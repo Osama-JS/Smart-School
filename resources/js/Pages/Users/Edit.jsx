@@ -1,277 +1,110 @@
-import React, { useState, useEffect } from 'react';
-import AdminLayout from '../../Layouts/AdminLayout';
-import { Head, useForm, usePage } from '@inertiajs/react';
-import { ImagePlus, Info, Users, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Head, router, Link, usePage } from '@inertiajs/react';
+import AdminLayout from '@/Layouts/AdminLayout';
+import { ArrowRight, Save } from 'lucide-react';
 
-export default function EditUser({ grades, user, userSections }) {
-    const { flash } = usePage().props;
-    
-    // Convert userSections into classRows structure
-    const initialRows = userSections && userSections.length > 0 
-        ? userSections.map((sectionId, i) => {
-            let matchedGradeId = '';
-            for (const grade of grades) {
-                if (grade.sections.some(s => s.id === sectionId)) {
-                    matchedGradeId = grade.id;
-                    break;
-                }
-            }
-            return { id: Date.now() + i, grade_id: matchedGradeId, section_id: sectionId };
-        })
-        : [{ id: Date.now(), grade_id: '', section_id: '' }];
-
-    // Manage dynamic rows of grade/section
-    const [classRows, setClassRows] = useState(initialRows);
-
-    const { data, setData, put, processing, errors, clearErrors } = useForm({
-        type: user.type || 'supervisor',
+export default function UsersEdit({ user, roles, branches }) {
+    const { errors } = usePage().props;
+    const [form, setForm] = useState({
         name: user.name || '',
-        phone: user.phone || '',
-        gender: user.gender || '',
         username: user.username || '',
         password: '',
-        sections: userSections || []
+        role_id: user.role_id || '',
+        branch_id: user.branch_id || '',
+        is_active: user.is_active,
     });
-
-    // Update form data sections whenever classRows change
-    useEffect(() => {
-        const selectedSections = classRows
-            .map(row => row.section_id)
-            .filter(id => id !== '');
-        setData('sections', selectedSections);
-    }, [classRows]);
-
-    const handleAddRow = () => {
-        setClassRows([...classRows, { id: Date.now(), grade_id: '', section_id: '' }]);
-    };
-
-    const handleRemoveRow = (id) => {
-        setClassRows(classRows.filter(row => row.id !== id));
-    };
-
-    const handleRowChange = (id, field, value) => {
-        setClassRows(classRows.map(row => {
-            if (row.id === id) {
-                // If grade changes, reset the section
-                if (field === 'grade_id') {
-                    return { ...row, grade_id: value, section_id: '' };
-                }
-                return { ...row, [field]: value };
-            }
-            return row;
-        }));
-    };
+    const [saving, setSaving] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        put(route('users.update', user.id));
+        setSaving(true);
+        router.put(route('users.update', user.id), form, {
+            onFinish: () => setSaving(false),
+        });
     };
 
     return (
         <AdminLayout activeMenu="المستخدمون">
-            <Head title="تعديل مستخدم" />
+            <Head title={`تعديل مستخدم: ${user.name} | النظام الإداري`} />
 
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-gray-800">المستخدمون / <span className="text-gray-500 text-lg">تعديل مستخدم</span></h2>
-                </div>
-                <div className="flex gap-2">
-                    <button className="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2 text-sm hover:bg-blue-600 transition-colors">
-                        <Users size={16} />
-                        مستخدموا لوحة التحكم
-                    </button>
+            <div className="relative overflow-hidden bg-white/60 backdrop-blur-xl border border-white/40 rounded-3xl p-6 md:p-8 mb-8 shadow-sm">
+                <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-bl from-indigo-500/20 to-transparent rounded-full blur-3xl pointer-events-none" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Link href={route('users.index')} className="text-slate-400 hover:text-indigo-600 transition-colors">
+                                <ArrowRight size={20} />
+                            </Link>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">تعديل حساب المستخدم</h1>
+                        </div>
+                        <p className="text-slate-500 text-sm font-medium pr-8">{user.name}</p>
+                    </div>
                 </div>
             </div>
 
-            {flash?.success && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span className="block sm:inline">{flash.success}</span>
-                </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 relative">
-                <div className="flex justify-end items-center mb-6">
-
-                    <div className="w-64">
-                        <div className="relative">
-                            <select 
-                                value={data.type}
-                                onChange={e => {
-                                    setData('type', e.target.value);
-                                    clearErrors('type');
-                                }}
-                                className={`w-full bg-gray-50 border ${errors.type ? 'border-red-500' : 'border-gray-200'} text-gray-700 py-2 px-3 rounded-md appearance-none focus:outline-none focus:ring-1 focus:ring-blue-500 text-right pr-8`}
-                            >
-                                <option value="admin">مدير</option>
-                                <option value="supervisor">المشرفين</option>
-                                <option value="teacher">المعلمين</option>
-                                <option value="student">الطلاب</option>
-                            </select>
-                            <ChevronDown className="absolute left-3 top-2.5 text-gray-500 pointer-events-none" size={16} />
-                        </div>
-                        {errors.type && <p className="text-red-500 text-xs mt-1">{errors.type}</p>}
-                    </div>
-                </div>
-
-                <div className="bg-[#f8f9fa] rounded-lg p-6 border border-gray-100 mb-6">
-                    <div className="flex flex-col lg:flex-row gap-6">
-                        
-                        <div className="flex-1 space-y-4">
-                            {/* Row 1 */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="relative">
-                                    <input 
-                                        type="text" 
-                                        placeholder="الاسم الرباعي" 
-                                        value={data.name}
-                                        onChange={e => { setData('name', e.target.value); clearErrors('name'); }}
-                                        autoComplete="name"
-                                        className={`w-full border ${errors.name ? 'border-red-500' : 'border-gray-200'} rounded-md py-2.5 px-3 focus:outline-none focus:border-blue-500 text-right bg-white`}
-                                    />
-                                    {errors.name && <p className="text-red-500 text-xs mt-1 absolute">{errors.name}</p>}
-                                </div>
-                                <div className="flex gap-4">
-                                    <div className="relative w-1/3">
-                                        <select 
-                                            value={data.gender}
-                                            onChange={e => { setData('gender', e.target.value); clearErrors('gender'); }}
-                                            className={`w-full border ${errors.gender ? 'border-red-500' : 'border-gray-200'} rounded-md py-2.5 px-3 appearance-none focus:outline-none focus:border-blue-500 text-right bg-white`}
-                                        >
-                                            <option value="">النوع</option>
-                                            <option value="male">ذكر</option>
-                                            <option value="female">أنثى</option>
-                                        </select>
-                                        <ChevronDown className="absolute left-3 top-3 text-gray-400 pointer-events-none" size={16} />
-                                        {errors.gender && <p className="text-red-500 text-xs mt-1 absolute">{errors.gender}</p>}
-                                    </div>
-                                    <div className="relative w-2/3">
-                                        <input 
-                                            type="text" 
-                                            placeholder="رقم الهاتف" 
-                                            value={data.phone}
-                                            onChange={e => { setData('phone', e.target.value); clearErrors('phone'); }}
-                                            autoComplete="tel"
-                                            className={`w-full border ${errors.phone ? 'border-red-500' : 'border-gray-200'} rounded-md py-2.5 px-3 focus:outline-none focus:border-blue-500 text-right bg-white`}
-                                        />
-                                        {errors.phone && <p className="text-red-500 text-xs mt-1 absolute">{errors.phone}</p>}
-                                    </div>
-                                </div>
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden max-w-4xl mx-auto">
+                <form onSubmit={handleSubmit}>
+                    <div className="p-6 md:p-8 space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">الاسم الكامل <span className="text-rose-500">*</span></label>
+                                <input type="text" required
+                                    className={`w-full border rounded-xl px-4 py-2.5 text-sm outline-none transition-colors ${errors.name ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-400'}`}
+                                    value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                {errors.name && <p className="text-xs text-rose-500 mt-1">{errors.name}</p>}
                             </div>
-
-                            {/* Row 2: Dynamic Grade/Section rows */}
-                            <div className="space-y-4">
-                                {classRows.map((row, index) => (
-                                    <div key={row.id} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="relative">
-                                            <select 
-                                                value={row.grade_id}
-                                                onChange={(e) => handleRowChange(row.id, 'grade_id', e.target.value)}
-                                                className="w-full border border-gray-200 rounded-md py-2.5 px-3 appearance-none focus:outline-none focus:border-blue-500 text-right bg-white"
-                                            >
-                                                <option value="">اختر الصف</option>
-                                                {grades && grades.map(grade => (
-                                                    <option key={grade.id} value={grade.id}>{grade.name}</option>
-                                                ))}
-                                            </select>
-                                            <ChevronDown className="absolute left-3 top-3 text-gray-400 pointer-events-none" size={16} />
-                                        </div>
-                                        
-                                        <div className="flex gap-4 items-center">
-                                            <div className="relative w-2/3">
-                                                <select 
-                                                    value={row.section_id}
-                                                    onChange={(e) => handleRowChange(row.id, 'section_id', e.target.value)}
-                                                    className="w-full border border-gray-200 rounded-md py-2.5 px-3 appearance-none focus:outline-none focus:border-blue-500 text-right bg-white"
-                                                >
-                                                    <option value="">اختر الشعبة</option>
-                                                    {grades && row.grade_id && grades.find(g => g.id.toString() === row.grade_id.toString())?.sections.map(section => (
-                                                        <option key={section.id} value={section.id}>{section.name}</option>
-                                                    ))}
-                                                </select>
-                                                <ChevronDown className="absolute left-3 top-3 text-gray-400 pointer-events-none" size={16} />
-                                            </div>
-                                            
-                                            <div className="w-1/3 flex gap-2">
-                                                {index === classRows.length - 1 ? (
-                                                    <button 
-                                                        type="button"
-                                                        onClick={handleAddRow}
-                                                        className="w-full border border-dashed border-gray-400 text-gray-500 rounded-md py-2 flex items-center justify-center gap-1 hover:bg-gray-50 hover:border-gray-500 transition-colors bg-white"
-                                                    >
-                                                        <span className="text-xs">إضافة صف</span>
-                                                        <Plus size={14} />
-                                                    </button>
-                                                ) : (
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => handleRemoveRow(row.id)}
-                                                        className="w-full border border-red-200 text-red-500 rounded-md py-2 flex items-center justify-center gap-1 hover:bg-red-50 hover:border-red-300 transition-colors bg-white"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">اسم المستخدم <span className="text-rose-500">*</span></label>
+                                <input type="text" required dir="ltr"
+                                    className={`w-full border rounded-xl px-4 py-2.5 text-sm outline-none transition-colors ${errors.username ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-400'}`}
+                                    value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} />
+                                {errors.username && <p className="text-xs text-rose-500 mt-1">{errors.username}</p>}
                             </div>
-
-                            {/* Row 3 */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 mt-2 border-t border-gray-200">
-                                <div className="relative">
-                                    <input 
-                                        type="text" 
-                                        placeholder="اسم المستخدم" 
-                                        value={data.username}
-                                        onChange={e => { setData('username', e.target.value); clearErrors('username'); }}
-                                        autoComplete="username"
-                                        className={`w-full border ${errors.username ? 'border-red-500' : 'border-gray-200'} rounded-md py-2.5 px-3 focus:outline-none focus:border-blue-500 text-right bg-white`}
-                                    />
-                                    {errors.username && <p className="text-red-500 text-xs mt-1 absolute">{errors.username}</p>}
-                                </div>
-                                <div className="relative">
-                                    <input 
-                                        type="password" 
-                                        placeholder="كلمة المرور (اتركها فارغة إذا لم ترد تغييرها)" 
-                                        value={data.password}
-                                        onChange={e => { setData('password', e.target.value); clearErrors('password'); }}
-                                        autoComplete="new-password"
-                                        className={`w-full border ${errors.password ? 'border-red-500' : 'border-gray-200'} rounded-md py-2.5 px-3 focus:outline-none focus:border-blue-500 text-right bg-white`}
-                                    />
-                                    {errors.password && <p className="text-red-500 text-xs mt-1 absolute">{errors.password}</p>}
-                                </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">كلمة المرور (اختياري)</label>
+                                <input type="password" minLength="8" dir="ltr" placeholder="اتركه فارغاً للإبقاء على الحالية"
+                                    className={`w-full border rounded-xl px-4 py-2.5 text-sm outline-none transition-colors ${errors.password ? 'border-rose-300 focus:ring-rose-200' : 'border-slate-200 focus:ring-indigo-500/20 focus:border-indigo-400'}`}
+                                    value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                                {errors.password && <p className="text-xs text-rose-500 mt-1">{errors.password}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">الدور والصلاحية <span className="text-rose-500">*</span></label>
+                                <select required
+                                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                                    value={form.role_id} onChange={e => setForm({ ...form, role_id: e.target.value })}>
+                                    {roles?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                                </select>
+                                {errors.role_id && <p className="text-xs text-rose-500 mt-1">{errors.role_id}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">الفرع <span className="text-rose-500">*</span></label>
+                                <select required
+                                    className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 bg-white"
+                                    value={form.branch_id} onChange={e => setForm({ ...form, branch_id: e.target.value })}>
+                                    {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                </select>
+                                {errors.branch_id && <p className="text-xs text-rose-500 mt-1">{errors.branch_id}</p>}
+                            </div>
+                            <div className="flex items-center pt-8">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox"
+                                        className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                                        checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })} />
+                                    <span className="text-sm font-bold text-slate-700">حساب نشط</span>
+                                </label>
                             </div>
                         </div>
-
-                        {/* Image Upload Box */}
-                        <div className="w-full lg:w-48 xl:w-56">
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg h-full min-h-[160px] bg-white flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 hover:border-gray-400 transition-colors">
-                                <ImagePlus size={32} className="mb-2 text-gray-400" />
-                                <span className="text-sm font-medium">اضف صورة</span>
-                            </div>
-                        </div>
-
                     </div>
-                    
-                    {/* Info text */}
-                    <div className="flex items-center justify-center gap-2 mt-6 text-sm text-[#2a87a9]">
-                        <p>هذا المستخدم خاص بتطبيق الجوال ، ولا يمكن الدخول من لوحة التحكم بنفس هذا الحساب</p>
-                        <Info size={16} />
-                    </div>
-
-                    {/* Submit Button */}
-                    <div className="mt-6">
-                        <button 
-                            type="submit"
-                            disabled={processing}
-                            className="w-full bg-[#3f8fca] hover:bg-[#347bae] disabled:bg-blue-300 text-white font-medium py-3 rounded-md transition-colors text-lg"
-                        >
-                            {processing ? 'جاري الحفظ...' : 'حفظ'}
+                    <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+                        <Link href={route('users.index')} className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                            إلغاء
+                        </Link>
+                        <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-60">
+                            <Save size={16} /> {saving ? 'جاري الحفظ...' : 'تحديث البيانات'}
                         </button>
                     </div>
-
-                </div>
-            </form>
+                </form>
+            </div>
         </AdminLayout>
     );
 }

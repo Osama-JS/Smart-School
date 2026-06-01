@@ -27,11 +27,13 @@ return new class extends Migration {
         Schema::create('chat_messages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('chat_room_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('sender_id')->constrained('users')->cascadeOnDelete();
+            $table->unsignedBigInteger('sender_id');
             $table->text('message_text')->nullable();
             $table->string('attachment_url')->nullable();
             $table->timestamp('read_at')->nullable();
             $table->timestamps();
+
+            $table->foreign('sender_id')->references('id')->on('users')->onDelete('cascade');
         });
 
         // 4. الإشعارات (Push Notifications)

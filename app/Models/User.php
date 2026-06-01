@@ -36,6 +36,7 @@ class User extends Authenticatable
 
     // العلاقات الأكاديمية (حسب الدور)
     public function student(): HasOne { return $this->hasOne(Student::class); }
+    public function employee(): HasOne { return $this->hasOne(Employee::class); }
     public function lessonPreparations(): HasMany { return $this->hasMany(LessonPreparation::class, 'teacher_id'); }
     public function classroomVisits(): HasMany { return $this->hasMany(ClassroomVisit::class, 'teacher_id'); }
 

@@ -34,24 +34,29 @@ return new class extends Migration {
         // 3. دفاتر التحضير اليومية للمدرسين
         Schema::create('lesson_preparations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('teacher_id')->constrained('users')->cascadeOnDelete();
+            $table->unsignedBigInteger('teacher_id');
             $table->foreignId('subject_id')->constrained('subjects')->cascadeOnDelete();
             $table->foreignId('grade_id')->constrained('grades')->cascadeOnDelete();
             $table->string('lesson_title');
             $table->date('preparation_date');
             $table->text('content');
             $table->timestamps();
+
+            $table->foreign('teacher_id')->references('id')->on('users')->onDelete('cascade');
         });
 
         // 4. الزيارات الصفية (تقييم المشرف للمعلم)
         Schema::create('classroom_visits', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('supervisor_id')->constrained('users');
-            $table->foreignId('teacher_id')->constrained('users');
+            $table->unsignedBigInteger('supervisor_id');
+            $table->unsignedBigInteger('teacher_id');
             $table->date('visit_date');
             $table->decimal('score', 5, 2);
             $table->text('notes')->nullable();
             $table->timestamps();
+
+            $table->foreign('supervisor_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('teacher_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

@@ -5,7 +5,7 @@ import {
     AlertTriangle, Calendar, FileText, CheckSquare, Star, Eye, 
     ClipboardList, Map, Book, Library, BarChart, UserPlus, Settings,
     Menu, ChevronDown, LogOut, User, Search, X,
-    PanelLeftClose, PanelLeftOpen
+    PanelLeftClose, PanelLeftOpen, ShieldCheck, Store, Clock
 } from 'lucide-react';
 
 export default function AdminLayout({ children, activeMenu = 'المستخدمون' }) {
@@ -33,6 +33,29 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'الرئيسية', icon: Home, url: route('dashboard') },
                 { name: 'المستخدمون', icon: Users, url: route('users.index') },
+            ]
+        },
+        {
+            title: 'النظام الإداري (HR)',
+            items: [
+                { name: 'الأقسام والإدارات', icon: BookOpen, url: route('hr.departments') },
+                { name: 'الدرجات الوظيفية', icon: ShieldCheck, url: route('hr.job-grades') },
+                { name: 'الفروع', icon: Store, url: route('hr.branches') },
+                { name: 'الشفتات', icon: Clock, url: route('hr.shifts') },
+                { name: 'دليل الموظفين', icon: UserPlus, url: route('hr.employees') },
+            ]
+        },
+        {
+            title: 'الحضور والانصراف',
+            items: [
+                { name: 'سجل الحضور', icon: CheckSquare, url: route('hr.attendance') },
+            ]
+        },
+        {
+            title: 'سير العمل والطلبات',
+            items: [
+                { name: 'تقديم طلب', icon: FileText, url: route('hr.requests') },
+                { name: 'صندوق الموافقات', icon: Bell, url: route('hr.approvals') },
             ]
         },
         {
@@ -68,8 +91,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'الإدارة',
             items: [
-                { name: 'إدارة الصلاحيات', icon: Shield },
-                { name: 'إعدادات النظام', icon: Settings },
+                { name: 'إدارة الصلاحيات', icon: Shield, url: route('admin.permissions') },
+                { name: 'إعدادات النظام', icon: Settings, url: route('admin.settings') },
             ]
         },
     ];

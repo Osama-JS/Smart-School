@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 
 /* ======================================
    القيم ERP - Premium Design System
@@ -97,7 +96,7 @@
    ====================================== */
 
 * {
-    font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, sans-serif;
+    font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
 }
 
 body {
