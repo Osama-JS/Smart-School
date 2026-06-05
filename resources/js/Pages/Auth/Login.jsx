@@ -25,23 +25,28 @@ export default function Login({ status, canResetPassword }) {
             <Head title="تسجيل الدخول" />
 
             {status && (
-                <div className="mb-5 text-sm font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-lg animate-slide-up">
+                <div className="mb-5 text-sm font-medium text-emerald-600 bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-2xl animate-slide-up">
                     {status}
                 </div>
             )}
 
-            <form onSubmit={submit} className="space-y-6">
-                {/* Username */}
+            <div className="mb-6">
+                <h3 className="text-xl font-extrabold text-slate-900">تسجيل الدخول</h3>
+                <p className="text-slate-500 text-xs mt-1">الرجاء إدخال اسم المستخدم وكلمة المرور للمتابعة.</p>
+            </div>
+
+            <form onSubmit={submit} className="space-y-5">
+                
+                {/* Username Input with icon and separator line */}
                 <div>
-                    <label htmlFor="username" className="erp-label">اسم المستخدم</label>
-                    <div className="relative">
-                        <User size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <label htmlFor="username" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">اسم المستخدم</label>
+                    <div className="relative flex items-center">
                         <input
                             id="username"
                             type="text"
                             name="username"
                             value={data.username}
-                            className={`erp-input pr-11 ${errors.username ? 'error' : ''}`}
+                            className={`peer w-full bg-white dark:bg-slate-900/40 border rounded-2xl pr-13 pl-4 py-3.5 text-sm outline-none transition-all focus:ring-4 ${errors.username ? 'border-accent-300 focus:ring-accent-500/10 focus:border-accent-400' : 'border-slate-200 dark:border-slate-800 focus:ring-primary-500/10 focus:border-primary-500'} text-slate-800 dark:text-slate-100 font-semibold`}
                             autoComplete="username"
                             autoFocus
                             placeholder="أدخل اسم المستخدم"
@@ -49,32 +54,38 @@ export default function Login({ status, canResetPassword }) {
                             dir="ltr"
                             style={{ textAlign: 'right' }}
                         />
+                        <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 peer-focus:text-primary-500 border-l border-slate-200/80 dark:border-slate-800 peer-focus:border-primary-500/30 pl-2.5 transition-colors duration-200">
+                            <User size={18} />
+                        </div>
                     </div>
                     <InputError message={errors.username} className="mt-2" />
                 </div>
 
-                {/* Password */}
+                {/* Password Input with icon, separator line and eye toggle */}
                 <div>
-                    <label htmlFor="password" className="erp-label">كلمة المرور</label>
-                    <div className="relative">
-                        <Lock size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <label htmlFor="password" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">كلمة المرور</label>
+                    <div className="relative flex items-center">
                         <input
                             id="password"
                             type={showPassword ? 'text' : 'password'}
                             name="password"
                             value={data.password}
-                            className={`erp-input pr-11 pl-11 ${errors.password ? 'error' : ''}`}
+                            className={`peer w-full bg-white dark:bg-slate-900/40 border rounded-2xl pr-13 pl-12 py-3.5 text-sm outline-none transition-all focus:ring-4 ${errors.password ? 'border-accent-300 focus:ring-accent-500/10 focus:border-accent-400' : 'border-slate-200 dark:border-slate-800 focus:ring-primary-500/10 focus:border-primary-500'} text-slate-800 dark:text-slate-100 font-semibold`}
                             autoComplete="current-password"
                             placeholder="أدخل كلمة المرور"
                             onChange={(e) => setData('password', e.target.value)}
                             dir="ltr"
                             style={{ textAlign: 'right' }}
                         />
+                        <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 peer-focus:text-primary-500 border-l border-slate-200/80 dark:border-slate-800 peer-focus:border-primary-500/30 pl-2.5 transition-colors duration-200">
+                            <Lock size={18} />
+                        </div>
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:text-slate-600 transition-colors p-1"
                             tabIndex={-1}
+                            aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                         >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                         </button>
@@ -82,36 +93,36 @@ export default function Login({ status, canResetPassword }) {
                     <InputError message={errors.password} className="mt-2" />
                 </div>
 
-                {/* Remember & Forgot */}
-                <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2 cursor-pointer group">
+                {/* Remember & Forgot Password links */}
+                <div className="flex items-center justify-between pt-1">
+                    <label className="flex items-center gap-2.5 cursor-pointer group py-1">
                         <input
                             type="checkbox"
                             name="remember"
                             checked={data.remember}
                             onChange={(e) => setData('remember', e.target.checked)}
-                            className="w-4 h-4 rounded border-slate-300 text-[#6b9b37] focus:ring-[#6b9b37] focus:ring-offset-0 transition-colors"
+                            className="w-[18px] h-[18px] rounded border-slate-300 text-primary-500 focus:ring-primary-500 focus:ring-offset-0 transition-colors cursor-pointer"
                         />
-                        <span className="text-sm text-slate-500 group-hover:text-slate-700 transition-colors select-none">
-                            تذكرني
+                        <span className="text-xs text-slate-500 group-hover:text-slate-700 transition-colors select-none font-bold">
+                            تذكرني على هذا الجهاز
                         </span>
                     </label>
 
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="text-sm text-[#6b9b37] hover:text-[#558a2a] font-medium transition-colors"
+                            className="text-xs text-primary-600 hover:text-primary-700 font-bold transition-colors py-1"
                         >
                             نسيت كلمة المرور؟
                         </Link>
                     )}
                 </div>
 
-                {/* Submit */}
+                {/* Submit button with spinner inside */}
                 <button
                     type="submit"
                     disabled={processing}
-                    className="erp-btn erp-btn-primary w-full !py-3 text-[15px] disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 shadow-lg shadow-primary-500/15 hover:shadow-primary-500/25 active:scale-[0.98] transition-all w-full text-sm font-extrabold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {processing ? (
                         <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

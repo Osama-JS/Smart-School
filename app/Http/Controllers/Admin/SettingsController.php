@@ -38,7 +38,13 @@ class SettingsController extends Controller
             'academic_year'      => 'required|string|max:20',
             'session_timeout'    => 'required|integer|min:10|max:1440',
             'max_login_attempts' => 'required|integer|min:3|max:20',
+            'logo'               => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
         ]);
+
+        if ($request->hasFile('logo')) {
+            $logoFile = $request->file('logo');
+            $logoFile->move(public_path('images'), 'logo.png');
+        }
 
         // في نظام حقيقي يُحفظ في جدول settings أو ملف .env
         return redirect()->route('admin.settings')->with('success', 'تم حفظ الإعدادات بنجاح');

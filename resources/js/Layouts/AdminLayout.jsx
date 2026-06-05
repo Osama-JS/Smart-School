@@ -1,31 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { 
     Home, Users, BookOpen, Shield, Newspaper, Bell, Smartphone, 
     AlertTriangle, Calendar, FileText, CheckSquare, Star, Eye, 
     ClipboardList, Map, Book, Library, BarChart, UserPlus, Settings,
     Menu, ChevronDown, LogOut, User, Search, X,
-    PanelLeftClose, PanelLeftOpen, ShieldCheck, Store, Clock
+    PanelLeftClose, PanelLeftOpen, ShieldCheck, Store, Clock,
+    LayoutDashboard, Briefcase, Sun, Moon
 } from 'lucide-react';
 
 export default function AdminLayout({ children, activeMenu = 'المستخدمون' }) {
-    const { auth } = usePage().props;
+    const { auth, logo_url } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+    const [sidebarClosing, setSidebarClosing] = useState(false);
     const [profileDropdown, setProfileDropdown] = useState(false);
     const [scrolled, setScrolled] = useState(false);
+    const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+
+    const [theme, setTheme] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('theme') || 'light';
+        }
+        return 'light';
+    });
 
     useEffect(() => {
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    // Scroll detection
+    useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 10);
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Profile dropdown close on outside click
     useEffect(() => {
         const handleClick = () => setProfileDropdown(false);
         if (profileDropdown) document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
     }, [profileDropdown]);
+
+    // Escape key to close sidebar & search
+    useEffect(() => {
+        const handleKey = (e) => {
+            if (e.key === 'Escape') {
+                if (mobileSearchOpen) setMobileSearchOpen(false);
+                if (mobileSidebarOpen) closeMobileSidebar();
+            }
+        };
+        document.addEventListener('keydown', handleKey);
+        return () => document.removeEventListener('keydown', handleKey);
+    }, [mobileSidebarOpen, mobileSearchOpen]);
+
+    // Lock body scroll when mobile sidebar is open
+    useEffect(() => {
+        if (mobileSidebarOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => { document.body.style.overflow = ''; };
+    }, [mobileSidebarOpen]);
+
+    // Animated close for mobile sidebar
+    const closeMobileSidebar = useCallback(() => {
+        setSidebarClosing(true);
+        setTimeout(() => {
+            setMobileSidebarOpen(false);
+            setSidebarClosing(false);
+        }, 250);
+    }, []);
 
     const menuGroups = [
         {
@@ -97,18 +149,35 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         },
     ];
 
+    // Bottom navigation items
+    const bottomNavItems = [
+        { name: 'الرئيسية', icon: Home, url: route('dashboard'), key: 'الرئيسية' },
+        { name: 'الموظفين', icon: Users, url: route('hr.employees'), key: 'دليل الموظفين' },
+        { name: 'الحضور', icon: CheckSquare, url: route('hr.attendance'), key: 'سجل الحضور' },
+        { name: 'الطلبات', icon: FileText, url: route('hr.requests'), key: 'تقديم طلب' },
+        { name: 'المزيد', icon: Menu, action: 'sidebar', key: '__more' },
+    ];
+
     const SidebarContent = () => (
         <div className="flex flex-col h-full">
             {/* Brand Line */}
             <div className="brand-line"></div>
             
-            {/* Logo */}
+            {/* Logo & Close button for mobile */}
             <div className="p-5 flex items-center gap-3 border-b border-white/10">
-                <img src="/alqiam_school/public/images/logo.png" alt="مدارس القيم" className="h-11 w-11 rounded-xl object-contain bg-white/10 p-1 shrink-0" />
-                <div className="leading-tight overflow-hidden">
+                <img src={logo_url || '/images/logo.png'} alt="مدارس القيم" className="h-11 w-11 rounded-xl object-contain bg-white/10 p-1 shrink-0" />
+                <div className="leading-tight overflow-hidden flex-1 min-w-0">
                     <h1 className="font-bold text-white text-[15px] truncate">مدارس القيم</h1>
                     <p className="text-[11px] text-gray-500 truncate">نظام القيم ERP</p>
                 </div>
+                {/* Close button — mobile only */}
+                <button 
+                    className="lg:hidden erp-btn-ghost text-gray-400 hover:text-white hover:bg-white/10 rounded-lg p-2"
+                    onClick={closeMobileSidebar}
+                    aria-label="إغلاق القائمة"
+                >
+                    <X size={20} />
+                </button>
             </div>
 
             {/* Menu Groups */}
@@ -124,7 +193,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                         <Link
                                             href={menu.url || '#'}
                                             className={`erp-sidebar-item ${isActive ? 'active' : ''}`}
-                                            onClick={() => setMobileSidebarOpen(false)}
+                                            onClick={() => {
+                                                if (mobileSidebarOpen) closeMobileSidebar();
+                                            }}
                                         >
                                             <menu.icon size={18} className="sidebar-icon" />
                                             <span>{menu.name}</span>
@@ -165,14 +236,14 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 <SidebarContent />
             </aside>
 
-            {/* Mobile Sidebar */}
+            {/* Mobile Sidebar with animated backdrop */}
             {mobileSidebarOpen && (
                 <div className="fixed inset-0 z-40 lg:hidden">
                     <div 
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" 
-                        onClick={() => setMobileSidebarOpen(false)} 
+                        className={`sidebar-backdrop ${sidebarClosing ? 'closing' : ''}`}
+                        onClick={closeMobileSidebar} 
                     />
-                    <aside className="erp-sidebar absolute right-0 top-0 h-full w-[280px] z-50 animate-slide-right flex flex-col">
+                    <aside className={`sidebar-mobile-panel erp-sidebar flex flex-col ${sidebarClosing ? 'closing' : ''}`}>
                         <SidebarContent />
                     </aside>
                 </div>
@@ -181,34 +252,55 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             {/* Main Area */}
             <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
                 {/* Topbar */}
-                <header className={`erp-topbar flex items-center justify-between px-4 lg:px-6 ${scrolled ? 'scrolled' : ''}`}>
-                    <div className="flex items-center gap-3">
-                        <button className="erp-btn-ghost lg:hidden" onClick={() => setMobileSidebarOpen(true)}>
+                <header className={`erp-topbar flex items-center justify-between px-3 sm:px-4 lg:px-6 ${scrolled ? 'scrolled' : ''}`}>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <button className="erp-btn-ghost lg:hidden" onClick={() => setMobileSidebarOpen(true)} aria-label="فتح القائمة">
                             <Menu size={22} />
                         </button>
-                        <button className="erp-btn-ghost hidden lg:flex" onClick={() => setSidebarOpen(!sidebarOpen)}>
+                        <button className="erp-btn-ghost hidden lg:flex" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="تبديل القائمة">
                             {sidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
                         </button>
+
+                        {/* Desktop Search */}
                         <div className="hidden md:flex items-center relative">
                             <Search size={16} className="absolute right-3 text-slate-400 pointer-events-none" />
                             <input 
                                 type="text" 
                                 placeholder="بحث سريع..." 
-                                className="erp-input w-64 pr-9 text-sm !py-2 !border-slate-200 bg-slate-50/80 focus:bg-white"
+                                className="erp-input w-56 lg:w-64 pr-9 text-sm !py-2 !border-slate-200 bg-slate-50/80 focus:bg-white"
                             />
                         </div>
+
+                        {/* Mobile Search Button */}
+                        <button 
+                            className="erp-btn-ghost md:hidden" 
+                            onClick={() => setMobileSearchOpen(true)}
+                            aria-label="بحث"
+                        >
+                            <Search size={20} />
+                        </button>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button className="erp-btn-ghost relative">
+                    <div className="flex items-center gap-1 sm:gap-2">
+                        {/* Theme Toggle Button */}
+                        <button 
+                            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
+                            className="erp-btn-ghost text-slate-500 hover:text-primary-600 transition-colors"
+                            aria-label="تبديل المظهر"
+                        >
+                            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                        </button>
+
+                        <button className="erp-btn-ghost relative" aria-label="الإشعارات">
                             <Bell size={20} />
                             <span className="notification-dot"></span>
                         </button>
 
                         <div className="relative">
                             <button 
-                                className="flex items-center gap-3 py-1.5 px-3 rounded-lg hover:bg-slate-50 transition-colors"
+                                className="flex items-center gap-2 sm:gap-3 py-1.5 px-2 sm:px-3 rounded-lg hover:bg-slate-50 transition-colors"
                                 onClick={(e) => { e.stopPropagation(); setProfileDropdown(!profileDropdown); }}
+                                aria-label="الملف الشخصي"
                             >
                                 <div className="text-left hidden sm:block">
                                     <p className="text-sm font-bold text-slate-800 leading-tight">
@@ -226,7 +318,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                     <Link href={route('profile.edit')} className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
                                         <User size={16} /> <span>الملف الشخصي</span>
                                     </Link>
-                                    <Link href="#" className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
+                                    <Link href={route('admin.settings')} className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
                                         <Settings size={16} /> <span>الإعدادات</span>
                                     </Link>
                                     <hr className="my-1 border-slate-100" />
@@ -239,13 +331,72 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                     </div>
                 </header>
 
+                {/* Mobile Search Overlay */}
+                {mobileSearchOpen && (
+                    <div className="search-overlay md:hidden">
+                        <div className="flex items-center gap-3">
+                            <div className="flex-1 relative">
+                                <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                <input 
+                                    type="text"
+                                    placeholder="ابحث في النظام..."
+                                    className="search-overlay-input"
+                                    autoFocus
+                                />
+                            </div>
+                            <button 
+                                className="erp-btn-ghost shrink-0" 
+                                onClick={() => setMobileSearchOpen(false)}
+                                aria-label="إغلاق البحث"
+                            >
+                                <X size={22} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[var(--surface-bg)]">
+                <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 bg-[var(--surface-bg)]">
                     <div className="max-w-7xl mx-auto page-enter">
                         {children}
                     </div>
                 </main>
             </div>
+
+            {/* Bottom Navigation — Mobile Only */}
+            <nav className="bottom-nav" aria-label="التنقل السريع">
+                <div className="bottom-nav-inner">
+                    {bottomNavItems.map((item, idx) => {
+                        const isActive = item.key === activeMenu;
+                        const isMore = item.action === 'sidebar';
+                        
+                        if (isMore) {
+                            return (
+                                <button
+                                    key={idx}
+                                    className={`bottom-nav-item ${mobileSidebarOpen ? 'active' : ''}`}
+                                    onClick={() => setMobileSidebarOpen(true)}
+                                    aria-label={item.name}
+                                >
+                                    <item.icon size={22} className="nav-icon" />
+                                    <span>{item.name}</span>
+                                </button>
+                            );
+                        }
+
+                        return (
+                            <Link
+                                key={idx}
+                                href={item.url}
+                                className={`bottom-nav-item ${isActive ? 'active' : ''}`}
+                            >
+                                <item.icon size={22} className="nav-icon" />
+                                <span>{item.name}</span>
+                            </Link>
+                        );
+                    })}
+                </div>
+            </nav>
         </div>
     );
 }

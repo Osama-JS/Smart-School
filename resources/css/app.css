@@ -1,43 +1,75 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary-50: #f0f7eb;
+  --color-primary-100: #dcefd1;
+  --color-primary-200: #b9dfa3;
+  --color-primary-300: #96cf75;
+  --color-primary-400: #7cbf4f;
+  --color-primary-500: #6b9b37;
+  --color-primary-600: #558a2a;
+  --color-primary-700: #437020;
+  --color-primary-800: #325518;
+  --color-primary-900: #1e3a0e;
+
+  --color-accent-50: #fef2f2;
+  --color-accent-100: #fee2e2;
+  --color-accent-200: #fecaca;
+  --color-accent-400: #e74c4c;
+  --color-accent-500: #cc2b2b;
+  --color-accent-600: #b91c1c;
+  --color-accent-700: #991b1b;
+
+  --color-dark-50: #f8f9fa;
+  --color-dark-100: #e9ecef;
+  --color-dark-200: #dee2e6;
+  --color-dark-300: #ced4da;
+  --color-dark-400: #adb5bd;
+  --color-dark-500: #6c757d;
+  --color-dark-600: #495057;
+  --color-dark-700: #343a40;
+  --color-dark-800: #212529;
+  --color-dark-900: #0f1419;
+}
+
 /* ======================================
-   القيم ERP - Premium Design System
+   القيم ERP - Premium Design System v2
    ألوان مستخرجة من الشعار: أخضر، أحمر، أسود
    ====================================== */
 
 :root {
     /* Primary Brand — Green (من الشعار) */
-    --primary-50: #f0f7eb;
-    --primary-100: #dcefd1;
-    --primary-200: #b9dfa3;
-    --primary-300: #96cf75;
-    --primary-400: #7cbf4f;
-    --primary-500: #6b9b37;
-    --primary-600: #558a2a;
-    --primary-700: #437020;
-    --primary-800: #325518;
-    --primary-900: #1e3a0e;
+    --primary-50: var(--color-primary-50);
+    --primary-100: var(--color-primary-100);
+    --primary-200: var(--color-primary-200);
+    --primary-300: var(--color-primary-300);
+    --primary-400: var(--color-primary-400);
+    --primary-500: var(--color-primary-500);
+    --primary-600: var(--color-primary-600);
+    --primary-700: var(--color-primary-700);
+    --primary-800: var(--color-primary-800);
+    --primary-900: var(--color-primary-900);
 
     /* Accent — Red (من الشعار) */
-    --accent-50: #fef2f2;
-    --accent-100: #fee2e2;
-    --accent-200: #fecaca;
-    --accent-400: #e74c4c;
-    --accent-500: #cc2b2b;
-    --accent-600: #b91c1c;
-    --accent-700: #991b1b;
+    --accent-50: var(--color-accent-50);
+    --accent-100: var(--color-accent-100);
+    --accent-200: var(--color-accent-200);
+    --accent-400: var(--color-accent-400);
+    --accent-500: var(--color-accent-500);
+    --accent-600: var(--color-accent-600);
+    --accent-700: var(--color-accent-700);
 
     /* Dark — Black (من الشعار) */
-    --dark-50: #f8f9fa;
-    --dark-100: #e9ecef;
-    --dark-200: #dee2e6;
-    --dark-300: #ced4da;
-    --dark-400: #adb5bd;
-    --dark-500: #6c757d;
-    --dark-600: #495057;
-    --dark-700: #343a40;
-    --dark-800: #212529;
-    --dark-900: #0f1419;
+    --dark-50: var(--color-dark-50);
+    --dark-100: var(--color-dark-100);
+    --dark-200: var(--color-dark-200);
+    --dark-300: var(--color-dark-300);
+    --dark-400: var(--color-dark-400);
+    --dark-500: var(--color-dark-500);
+    --dark-600: var(--color-dark-600);
+    --dark-700: var(--color-dark-700);
+    --dark-800: var(--color-dark-800);
+    --dark-900: var(--color-dark-900);
 
     /* Success / Warning / Info */
     --success-50: #ecfdf5;
@@ -54,13 +86,17 @@
     --danger-500: var(--accent-500);
     --danger-600: var(--accent-600);
 
-    /* Sidebar — Dark theme */
-    --sidebar-bg: #111318;
-    --sidebar-hover: #1c1f27;
+    /* Sidebar — Adaptable theme */
+    --sidebar-bg: #ffffff;
+    --sidebar-hover: var(--primary-50);
+    --sidebar-hover-text: var(--primary-700);
     --sidebar-active-from: var(--primary-500);
     --sidebar-active-to: var(--primary-700);
-    --sidebar-text: #8b919e;
+    --sidebar-text: #475569;
     --sidebar-text-active: #ffffff;
+    --sidebar-border: #e2e8f0;
+    --sidebar-section-text: #94a3b8;
+    --sidebar-scrollbar-thumb: rgba(0, 0, 0, 0.15);
     --sidebar-width: 280px;
 
     /* Surfaces */
@@ -69,7 +105,7 @@
     --surface-border: #e2e8f0;
 
     /* Typography */
-    --text-primary: #0f1419;
+    --text-primary: var(--color-dark-900);
     --text-secondary: #475569;
     --text-muted: #94a3b8;
 
@@ -89,6 +125,9 @@
     --radius-md: 10px;
     --radius-lg: 14px;
     --radius-xl: 20px;
+
+    /* Bottom nav height */
+    --bottom-nav-height: 0px;
 }
 
 /* ======================================
@@ -97,6 +136,12 @@
 
 * {
     font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -104,13 +149,20 @@ body {
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
 }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 100px; }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Selection */
+::selection {
+    background: var(--primary-200);
+    color: var(--primary-900);
+}
 
 /* ======================================
    Animations
@@ -119,13 +171,24 @@ body {
 @keyframes fadeIn {
     from { opacity: 0; } to { opacity: 1; }
 }
+@keyframes fadeOut {
+    from { opacity: 1; } to { opacity: 0; }
+}
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(12px); }
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 @keyframes slideRight {
-    from { opacity: 0; transform: translateX(-12px); }
+    from { opacity: 0; transform: translateX(100%); }
     to { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideRightOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(100%); }
 }
 @keyframes scaleIn {
     from { opacity: 0; transform: scale(0.95); }
@@ -139,19 +202,36 @@ body {
     0%, 100% { transform: translateY(0px); }
     50% { transform: translateY(-6px); }
 }
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+@keyframes popIn {
+    0% { opacity: 0; transform: scale(0.8); }
+    60% { opacity: 1; transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+@keyframes slideUpBounce {
+    0% { opacity: 0; transform: translateY(30px); }
+    60% { opacity: 1; transform: translateY(-4px); }
+    100% { transform: translateY(0); }
+}
 
 .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-.animate-slide-up { animation: slideUp 0.35s ease-out; }
-.animate-slide-right { animation: slideRight 0.3s ease-out; }
+.animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-slide-down { animation: slideDown 0.3s ease-out; }
+.animate-slide-right { animation: slideRight 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
 .animate-scale-in { animation: scaleIn 0.25s ease-out; }
+.animate-pop-in { animation: popIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* Stagger children */
-.stagger-children > * { animation: slideUp 0.4s ease-out both; }
-.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
-.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
-.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
-.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
-.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > * { animation: slideUpBounce 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stagger-children > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.08s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.12s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.16s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.20s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.24s; }
 
 /* ======================================
    Sidebar Styles
@@ -163,7 +243,14 @@ body {
     transition: width var(--transition-normal);
     overflow-y: auto;
     overflow-x: hidden;
+    will-change: transform;
+    border-left: 1px solid var(--sidebar-border);
 }
+
+/* Sidebar scrollbar - thinner */
+.erp-sidebar::-webkit-scrollbar { width: 3px; }
+.erp-sidebar::-webkit-scrollbar-thumb { background: var(--sidebar-scrollbar-thumb); border-radius: 100px; }
+.erp-sidebar::-webkit-scrollbar-thumb:hover { opacity: 0.8; }
 
 .erp-sidebar-item {
     display: flex;
@@ -178,17 +265,18 @@ body {
     transition: all var(--transition-fast);
     position: relative;
     text-decoration: none;
+    min-height: 42px;
 }
 
 .erp-sidebar-item:hover {
     background: var(--sidebar-hover);
-    color: #d1d5db;
+    color: var(--sidebar-hover-text);
 }
 
 .erp-sidebar-item.active {
     background: linear-gradient(135deg, var(--sidebar-active-from), var(--sidebar-active-to));
     color: var(--sidebar-text-active);
-    box-shadow: 0 4px 14px rgba(107, 155, 55, 0.35);
+    box-shadow: 0 4px 14px rgba(107, 155, 55, 0.3);
 }
 
 .erp-sidebar-item.active .sidebar-icon { color: var(--sidebar-text-active); }
@@ -208,9 +296,73 @@ body {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #4b5563;
+    color: var(--sidebar-section-text);
     padding: 0 18px;
     margin-bottom: 6px;
+}
+
+/* Sidebar Custom Theme Adaptations */
+.erp-sidebar div.border-b.border-white\/10 {
+    border-color: var(--sidebar-border) !important;
+}
+.erp-sidebar div.border-t.border-white\/10 {
+    border-color: var(--sidebar-border) !important;
+}
+.erp-sidebar .text-slate-200 {
+    color: var(--text-primary) !important;
+}
+.erp-sidebar .text-gray-500 {
+    color: var(--text-secondary) !important;
+}
+.erp-sidebar h1.text-white {
+    color: var(--text-primary) !important;
+}
+.erp-sidebar p.text-gray-500 {
+    color: var(--text-secondary) !important;
+}
+.erp-sidebar div[class*="from-green-700\/50"] {
+    background: linear-gradient(135deg, var(--primary-50), var(--primary-100)) !important;
+    border-color: var(--primary-200) !important;
+}
+.erp-sidebar div[class*="from-green-700\/50"] svg {
+    color: var(--primary-600) !important;
+}
+
+.dark .erp-sidebar div[class*="from-green-700\/50"] {
+    background: linear-gradient(135deg, rgba(85, 138, 42, 0.2), rgba(30, 58, 14, 0.3)) !important;
+    border-color: rgba(107, 155, 55, 0.3) !important;
+}
+.dark .erp-sidebar div[class*="from-green-700\/50"] svg {
+    color: var(--primary-300) !important;
+}
+
+/* Mobile sidebar overlay backdrop */
+.sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 40;
+    animation: fadeIn 0.2s ease-out;
+}
+.sidebar-backdrop.closing {
+    animation: fadeOut 0.25s ease-in forwards;
+}
+
+/* Mobile sidebar panel */
+.sidebar-mobile-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100%;
+    height: 100dvh;
+    width: min(300px, 85vw);
+    z-index: 50;
+    animation: slideRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sidebar-mobile-panel.closing {
+    animation: slideRightOut 0.25s ease-in forwards;
 }
 
 /* ======================================
@@ -218,19 +370,19 @@ body {
    ====================================== */
 
 .erp-topbar {
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid var(--surface-border);
     height: 64px;
     position: sticky;
     top: 0;
     z-index: 30;
-    transition: box-shadow var(--transition-normal);
+    transition: box-shadow var(--transition-normal), height var(--transition-normal);
 }
 
 .erp-topbar.scrolled {
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06);
 }
 
 /* ======================================
@@ -247,14 +399,14 @@ body {
 .erp-card:hover { box-shadow: var(--shadow-md); }
 
 .erp-card-header {
-    padding: 20px 24px;
+    padding: 18px 20px;
     border-bottom: 1px solid var(--surface-border);
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.erp-card-body { padding: 24px; }
+.erp-card-body { padding: 20px; }
 
 /* Stat Card with brand accent */
 .stat-card {
@@ -311,6 +463,7 @@ body {
     white-space: nowrap;
     position: relative;
     overflow: hidden;
+    min-height: 40px;
 }
 
 .erp-btn::after {
@@ -366,6 +519,8 @@ body {
     color: var(--text-secondary);
     padding: 8px;
     border-radius: var(--radius-sm);
+    min-height: 40px;
+    min-width: 40px;
 }
 .erp-btn-ghost:hover { background: #f1f5f9; color: var(--text-primary); }
 .erp-btn-ghost::after { display: none; }
@@ -384,6 +539,7 @@ body {
     color: var(--text-primary);
     transition: all var(--transition-fast);
     outline: none;
+    min-height: 42px;
 }
 .erp-input::placeholder { color: var(--text-muted); }
 .erp-input:focus {
@@ -408,6 +564,7 @@ body {
     outline: none;
     appearance: none;
     cursor: pointer;
+    min-height: 42px;
 }
 .erp-select:focus {
     border-color: var(--primary-400);
@@ -432,6 +589,12 @@ body {
     border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
+}
+
+/* Responsive table container */
+.erp-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .erp-table {
@@ -550,8 +713,8 @@ body {
    ====================================== */
 
 .erp-action-btn {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -599,7 +762,7 @@ body {
 /* ======================================
    Page Transition
    ====================================== */
-.page-enter { animation: slideUp 0.3s ease-out; }
+.page-enter { animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* ======================================
    Brand accent line (top border)
@@ -608,4 +771,694 @@ body {
     height: 3px;
     background: linear-gradient(90deg, var(--primary-500), var(--accent-500), var(--dark-800));
     border-radius: 0 0 2px 2px;
+}
+
+/* ======================================
+   Bottom Navigation — Mobile
+   ====================================== */
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 35;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-top: 1px solid var(--surface-border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    display: none;
+}
+
+.bottom-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: 60px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    position: relative;
+    min-width: 56px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav-item:active {
+    transform: scale(0.92);
+}
+
+.bottom-nav-item.active {
+    color: var(--primary-600);
+}
+
+.bottom-nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-500), var(--primary-600));
+    border-radius: 0 0 4px 4px;
+}
+
+.bottom-nav-item .nav-icon {
+    width: 22px;
+    height: 22px;
+    transition: all var(--transition-fast);
+}
+
+.bottom-nav-item.active .nav-icon {
+    color: var(--primary-600);
+}
+
+/* ======================================
+   Search Overlay — Mobile
+   ====================================== */
+
+.search-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    animation: fadeIn 0.2s ease-out;
+    padding: 12px 16px;
+    padding-top: env(safe-area-inset-top, 12px);
+}
+
+.search-overlay-input {
+    width: 100%;
+    padding: 14px 16px;
+    padding-right: 44px;
+    border: 2px solid var(--primary-300);
+    border-radius: var(--radius-lg);
+    background: white;
+    font-size: 16px;
+    color: var(--text-primary);
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(107, 155, 55, 0.1);
+}
+
+/* ======================================
+   Welcome Header — Dashboard
+   ====================================== */
+
+.welcome-header {
+    background: linear-gradient(135deg, rgba(107, 155, 55, 0.08) 0%, rgba(107, 155, 55, 0.02) 100%);
+    border: 1px solid rgba(107, 155, 55, 0.12);
+    border-radius: var(--radius-xl);
+    padding: 24px 28px;
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome-header::before {
+    content: '';
+    position: absolute;
+    top: -60%;
+    left: -20%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(107, 155, 55, 0.08) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.welcome-header::after {
+    content: '';
+    position: absolute;
+    bottom: -40%;
+    right: -10%;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(204, 43, 43, 0.04) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+/* ======================================
+   RESPONSIVE — Tablet (768px — 1024px)
+   ====================================== */
+
+@media (max-width: 1024px) {
+    :root {
+        --sidebar-width: 260px;
+    }
+
+    .erp-topbar {
+        height: 58px;
+    }
+
+    .erp-card-header {
+        padding: 16px 18px;
+    }
+    .erp-card-body {
+        padding: 18px;
+    }
+
+    .stat-card {
+        padding: 18px 20px;
+    }
+
+    /* Touch targets — minimum 44px */
+    .erp-sidebar-item {
+        padding: 12px 18px;
+        min-height: 44px;
+    }
+
+    .erp-btn {
+        min-height: 44px;
+        padding: 10px 18px;
+    }
+
+    .erp-action-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .erp-btn-ghost {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px;
+    }
+
+    .erp-input, .erp-select {
+        min-height: 44px;
+        padding: 11px 14px;
+    }
+
+    .erp-table thead th {
+        padding: 12px 16px;
+    }
+    .erp-table tbody td {
+        padding: 12px 16px;
+    }
+
+    .welcome-header {
+        padding: 20px 22px;
+    }
+}
+
+/* ======================================
+   RESPONSIVE — Mobile (< 768px)
+   ====================================== */
+
+@media (max-width: 767px) {
+    :root {
+        --bottom-nav-height: 60px;
+    }
+
+    body {
+        padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Show bottom nav */
+    .bottom-nav {
+        display: block;
+    }
+
+    .erp-topbar {
+        height: 54px;
+    }
+
+    /* Card adjustments */
+    .erp-card {
+        border-radius: var(--radius-md);
+    }
+    .erp-card-header {
+        padding: 14px 16px;
+    }
+    .erp-card-body {
+        padding: 16px;
+    }
+
+    .stat-card {
+        padding: 16px 18px;
+        border-radius: var(--radius-md);
+    }
+
+    /* Larger touch targets */
+    .erp-sidebar-item {
+        padding: 13px 18px;
+        min-height: 48px;
+        font-size: 14px;
+    }
+
+    .erp-btn {
+        min-height: 48px;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .erp-btn-ghost {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 10px;
+    }
+
+    .erp-action-btn {
+        width: 44px;
+        height: 44px;
+    }
+
+    .erp-input, .erp-select {
+        min-height: 48px;
+        padding: 12px 14px;
+        font-size: 16px; /* Prevents iOS zoom */
+    }
+
+    /* Table adjustments */
+    .erp-table {
+        font-size: 13px;
+    }
+    .erp-table thead th {
+        padding: 12px 14px;
+        font-size: 11px;
+    }
+    .erp-table tbody td {
+        padding: 12px 14px;
+    }
+
+    /* Modal full-screen on mobile */
+    .erp-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+    .erp-modal {
+        border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+        max-height: 90vh;
+        max-height: 90dvh;
+        overflow-y: auto;
+    }
+
+    /* Login page adjustments */
+    .login-card {
+        padding: 24px 20px !important;
+        border-radius: var(--radius-lg);
+    }
+
+    .welcome-header {
+        padding: 18px 16px;
+        border-radius: var(--radius-md);
+    }
+
+    /* Compact notification indicator */
+    .notification-dot {
+        width: 7px;
+        height: 7px;
+    }
+}
+
+/* ======================================
+   RESPONSIVE — Small phones (< 380px)
+   ====================================== */
+
+@media (max-width: 379px) {
+    .stat-card {
+        padding: 14px 16px;
+    }
+
+    .erp-card-header {
+        padding: 12px 14px;
+    }
+    .erp-card-body {
+        padding: 14px;
+    }
+
+    .erp-table thead th,
+    .erp-table tbody td {
+        padding: 10px 12px;
+    }
+}
+
+/* ======================================
+   Safe Area — iPhone notch support
+   ====================================== */
+
+@supports (padding: env(safe-area-inset-top)) {
+    .erp-topbar {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+    
+    .sidebar-mobile-panel {
+        padding-top: env(safe-area-inset-top, 0px);
+    }
+}
+
+/* ======================================
+   Print Styles
+   ====================================== */
+
+@media print {
+    .erp-sidebar,
+    .erp-topbar,
+    .bottom-nav,
+    .erp-btn-ghost { display: none !important; }
+
+    body { 
+        background: white !important; 
+        padding: 0 !important;
+    }
+
+    .erp-card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        break-inside: avoid;
+    }
+}
+
+/* ======================================
+   Reduced Motion — Accessibility
+   ====================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ======================================
+   Touch Device Hover Fix
+   ====================================== */
+
+@media (hover: none) {
+    .stat-card:hover {
+        transform: none;
+        box-shadow: var(--shadow-sm);
+    }
+    .erp-btn:hover {
+        transform: none;
+    }
+    .erp-btn-primary:hover {
+        transform: none;
+    }
+    .erp-action-btn:hover {
+        transform: none;
+    }
+}
+
+/* ======================================
+   Premium Design Enhancements
+   ====================================== */
+
+.erp-premium-card {
+    background: white;
+    border: 1px solid rgba(15, 20, 25, 0.04);
+    border-radius: 24px;
+    padding: 20px;
+    box-shadow: 0 4px 20px -2px rgba(15, 20, 25, 0.02);
+    transition: all var(--transition-normal);
+}
+.erp-premium-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px -4px rgba(107, 155, 55, 0.08);
+    border-color: rgba(107, 155, 55, 0.15);
+}
+
+/* ======================================
+   Dark Mode System
+   ====================================== */
+
+.dark {
+    --surface-bg: #090d11;
+    --surface-card: #121820;
+    --surface-border: #1e2631;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+
+    /* Sidebar theme dark mode */
+    --sidebar-bg: #121820;
+    --sidebar-hover: #1b2430;
+    --sidebar-hover-text: #f8fafc;
+    --sidebar-active-from: var(--primary-500);
+    --sidebar-active-to: var(--primary-700);
+    --sidebar-text: #94a3b8;
+    --sidebar-text-active: #ffffff;
+    --sidebar-border: #1e2631;
+    --sidebar-section-text: #4b5563;
+    --sidebar-scrollbar-thumb: rgba(255, 255, 255, 0.08);
+
+    /* Theme colors */
+    --color-dark-900: #f8fafc;
+}
+
+/* Global Overrides for Dark Mode */
+.dark body {
+    background: var(--surface-bg);
+    color: var(--text-primary);
+}
+
+.dark .bg-white {
+    background-color: var(--surface-card) !important;
+}
+
+.dark .bg-slate-50,
+.dark .bg-slate-50\/30,
+.dark .bg-slate-50\/50,
+.dark .bg-slate-50\/60,
+.dark .bg-slate-50\/80 {
+    background-color: var(--surface-bg) !important;
+}
+
+.dark .text-slate-800,
+.dark .text-slate-900,
+.dark .text-slate-750,
+.dark .text-dark-900 {
+    color: var(--text-primary) !important;
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600 {
+    color: var(--text-secondary) !important;
+}
+
+.dark .text-slate-500,
+.dark .text-slate-400,
+.dark .text-slate-450 {
+    color: var(--text-muted) !important;
+}
+
+.dark .border-slate-50,
+.dark .border-slate-100,
+.dark .border-slate-100\/50,
+.dark .border-slate-100\/80,
+.dark .border-slate-200 {
+    border-color: var(--surface-border) !important;
+}
+
+/* Glassmorphism header override */
+.dark .bg-white\/60 {
+    background-color: rgba(18, 24, 32, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Topbar override */
+.dark .erp-topbar {
+    background: rgba(18, 24, 32, 0.92) !important;
+    border-bottom-color: var(--surface-border) !important;
+}
+
+/* Modal and Action Menu override */
+.dark .relative.bg-white.rounded-3xl,
+.dark .absolute.bg-white.rounded-xl,
+.dark .absolute.bg-white.rounded-2xl {
+    background-color: var(--surface-card) !important;
+    border-color: var(--surface-border) !important;
+}
+
+/* Buttons */
+.dark .erp-btn-secondary {
+    background: var(--surface-bg) !important;
+    border-color: var(--surface-border) !important;
+    color: var(--text-primary) !important;
+}
+.dark .erp-btn-secondary:hover {
+    background: var(--surface-card) !important;
+}
+
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-50\/30:hover,
+.dark .hover\:bg-slate-50\/50:hover,
+.dark .hover\:bg-slate-50\/60:hover,
+.dark .hover\:bg-slate-50\/80:hover {
+    background-color: var(--surface-bg) !important;
+}
+
+.dark .hover\:bg-slate-100:hover,
+.dark .hover\:bg-slate-100\/80:hover {
+    background-color: var(--surface-border) !important;
+}
+
+.dark .hover\:bg-primary-50\/20:hover {
+    background-color: rgba(107, 155, 55, 0.1) !important;
+}
+
+/* Form Elements */
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="time"],
+.dark input[type="date"],
+.dark select,
+.dark textarea,
+.dark .erp-input,
+.dark .erp-select,
+.dark .search-overlay-input {
+    background-color: var(--surface-bg) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--surface-border) !important;
+}
+
+.dark input::placeholder {
+    color: var(--text-muted) !important;
+}
+
+/* Tables */
+.dark .erp-table thead {
+    background: linear-gradient(180deg, var(--surface-bg), var(--surface-bg)) !important;
+    border-bottom-color: var(--surface-border) !important;
+}
+.dark .erp-table tbody tr {
+    border-bottom-color: var(--surface-border) !important;
+}
+.dark .erp-table tbody tr:hover {
+    background-color: rgba(107, 155, 55, 0.04) !important;
+}
+
+/* Premium Card hover glow in dark mode */
+.dark .erp-premium-card {
+    background: var(--surface-card);
+    border-color: rgba(255, 255, 255, 0.02);
+}
+.dark .erp-premium-card:hover {
+    box-shadow: 0 12px 30px -4px rgba(107, 155, 55, 0.15);
+    border-color: rgba(107, 155, 55, 0.25);
+}
+
+/* Scrollbar dark */
+.dark ::-webkit-scrollbar-thumb {
+    background: #273544;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #384a5e;
+}
+
+/* Main Area Dark Mode Enhancements */
+.dark main {
+    background-color: var(--surface-bg) !important;
+}
+
+/* Adjust page banners to avoid bright white backgrounds in dark mode */
+.dark .relative.overflow-hidden.bg-white\/60,
+.dark .relative.overflow-hidden.bg-gradient-to-br.from-primary-50\/70,
+.dark .relative.overflow-hidden.bg-gradient-to-br.from-primary-500\/10 {
+    background-image: linear-gradient(135deg, rgba(107, 155, 55, 0.08) 0%, rgba(18, 24, 32, 0.8) 50%, var(--surface-card) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Soft brand-green glowing blobs in dark mode instead of bright/blue highlights */
+.dark .bg-gradient-to-br.from-indigo-500\/10,
+.dark .bg-gradient-to-br.from-primary-500\/10,
+.dark .bg-gradient-to-br.from-primary-500\/5,
+.dark .bg-gradient-to-br.from-accent-500\/5,
+.dark .bg-gradient-to-br.from-amber-500\/10,
+.dark .bg-gradient-to-br.from-amber-500\/20 {
+    background-image: linear-gradient(135deg, rgba(107, 155, 55, 0.15) 0%, transparent 100%) !important;
+}
+
+/* Adjust status container tints */
+.dark .bg-primary-50 {
+    background-color: rgba(107, 155, 55, 0.12) !important;
+}
+.dark .bg-warning-50,
+.dark .bg-warning-50\/50 {
+    background-color: rgba(245, 158, 11, 0.08) !important;
+}
+.dark .bg-accent-50 {
+    background-color: rgba(204, 43, 43, 0.12) !important;
+}
+
+/* Adjust status text brightness to meet contrast ratios in dark mode */
+.dark .text-primary-700 {
+    color: var(--primary-400) !important;
+}
+.dark .text-warning-600 {
+    color: #f59e0b !important;
+}
+.dark .text-accent-700 {
+    color: var(--accent-400) !important;
+}
+.dark .text-primary-600 {
+    color: var(--primary-400) !important;
+}
+
+/* Table header in dark mode */
+.dark .erp-table thead {
+    background: #161d26 !important;
+    border-bottom: 2px solid var(--surface-border) !important;
+}
+
+/* Input checkbox formatting in dark mode */
+.dark input[type="checkbox"] {
+    background-color: var(--surface-bg) !important;
+    border-color: var(--surface-border) !important;
+}
+
+/* ======================================
+   Main Area Light Mode Enhancements
+   ====================================== */
+
+/* Glassmorphism page headers in light mode with subtle brand border and soft glow shadow */
+html:not(.dark) main .relative.overflow-hidden.bg-white\/60,
+html:not(.dark) main .relative.overflow-hidden.bg-gradient-to-br.from-primary-50\/70,
+html:not(.dark) main .relative.overflow-hidden.bg-gradient-to-br.from-primary-500\/10 {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.55)) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(107, 155, 55, 0.12) !important;
+    box-shadow: 0 10px 30px -10px rgba(107, 155, 55, 0.05) !important;
+}
+
+/* Premium light status badges with thin borders */
+html:not(.dark) main .bg-primary-50 {
+    background-color: rgba(107, 155, 55, 0.06) !important;
+    border: 1px solid rgba(107, 155, 55, 0.15) !important;
+}
+html:not(.dark) main .bg-warning-50,
+html:not(.dark) main .bg-warning-50\/50 {
+    background-color: rgba(245, 158, 11, 0.05) !important;
+    border: 1px solid rgba(245, 158, 11, 0.15) !important;
+}
+html:not(.dark) main .bg-accent-50 {
+    background-color: rgba(204, 43, 43, 0.05) !important;
+    border: 1px solid rgba(204, 43, 43, 0.12) !important;
+}
+
+/* Clean, modern tables in light mode */
+html:not(.dark) main .erp-table thead {
+    background: linear-gradient(180deg, #fdfefe, #f7fafc) !important;
+    border-bottom: 2px solid #edf2f7 !important;
+}
+html:not(.dark) main .erp-table tbody tr {
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+html:not(.dark) main .erp-table tbody tr:hover {
+    background-color: rgba(107, 155, 55, 0.02) !important;
 }

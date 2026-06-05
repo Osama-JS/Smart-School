@@ -33,28 +33,138 @@ class UserController extends Controller
             $query->where('is_active', $request->status === 'active' ? 1 : 0);
         }
 
-        $users = $query->latest()->paginate(15)->through(function ($user) {
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
+        }
+
+        if ($request->filled('created_at')) {
+            $range = $request->created_at;
+            if ($range === 'today') {
+                $query->whereDate('created_at', today());
+            } elseif ($range === 'week') {
+                $query->where('created_at', '>=', now()->subWeek());
+            } elseif ($range === 'month') {
+                $query->where('created_at', '>=', now()->subMonth());
+            }
+        }
+
+        $sortBy = $request->input('sort_by', 'created_at');
+        $sortDir = $request->input('sort_dir', 'desc');
+
+        if (in_array($sortBy, ['name', 'username', 'role_id', 'branch_id', 'is_active', 'created_at'])) {
+            $query->orderBy($sortBy, $sortDir);
+        } else {
+            $query->latest();
+        }
+
+        $users = $query->paginate(15)->through(function ($user) {
+            // Generate deterministic mock info based on user ID for demonstration
+            $mockTimes = ['نشط الآن', 'نشط منذ 5 دقائق', 'نشط منذ ساعتين', 'نشط منذ يومين', 'لم يسجل دخول بعد'];
+            $mockDevices = ['كمبيوتر (Windows)', 'جوال (iPhone)', 'كمبيوتر (Mac)', 'جوال (Android)', '—'];
+            
+            $timeIndex = $user->id % count($mockTimes);
+            $deviceIndex = $user->id % count($mockDevices);
+
+            if ($user->username === 'admin') {
+                $lastLogin = 'نشط الآن';
+                $device = 'كمبيوتر (Windows)';
+            } else {
+                $lastLogin = $mockTimes[$timeIndex];
+                $device = $mockDevices[$deviceIndex];
+            }
+
             return [
-                'id'        => $user->id,
-                'name'      => $user->name,
-                'username'  => $user->username,
-                'role'      => $user->role?->name ?? '—',
-                'role_id'   => $user->role_id,
-                'branch'    => $user->branch?->name ?? '—',
-                'is_active' => $user->is_active,
-                'avatar'    => 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=6b9b37&color=fff&bold=true',
+                'id'         => $user->id,
+                'name'       => $user->name,
+                'username'   => $user->username,
+                'role'       => $user->role?->name ?? '—',
+                'role_id'    => $user->role_id,
+                'branch'     => $user->branch?->name ?? '—',
+                'is_active'  => $user->is_active,
+                'avatar'     => 'https://ui-avatars.com/api/?name=' . urlencode($user->name) . '&background=6b9b37&color=fff&bold=true',
+                'last_login' => $lastLogin,
+                'device'     => $device,
             ];
         });
 
         $roles    = Role::select('id', 'name')->orderBy('name')->get();
         $branches = Branch::select('id', 'name')->orderBy('name')->get();
 
+        $stats = [
+            'total'    => User::count(),
+            'teachers' => User::whereHas('role', function ($q) {
+                $q->where('name', 'like', '%معلم%');
+            })->count(),
+            'admins'   => User::whereHas('role', function ($q) {
+                $q->where('name', 'like', '%مدير%');
+            })->count(),
+            'inactive' => User::where('is_active', 0)->count(),
+        ];
+
         return Inertia::render('Users/Index', [
             'users'    => $users,
             'roles'    => $roles,
             'branches' => $branches,
-            'filters'  => $request->only(['search', 'role_id', 'status']),
+            'filters'  => $request->only(['search', 'role_id', 'status', 'branch_id', 'created_at', 'sort_by', 'sort_dir']),
+            'stats'    => $stats,
         ]);
+    }
+
+    public function resetPassword(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8'],
+        ]);
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return redirect()->route('users.index')->with('success', 'تم إعادة تعيين كلمة مرور المستخدم ' . $user->name . ' بنجاح');
+    }
+
+    public function quickUpdate(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'is_active' => ['nullable', 'boolean'],
+            'branch_id' => ['nullable', 'exists:branches,id'],
+            'role_id'   => ['nullable', 'exists:roles,id'],
+        ]);
+
+        $user->update(array_filter($validated, function ($value) {
+            return $value !== null;
+        }));
+
+        return redirect()->back()->with('success', 'تم تحديث بيانات المستخدم بنجاح');
+    }
+
+    public function bulk(Request $request)
+    {
+        $validated = $request->validate([
+            'ids'       => ['required', 'array'],
+            'ids.*'     => ['exists:users,id'],
+            'action'    => ['required', 'string', 'in:delete,activate,deactivate,change_branch'],
+            'branch_id' => ['required_if:action,change_branch', 'nullable', 'exists:branches,id'],
+        ]);
+
+        $ids = $validated['ids'];
+        $action = $validated['action'];
+
+        if ($action === 'delete') {
+            User::whereIn('id', $ids)->delete();
+            $message = 'تم حذف المستخدمين المحددين بنجاح';
+        } elseif ($action === 'activate') {
+            User::whereIn('id', $ids)->update(['is_active' => 1]);
+            $message = 'تم تفعيل الحسابات المحددة بنجاح';
+        } elseif ($action === 'deactivate') {
+            User::whereIn('id', $ids)->update(['is_active' => 0]);
+            $message = 'تم تعطيل الحسابات المحددة بنجاح';
+        } elseif ($action === 'change_branch') {
+            User::whereIn('id', $ids)->update(['branch_id' => $validated['branch_id']]);
+            $message = 'تم تغيير الفرع للمستخدمين المحددين بنجاح';
+        }
+
+        return redirect()->route('users.index')->with('success', $message);
     }
 
     public function store(Request $request)
