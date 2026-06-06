@@ -3,7 +3,8 @@ import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
     Search, Plus, Building, Users, FolderTree, ChevronRight,
-    ChevronDown, Edit2, Trash2, MoreVertical, X, Check, AlertTriangle, Save
+    ChevronDown, Edit2, Trash2, MoreVertical, X, Check, AlertTriangle, Save,
+    SlidersHorizontal, RotateCcw, Filter
 } from 'lucide-react';
 
 // ─── Tree Node Component ───────────────────────────────────────────────────────
@@ -140,6 +141,12 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, fil
 
     const [view, setView]           = useState('grid'); // 'grid' | 'tree'
     const [searchValue, setSearch]  = useState(filters?.search ?? '');
+    const [typeFilter, setTypeFilter] = useState(filters?.type ?? 'all');
+    const [parentFilter, setParentFilter] = useState(filters?.parent_filter_id ?? 'all');
+    const [staffFilter, setStaffFilter] = useState(filters?.staff_range ?? 'all');
+    const [sortBy, setSortBy]       = useState(filters?.sort_by ?? 'all');
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
     const [showAdd, setShowAdd]     = useState(false);
     const [editDept, setEditDept]   = useState(null);
     const [deleteDept, setDeleteDept] = useState(null);
@@ -171,14 +178,41 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, fil
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
+    // Filter Application Handler
+    const applyFilters = (newFilters) => {
+        const queryParams = {
+            search: newFilters.search !== undefined ? newFilters.search : searchValue,
+            type: newFilters.type !== 'all' ? newFilters.type : undefined,
+            parent_filter_id: newFilters.parent_filter_id !== 'all' ? newFilters.parent_filter_id : undefined,
+            staff_range: newFilters.staff_range !== 'all' ? newFilters.staff_range : undefined,
+            sort_by: newFilters.sort_by !== 'all' ? newFilters.sort_by : undefined,
+        };
+        router.get(route('hr.departments'), queryParams, { preserveState: true, replace: true });
+    };
+
     // Live search with debounce
     const handleSearch = (val) => {
         setSearch(val);
         clearTimeout(searchTimeout.current);
         searchTimeout.current = setTimeout(() => {
-            router.get(route('hr.departments'), { search: val }, { preserveState: true, replace: true });
+            applyFilters({ search: val, type: typeFilter, parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: sortBy });
         }, 400);
     };
+
+    const handleClearFilters = () => {
+        setSearch('');
+        setTypeFilter('all');
+        setParentFilter('all');
+        setStaffFilter('all');
+        setSortBy('all');
+        router.get(route('hr.departments'), {}, { preserveState: true, replace: true });
+    };
+
+    const activeFiltersCount = 
+        (typeFilter !== 'all' ? 1 : 0) + 
+        (parentFilter !== 'all' ? 1 : 0) + 
+        (staffFilter !== 'all' ? 1 : 0) + 
+        (sortBy !== 'all' ? 1 : 0);
 
     const openAdd = () => { setForm({ name: '', parent_id: '' }); setShowAdd(true); };
     const openEdit = (dept) => { setForm({ name: dept.name, parent_id: dept.parent_id ?? '' }); setEditDept(dept); };
@@ -270,34 +304,201 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, fil
                 </div>
             ) : (
                 <>
-                    <div className="mb-6">
-                        <div className="group relative max-w-md flex items-center bg-slate-100/60 dark:bg-slate-900/50 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 focus-within:bg-white dark:focus-within:bg-[#121820] border border-transparent dark:border-slate-800 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-primary-500/10 rounded-2xl transition-all p-1">
-                            <div className="flex-1 relative flex items-center">
-                                <Search size={18} className="absolute right-3.5 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 group-focus-within:scale-110 transition-all duration-300" />
-                                <input
-                                    ref={searchInputRef}
-                                    type="text"
-                                    placeholder="ابحث عن قسم..."
-                                    className="w-full bg-transparent border-none pr-10 pl-10 py-2.5 text-sm outline-none text-dark-900 dark:text-slate-100 font-bold"
-                                    value={searchValue}
-                                    onChange={e => handleSearch(e.target.value)}
-                                />
-                                {!searchValue && (
-                                    <kbd className="absolute left-3.5 px-1.5 py-0.5 text-[10px] font-sans font-bold text-slate-400 dark:text-slate-500 bg-slate-200/60 dark:bg-slate-800 border border-slate-300/40 dark:border-slate-700/60 rounded pointer-events-none group-focus-within:opacity-0 transition-opacity duration-200">
-                                        /
-                                    </kbd>
-                                )}
-                                {searchValue && (
-                                    <button
-                                        type="button"
-                                        onClick={() => handleSearch('')}
-                                        className="absolute left-3 p-1 rounded-lg text-slate-450 dark:text-slate-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 transition-all active:scale-90"
-                                    >
-                                        <X size={14} strokeWidth={2.5} />
-                                    </button>
-                                )}
+                    <div className="mb-6 flex flex-col gap-4">
+                        {/* Search and Toggle Filters */}
+                        <div className="flex items-center gap-3">
+                            <div className="group relative max-w-md flex-1 flex items-center bg-slate-100/60 dark:bg-slate-900/50 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 focus-within:bg-white dark:focus-within:bg-[#121820] border border-transparent dark:border-slate-800 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-primary-500/10 rounded-2xl transition-all p-1">
+                                <div className="flex-1 relative flex items-center">
+                                    <Search size={18} className="absolute right-3.5 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 group-focus-within:scale-110 transition-all duration-300" />
+                                    <input
+                                        ref={searchInputRef}
+                                        type="text"
+                                        placeholder="ابحث عن قسم..."
+                                        className="w-full bg-transparent border-none pr-10 pl-10 py-2.5 text-sm outline-none text-dark-900 dark:text-slate-100 font-bold"
+                                        value={searchValue}
+                                        onChange={e => handleSearch(e.target.value)}
+                                    />
+                                    {!searchValue && (
+                                        <kbd className="absolute left-3.5 px-1.5 py-0.5 text-[10px] font-sans font-bold text-slate-400 dark:text-slate-500 bg-slate-200/60 dark:bg-slate-800 border border-slate-300/40 dark:border-slate-700/60 rounded pointer-events-none group-focus-within:opacity-0 transition-opacity duration-200">
+                                            /
+                                        </kbd>
+                                    )}
+                                    {searchValue && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSearch('')}
+                                            className="absolute left-3 p-1 rounded-lg text-slate-450 dark:text-slate-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 transition-all active:scale-90"
+                                        >
+                                            <X size={14} strokeWidth={2.5} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+
+                            {/* Advanced Filter Toggle Button */}
+                            <button
+                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                className={`h-12 px-4 rounded-2xl text-sm font-bold border transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                                    showAdvancedFilters || activeFiltersCount > 0
+                                        ? 'bg-primary-50 border-primary-200 dark:border-primary-900/30 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400'
+                                        : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/60'
+                                }`}
+                            >
+                                <SlidersHorizontal size={15} />
+                                <span>تصفية</span>
+                                {activeFiltersCount > 0 && (
+                                    <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] flex items-center justify-center font-bold">
+                                        {activeFiltersCount}
+                                    </span>
+                                )}
+                            </button>
                         </div>
+
+                        {/* Advanced Inline Filter Panel */}
+                        {showAdvancedFilters && (
+                            <div className="p-6 bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 rounded-3xl shadow-sm relative animate-scale-in">
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                                    {/* 1. Department Type */}
+                                    <div className="flex flex-col gap-1.5 text-right">
+                                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400">نوع القسم</label>
+                                        <select 
+                                            value={typeFilter} 
+                                            onChange={e => {
+                                                setTypeFilter(e.target.value);
+                                                applyFilters({ type: e.target.value, parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: sortBy });
+                                            }}
+                                            className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
+                                        >
+                                            <option value="all">الكل</option>
+                                            <option value="main">قسم رئيسي (إدارة)</option>
+                                            <option value="sub">قسم فرعي</option>
+                                        </select>
+                                    </div>
+
+                                    {/* 2. Parent Department */}
+                                    <div className="flex flex-col gap-1.5 text-right">
+                                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400">القسم الرئيسي الأب</label>
+                                        <select 
+                                            value={parentFilter} 
+                                            onChange={e => {
+                                                setParentFilter(e.target.value);
+                                                applyFilters({ type: typeFilter, parent_filter_id: e.target.value, staff_range: staffFilter, sort_by: sortBy });
+                                            }}
+                                            className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
+                                        >
+                                            <option value="all">الكل</option>
+                                            {parentOptions?.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* 3. Employee Density */}
+                                    <div className="flex flex-col gap-1.5 text-right">
+                                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400">كثافة الموظفين</label>
+                                        <select 
+                                            value={staffFilter} 
+                                            onChange={e => {
+                                                setStaffFilter(e.target.value);
+                                                applyFilters({ type: typeFilter, parent_filter_id: parentFilter, staff_range: e.target.value, sort_by: sortBy });
+                                            }}
+                                            className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
+                                        >
+                                            <option value="all">الكل</option>
+                                            <option value="empty">أقسام فارغة (0 موظف)</option>
+                                            <option value="low">كثافة منخفضة (1-2 موظفين)</option>
+                                            <option value="medium">كثافة متوسطة (3-9 موظفين)</option>
+                                            <option value="high">كثافة عالية (10+ موظفين)</option>
+                                        </select>
+                                    </div>
+
+                                    {/* 4. Sort By */}
+                                    <div className="flex flex-col gap-1.5 text-right">
+                                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ترتيب حسب</label>
+                                        <select 
+                                            value={sortBy} 
+                                            onChange={e => {
+                                                setSortBy(e.target.value);
+                                                applyFilters({ type: typeFilter, parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: e.target.value });
+                                            }}
+                                            className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
+                                        >
+                                            <option value="all">الافتراضي (حسب الهيكل)</option>
+                                            <option value="name_asc">الاسم (أبجدي تصاعدي)</option>
+                                            <option value="name_desc">الاسم (أبجدي تنازلي)</option>
+                                            <option value="employees_desc">عدد الموظفين (الأكثر أولاً)</option>
+                                            <option value="employees_asc">عدد الموظفين (الأقل أولاً)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Active Filter Badges */}
+                        {(searchValue || typeFilter !== 'all' || parentFilter !== 'all' || staffFilter !== 'all' || sortBy !== 'all') && (
+                            <div className="flex items-center justify-between flex-wrap gap-3 p-4 bg-slate-50/50 dark:bg-slate-900/10 rounded-2xl border border-slate-100 dark:border-primary-500/5">
+                                <div className="flex items-center gap-2 flex-wrap text-xs font-bold text-slate-500 dark:text-slate-400" dir="rtl">
+                                    <span>المرشحات النشطة:</span>
+                                    {searchValue && (
+                                        <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                            <span>البحث: "{searchValue}"</span>
+                                            <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => handleSearch('')} />
+                                        </span>
+                                    )}
+                                    {typeFilter !== 'all' && (
+                                        <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                            <span>النوع: {typeFilter === 'main' ? 'إدارة رئيسية' : 'قسم فرعي'}</span>
+                                            <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
+                                                setTypeFilter('all');
+                                                applyFilters({ type: 'all', parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: sortBy });
+                                            }} />
+                                        </span>
+                                    )}
+                                    {parentFilter !== 'all' && (
+                                        <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                            <span>القسم الأب: {parentOptions?.find(p => String(p.id) === String(parentFilter))?.name}</span>
+                                            <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
+                                                setParentFilter('all');
+                                                applyFilters({ type: typeFilter, parent_filter_id: 'all', staff_range: staffFilter, sort_by: sortBy });
+                                            }} />
+                                        </span>
+                                    )}
+                                    {staffFilter !== 'all' && (
+                                        <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                            <span>الكثافة: {
+                                                staffFilter === 'empty' ? 'أقسام فارغة' :
+                                                staffFilter === 'low' ? 'كثافة منخفضة (1-2)' :
+                                                staffFilter === 'medium' ? 'كثافة متوسطة (3-9)' : 'كثافة عالية (10+)'
+                                            }</span>
+                                            <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
+                                                setStaffFilter('all');
+                                                applyFilters({ type: typeFilter, parent_filter_id: parentFilter, staff_range: 'all', sort_by: sortBy });
+                                            }} />
+                                        </span>
+                                    )}
+                                    {sortBy !== 'all' && (
+                                        <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                            <span>الترتيب: {
+                                                sortBy === 'name_asc' ? 'الاسم تصاعدياً' :
+                                                sortBy === 'name_desc' ? 'الاسم تنازلياً' :
+                                                sortBy === 'employees_desc' ? 'الموظفين الأكثر أولاً' : 'الموظفين الأقل أولاً'
+                                            }</span>
+                                            <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
+                                                setSortBy('all');
+                                                applyFilters({ type: typeFilter, parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: 'all' });
+                                            }} />
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={handleClearFilters}
+                                    className="text-xs font-extrabold text-accent-500 hover:text-accent-600 flex items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-all active:scale-95 cursor-pointer"
+                                >
+                                    <RotateCcw size={12} />
+                                    <span>إعادة ضبط المرشحات</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* ── Cards Grid ── */}

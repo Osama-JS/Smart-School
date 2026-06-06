@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
         'update'  => 'hr.job-grades.update',
         'destroy' => 'hr.job-grades.destroy',
     ]);
+    Route::patch('/hr/employees/{employee}/quick-update', [\App\Http\Controllers\HR\EmployeeController::class, 'quickUpdate'])->name('hr.employees.quick-update');
     Route::resource('/hr/employees', \App\Http\Controllers\HR\EmployeeController::class)->names([
         'index' => 'hr.employees'
     ]);
@@ -78,6 +79,7 @@ Route::middleware('auth')->group(function () {
     // ── Attendance ──
     Route::get('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'index'])->name('hr.attendance');
     Route::post('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'store'])->name('hr.attendance.store');
+    Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
     Route::put('/hr/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceController::class, 'update'])->name('hr.attendance.update');
 });
 
