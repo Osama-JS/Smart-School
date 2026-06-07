@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToBranch;
 
 class Department extends Model
 {
-    protected $fillable = ['name', 'parent_id'];
+    use BelongsToBranch;
+
+    protected $fillable = ['name', 'parent_id', 'branch_id'];
 
     public function employees()
     {

@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Traits\BelongsToBranch;
 
 class JobGrade extends Model
 {
-    protected $fillable = ['name', 'level'];
+    use BelongsToBranch;
+
+    protected $fillable = ['name', 'level', 'branch_id'];
 
     public function employees()
     {

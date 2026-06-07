@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Search, Plus, Filter, MoreVertical, Edit2, Trash2, ShieldCheck, Check, AlertTriangle, Users as UsersIcon, Shield, Store, ChevronDown, UserCheck, RotateCcw, Key, Lock, Eye, EyeOff, Calendar, LayoutGrid, List, Download, Printer, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Plus, Filter, MoreVertical, Edit2, Trash2, ShieldCheck, Check, AlertTriangle, Users as UsersIcon, Shield, Store, ChevronDown, UserCheck, RotateCcw, Key, Lock, Eye, EyeOff, Calendar, LayoutGrid, List, Download, Printer, ArrowUpDown, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function Modal({ isOpen, onClose, title, children }) {
@@ -13,10 +13,10 @@ function Modal({ isOpen, onClose, title, children }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden border border-slate-100 animate-scale-in">
-                <div className="flex items-center justify-between p-6 border-b border-slate-50">
-                    <div className="text-lg font-bold text-dark-900">{title}</div>
-                    <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-50 text-slate-400 transition-colors">✕</button>
+            <div className="relative bg-white dark:bg-[#121820] rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden border border-slate-100 dark:border-slate-800 animate-scale-in">
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800/80">
+                    <div className="text-lg font-bold text-dark-900 dark:text-white">{title}</div>
+                    <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-400 dark:text-slate-500 transition-colors">✕</button>
                 </div>
                 <div className="p-6">{children}</div>
             </div>
@@ -291,6 +291,77 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
     const usersData = users?.data ?? [];
     const activeFiltersCount = (roleFilter ? 1 : 0) + (statusFilter ? 1 : 0) + (branchFilter ? 1 : 0) + (dateFilter ? 1 : 0);
 
+    const statsItems = stats ? [
+        {
+            title: 'إجمالي الحسابات',
+            value: stats.total,
+            icon: UsersIcon,
+            color: 'blue',
+            iconBg: 'bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400',
+            progressWidth: '100%',
+            progressColor: 'bg-gradient-to-r from-blue-400 to-blue-600',
+            glowBg: 'bg-blue-500/5',
+            hoverBorder: 'hover:border-blue-200 dark:hover:border-blue-800/30',
+            topLineHover: 'group-hover:bg-blue-500/20',
+            ringColor: 'border-blue-500/20',
+            badgeClass: 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-100/30 dark:border-blue-500/20',
+            badgeIcon: <ArrowUpRight size={10} strokeWidth={3} />,
+            badgeText: '100%',
+            subText: 'من إجمالي مستخدمي النظام'
+        },
+        {
+            title: 'المعلمون',
+            value: stats.teachers,
+            icon: ShieldCheck,
+            color: 'indigo',
+            iconBg: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400',
+            progressWidth: stats.total > 0 ? `${((stats.teachers / stats.total) * 100).toFixed(1)}%` : '0%',
+            progressColor: 'bg-gradient-to-r from-indigo-400 to-indigo-600',
+            glowBg: 'bg-indigo-500/5',
+            hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-800/30',
+            topLineHover: 'group-hover:bg-indigo-500/20',
+            ringColor: 'border-indigo-500/20',
+            badgeClass: 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-100/30 dark:border-indigo-500/20',
+            badgeIcon: <ArrowUpRight size={10} strokeWidth={3} />,
+            badgeText: stats.total > 0 ? `${((stats.teachers / stats.total) * 100).toFixed(0)}%` : '0%',
+            subText: 'نسبة المعلمين بالنظام'
+        },
+        {
+            title: 'مدراء النظام',
+            value: stats.admins,
+            icon: Shield,
+            color: 'amber',
+            iconBg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400',
+            progressWidth: stats.total > 0 ? `${((stats.admins / stats.total) * 100).toFixed(1)}%` : '0%',
+            progressColor: 'bg-gradient-to-r from-amber-400 to-amber-600',
+            glowBg: 'bg-amber-500/5',
+            hoverBorder: 'hover:border-amber-200 dark:hover:border-amber-800/30',
+            topLineHover: 'group-hover:bg-amber-500/20',
+            ringColor: 'border-amber-500/20',
+            badgeClass: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-100/30 dark:border-amber-500/20',
+            badgeIcon: <ArrowUpRight size={10} strokeWidth={3} />,
+            badgeText: stats.total > 0 ? `${((stats.admins / stats.total) * 100).toFixed(0)}%` : '0%',
+            subText: 'نسبة مدراء النظام'
+        },
+        {
+            title: 'الحسابات المعطلة',
+            value: stats.inactive,
+            icon: AlertTriangle,
+            color: 'rose',
+            iconBg: 'bg-rose-50 text-rose-600 dark:bg-rose-950/20 dark:text-rose-400',
+            progressWidth: stats.total > 0 ? `${((stats.inactive / stats.total) * 100).toFixed(1)}%` : '0%',
+            progressColor: 'bg-gradient-to-r from-rose-400 to-rose-600',
+            glowBg: 'bg-rose-500/5',
+            hoverBorder: 'hover:border-rose-200 dark:hover:border-rose-800/30',
+            topLineHover: 'group-hover:bg-rose-500/20',
+            ringColor: 'border-rose-500/20',
+            badgeClass: 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-100/20 dark:border-rose-500/20',
+            badgeIcon: <ArrowDownRight size={10} strokeWidth={3} />,
+            badgeText: stats.total > 0 ? `${((stats.inactive / stats.total) * 100).toFixed(0)}%` : '0%',
+            subText: 'نسبة الحسابات المعطلة'
+        }
+    ] : [];
+
     const toggleUser = (id) => {
         setSelectedUsers(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     };
@@ -307,7 +378,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
     const renderSortHeader = (label, field) => {
         const isSorted = sortBy === field;
         return (
-            <th onClick={() => handleSort(field)} className="px-6 py-4 text-xs font-black text-primary-800 dark:text-primary-300 uppercase tracking-wider cursor-pointer hover:bg-primary-100/35 dark:hover:bg-primary-950/40 select-none transition-colors no-print">
+            <th onClick={() => handleSort(field)} className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 select-none transition-all no-print">
                 <div className="flex items-center gap-1.5 justify-start">
                     <span>{label}</span>
                     {isSorted ? (
@@ -372,26 +443,23 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                 </div>
             )}
 
-            {/* Header Banner - Developed and Premium styled in Brand colors */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-[#5b8a2d]/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none no-print">
-                {/* Brand Line Accent */}
+            {/* Header Banner - Developed and Premium styled in Brand colors (Styled like Staff Directory) */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none no-print bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                 <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                 
-                {/* Fine abstract geometric background lines (similar to user mockup gold waves but in brand green) */}
+                {/* Visual geometric lines */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                     <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
-                        <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
                         <circle cx="250" cy="90" r="4" className="fill-primary-500" />
                         <circle cx="500" cy="160" r="6" className="fill-primary-400" />
-                        <circle cx="750" cy="60" r="3" className="fill-primary-300" />
                     </svg>
                 </div>
 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">إدارة المستخدمين</h1>
-                        <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">التحكم الكامل في حسابات دخول النظام وصلاحياتها</p>
+                        <h1 className="text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight">إدارة المستخدمين</h1>
+                        <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">التحكم الكامل في حسابات دخول النظام وصلاحياتها</p>
                     </div>
                     
                     {/* Buttons on Left in RTL */}
@@ -511,67 +579,45 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
 
             {/* Stats Cards Section */}
             {stats && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                    {/* Total Users */}
-                    <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 p-5 rounded-3xl shadow-sm hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group">
-                        {/* Glowing ambient light */}
-                        <div className="absolute -left-6 -top-6 w-24 h-24 bg-primary-500/5 dark:bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
-                        
-                        <div className="relative z-10 min-w-0">
-                            <span className="text-xs font-bold text-slate-400 dark:text-slate-500">إجمالي الحسابات</span>
-                            <h3 className="text-2xl font-black text-dark-900 dark:text-white mt-1 leading-none font-mono tracking-tight">{stats.total}</h3>
-                        </div>
-                        <div className="relative z-10 h-12 w-12 rounded-2xl bg-primary-50 dark:bg-primary-950/20 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
-                            <UsersIcon size={22} />
-                        </div>
-                    </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {statsItems.map((stat, index) => (
+                        <div key={index} className={`bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.015)] dark:shadow-none hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#f1f5f9_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:16px_16px] ${stat.hoverBorder}`}>
+                            {/* Glowing ambient light */}
+                            <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glowBg} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
+                            <div className={`absolute top-0 right-0 left-0 h-1 bg-transparent ${stat.topLineHover} transition-colors`} />
 
-                    {/* Active Teachers */}
-                    <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 p-5 rounded-3xl shadow-sm hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group">
-                        {/* Glowing ambient light */}
-                        <div className="absolute -left-6 -top-6 w-24 h-24 bg-primary-500/5 dark:bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
-                        
-                        <div className="relative z-10 min-w-0">
-                            <span className="text-xs font-bold text-slate-400 dark:text-slate-500">المعلمون</span>
-                            <h3 className="text-2xl font-black text-dark-900 dark:text-white mt-1 leading-none font-mono tracking-tight">{stats.teachers}</h3>
+                            <div className="relative z-10 flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">{stat.title}</p>
+                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 leading-none font-mono tracking-tight">{stat.value}</h3>
+                                </div>
+                                <div className={`relative h-11 w-11 rounded-2xl ${stat.iconBg} flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-all duration-350 group-hover:scale-110 group-hover:-rotate-3`}>
+                                    {/* Double ring hover overlay */}
+                                    <span className={`absolute inset-0 rounded-2xl border ${stat.ringColor} scale-100 group-hover:scale-125 opacity-0 group-hover:opacity-100 transition-all duration-300`} />
+                                    <stat.icon size={20} strokeWidth={2.5} />
+                                </div>
+                            </div>
+                            
+                            {/* Progress bar and trend badge */}
+                            <div className="relative z-10 space-y-2.5 mt-1">
+                                <div className="w-full bg-slate-100/80 dark:bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full transition-all duration-1000 ease-out ${stat.progressColor}`} style={{ width: stat.progressWidth }} />
+                                </div>
+                                <div className="flex items-center justify-between text-[10px] font-bold">
+                                    <div className={`inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full border ${stat.badgeClass}`}>
+                                        {stat.badgeIcon}
+                                        <span>{stat.badgeText}</span>
+                                    </div>
+                                    <span className="text-slate-400 dark:text-slate-505">{stat.subText}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="relative z-10 h-12 w-12 rounded-2xl bg-primary-50 dark:bg-primary-950/20 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
-                            <ShieldCheck size={22} />
-                        </div>
-                    </div>
-
-                    {/* System Admins */}
-                    <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 p-5 rounded-3xl shadow-sm hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group">
-                        {/* Glowing ambient light */}
-                        <div className="absolute -left-6 -top-6 w-24 h-24 bg-slate-500/5 dark:bg-slate-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
-                        
-                        <div className="relative z-10 min-w-0">
-                            <span className="text-xs font-bold text-slate-400 dark:text-slate-500">مدراء النظام</span>
-                            <h3 className="text-2xl font-black text-dark-900 dark:text-white mt-1 leading-none font-mono tracking-tight">{stats.admins}</h3>
-                        </div>
-                        <div className="relative z-10 h-12 w-12 rounded-2xl bg-dark-50 dark:bg-slate-900 text-dark-700 dark:text-slate-300 flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
-                            <Shield size={22} />
-                        </div>
-                    </div>
-
-                    {/* Inactive Accounts */}
-                    <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 p-5 rounded-3xl shadow-sm hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group">
-                        {/* Glowing ambient light */}
-                        <div className={`absolute -left-6 -top-6 w-24 h-24 ${stats.inactive > 0 ? 'bg-accent-500/5' : 'bg-slate-500/5'} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
-                        
-                        <div className="relative z-10 min-w-0">
-                            <span className="text-xs font-bold text-slate-400 dark:text-slate-500">الحسابات المعطلة</span>
-                            <h3 className={`text-2xl font-black mt-1 leading-none font-mono tracking-tight ${stats.inactive > 0 ? 'text-accent-600' : 'text-dark-900 dark:text-white'}`}>{stats.inactive}</h3>
-                        </div>
-                        <div className={`relative z-10 h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 ${stats.inactive > 0 ? 'bg-accent-50 dark:bg-accent-950/20 text-accent-600 dark:text-accent-400' : 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500'}`}>
-                            <AlertTriangle size={22} />
-                        </div>
-                    </div>
+                    ))}
                 </div>
             )}
 
             {/* List Container with refined borders and shadows */}
-            <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 rounded-3xl shadow-md dark:shadow-none overflow-hidden">
+            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl shadow-sm dark:shadow-none overflow-hidden animate-fade-in">
                 {/* Search Header - Refactored search container with integrated button */}
                 <div className="p-6 border-b border-slate-50 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-b from-white to-slate-50/30 dark:from-transparent dark:to-transparent">
                     <h2 className="text-base font-bold text-dark-900 dark:text-white">قائمة المستخدمين</h2>
@@ -709,35 +755,26 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                                     )}
                                     {dateFilter && (
                                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-950/20 text-primary-700 dark:text-primary-400 text-[10px] font-bold border border-primary-200/50 dark:border-primary-800/20">
-                                            <span>التسجيل: {dateFilter === 'today' ? 'اليوم' : dateFilter === 'week' ? 'هذا الأسبوع' : 'هذا الشهر'}</span>
+                                            <span>التاريخ: {dateFilter === 'today' ? 'اليوم' : dateFilter === 'week' ? 'هذا الأسبوع' : 'هذا الشهر'}</span>
                                             <button type="button" onClick={() => handleFilterChange(roleFilter, statusFilter, branchFilter, '')} className="hover:text-accent-500 text-slate-450 dark:text-slate-500 transition-colors mr-1">✕</button>
                                         </span>
                                     )}
                                 </div>
-                                
-                                <button
-                                    type="button"
-                                    onClick={clearFilters}
-                                    className="flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-accent-500 dark:hover:text-accent-400 transition-colors"
-                                >
-                                    <RotateCcw size={12} />
-                                    <span>مسح التصفية</span>
-                                </button>
                             </div>
                         )}
                     </div>
                 )}
 
                 {/* Pre-configured filter presets toolbar */}
-                <div className="px-6 py-3 border-b border-slate-50 dark:border-slate-800/80 bg-slate-50/10 dark:bg-slate-900/5 flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-black text-slate-450 dark:text-slate-550 ml-2">مرشحات سريعة:</span>
+                <div className="px-6 py-3.5 border-b border-slate-100/80 dark:border-slate-800/80 bg-slate-50/30 dark:bg-slate-900/10 flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 ml-2">مرشحات سريعة:</span>
                     <button
                         type="button"
                         onClick={clearFilters}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             !roleFilter && !statusFilter && !branchFilter && !dateFilter
                                 ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-350 hover:bg-slate-200/50 dark:hover:bg-slate-805'
+                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                         }`}
                     >
                         الكل
@@ -745,10 +782,10 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                     <button
                         type="button"
                         onClick={() => handleFilterChange(roles?.find(r => r.name.includes('مدير'))?.id ?? '', '', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('مدير')
                                 ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-355 hover:bg-slate-200/50 dark:hover:bg-slate-805'
+                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                         }`}
                     >
                         المدراء
@@ -756,10 +793,10 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                     <button
                         type="button"
                         onClick={() => handleFilterChange(roles?.find(r => r.name.includes('معلم'))?.id ?? '', '', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('معلم')
                                 ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-355 hover:bg-slate-200/50 dark:hover:bg-slate-805'
+                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                         }`}
                     >
                         المعلمون
@@ -767,10 +804,10 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                     <button
                         type="button"
                         onClick={() => handleFilterChange('', 'active', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             statusFilter === 'active' && !roleFilter && !branchFilter && !dateFilter
                                 ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-355 hover:bg-slate-200/50 dark:hover:bg-slate-805'
+                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                         }`}
                     >
                         النشطون
@@ -778,10 +815,10 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                     <button
                         type="button"
                         onClick={() => handleFilterChange('', 'inactive', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                             statusFilter === 'inactive' && !roleFilter && !branchFilter && !dateFilter
                                 ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-slate-100 dark:bg-slate-900/50 text-slate-600 dark:text-slate-355 hover:bg-slate-200/50 dark:hover:bg-slate-805'
+                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                         }`}
                     >
                         المعطلون
@@ -790,7 +827,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
 
                 {/* Table or Grid Data */}
                 {usersData.length === 0 ? (
-                    <div className="text-center py-20 text-slate-400 no-print">
+                    <div className="text-center py-20 text-slate-400 dark:text-slate-500 no-print">
                         <UsersIcon size={48} className="mx-auto mb-4 text-slate-300 opacity-80 animate-pulse" />
                         <p className="font-bold text-slate-500 text-sm">لا يوجد مستخدمون مطابقون لمعايير البحث</p>
                     </div>
@@ -803,7 +840,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                                     const isTeacher = user.role?.includes('معلم');
                                     const isSelected = selectedUsers.includes(user.id);
                                     return (
-                                        <div key={user.id} className={`relative bg-slate-50/50 dark:bg-slate-900/30 border rounded-3xl p-5 hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 group ${isSelected ? 'border-primary-500 bg-primary-50/10 dark:bg-primary-950/10' : 'border-slate-100 dark:border-slate-800'}`}>
+                                        <div key={user.id} className={`relative bg-white dark:bg-slate-900/40 border rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 group ${isSelected ? 'border-primary-500 dark:border-primary-600 bg-primary-50/10 dark:bg-primary-950/10' : 'border-slate-100 dark:border-slate-800/80'}`}>
                                             {/* Ambient Glow */}
                                             <div className="absolute -left-6 -top-6 w-20 h-20 bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
                                             
@@ -832,7 +869,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
 
                                                 <div className="flex items-center gap-2 no-print">
                                                     {/* Quick Status Toggle inside Grid Card */}
-                                                    <button onClick={() => toggleUserStatus(user)} title="اضغط لتغيير الحالة فورياً" className="transition-all hover:scale-105 shrink-0">
+                                                    <button onClick={() => toggleUserStatus(user)} title="اضغط لتغيير الحالة فورياً" className="transition-all hover:scale-105 shrink-0 cursor-pointer">
                                                         {user.is_active ? (
                                                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-[#f0f7eb] dark:bg-primary-950/20 text-primary-700 dark:text-primary-400 border border-[#dcefd1] dark:border-primary-900/30">
                                                                 <span className="relative flex h-1.5 w-1.5 shrink-0">
@@ -855,27 +892,27 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                                             {/* Card Body: User Avatar & Info */}
                                             <div className="flex flex-col items-center text-center mt-2 mb-4">
                                                 <div className="relative mb-3 shrink-0">
-                                                    <img src={user.avatar} className="w-16 h-16 rounded-full border-2 border-slate-200 dark:border-slate-800 object-cover shadow-sm transition-transform duration-300 group-hover:scale-105" />
+                                                    <img src={user.avatar} className="w-16 h-16 rounded-full border border-slate-200 dark:border-slate-800 object-cover shadow-sm transition-transform duration-300 group-hover:scale-105" />
                                                     {user.is_active && (
-                                                        <span className="absolute bottom-0 left-0 w-4.5 h-4.5 bg-primary-500 border-2 border-white dark:border-slate-900 rounded-full shadow-sm" />
+                                                        <span className="absolute bottom-0 left-0 w-4 h-4 bg-primary-500 border-2 border-white dark:border-slate-900 rounded-full shadow-sm" />
                                                     )}
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-black text-dark-900 dark:text-white text-[15px] leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">{user.name}</h4>
+                                                    <h4 className="font-black text-dark-900 dark:text-white text-[15px] leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-405 transition-colors">{user.name}</h4>
                                                     <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 block">@{user.username}</span>
                                                 </div>
                                             </div>
 
                                             {/* Card Footer Details */}
                                             <div className="border-t border-slate-100/70 dark:border-slate-800/60 pt-4 mt-2 space-y-2">
-                                                <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-350">
+                                                <div className="flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
                                                     <span className="text-slate-400 dark:text-slate-500">الفرع:</span>
                                                     <div className="flex items-center gap-1">
                                                         <Store size={12} className="text-slate-400" />
                                                         <span>{user.branch}</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-350">
+                                                <div className="flex items-center justify-between text-[11px] text-slate-650 dark:text-slate-355">
                                                     <span className="text-slate-400 dark:text-slate-500">آخر ظهور:</span>
                                                     <span className={user.last_login === 'نشط الآن' ? 'text-primary-600 dark:text-primary-400 font-bold' : ''}>{user.last_login}</span>
                                                 </div>
@@ -894,8 +931,8 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-right border-collapse">
                                     <thead>
-                                        <tr className="bg-gradient-to-r from-primary-50 via-primary-100/50 to-primary-50 dark:from-primary-950/40 dark:via-primary-900/20 dark:to-primary-950/40 border-b border-primary-200/60 dark:border-primary-900/30">
-                                            <th className="px-6 py-4 text-xs font-black text-primary-800 dark:text-primary-300 uppercase tracking-wider text-center w-12 no-print">
+                                        <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100/80 dark:border-slate-800/85">
+                                            <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider text-center w-12 no-print">
                                                 <input type="checkbox"
                                                     className="w-4 h-4 text-primary-600 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-primary-500/20 cursor-pointer"
                                                     checked={usersData.length > 0 && usersData.every(u => selectedUsers.includes(u.id))}
@@ -906,7 +943,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                                             {visibleColumns.role && renderSortHeader("الدور (الصلاحية)", "role_id")}
                                             {visibleColumns.branch && renderSortHeader("الفرع", "branch_id")}
                                             {visibleColumns.status && renderSortHeader("الحالة", "is_active")}
-                                            <th className="px-6 py-4 text-xs font-black text-primary-800 dark:text-primary-300 uppercase tracking-wider text-center no-print">إجراء</th>
+                                            <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider text-center no-print">إجراء</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100/70 dark:divide-slate-800/60">
@@ -916,7 +953,13 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                                             const isSelected = selectedUsers.includes(user.id);
                                             
                                             return (
-                                                <tr key={user.id} className={`group border-r-4 border-r-transparent hover:border-r-primary-500 hover:bg-primary-50/20 dark:hover:bg-gradient-to-l dark:hover:from-primary-950/20 dark:hover:to-transparent transition-all duration-300 ${isSelected ? 'bg-primary-50/40 dark:bg-primary-950/30 border-r-primary-500' : ''}`}>
+                                                <tr key={user.id} className={`group border-r-4 border-r-transparent transition-all duration-200 cursor-pointer ${
+                                                    isSelected 
+                                                        ? 'bg-primary-50/10 dark:bg-primary-950/10 border-r-primary-500' 
+                                                        : !user.is_active
+                                                            ? 'hover:border-r-rose-500 hover:bg-rose-50/5 dark:hover:bg-rose-950/5 border-r-rose-500/20'
+                                                            : 'hover:border-r-primary-500 hover:bg-slate-50/40 dark:hover:bg-primary-500/5'
+                                                }`}>
                                                     {/* Checkbox column */}
                                                     <td className="px-6 py-4.5 whitespace-nowrap text-center no-print">
                                                         <input type="checkbox"
@@ -988,18 +1031,18 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                                                     {/* Status Badge - Clickable Status toggle */}
                                                     {visibleColumns.status && (
                                                         <td className="px-6 py-4.5 whitespace-nowrap">
-                                                            <button onClick={() => toggleUserStatus(user)} title="اضغط لتغيير الحالة فورياً" className="transition-all hover:scale-105 shrink-0 no-print">
+                                                            <button onClick={() => toggleUserStatus(user)} title="اضغط لتغيير الحالة فورياً" className="transition-all hover:scale-105 shrink-0 no-print cursor-pointer">
                                                                 {user.is_active ? (
-                                                                    <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-[#f0f7eb] dark:bg-primary-950/20 text-primary-700 dark:text-primary-400 border border-[#dcefd1] dark:border-primary-900/30">
-                                                                        <span className="relative flex h-2 w-2 shrink-0">
-                                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                                                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+                                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-500/20">
+                                                                        <span className="relative flex h-1.5 w-1.5 shrink-0">
+                                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
                                                                         </span>
                                                                         <span>نشط</span>
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-extrabold bg-accent-50 dark:bg-accent-950/20 text-accent-700 dark:text-accent-400 border border-accent-100 dark:border-accent-900/20">
-                                                                        <span className="h-2 w-2 rounded-full bg-accent-500 shrink-0" />
+                                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-455 border border-rose-100/50 dark:border-rose-500/20">
+                                                                        <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
                                                                         <span>معطل</span>
                                                                     </span>
                                                                 )}
@@ -1065,23 +1108,23 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
 
             {/* Quick Reset Password Modal */}
             <Modal isOpen={!!resetUser} onClose={() => setResetUser(null)} title={
-                <div className="flex items-center gap-2 text-dark-900">
+                <div className="flex items-center gap-2 text-dark-900 dark:text-white">
                     <Key size={18} className="text-primary-500" />
                     <span>إعادة تعيين كلمة المرور</span>
                 </div>
             }>
                 <form onSubmit={handleResetPassword} className="space-y-5">
                     <div>
-                        <p className="text-xs text-slate-400 font-semibold mb-2">تعيين كلمة مرور جديدة للمستخدم:</p>
-                        <p className="text-sm font-black text-dark-900 bg-slate-50 px-4 py-2.5 rounded-xl border border-slate-100">{resetUser?.name} (@{resetUser?.username})</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mb-2">تعيين كلمة مرور جديدة للمستخدم:</p>
+                        <p className="text-sm font-black text-dark-900 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/60 px-4 py-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">{resetUser?.name} (@{resetUser?.username})</p>
                     </div>
                     <div>
-                        <label className="block text-sm font-bold text-dark-900 mb-2">كلمة المرور الجديدة</label>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">كلمة المرور الجديدة</label>
                         <div className="relative">
-                            <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                            <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 pointer-events-none" />
                             <input type={showPassword ? "text" : "password"} required minLength="8" dir="ltr"
                                 placeholder="••••••••"
-                                className="w-full border border-slate-200 rounded-2xl pr-11 pl-12 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all"
+                                className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-12 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 bg-white dark:bg-slate-900 text-dark-900 dark:text-white transition-all"
                                 value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                             <button type="button" onClick={() => setShowPassword(!showPassword)}
                                 className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-xl">
@@ -1091,9 +1134,9 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                     </div>
                     <div className="flex justify-end gap-3 pt-3">
                         <button type="button" onClick={() => { setResetUser(null); setNewPassword(''); setShowPassword(false); }}
-                            className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200/70 transition-colors">إلغاء</button>
+                            className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-850 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
                         <button type="submit"
-                            className="px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all">تحديث كلمة المرور</button>
+                            className="px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all cursor-pointer">تحديث كلمة المرور</button>
                     </div>
                 </form>
             </Modal>
@@ -1102,12 +1145,12 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
             <Modal isOpen={bulkBranchModal} onClose={() => setBulkBranchModal(false)} title="تغيير فرع المستخدمين">
                 <div className="space-y-5">
                     <div>
-                        <label className="block text-sm font-bold text-dark-900 mb-2">اختر الفرع الجديد</label>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">اختر الفرع الجديد</label>
                         <div className="relative flex items-center">
-                            <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 border-l border-slate-200/80 pl-2.5">
-                                <Store size={18} />
+                            <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 border-l border-slate-200/80 dark:border-slate-800 pl-2.5">
+                                <Store size={18} className="text-[#6b9b37] dark:text-primary-450" />
                             </div>
-                            <select className="w-full border border-slate-200 rounded-2xl pr-13 pl-10 py-3.5 text-sm bg-white focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all appearance-none cursor-pointer text-slate-700 font-bold hover:border-slate-300"
+                            <select className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-13 pl-10 py-3.5 text-sm bg-white dark:bg-slate-900 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all appearance-none cursor-pointer text-slate-700 dark:text-slate-200 font-bold hover:border-slate-300 dark:hover:border-slate-700"
                                 value={bulkBranchId} onChange={e => setBulkBranchId(e.target.value)}>
                                 <option value="" disabled>اختر الفرع</option>
                                 {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -1117,9 +1160,9 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                     </div>
                     <div className="flex justify-end gap-3 pt-3">
                         <button onClick={() => setBulkBranchModal(false)}
-                            className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200/70 transition-colors">إلغاء</button>
+                            className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-850 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
                         <button onClick={() => runBulkAction('change_branch', bulkBranchId)} disabled={!bulkBranchId}
-                            className="px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all disabled:opacity-50">حفظ وتغيير الفرع</button>
+                            className="px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all disabled:opacity-50 cursor-pointer">حفظ وتغيير الفرع</button>
                     </div>
                 </div>
             </Modal>
@@ -1127,16 +1170,16 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
             {/* Single Delete Modal in Accent Red */}
             <Modal isOpen={!!showDel} onClose={() => setShowDel(null)} title="تأكيد الحذف">
                 <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-accent-50 flex items-center justify-center animate-pulse">
-                        <AlertTriangle size={32} className="text-accent-500" />
+                    <div className="w-16 h-16 rounded-2xl bg-accent-50 dark:bg-accent-950/20 flex items-center justify-center animate-pulse">
+                        <AlertTriangle size={32} className="text-accent-500 dark:text-accent-400" />
                     </div>
                     <div>
-                        <p className="font-bold text-dark-900 text-lg mb-1">تأكيد حذف المستخدم</p>
-                        <p className="text-sm text-slate-500">هل تريد حذف "{showDel?.name}" نهائياً؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                        <p className="font-bold text-dark-900 dark:text-white text-lg mb-1">تأكيد حذف المستخدم</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">هل تريد حذف "{showDel?.name}" نهائياً؟ لا يمكن التراجع عن هذا الإجراء.</p>
                     </div>
                     <div className="flex gap-3 w-full mt-2">
-                        <button onClick={() => setShowDel(null)} className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200/70 transition-colors">إلغاء</button>
-                        <button onClick={handleDelete} className="flex-1 py-3 text-sm font-bold text-white bg-accent-500 hover:bg-accent-600 rounded-2xl shadow-md shadow-accent-500/10 transition-all">حذف نهائياً</button>
+                        <button onClick={() => setShowDel(null)} className="flex-1 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-850 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
+                        <button onClick={handleDelete} className="flex-1 py-3 text-sm font-bold text-white bg-accent-500 hover:bg-accent-600 rounded-2xl shadow-md shadow-accent-500/10 transition-all cursor-pointer">حذف نهائياً</button>
                     </div>
                 </div>
             </Modal>
@@ -1144,16 +1187,16 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
             {/* Bulk Delete Modal */}
             <Modal isOpen={showBulkDel} onClose={() => setShowBulkDel(null)} title="تأكيد الحذف الجماعي">
                 <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-accent-50 flex items-center justify-center animate-pulse">
-                        <AlertTriangle size={32} className="text-accent-500" />
+                    <div className="w-16 h-16 rounded-2xl bg-accent-50 dark:bg-accent-950/20 flex items-center justify-center animate-pulse">
+                        <AlertTriangle size={32} className="text-accent-500 dark:text-accent-400" />
                     </div>
                     <div>
-                        <p className="font-bold text-dark-900 text-lg mb-1">تأكيد حذف المستخدمين المحددين</p>
-                        <p className="text-sm text-slate-500">هل تريد حذف {selectedUsers.length} مستخدمين محددين نهائياً؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                        <p className="font-bold text-dark-900 dark:text-white text-lg mb-1">تأكيد حذف المستخدمين المحددين</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">هل تريد حذف {selectedUsers.length} مستخدمين محددين نهائياً؟ لا يمكن التراجع عن هذا الإجراء.</p>
                     </div>
                     <div className="flex gap-3 w-full mt-2">
-                        <button onClick={() => setShowBulkDel(null)} className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200/70 transition-colors">إلغاء</button>
-                        <button onClick={() => { runBulkAction('delete'); setShowBulkDel(false); }} className="flex-1 py-3 text-sm font-bold text-white bg-accent-500 hover:bg-accent-600 rounded-2xl shadow-md shadow-accent-500/10 transition-all">حذف نهائياً</button>
+                        <button onClick={() => setShowBulkDel(null)} className="flex-1 py-3 text-sm font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-850 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
+                        <button onClick={() => { runBulkAction('delete'); setShowBulkDel(false); }} className="flex-1 py-3 text-sm font-bold text-white bg-accent-500 hover:bg-accent-600 rounded-2xl shadow-md shadow-accent-500/10 transition-all cursor-pointer">حذف نهائياً</button>
                     </div>
                 </div>
             </Modal>

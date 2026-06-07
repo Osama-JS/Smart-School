@@ -7,10 +7,11 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Traits\BelongsToBranch;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use Notifiable, BelongsToBranch;
 
     protected $fillable = [
         'branch_id', 'role_id', 'name', 'username', 'password', 'is_active'
@@ -46,5 +47,21 @@ class User extends Authenticatable
     public function hasPermission($permissionName): bool
     {
         return $this->role->permissions()->where('name', $permissionName)->exists();
+    }
+
+    /**
+     * توليد مفتاح تخزين مؤقت معزول تلقائياً بحسب فرع المستخدم
+     */
+    public function branchCacheKey(string $key): string
+    {
+        return "branch_{$this->branch_id}_{$key}";
+    }
+
+    /**
+     * توليد مسار تخزين ملفات معزول تلقائياً بحسب فرع المستخدم
+     */
+    public function branchStoragePath(string $subPath): string
+    {
+        return "branches/{$this->branch_id}/" . ltrim($subPath, '/');
     }
 }

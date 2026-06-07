@@ -13,11 +13,13 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. إنشاء فرع افتراضي
+        // 1. إنشاء فروع افتراضية
         $branch = Branch::create(['name' => 'الفرع الرئيسي']);
+        $branch2 = Branch::create(['name' => 'فرع جدة']);
 
         // 2. إنشاء الأدوار الأساسية
         $adminRole = Role::create(['name' => 'مدير النظام']);
+        $managerRole = Role::create(['name' => 'مدير فرع']);
         $teacherRole = Role::create(['name' => 'معلم']);
         $studentRole = Role::create(['name' => 'طالب']);
         $parentRole = Role::create(['name' => 'ولي أمر']);
@@ -45,6 +47,12 @@ class DatabaseSeeder extends Seeder
         // إعطاء مدير النظام جميع الصلاحيات
         $adminRole->permissions()->sync(Permission::all());
 
+        // إعطاء مدير الفرع الصلاحيات المرتبطة بالعمليات والإدارة والأكاديميا + إدارة المستخدمين
+        $managerPermissions = Permission::where('module', '!=', 'admin')
+            ->orWhere('name', 'إدارة المستخدمين')
+            ->pluck('id');
+        $managerRole->permissions()->sync($managerPermissions);
+
         // 4. إنشاء مستخدم مدير للنظام
         User::create([
             'branch_id' => $branch->id,
@@ -52,6 +60,25 @@ class DatabaseSeeder extends Seeder
             'name' => 'مدير النظام',
             'username' => 'admin',
             'password' => Hash::make('admin123'),
+            'is_active' => true,
+        ]);
+
+        // إنشاء مستخدمين وهميين يحملون دور "مدير فرع"
+        User::create([
+            'branch_id' => $branch->id,
+            'role_id' => $managerRole->id,
+            'name' => 'عبدالله العتيبي (مدير الفرع الرئيسي)',
+            'username' => 'manager.main',
+            'password' => Hash::make('manager123'),
+            'is_active' => true,
+        ]);
+
+        User::create([
+            'branch_id' => $branch2->id,
+            'role_id' => $managerRole->id,
+            'name' => 'فيصل الزهراني (مدير فرع جدة)',
+            'username' => 'manager.jeddah',
+            'password' => Hash::make('manager123'),
             'is_active' => true,
         ]);
 

@@ -76,10 +76,18 @@ class DepartmentController extends Controller
 
         $parentOptions = Department::select('id', 'name')->orderBy('name')->get();
 
+        $stats = [
+            'total'           => Department::count(),
+            'main'            => Department::whereNull('parent_id')->count(),
+            'sub'             => Department::whereNotNull('parent_id')->count(),
+            'total_employees' => \App\Models\Employee::count(),
+        ];
+
         return Inertia::render('HR/Departments/Index', [
             'departments'   => $departments,
             'tree'          => $tree,
             'parentOptions' => $parentOptions,
+            'stats'         => $stats,
             'filters'       => $request->only(['search', 'type', 'parent_filter_id', 'staff_range', 'sort_by']),
         ]);
     }
