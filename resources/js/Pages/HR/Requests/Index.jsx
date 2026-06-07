@@ -364,31 +364,34 @@ export default function RequestsIndex() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 no-print">
                 {/* 1. Pending Requests Card */}
                 <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 p-5 rounded-3xl shadow-sm hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default">
-                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-warning-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-dark-400 to-dark-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 pointer-events-none" />
+                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-dark-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
                     <div className="relative z-10 min-w-0">
                         <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">طلبات قيد المراجعة</p>
                         <h3 className="text-2xl font-black text-dark-900 dark:text-white leading-none font-mono tracking-tight">{filteredPending}</h3>
                     </div>
-                    <div className="relative z-10 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 bg-warning-50/50 dark:bg-warning-950/20 text-warning-600 dark:text-warning-400 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
+                    <div className="relative z-10 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 bg-dark-100 dark:bg-dark-900/40 text-dark-700 dark:text-dark-300 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
                         <Clock size={20} strokeWidth={2.5} />
                     </div>
                 </div>
 
                 {/* 2. Approved Requests Card */}
                 <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 p-5 rounded-3xl shadow-sm hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-400 to-primary-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 pointer-events-none" />
                     <div className="absolute -left-6 -top-6 w-24 h-24 bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
                     <div className="relative z-10 min-w-0">
                         <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">الطلبات المعتمدة</p>
                         <h3 className="text-2xl font-black text-dark-900 dark:text-white leading-none font-mono tracking-tight">{filteredApproved}</h3>
                     </div>
-                    <div className="relative z-10 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 bg-primary-50 dark:bg-primary-950/20 text-primary-600 dark:text-primary-400 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
+                    <div className="relative z-10 w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-400 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3">
                         <CheckCircle size={20} strokeWidth={2.5} />
                     </div>
                 </div>
 
                 {/* 3. Leave Balance Circular SVG Card */}
                 <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 p-5 rounded-3xl shadow-sm hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default">
-                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 pointer-events-none" />
+                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
                     <div className="relative z-10 min-w-0">
                         <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">رصيد الإجازات المتبقي</p>
                         <h3 className="text-2xl font-black text-dark-900 dark:text-white leading-none font-mono tracking-tight">12 <span className="text-xs font-bold text-slate-400 dark:text-slate-500 mr-1">يوم متبقي</span></h3>
@@ -398,11 +401,11 @@ export default function RequestsIndex() {
                         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44">
                             <defs>
                                 <linearGradient id="neonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#84cc16" />
-                                    <stop offset="100%" stopColor="#22c55e" />
+                                    <stop offset="0%" stopColor="#10b981" />
+                                    <stop offset="100%" stopColor="#059669" />
                                 </linearGradient>
                                 <filter id="neonGlow" x="-15%" y="-15%" width="130%" height="130%">
-                                    <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor="#22c55e" floodOpacity="0.4" />
+                                    <feDropShadow dx="0" dy="0" stdDeviation="1.5" floodColor="#10b981" floodOpacity="0.4" />
                                 </filter>
                             </defs>
                             <circle

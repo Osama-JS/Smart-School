@@ -3,7 +3,8 @@ import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
     Search, Plus, MapPin, Phone, Users, Edit2, Trash2,
-    MoreVertical, X, Check, AlertTriangle, Store, Compass, Crosshair, Save, SlidersHorizontal, RotateCcw
+    MoreVertical, X, Check, AlertTriangle, Store, Compass, Crosshair, Save, SlidersHorizontal, RotateCcw,
+    ChevronDown
 } from 'lucide-react';
 
 // ─── Modal Component ───────────────────────────────────────────────────────────
@@ -275,19 +276,19 @@ export default function BranchesIndex({ branches, filters }) {
             <div className="mb-6 flex flex-col gap-4">
                 {/* Search input with toggle filters */}
                 <div className="flex items-center gap-3">
-                    <div className="group relative max-w-md flex-1 flex items-center bg-slate-100/60 dark:bg-slate-900/50 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 focus-within:bg-white dark:focus-within:bg-[#121820] border border-transparent dark:border-slate-800 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-primary-500/10 rounded-2xl transition-all p-1">
+                    <div className="group relative max-w-md flex-1 flex items-center bg-white dark:bg-[#121820] hover:bg-slate-50/50 dark:hover:bg-slate-900/60 focus-within:bg-white dark:focus-within:bg-[#121820] border border-slate-200/85 dark:border-slate-800 focus-within:border-primary-500 dark:focus-within:border-primary-500/80 focus-within:ring-4 focus-within:ring-primary-500/10 rounded-2xl shadow-sm hover:shadow-md focus-within:shadow-md transition-all duration-300 p-1.5">
                         <div className="flex-1 relative flex items-center">
-                            <Search size={18} className="absolute right-3.5 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 group-focus-within:scale-110 transition-all duration-300" />
+                            <Search size={18} className="absolute right-3.5 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 group-focus-within:scale-105 transition-all duration-300" />
                             <input
                                 ref={searchInputRef}
                                 type="text"
                                 placeholder="ابحث عن فرع بالاسم أو العنوان أو الهاتف..."
-                                className="w-full bg-transparent border-none pr-10 pl-10 py-2.5 text-sm outline-none text-dark-900 dark:text-slate-100 font-bold"
+                                className="w-full bg-transparent border-none pr-10 pl-10 py-2 text-sm outline-none text-dark-900 dark:text-slate-100 font-bold placeholder:text-slate-400 dark:placeholder:text-slate-550"
                                 value={searchValue}
                                 onChange={e => handleSearch(e.target.value)}
                             />
                             {!searchValue && (
-                                <kbd className="absolute left-3.5 px-1.5 py-0.5 text-[10px] font-sans font-bold text-slate-400 dark:text-slate-500 bg-slate-200/60 dark:bg-slate-800 border border-slate-300/40 dark:border-slate-700/60 rounded pointer-events-none group-focus-within:opacity-0 transition-opacity duration-200">
+                                <kbd className="absolute left-3.5 px-2 py-0.5 text-[9px] font-sans font-black text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40 border border-primary-100 dark:border-primary-900/40 rounded-lg pointer-events-none group-focus-within:opacity-0 transition-opacity duration-200">
                                     /
                                 </kbd>
                             )}
@@ -295,7 +296,7 @@ export default function BranchesIndex({ branches, filters }) {
                                 <button
                                     type="button"
                                     onClick={() => handleSearch('')}
-                                    className="absolute left-3 p-1 rounded-lg text-slate-450 dark:text-slate-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 transition-all active:scale-90"
+                                    className="absolute left-3.5 p-1 rounded-xl text-slate-450 dark:text-slate-550 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-700 dark:hover:text-slate-300 transition-all active:scale-90"
                                 >
                                     <X size={14} strokeWidth={2.5} />
                                 </button>
@@ -306,16 +307,16 @@ export default function BranchesIndex({ branches, filters }) {
                     {/* Advanced Filter Toggle Button */}
                     <button
                         onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                        className={`h-12 px-4 rounded-2xl text-sm font-bold border transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                        className={`h-12 px-5 rounded-2xl text-sm font-bold border transition-all duration-300 flex items-center gap-2 cursor-pointer shadow-sm hover:shadow active:scale-95 ${
                             showAdvancedFilters || activeFiltersCount > 0
-                                ? 'bg-primary-50 border-primary-200 dark:border-primary-900/30 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400'
-                                : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/60'
+                                ? 'bg-primary-50/80 border-primary-200 text-primary-600 dark:border-primary-900/30 dark:bg-primary-950/20 dark:text-primary-400 hover:bg-primary-100/50'
+                                : 'bg-white dark:bg-[#121820] border-slate-200/85 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/60 hover:text-slate-700'
                         }`}
                     >
-                        <SlidersHorizontal size={15} />
+                        <SlidersHorizontal size={15} className={`transition-transform duration-300 ${showAdvancedFilters ? 'rotate-90 text-primary-500' : ''}`} />
                         <span>تصفية</span>
                         {activeFiltersCount > 0 && (
-                            <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] flex items-center justify-center font-bold">
+                            <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] flex items-center justify-center font-bold animate-pop-in">
                                 {activeFiltersCount}
                             </span>
                         )}
@@ -324,61 +325,115 @@ export default function BranchesIndex({ branches, filters }) {
 
                 {/* Advanced Inline Filter Panel */}
                 {showAdvancedFilters && (
-                    <div className="p-6 bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 rounded-3xl shadow-sm relative animate-scale-in">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                            {/* 1. Status Filter */}
-                            <div className="flex flex-col gap-1.5 text-right">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">حالة الفرع</label>
-                                <select 
-                                    value={statusFilter} 
-                                    onChange={e => {
-                                        setStatusFilter(e.target.value);
-                                        applyFilters({ status: e.target.value, staff_range: staffFilter, sort_by: sortBy });
-                                    }}
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="all">الكل</option>
-                                    <option value="active">نشط</option>
-                                    <option value="inactive">مغلق</option>
-                                </select>
+                    <div className="p-6 bg-white dark:bg-[#121820] border border-slate-200/60 dark:border-primary-500/10 rounded-3xl shadow-md shadow-slate-100/40 dark:shadow-none relative animate-scale-in">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            {/* 1. Status Filter - Segmented Control (Pill Tabs) */}
+                            <div className="flex flex-col gap-2.5 text-right">
+                                <span className="text-xs font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5 justify-end">
+                                    <span>حالة الفرع</span>
+                                </span>
+                                <div className="flex bg-slate-100/70 dark:bg-slate-900/60 p-1 rounded-2xl border border-slate-200/30 dark:border-slate-800/50 w-full">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStatusFilter('all');
+                                            applyFilters({ status: 'all', staff_range: staffFilter, sort_by: sortBy });
+                                        }}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-300 ${
+                                            statusFilter === 'all'
+                                                ? 'bg-white dark:bg-[#121820] text-slate-700 dark:text-white shadow-sm border border-slate-200/50 dark:border-slate-800'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'
+                                        }`}
+                                    >
+                                        الكل
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStatusFilter('active');
+                                            applyFilters({ status: 'active', staff_range: staffFilter, sort_by: sortBy });
+                                        }}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-300 ${
+                                            statusFilter === 'active'
+                                                ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/15'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'
+                                        }`}
+                                    >
+                                        نشط
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStatusFilter('inactive');
+                                            applyFilters({ status: 'inactive', staff_range: staffFilter, sort_by: sortBy });
+                                        }}
+                                        className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-300 ${
+                                            statusFilter === 'inactive'
+                                                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/15'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-350'
+                                        }`}
+                                    >
+                                        مغلق
+                                    </button>
+                                </div>
                             </div>
 
-                            {/* 2. Employee Density */}
-                            <div className="flex flex-col gap-1.5 text-right">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">كثافة الموظفين</label>
-                                <select 
-                                    value={staffFilter} 
-                                    onChange={e => {
-                                        setStaffFilter(e.target.value);
-                                        applyFilters({ status: statusFilter, staff_range: e.target.value, sort_by: sortBy });
-                                    }}
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="all">الكل</option>
-                                    <option value="empty">فروع شاغرة (0 موظف)</option>
-                                    <option value="low">كثافة منخفضة (1 - 5 موظفين)</option>
-                                    <option value="medium">كثافة متوسطة (6 - 15 موظفاً)</option>
-                                    <option value="high">كثافة عالية (16+ موظفاً)</option>
-                                </select>
+                            {/* 2. Employee Density - Interactive Chips Grid */}
+                            <div className="flex flex-col gap-2.5 text-right">
+                                <span className="text-xs font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5 justify-end">
+                                    <span>كثافة الموظفين</span>
+                                </span>
+                                <div className="flex flex-wrap gap-1.5 justify-end">
+                                    {[
+                                        { id: 'all', label: 'الكل' },
+                                        { id: 'empty', label: 'شاغرة (0)' },
+                                        { id: 'low', label: 'منخفضة (1-5)' },
+                                        { id: 'medium', label: 'متوسطة (6-15)' },
+                                        { id: 'high', label: 'عالية (16+)' },
+                                    ].map((opt) => (
+                                        <button
+                                            key={opt.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setStaffFilter(opt.id);
+                                                applyFilters({ status: statusFilter, staff_range: opt.id, sort_by: sortBy });
+                                            }}
+                                            className={`px-3 py-2 text-xs font-bold rounded-xl border transition-all duration-250 cursor-pointer active:scale-95 ${
+                                                staffFilter === opt.id
+                                                    ? 'bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/15'
+                                                    : 'bg-white dark:bg-[#121820] border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-700'
+                                            }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            {/* 3. Sort By */}
-                            <div className="flex flex-col gap-1.5 text-right">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ترتيب حسب</label>
-                                <select 
-                                    value={sortBy} 
-                                    onChange={e => {
-                                        setSortBy(e.target.value);
-                                        applyFilters({ status: statusFilter, staff_range: staffFilter, sort_by: e.target.value });
-                                    }}
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="all">الاسم (أبجدي تصاعدي)</option>
-                                    <option value="name_desc">الاسم (أبجدي تنازلي)</option>
-                                    <option value="employees_desc">عدد الموظفين (الأكثر أولاً)</option>
-                                    <option value="employees_asc">عدد الموظفين (الأقل أولاً)</option>
-                                    <option value="active_first">الفروع النشطة أولاً</option>
-                                </select>
+                            {/* 3. Sort By - Custom Styled Select */}
+                            <div className="flex flex-col gap-2.5 text-right">
+                                <span className="text-xs font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5 justify-end">
+                                    <span>ترتيب حسب</span>
+                                </span>
+                                <div className="relative group/sort">
+                                    <select
+                                        value={sortBy}
+                                        onChange={e => {
+                                            setSortBy(e.target.value);
+                                            applyFilters({ status: statusFilter, staff_range: staffFilter, sort_by: e.target.value });
+                                        }}
+                                        className="w-full bg-white dark:bg-[#121820] border border-slate-200/80 dark:border-slate-800 rounded-2xl pr-4 pl-10 py-2.5 text-xs font-black text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer appearance-none"
+                                    >
+                                        <option value="all">الاسم (أبجدي تصاعدي) 🔠</option>
+                                        <option value="name_desc">الاسم (أبجدي تنازلي) 🔡</option>
+                                        <option value="employees_desc">عدد الموظفين (الأكثر أولاً) 👥</option>
+                                        <option value="employees_asc">عدد الموظفين (الأقل أولاً) 👤</option>
+                                        <option value="active_first">الفروع النشطة أولاً 🟢</option>
+                                    </select>
+                                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-450 group-focus-within/sort:text-primary-500 transition-colors">
+                                        <ChevronDown size={16} />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -386,56 +441,80 @@ export default function BranchesIndex({ branches, filters }) {
 
                 {/* Active Filter Badges */}
                 {(searchValue || statusFilter !== 'all' || staffFilter !== 'all' || sortBy !== 'all') && (
-                    <div className="flex items-center justify-between flex-wrap gap-3 p-4 bg-slate-50/50 dark:bg-slate-900/10 rounded-2xl border border-slate-100 dark:border-primary-500/5">
-                        <div className="flex items-center gap-2 flex-wrap text-xs font-bold text-slate-500 dark:text-slate-400" dir="rtl">
+                    <div className="flex items-center justify-between flex-wrap gap-3 p-4 bg-slate-100/40 dark:bg-slate-900/10 rounded-2xl border border-slate-200/50 dark:border-primary-500/5 animate-slide-down">
+                        <div className="flex items-center gap-2.5 flex-wrap text-xs font-bold text-slate-500 dark:text-slate-400" dir="rtl">
                             <span>المرشحات النشطة:</span>
                             {searchValue && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800/80 shadow-sm transition-all hover:border-slate-350 dark:hover:border-slate-700">
                                     <span>البحث: "{searchValue}"</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => handleSearch('')} />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleSearch('')}
+                                        className="p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-850 hover:text-rose-500 text-slate-400 transition-colors"
+                                    >
+                                        <X size={11} strokeWidth={2.5} />
+                                    </button>
                                 </span>
                             )}
                             {statusFilter !== 'all' && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800/80 shadow-sm transition-all hover:border-slate-350 dark:hover:border-slate-700">
                                     <span>الحالة: {statusFilter === 'active' ? 'نشط' : 'مغلق'}</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
-                                        setStatusFilter('all');
-                                        applyFilters({ status: 'all', staff_range: staffFilter, sort_by: sortBy });
-                                    }} />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStatusFilter('all');
+                                            applyFilters({ status: 'all', staff_range: staffFilter, sort_by: sortBy });
+                                        }}
+                                        className="p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-850 hover:text-rose-500 text-slate-400 transition-colors"
+                                    >
+                                        <X size={11} strokeWidth={2.5} />
+                                    </button>
                                 </span>
                             )}
                             {staffFilter !== 'all' && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800/80 shadow-sm transition-all hover:border-slate-350 dark:hover:border-slate-700">
                                     <span>الكثافة: {
                                         staffFilter === 'empty' ? 'شاغرة (0)' :
                                         staffFilter === 'low' ? 'منخفضة (1-5)' :
                                         staffFilter === 'medium' ? 'متوسطة (6-15)' : 'عالية (16+)'
                                     }</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
-                                        setStaffFilter('all');
-                                        applyFilters({ status: statusFilter, staff_range: 'all', sort_by: sortBy });
-                                    }} />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStaffFilter('all');
+                                            applyFilters({ status: statusFilter, staff_range: 'all', sort_by: sortBy });
+                                        }}
+                                        className="p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-850 hover:text-rose-500 text-slate-400 transition-colors"
+                                    >
+                                        <X size={11} strokeWidth={2.5} />
+                                    </button>
                                 </span>
                             )}
                             {sortBy !== 'all' && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
+                                <span className="inline-flex items-center gap-1.5 bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl border border-slate-200/70 dark:border-slate-800/80 shadow-sm transition-all hover:border-slate-350 dark:hover:border-slate-700">
                                     <span>الترتيب: {
                                         sortBy === 'name_desc' ? 'الاسم تنازلياً' :
                                         sortBy === 'employees_desc' ? 'الموظفين الأكثر أولاً' :
                                         sortBy === 'employees_asc' ? 'الموظفين الأقل أولاً' : 'النشطة أولاً'
                                     }</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
-                                        setSortBy('all');
-                                        applyFilters({ status: statusFilter, staff_range: staffFilter, sort_by: 'all' });
-                                    }} />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSortBy('all');
+                                            applyFilters({ status: statusFilter, staff_range: staffFilter, sort_by: 'all' });
+                                        }}
+                                        className="p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-850 hover:text-rose-500 text-slate-400 transition-colors"
+                                    >
+                                        <X size={11} strokeWidth={2.5} />
+                                    </button>
                                 </span>
                             )}
                         </div>
                         <button
                             onClick={handleClearFilters}
-                            className="text-xs font-extrabold text-accent-500 hover:text-accent-600 flex items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-all active:scale-95 cursor-pointer"
+                            className="text-xs font-bold text-accent-600 hover:text-accent-700 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent-50/50 hover:bg-accent-50 dark:bg-accent-950/10 dark:hover:bg-accent-950/20 border border-accent-100/50 dark:border-accent-900/10 transition-all active:scale-95 cursor-pointer group"
                         >
-                            <RotateCcw size={12} />
+                            <RotateCcw size={12} className="group-hover:rotate-[-45deg] transition-transform duration-300" />
                             <span>إعادة ضبط المرشحات</span>
                         </button>
                     </div>

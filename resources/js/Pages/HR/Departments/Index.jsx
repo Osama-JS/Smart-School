@@ -246,37 +246,37 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
             label: 'إجمالي الأقسام',
             value: stats?.total ?? parentOptions?.length ?? 0,
             icon: Building,
-            color: 'text-blue-600 dark:text-blue-400',
-            bg: 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-500/10 dark:to-cyan-500/10',
-            glowColor: 'bg-blue-400/10 dark:bg-blue-500/10',
-            borderAccent: 'border-blue-500/20'
+            color: 'text-primary-600 dark:text-primary-400',
+            bg: 'bg-gradient-to-br from-primary-50 to-primary-100/30 dark:from-primary-500/10 dark:to-primary-900/10',
+            glowColor: 'bg-primary-400/10 dark:bg-primary-500/10',
+            borderAccent: 'border-primary-500/20'
         },
         {
             label: 'الأقسام الرئيسية',
             value: stats?.main ?? tree?.length ?? 0,
             icon: FolderTree,
-            color: 'text-indigo-600 dark:text-indigo-400',
-            bg: 'bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-500/10 dark:to-violet-500/10',
-            glowColor: 'bg-indigo-400/10 dark:bg-indigo-500/10',
-            borderAccent: 'border-indigo-500/20'
+            color: 'text-emerald-600 dark:text-emerald-400',
+            bg: 'bg-gradient-to-br from-emerald-50 to-teal-50/50 dark:from-emerald-500/10 dark:to-teal-500/10',
+            glowColor: 'bg-emerald-400/10 dark:bg-emerald-500/10',
+            borderAccent: 'border-emerald-500/20'
         },
         {
             label: 'الأقسام الفرعية',
             value: stats?.sub ?? ((parentOptions?.length || 0) - (tree?.length || 0)),
             icon: Layers,
-            color: 'text-amber-600 dark:text-amber-400',
-            bg: 'bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-500/10 dark:to-orange-500/10',
-            glowColor: 'bg-amber-400/10 dark:bg-amber-500/10',
-            borderAccent: 'border-amber-500/20'
+            color: 'text-dark-700 dark:text-dark-300',
+            bg: 'bg-gradient-to-br from-dark-100 to-dark-200/50 dark:from-dark-500/10 dark:to-dark-700/10',
+            glowColor: 'bg-dark-400/10 dark:bg-dark-500/10',
+            borderAccent: 'border-dark-500/20'
         },
         {
             label: 'إجمالي الموظفين بالأقسام',
             value: stats?.total_employees ?? 0,
             icon: Users,
-            color: 'text-emerald-600 dark:text-emerald-400',
-            bg: 'bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-500/10 dark:to-teal-500/10',
-            glowColor: 'bg-emerald-400/10 dark:bg-emerald-500/10',
-            borderAccent: 'border-emerald-500/20'
+            color: 'text-accent-600 dark:text-accent-400',
+            bg: 'bg-gradient-to-br from-accent-50 to-accent-100/30 dark:from-accent-500/10 dark:to-accent-700/10',
+            glowColor: 'bg-accent-400/10 dark:bg-accent-500/10',
+            borderAccent: 'border-accent-500/20'
         }
     ];
 
@@ -368,10 +368,10 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
                             <div key={idx} className="group relative bg-white dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 transition-all duration-300 hover:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.06)] dark:hover:shadow-none hover:-translate-y-1.5 overflow-hidden cursor-default">
                                 {/* Animated gradient accent line */}
                                 <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${
-                                    idx === 0 ? 'from-blue-500 to-cyan-500' :
-                                    idx === 1 ? 'from-indigo-500 to-violet-500' :
-                                    idx === 2 ? 'from-amber-500 to-orange-500' :
-                                    'from-emerald-500 to-teal-500'
+                                    idx === 0 ? 'from-primary-400 to-primary-600' :
+                                    idx === 1 ? 'from-emerald-400 to-emerald-600' :
+                                    idx === 2 ? 'from-dark-400 to-dark-600' :
+                                    'from-accent-400 to-accent-600'
                                 } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                                 {/* Ambient glow */}
                                 <div className={`absolute -left-8 -top-8 w-32 h-32 ${stat.glowColor} rounded-full blur-2xl group-hover:scale-[1.8] transition-all duration-500 pointer-events-none opacity-60`} />

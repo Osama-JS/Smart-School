@@ -319,27 +319,27 @@ export default function ApprovalsIndex() {
 
             <div className="screen-only-content space-y-8 animate-fade-in">
                 <style dangerouslySetInnerHTML={{__html: `
-                    @keyframes pulse-glow-amber {
+                    @keyframes pulse-glow-dark {
                         0%, 100% {
-                            box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
-                            border-color: rgba(245, 158, 11, 0.35);
+                            box-shadow: 0 0 12px rgba(100, 116, 139, 0.25);
+                            border-color: rgba(100, 116, 139, 0.35);
                         }
                         50% {
-                            box-shadow: 0 0 22px rgba(245, 158, 11, 0.5);
-                            border-color: rgba(245, 158, 11, 0.8);
+                            box-shadow: 0 0 22px rgba(100, 116, 139, 0.5);
+                            border-color: rgba(100, 116, 139, 0.8);
                         }
                     }
                     .pending-pulse-card {
-                        animation: pulse-glow-amber 2.5s infinite ease-in-out;
+                        animation: pulse-glow-dark 2.5s infinite ease-in-out;
                     }
                     @keyframes pulse-glow-row {
                         0%, 100% {
-                            border-right-color: rgba(245, 158, 11, 0.3);
-                            background-color: rgba(245, 158, 11, 0.01);
+                            border-right-color: rgba(100, 116, 139, 0.3);
+                            background-color: rgba(100, 116, 139, 0.01);
                         }
                         50% {
-                            border-right-color: rgba(245, 158, 11, 0.85);
-                            background-color: rgba(245, 158, 11, 0.04);
+                            border-right-color: rgba(100, 116, 139, 0.85);
+                            background-color: rgba(100, 116, 139, 0.04);
                         }
                     }
                     .pending-pulse-row {
@@ -392,18 +392,23 @@ export default function ApprovalsIndex() {
                 {/* Dashboard Stats */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {[
-                        { label: 'بانتظار الاعتماد', value: statsPending, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', glow: 'bg-amber-500/5 dark:bg-amber-500/10' },
+                        { label: 'بانتظار الاعتماد', value: statsPending, icon: Clock, color: 'text-dark-700 dark:text-dark-300', bg: 'bg-dark-100 dark:bg-dark-900/40', glow: 'bg-dark-500/5 dark:bg-dark-500/10' },
                         { label: 'تمت الموافقة', value: statsApproved, icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', glow: 'bg-emerald-500/5 dark:bg-emerald-500/10' },
-                        { label: 'مرفوضة', value: statsRejected, icon: XCircle, color: 'text-rose-650 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-500/10', glow: 'bg-rose-500/5 dark:bg-rose-550/10' },
+                        { label: 'مرفوضة', value: statsRejected, icon: XCircle, color: 'text-accent-600 dark:text-accent-400', bg: 'bg-accent-50 dark:bg-accent-500/10', glow: 'bg-accent-500/5 dark:bg-accent-500/10' },
                         { label: 'إجمالي الطلبات', value: statsTotal, icon: FileText, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-500/10', glow: 'bg-primary-500/5 dark:bg-primary-500/10' }
                     ].map((stat, idx) => (
                         <div key={idx} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#5b8a2d_1.2px,transparent_1.2px)] [background-size:16px_16px]">
-                            <div className="absolute top-0 right-0 left-0 h-1 bg-transparent group-hover:bg-primary-500/20 transition-colors" />
+                            <div className={`absolute top-0 right-0 left-0 h-1 bg-gradient-to-r ${
+                                idx === 0 ? 'from-dark-400 to-dark-600' :
+                                idx === 1 ? 'from-emerald-400 to-emerald-600' :
+                                idx === 2 ? 'from-accent-400 to-accent-600' :
+                                'from-primary-400 to-primary-600'
+                            } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                             <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glow} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
                             
                             <div className="relative z-10 min-w-0">
                                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">{stat.label}</p>
-                                <h3 className="text-2xl font-black text-slate-850 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
+                                <h3 className="text-2xl font-black text-slate-855 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
                             </div>
                             <div className={`relative z-10 w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}>
                                 <stat.icon size={20} strokeWidth={2.5} />

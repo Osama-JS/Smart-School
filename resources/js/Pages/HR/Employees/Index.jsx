@@ -6,7 +6,7 @@ import {
     MoreVertical, Edit2, Trash2, X, Check, Users, Calendar, 
     AlertTriangle, LayoutGrid, List, Download, Printer, RotateCcw,
     ArrowUpDown, ArrowUp, ArrowDown, UserCheck, UserX, CheckCircle2,
-    XCircle, ChevronDown
+    XCircle, ChevronDown, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
@@ -234,12 +234,76 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
 
     const empData = employees?.data ?? [];
 
-    const statCards = [
-        { label: 'إجمالي الموظفين', value: stats?.total ?? 0, icon: Users, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-500/10', glowColor: 'bg-primary-500/5 dark:bg-primary-500/10', borderAccent: 'border-primary-500/20' },
-        { label: 'الموظفون النشطون', value: stats?.active ?? 0, icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', glowColor: 'bg-emerald-500/5 dark:bg-emerald-500/10', borderAccent: 'border-emerald-500/20' },
-        { label: 'الموظفون المعطلون', value: stats?.inactive ?? 0, icon: XCircle, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-500/10', glowColor: 'bg-rose-500/5 dark:bg-rose-500/10', borderAccent: 'border-rose-500/20' },
-        { label: 'المعينون هذا الشهر', value: stats?.new_hires ?? 0, icon: Calendar, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', glowColor: 'bg-amber-500/5 dark:bg-amber-500/10', borderAccent: 'border-amber-500/20' },
-    ];
+    const statCards = stats ? [
+        {
+            title: 'إجمالي الموظفين',
+            value: stats.total ?? 0,
+            icon: Users,
+            color: 'primary',
+            iconBg: 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400',
+            progressWidth: '100%',
+            progressColor: 'bg-gradient-to-r from-primary-400 to-primary-600',
+            glowBg: 'bg-primary-500/5',
+            hoverBorder: 'hover:border-primary-200 dark:hover:border-primary-800/30',
+            topLineHover: 'group-hover:bg-primary-500/20',
+            ringColor: 'border-primary-500/20',
+            badgeClass: 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 border-primary-100/30 dark:border-primary-500/20',
+            badgeIcon: <ArrowUpRight size={10} strokeWidth={3} />,
+            badgeText: '100%',
+            subText: 'من إجمالي موظفي المدرسة'
+        },
+        {
+            title: 'الموظفون النشطون',
+            value: stats.active ?? 0,
+            icon: CheckCircle2,
+            color: 'emerald',
+            iconBg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400',
+            progressWidth: stats.total > 0 ? `${((stats.active / stats.total) * 100).toFixed(1)}%` : '0%',
+            progressColor: 'bg-gradient-to-r from-emerald-400 to-emerald-600',
+            glowBg: 'bg-emerald-500/5',
+            hoverBorder: 'hover:border-emerald-200 dark:hover:border-emerald-800/30',
+            topLineHover: 'group-hover:bg-emerald-500/20',
+            ringColor: 'border-emerald-500/20',
+            badgeClass: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-100/30 dark:border-emerald-500/20',
+            badgeIcon: <ArrowUpRight size={10} strokeWidth={3} />,
+            badgeText: stats.total > 0 ? `${((stats.active / stats.total) * 100).toFixed(0)}%` : '0%',
+            subText: 'نسبة الموظفين النشطين'
+        },
+        {
+            title: 'الموظفون المعطلون',
+            value: stats.inactive ?? 0,
+            icon: XCircle,
+            color: 'accent',
+            iconBg: 'bg-accent-50 text-accent-600 dark:bg-accent-950/20 dark:text-accent-400',
+            progressWidth: stats.total > 0 ? `${((stats.inactive / stats.total) * 100).toFixed(1)}%` : '0%',
+            progressColor: 'bg-gradient-to-r from-accent-400 to-accent-600',
+            glowBg: 'bg-accent-500/5',
+            hoverBorder: 'hover:border-accent-200 dark:hover:border-accent-800/30',
+            topLineHover: 'group-hover:bg-accent-500/20',
+            ringColor: 'border-accent-500/20',
+            badgeClass: 'bg-accent-50 dark:bg-accent-500/10 text-accent-700 dark:text-accent-400 border-accent-100/20 dark:border-accent-500/20',
+            badgeIcon: <ArrowDownRight size={10} strokeWidth={3} />,
+            badgeText: stats.total > 0 ? `${((stats.inactive / stats.total) * 100).toFixed(0)}%` : '0%',
+            subText: 'نسبة الموظفين المعطلين'
+        },
+        {
+            title: 'المعينون هذا الشهر',
+            value: stats.new_hires ?? 0,
+            icon: Calendar,
+            color: 'dark',
+            iconBg: 'bg-dark-100 text-dark-700 dark:bg-dark-900/40 dark:text-dark-300',
+            progressWidth: stats.total > 0 ? `${((stats.new_hires / stats.total) * 100).toFixed(1)}%` : '0%',
+            progressColor: 'bg-gradient-to-r from-dark-500 to-dark-700 dark:from-dark-400 dark:to-dark-600',
+            glowBg: 'bg-dark-500/5',
+            hoverBorder: 'hover:border-dark-300 dark:hover:border-dark-800/30',
+            topLineHover: 'group-hover:bg-dark-500/20',
+            ringColor: 'border-dark-500/20',
+            badgeClass: 'bg-dark-100 dark:bg-dark-500/10 text-dark-800 dark:text-dark-300 border-dark-200/30 dark:border-dark-500/20',
+            badgeIcon: <ArrowUpRight size={10} strokeWidth={3} />,
+            badgeText: stats.total > 0 ? `${((stats.new_hires / stats.total) * 100).toFixed(0)}%` : '0%',
+            subText: 'نسبة التعيينات الجديدة'
+        }
+    ] : [];
 
     const hasActiveFilters = 
         searchValue !== '' ||
@@ -300,22 +364,43 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                 </div>
 
                 {/* Stats Dashboard */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                    {statCards.map((stat, idx) => (
-                        <div key={idx} className={`bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-100 dark:border-slate-800 p-5 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px]`}>
-                            <div className="absolute top-0 right-0 left-0 h-1 bg-transparent group-hover:bg-primary-500/20 transition-colors" />
-                            <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glowColor} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
-                            
-                            <div className="relative z-10 min-w-0">
-                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">{stat.label}</p>
-                                <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
+                {stats && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+                        {statCards.map((stat, index) => (
+                            <div key={index} className={`bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.015)] dark:shadow-none hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#f1f5f9_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:16px_16px] ${stat.hoverBorder}`}>
+                                {/* Glowing ambient light */}
+                                <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glowBg} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
+                                <div className={`absolute top-0 right-0 left-0 h-1 bg-transparent ${stat.topLineHover} transition-colors`} />
+
+                                <div className="relative z-10 flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">{stat.title}</p>
+                                        <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 leading-none font-mono tracking-tight">{stat.value}</h3>
+                                    </div>
+                                    <div className={`relative h-11 w-11 rounded-2xl ${stat.iconBg} flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-all duration-350 group-hover:scale-110 group-hover:-rotate-3`}>
+                                        {/* Double ring hover overlay */}
+                                        <span className={`absolute inset-0 rounded-2xl border ${stat.ringColor} scale-100 group-hover:scale-125 opacity-0 group-hover:opacity-100 transition-all duration-300`} />
+                                        <stat.icon size={20} strokeWidth={2.5} />
+                                    </div>
+                                </div>
+                                
+                                {/* Progress bar and trend badge */}
+                                <div className="relative z-10 space-y-2.5 mt-1">
+                                    <div className="w-full bg-slate-100/80 dark:bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                                        <div className={`h-full rounded-full transition-all duration-1000 ease-out ${stat.progressColor}`} style={{ width: stat.progressWidth }} />
+                                    </div>
+                                    <div className="flex items-center justify-between text-[10px] font-bold">
+                                        <div className={`inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full border ${stat.badgeClass}`}>
+                                            {stat.badgeIcon}
+                                            <span>{stat.badgeText}</span>
+                                        </div>
+                                        <span className="text-slate-400 dark:text-slate-505">{stat.subText}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div className={`relative z-10 w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}>
-                                <stat.icon size={20} strokeWidth={2.5} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Search & Filter Panel */}
                 <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm">

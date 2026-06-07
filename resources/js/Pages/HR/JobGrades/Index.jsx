@@ -3,7 +3,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
     Search, Plus, ShieldCheck, Star, Users, Edit2, Trash2,
-    MoreVertical, X, Check, AlertTriangle, Save, SlidersHorizontal, RotateCcw, Award
+    MoreVertical, X, Check, AlertTriangle, Save, SlidersHorizontal, RotateCcw, Award, ChevronDown
 } from 'lucide-react';
 
 // ─── Modal Component ───────────────────────────────────────────────────────────
@@ -279,7 +279,8 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
             {/* ── Stats Section ── */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {/* Stat 1: Total Grades */}
-                <div className="relative overflow-hidden bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl shadow-sm hover:shadow-md transition-all group">
+                <div className="relative overflow-hidden bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 group cursor-default">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-400 to-primary-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 pointer-events-none" />
                     <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1.2px,transparent_1.2px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
                     <div className="absolute -left-6 -top-6 w-24 h-24 bg-primary-500/5 rounded-full blur-xl pointer-events-none" />
                     <div className="flex items-center justify-between">
@@ -294,270 +295,288 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
                 </div>
 
                 {/* Stat 2: Average Level */}
-                <div className="relative overflow-hidden bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl shadow-sm hover:shadow-md transition-all group">
+                <div className="relative overflow-hidden bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 group cursor-default">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-dark-400 to-dark-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 pointer-events-none" />
                     <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1.2px,transparent_1.2px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
-                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-amber-500/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-dark-500/5 rounded-full blur-xl pointer-events-none" />
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs font-bold text-slate-400 dark:text-slate-500">متوسط المستوى الوظيفي</p>
                             <h3 className="text-2xl font-black text-slate-800 dark:text-white mt-1 font-mono tracking-tight">{stats?.average_level ?? 0}</h3>
                         </div>
-                        <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-450 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-all">
+                        <div className="w-12 h-12 rounded-2xl bg-dark-100 dark:bg-dark-900/40 text-dark-700 dark:text-dark-300 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-all">
                             <Star size={22} strokeWidth={2.5} className="fill-current" />
                         </div>
                     </div>
                 </div>
 
                 {/* Stat 3: Total Employees */}
-                <div className="relative overflow-hidden bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl shadow-sm hover:shadow-md transition-all group">
+                <div className="relative overflow-hidden bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 group cursor-default">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 pointer-events-none" />
                     <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1.2px,transparent_1.2px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
-                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-blue-500/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-emerald-500/5 rounded-full blur-xl pointer-events-none" />
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs font-bold text-slate-400 dark:text-slate-500">الموظفون المسجلون بالدرجات</p>
                             <h3 className="text-2xl font-black text-slate-800 dark:text-white mt-1 font-mono tracking-tight">{stats?.total_employees ?? 0}</h3>
                         </div>
-                        <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-all">
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-all">
                             <Users size={22} strokeWidth={2.5} />
                         </div>
                     </div>
                 </div>
 
                 {/* Stat 4: Max Level */}
-                <div className="relative overflow-hidden bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl shadow-sm hover:shadow-md transition-all group">
+                <div className="relative overflow-hidden bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 group cursor-default">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-accent-400 to-accent-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 pointer-events-none" />
                     <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1.2px,transparent_1.2px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
-                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-rose-500/5 rounded-full blur-xl pointer-events-none" />
+                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-accent-500/5 rounded-full blur-xl pointer-events-none" />
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs font-bold text-slate-400 dark:text-slate-500">أعلى مستوى وظيفي</p>
                             <h3 className="text-2xl font-black text-slate-800 dark:text-white mt-1 font-mono tracking-tight">{stats?.max_level ?? 0}</h3>
                         </div>
-                        <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-all">
+                        <div className="w-12 h-12 rounded-2xl bg-accent-50 dark:bg-accent-950/30 text-accent-600 dark:text-accent-400 flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-all">
                             <Award size={22} strokeWidth={2.5} />
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── Search & Filter Controls ── */}
-            <div className="mb-6 flex flex-col gap-4">
-                {/* Search input with toggle filters */}
-                <div className="flex items-center gap-3">
-                    <div className="group relative max-w-md flex-1 flex items-center bg-slate-100/60 dark:bg-slate-900/50 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 focus-within:bg-white dark:focus-within:bg-[#121820] border border-transparent dark:border-slate-800 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-primary-500/10 rounded-2xl transition-all p-1">
-                        <div className="flex-1 relative flex items-center">
-                            <Search size={18} className="absolute right-3.5 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 group-focus-within:scale-110 transition-all duration-300" />
-                            <input
-                                ref={searchInputRef}
-                                type="text"
-                                placeholder="ابحث عن درجة وظيفية..."
-                                className="w-full bg-transparent border-none pr-10 pl-10 py-2.5 text-sm outline-none text-dark-900 dark:text-slate-100 font-bold"
-                                value={searchValue}
-                                onChange={e => handleSearch(e.target.value)}
-                            />
-                            {!searchValue && (
-                                <kbd className="absolute left-3.5 px-1.5 py-0.5 text-[10px] font-sans font-bold text-slate-400 dark:text-slate-500 bg-slate-200/60 dark:bg-slate-800 border border-slate-300/40 dark:border-slate-700/60 rounded pointer-events-none group-focus-within:opacity-0 transition-opacity duration-200">
-                                    /
-                                </kbd>
-                            )}
-                            {searchValue && (
-                                <button
-                                    type="button"
-                                    onClick={() => handleSearch('')}
-                                    className="absolute left-3 p-1 rounded-lg text-slate-450 dark:text-slate-500 hover:bg-slate-200/60 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 transition-all active:scale-90"
-                                >
-                                    <X size={14} strokeWidth={2.5} />
-                                </button>
-                            )}
-                        </div>
+            {/* ── Search & Filter Panel ── */}
+            <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm mb-6 no-print">
+                {/* Search and Toggle Filters */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="relative flex-1 max-w-md group">
+                        <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder="ابحث عن درجة وظيفية... (اضغط / للتركيز)"
+                            className="w-full bg-slate-50/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-12 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                            value={searchValue}
+                            onChange={e => handleSearch(e.target.value)}
+                        />
+                        {searchValue && (
+                            <button
+                                type="button"
+                                onClick={() => handleSearch('')}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-650 transition-all"
+                            >
+                                <X size={14} />
+                            </button>
+                        )}
+                        {!searchValue && (
+                            <kbd className="absolute left-4 top-1/2 -translate-y-1/2 px-1.5 py-0.5 bg-slate-200/60 dark:bg-slate-800 text-[10px] text-slate-500 dark:text-slate-400 rounded border border-slate-300 dark:border-slate-700 font-bold font-sans group-focus-within:opacity-0 transition-opacity">
+                                /
+                            </kbd>
+                        )}
                     </div>
 
-                    {/* Advanced Filter Toggle Button */}
-                    <button
-                        onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                        className={`h-12 px-4 rounded-2xl text-sm font-bold border transition-all duration-200 flex items-center gap-2 cursor-pointer ${
-                            showAdvancedFilters || activeFiltersCount > 0
-                                ? 'bg-primary-50 border-primary-200 dark:border-primary-900/30 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400'
-                                : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/60'
-                        }`}
-                    >
-                        <SlidersHorizontal size={15} />
-                        <span>تصفية</span>
-                        {activeFiltersCount > 0 && (
-                            <span className="w-5 h-5 rounded-full bg-primary-500 text-white text-[10px] flex items-center justify-center font-bold">
-                                {activeFiltersCount}
-                            </span>
+                    <div className="flex items-center gap-3 flex-wrap">
+                        {/* Advanced Filter Toggle Button */}
+                        <button
+                            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold transition-all border cursor-pointer ${
+                                showAdvancedFilters || activeFiltersCount > 0
+                                    ? 'bg-primary-500 text-white border-primary-500 shadow-sm'
+                                    : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900'
+                            }`}
+                        >
+                            <SlidersHorizontal size={16} />
+                            <span>تصفية متقدمة</span>
+                            {activeFiltersCount > 0 && (
+                                <span className={`w-5 h-5 rounded-full text-[10px] flex items-center justify-center font-bold ${
+                                    showAdvancedFilters || activeFiltersCount > 0
+                                        ? 'bg-white text-primary-600'
+                                        : 'bg-primary-500 text-white'
+                                }`}>
+                                    {activeFiltersCount}
+                                </span>
+                            )}
+                            <ChevronDown size={14} className={`transform transition-transform ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {(searchValue || activeFiltersCount > 0) && (
+                            <button
+                                onClick={handleClearFilters}
+                                className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold text-accent-600 dark:text-accent-400 bg-accent-50/50 dark:bg-accent-500/10 hover:bg-accent-100/60 dark:hover:bg-accent-500/20 transition-all border border-accent-100 dark:border-accent-500/10 cursor-pointer"
+                            >
+                                <RotateCcw size={16} />
+                                <span>إعادة تعيين</span>
+                            </button>
                         )}
-                    </button>
+                    </div>
                 </div>
 
                 {/* Advanced Inline Filter Panel */}
                 {showAdvancedFilters && (
-                    <div className="p-6 bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 rounded-3xl shadow-sm relative animate-scale-in">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-5">
-                            {/* 1. Level Range Category */}
-                            <div className="flex flex-col gap-1.5 text-right">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">فئة المستوى</label>
-                                <select 
-                                    value={levelFilter} 
-                                    onChange={e => {
-                                        setLevelFilter(e.target.value);
-                                        applyFilters({ level_range: e.target.value, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: sortBy });
-                                    }}
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="all">الكل</option>
-                                    <option value="executive">مستوى قيادي / تنفيذي (10 - 15)</option>
-                                    <option value="supervisory">مستوى إشرافي (5 - 9)</option>
-                                    <option value="entry">مستوى تشغيلي (1 - 4)</option>
-                                </select>
-                            </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mt-5 pt-5 border-t border-slate-100 dark:border-slate-800 animate-slide-down">
+                        {/* 1. Level Range Category */}
+                        <div className="flex flex-col gap-1.5 text-right">
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">فئة المستوى</label>
+                            <select 
+                                value={levelFilter} 
+                                onChange={e => {
+                                    setLevelFilter(e.target.value);
+                                    applyFilters({ level_range: e.target.value, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: sortBy });
+                                }}
+                                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
+                            >
+                                <option value="all">الكل</option>
+                                <option value="executive">مستوى قيادي / تنفيذي (10 - 15)</option>
+                                <option value="supervisory">مستوى إشرافي (5 - 9)</option>
+                                <option value="entry">مستوى تشغيلي (1 - 4)</option>
+                            </select>
+                        </div>
 
-                            {/* 2. Precise Min Level */}
-                            <div className="flex flex-col gap-1.5 text-right">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">الحد الأدنى للمستوى</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="15"
-                                    value={minLevel}
-                                    onChange={e => handleMinLevelChange(e.target.value)}
-                                    placeholder="مثال: 1"
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2 text-sm font-bold text-slate-750 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all"
-                                />
-                            </div>
+                        {/* 2. Precise Min Level */}
+                        <div className="flex flex-col gap-1.5 text-right">
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">الحد الأدنى للمستوى</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="15"
+                                value={minLevel}
+                                onChange={e => handleMinLevelChange(e.target.value)}
+                                placeholder="مثال: 1"
+                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2 text-sm font-bold text-slate-750 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all"
+                            />
+                        </div>
 
-                            {/* 3. Precise Max Level */}
-                            <div className="flex flex-col gap-1.5 text-right">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">الحد الأقصى للمستوى</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="15"
-                                    value={maxLevel}
-                                    onChange={e => handleMaxLevelChange(e.target.value)}
-                                    placeholder="مثال: 15"
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2 text-sm font-bold text-slate-755 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all"
-                                />
-                            </div>
+                        {/* 3. Precise Max Level */}
+                        <div className="flex flex-col gap-1.5 text-right">
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">الحد الأقصى للمستوى</label>
+                            <input
+                                type="number"
+                                min="1"
+                                max="15"
+                                value={maxLevel}
+                                onChange={e => handleMaxLevelChange(e.target.value)}
+                                placeholder="مثال: 15"
+                                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2 text-sm font-bold text-slate-755 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all"
+                            />
+                        </div>
 
-                            {/* 4. Employee Density */}
-                            <div className="flex flex-col gap-1.5 text-right">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">كثافة الموظفين</label>
-                                <select 
-                                    value={staffFilter} 
-                                    onChange={e => {
-                                        setStaffFilter(e.target.value);
-                                        applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: e.target.value, sort_by: sortBy });
-                                    }}
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="all">الكل</option>
-                                    <option value="empty">درجات شاغرة (0 موظف)</option>
-                                    <option value="low">كثافة منخفضة (1 - 5 موظفين)</option>
-                                    <option value="medium">كثافة متوسطة (6 - 15 موظفاً)</option>
-                                    <option value="high">كثافة عالية (16+ موظفاً)</option>
-                                </select>
-                            </div>
+                        {/* 4. Employee Density */}
+                        <div className="flex flex-col gap-1.5 text-right">
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">كثافة الموظفين</label>
+                            <select 
+                                value={staffFilter} 
+                                onChange={e => {
+                                    setStaffFilter(e.target.value);
+                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: e.target.value, sort_by: sortBy });
+                                }}
+                                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
+                            >
+                                <option value="all">الكل</option>
+                                <option value="empty">درجات شاغرة (0 موظف)</option>
+                                <option value="low">كثافة منخفضة (1 - 5 موظفين)</option>
+                                <option value="medium">كثافة متوسطة (6 - 15 موظفاً)</option>
+                                <option value="high">كثافة عالية (16+ موظفاً)</option>
+                            </select>
+                        </div>
 
-                            {/* 5. Sort By */}
-                            <div className="flex flex-col gap-1.5 text-right">
-                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ترتيب حسب</label>
-                                <select 
-                                    value={sortBy} 
-                                    onChange={e => {
-                                        setSortBy(e.target.value);
-                                        applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: e.target.value });
-                                    }}
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                >
-                                    <option value="all">المستوى الوظيفي (الأعلى أولاً)</option>
-                                    <option value="level_asc">المستوى الوظيفي (الأقل أولاً)</option>
-                                    <option value="name_asc">الاسم (أبجدي تصاعدي)</option>
-                                    <option value="name_desc">الاسم (أبجدي تنازلي)</option>
-                                    <option value="employees_desc">عدد الموظفين (الأكثر أولاً)</option>
-                                    <option value="employees_asc">عدد الموظفين (الأقل أولاً)</option>
-                                </select>
-                            </div>
+                        {/* 5. Sort By */}
+                        <div className="flex flex-col gap-1.5 text-right">
+                            <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ترتيب حسب</label>
+                            <select 
+                                value={sortBy} 
+                                onChange={e => {
+                                    setSortBy(e.target.value);
+                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: e.target.value });
+                                }}
+                                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
+                            >
+                                <option value="all">المستوى الوظيفي (الأعلى أولاً)</option>
+                                <option value="level_asc">المستوى الوظيفي (الأقل أولاً)</option>
+                                <option value="name_asc">الاسم (أبجدي تصاعدي)</option>
+                                <option value="name_desc">الاسم (أبجدي تنازلي)</option>
+                                <option value="employees_desc">عدد الموظفين (الأكثر أولاً)</option>
+                                <option value="employees_asc">عدد الموظفين (الأقل أولاً)</option>
+                            </select>
                         </div>
                     </div>
                 )}
 
                 {/* Active Filter Badges */}
                 {(searchValue || levelFilter !== 'all' || minLevel !== '' || maxLevel !== '' || staffFilter !== 'all' || sortBy !== 'all') && (
-                    <div className="flex items-center justify-between flex-wrap gap-3 p-4 bg-slate-50/50 dark:bg-slate-900/10 rounded-2xl border border-slate-100 dark:border-primary-500/5">
-                        <div className="flex items-center gap-2 flex-wrap text-xs font-bold text-slate-500 dark:text-slate-400" dir="rtl">
-                            <span>المرشحات النشطة:</span>
-                            {searchValue && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
-                                    <span>البحث: "{searchValue}"</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => handleSearch('')} />
-                                </span>
-                            )}
-                            {levelFilter !== 'all' && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
-                                    <span>النطاق: {
-                                        levelFilter === 'executive' ? 'قيادي (10-15)' :
-                                        levelFilter === 'supervisory' ? 'إشرافي (5-9)' : 'تشغيلي (1-4)'
-                                    }</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
-                                        setLevelFilter('all');
-                                        applyFilters({ level_range: 'all', min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: sortBy });
-                                    }} />
-                                </span>
-                            )}
-                            {minLevel !== '' && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
-                                    <span>الحد الأدنى للمستوى: {minLevel}</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
-                                        setMinLevel('');
-                                        applyFilters({ level_range: levelFilter, min_level: '', max_level: maxLevel, staff_range: staffFilter, sort_by: sortBy });
-                                    }} />
-                                </span>
-                            )}
-                            {maxLevel !== '' && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
-                                    <span>الحد الأقصى للمستوى: {maxLevel}</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
-                                        setMaxLevel('');
-                                        applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: '', staff_range: staffFilter, sort_by: sortBy });
-                                    }} />
-                                </span>
-                            )}
-                            {staffFilter !== 'all' && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
-                                    <span>الكثافة: {
-                                        staffFilter === 'empty' ? 'شاغرة (0)' :
-                                        staffFilter === 'low' ? 'منخفضة (1-5)' :
-                                        staffFilter === 'medium' ? 'متوسطة (6-15)' : 'عالية (16+)'
-                                    }</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
-                                        setStaffFilter('all');
-                                        applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: 'all', sort_by: sortBy });
-                                    }} />
-                                </span>
-                            )}
-                            {sortBy !== 'all' && (
-                                <span className="inline-flex items-center gap-1 bg-white dark:bg-[#121820] text-slate-750 dark:text-slate-350 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-slate-800/80">
-                                    <span>الترتيب: {
-                                        sortBy === 'level_asc' ? 'المستوى تصاعدياً' :
-                                        sortBy === 'name_asc' ? 'الاسم تصاعدياً' :
-                                        sortBy === 'name_desc' ? 'الاسم تنازلياً' :
-                                        sortBy === 'employees_desc' ? 'الموظفين الأكثر أولاً' : 'الموظفين الأقل أولاً'
-                                    }</span>
-                                    <X size={12} className="cursor-pointer text-slate-400 hover:text-slate-650" onClick={() => {
-                                        setSortBy('all');
-                                        applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: 'all' });
-                                    }} />
-                                </span>
-                            )}
-                        </div>
-                        <button
-                            onClick={handleClearFilters}
-                            className="text-xs font-extrabold text-accent-500 hover:text-accent-600 flex items-center gap-1 px-3 py-1.5 rounded-xl hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-all active:scale-95 cursor-pointer"
-                        >
-                            <RotateCcw size={12} />
-                            <span>إعادة ضبط المرشحات</span>
-                        </button>
+                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        {searchValue && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-xl border border-primary-100 dark:border-primary-500/20">
+                                <span>البحث: "{searchValue}"</span>
+                                <button onClick={() => handleSearch('')} className="hover:text-accent-500 transition-colors">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {levelFilter !== 'all' && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-xl border border-primary-100 dark:border-primary-500/20">
+                                <span>النطاق: {
+                                    levelFilter === 'executive' ? 'قيادي (10-15)' :
+                                    levelFilter === 'supervisory' ? 'إشرافي (5-9)' : 'تشغيلي (1-4)'
+                                }</span>
+                                <button onClick={() => {
+                                    setLevelFilter('all');
+                                    applyFilters({ level_range: 'all', min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: sortBy });
+                                }} className="hover:text-accent-500 transition-colors">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {minLevel !== '' && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-xl border border-primary-100 dark:border-primary-500/20">
+                                <span>الحد الأدنى: {minLevel}</span>
+                                <button onClick={() => {
+                                    setMinLevel('');
+                                    applyFilters({ level_range: levelFilter, min_level: '', max_level: maxLevel, staff_range: staffFilter, sort_by: sortBy });
+                                }} className="hover:text-accent-500 transition-colors">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {maxLevel !== '' && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-xl border border-primary-100 dark:border-primary-500/20">
+                                <span>الحد الأقصى: {maxLevel}</span>
+                                <button onClick={() => {
+                                    setMaxLevel('');
+                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: '', staff_range: staffFilter, sort_by: sortBy });
+                                }} className="hover:text-accent-500 transition-colors">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {staffFilter !== 'all' && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-xl border border-primary-100 dark:border-primary-500/20">
+                                <span>الكثافة: {
+                                    staffFilter === 'empty' ? 'شاغرة (0)' :
+                                    staffFilter === 'low' ? 'منخفضة (1-5)' :
+                                    staffFilter === 'medium' ? 'متوسطة (6-15)' : 'عالية (16+)'
+                                }</span>
+                                <button onClick={() => {
+                                    setStaffFilter('all');
+                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: 'all', sort_by: sortBy });
+                                }} className="hover:text-accent-500 transition-colors">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
+                        {sortBy !== 'all' && (
+                            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-xs font-bold rounded-xl border border-primary-100 dark:border-primary-500/20">
+                                <span>الترتيب: {
+                                    sortBy === 'level_asc' ? 'المستوى تصاعدياً' :
+                                    sortBy === 'name_asc' ? 'الاسم تصاعدياً' :
+                                    sortBy === 'name_desc' ? 'الاسم تنازلياً' :
+                                    sortBy === 'employees_desc' ? 'الموظفين الأكثر' : 'الموظفين الأقل'
+                                }</span>
+                                <button onClick={() => {
+                                    setSortBy('all');
+                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: 'all' });
+                                }} className="hover:text-accent-500 transition-colors">
+                                    <X size={12} />
+                                </button>
+                            </span>
+                        )}
                     </div>
                 )}
             </div>

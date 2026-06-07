@@ -49,14 +49,21 @@ const StatusBadge = ({ status }) => {
 };
 
 // ── Stat Card ─────────────────────────────────────────────────
-const StatCard = ({ icon: Icon, label, value, color, bg }) => {
+const StatCard = ({ icon: Icon, label, value, color, bg, idx }) => {
     let glowBg = 'bg-slate-500/5';
     if (color.includes('primary')) glowBg = 'bg-primary-500/5';
-    else if (color.includes('warning')) glowBg = 'bg-warning-500/5';
+    else if (color.includes('emerald')) glowBg = 'bg-emerald-500/5';
     else if (color.includes('accent')) glowBg = 'bg-accent-500/5';
+    else if (color.includes('dark')) glowBg = 'bg-dark-500/5';
 
     return (
         <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 p-5 rounded-3xl shadow-sm hover:shadow-lg dark:hover:shadow-black/20 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default">
+            <div className={`absolute top-0 right-0 left-0 h-1 bg-gradient-to-r ${
+                idx === 0 ? 'from-primary-400 to-primary-600' :
+                idx === 1 ? 'from-dark-400 to-dark-600' :
+                idx === 2 ? 'from-accent-400 to-accent-600' :
+                'from-emerald-400 to-emerald-600'
+            } opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
             <div className={`absolute -left-6 -top-6 w-24 h-24 ${glowBg} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
             
             <div className="relative z-10 min-w-0">
@@ -343,7 +350,7 @@ const AttendanceAnalyticsWidget = ({ stats, weeklyTrend = [] }) => {
                 data={weeklyTrend}
                 dataKey="late"
                 title="تأخير الموظفين هذا الأسبوع"
-                strokeColor="#f59e0b"
+                strokeColor="#475569"
                 icon={Clock}
                 statsValue={stats?.late}
             />
@@ -353,7 +360,7 @@ const AttendanceAnalyticsWidget = ({ stats, weeklyTrend = [] }) => {
                 data={weeklyTrend}
                 dataKey="absent"
                 title="غياب الموظفين هذا الأسبوع"
-                strokeColor="#f43f5e"
+                strokeColor="#e11d48"
                 icon={UserX}
                 statsValue={stats?.absent}
             />
@@ -905,10 +912,10 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard icon={UserCheck}   label="حاضرون"  value={stats?.present} color="text-primary-600 dark:text-primary-400" bg="bg-primary-50 dark:bg-primary-950/20" />
-                    <StatCard icon={AlertTriangle} label="متأخرون" value={stats?.late}    color="text-warning-600 dark:text-warning-400" bg="bg-warning-50/50 dark:bg-warning-950/20" />
-                    <StatCard icon={UserX}        label="غائبون"  value={stats?.absent}  color="text-accent-600 dark:text-accent-400"  bg="bg-accent-50 dark:bg-accent-950/20" />
-                    <StatCard icon={TimerOff}     label="بعذر"    value={stats?.excused} color="text-slate-600 dark:text-slate-450"   bg="bg-slate-50 dark:bg-slate-900/40" />
+                    <StatCard icon={UserCheck}   label="حاضرون"  value={stats?.present} color="text-primary-600 dark:text-primary-400" bg="bg-primary-50 dark:bg-primary-950/20" idx={0} />
+                    <StatCard icon={AlertTriangle} label="متأخرون" value={stats?.late}    color="text-dark-700 dark:text-dark-300" bg="bg-dark-100 dark:bg-dark-900/40" idx={1} />
+                    <StatCard icon={UserX}        label="غائبون"  value={stats?.absent}  color="text-accent-600 dark:text-accent-400"  bg="bg-accent-50 dark:bg-accent-950/20" idx={2} />
+                    <StatCard icon={TimerOff}     label="بعذر"    value={stats?.excused} color="text-emerald-600 dark:text-emerald-400"   bg="bg-emerald-50 dark:bg-emerald-950/20" idx={3} />
                 </div>
 
                 {/* Records Table Card */}

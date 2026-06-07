@@ -38,43 +38,43 @@ export default function Dashboard() {
     const stats = [
         { 
             title: 'إجمالي الطلاب', value: '1,247', change: '+12%', up: true,
-            icon: GraduationCap, color: 'emerald',
-            iconBg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-405',
-            progress: 'w-[84%] bg-gradient-to-r from-emerald-400 to-emerald-600',
+            icon: GraduationCap, color: 'primary',
+            iconBg: 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400',
+            progress: 'w-[84%] bg-gradient-to-r from-primary-400 to-primary-600',
+            glowBg: 'bg-primary-500/5',
+            hoverBorder: 'hover:border-primary-200 dark:hover:border-primary-800/30',
+            topLineHover: 'group-hover:bg-primary-500/20',
+            ringColor: 'border-primary-500/20'
+        },
+        { 
+            title: 'المعلمين', value: '86', change: '+3%', up: true,
+            icon: Users, color: 'emerald',
+            iconBg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400',
+            progress: 'w-[91%] bg-gradient-to-r from-emerald-400 to-emerald-600',
             glowBg: 'bg-emerald-500/5',
             hoverBorder: 'hover:border-emerald-200 dark:hover:border-emerald-800/30',
             topLineHover: 'group-hover:bg-emerald-500/20',
             ringColor: 'border-emerald-500/20'
         },
         { 
-            title: 'المعلمين', value: '86', change: '+3%', up: true,
-            icon: Users, color: 'indigo',
-            iconBg: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400',
-            progress: 'w-[91%] bg-gradient-to-r from-indigo-400 to-indigo-600',
-            glowBg: 'bg-indigo-500/5',
-            hoverBorder: 'hover:border-indigo-200 dark:hover:border-indigo-800/30',
-            topLineHover: 'group-hover:bg-indigo-500/20',
-            ringColor: 'border-indigo-500/20'
-        },
-        { 
             title: 'المواد الدراسية', value: '24', change: '0%', up: true,
-            icon: BookOpen, color: 'amber',
-            iconBg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400',
-            progress: 'w-[100%] bg-gradient-to-r from-amber-400 to-amber-600',
-            glowBg: 'bg-amber-500/5',
-            hoverBorder: 'hover:border-amber-200 dark:hover:border-amber-800/30',
-            topLineHover: 'group-hover:bg-amber-500/20',
-            ringColor: 'border-amber-500/20'
+            icon: BookOpen, color: 'dark',
+            iconBg: 'bg-dark-100 text-dark-700 dark:bg-dark-900/40 dark:text-dark-300',
+            progress: 'w-[100%] bg-gradient-to-r from-dark-500 to-dark-700 dark:from-dark-400 dark:to-dark-600',
+            glowBg: 'bg-dark-500/5',
+            hoverBorder: 'hover:border-dark-300 dark:hover:border-dark-800/30',
+            topLineHover: 'group-hover:bg-dark-500/20',
+            ringColor: 'border-dark-500/20'
         },
         { 
             title: 'نسبة الحضور اليوم', value: '94.2%', change: '-1.3%', up: false,
-            icon: CheckSquare, color: 'teal',
-            iconBg: 'bg-teal-50 text-teal-600 dark:bg-teal-950/20 dark:text-teal-400',
-            progress: 'w-[94.2%] bg-gradient-to-r from-teal-400 to-teal-600',
-            glowBg: 'bg-teal-500/5',
-            hoverBorder: 'hover:border-teal-200 dark:hover:border-teal-800/30',
-            topLineHover: 'group-hover:bg-teal-500/20',
-            ringColor: 'border-teal-500/20'
+            icon: CheckSquare, color: 'accent',
+            iconBg: 'bg-accent-50 text-accent-600 dark:bg-accent-950/20 dark:text-accent-400',
+            progress: 'w-[94.2%] bg-gradient-to-r from-accent-400 to-accent-600',
+            glowBg: 'bg-accent-500/5',
+            hoverBorder: 'hover:border-accent-200 dark:hover:border-accent-800/30',
+            topLineHover: 'group-hover:bg-accent-500/20',
+            ringColor: 'border-accent-500/20'
         },
     ];
 
