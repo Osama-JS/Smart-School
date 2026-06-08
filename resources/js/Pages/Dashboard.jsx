@@ -7,7 +7,7 @@ import {
     Clock, AlertCircle, Activity, Sparkles, BookCheck, ShieldAlert
 } from 'lucide-react';
 
-export default function Dashboard() {
+export default function Dashboard({ stats: backendStats, recentActivities, weeklyData }) {
     const { auth, logo_url } = usePage().props;
 
     // Live digital clock state
@@ -24,20 +24,15 @@ export default function Dashboard() {
 
     // Interactive Weekly Attendance state
     const [hoveredDay, setHoveredDay] = useState(null);
-    const weeklyData = [
-        { day: 'الأحد', percentage: 95.2, present: 1187, absent: 60, x: 50, y: 110 },
-        { day: 'الإثنين', percentage: 96.8, present: 1207, absent: 40, x: 150, y: 70 },
-        { day: 'الثلاثاء', percentage: 94.2, present: 1174, absent: 73, x: 250, y: 130 }, // Today
-        { day: 'الأربعاء', percentage: 95.5, present: 1191, absent: 56, x: 350, y: 100 },
-        { day: 'الخميس', percentage: 93.8, present: 1170, absent: 77, x: 450, y: 140 }
-    ];
+    // Using backend weekly data if available, fallback to empty array
+    // weeklyData is already provided by props
 
     // Activity Filter state
     const [activityFilter, setActivityFilter] = useState('all'); // 'all', 'success', 'info', 'warning'
 
     const stats = [
         { 
-            title: 'إجمالي الطلاب', value: '1,247', change: '+12%', up: true,
+            title: 'إجمالي الطلاب', value: backendStats?.students || '0', change: '+0%', up: true,
             icon: GraduationCap, color: 'primary',
             iconBg: 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400',
             progress: 'w-[84%] bg-gradient-to-r from-primary-400 to-primary-600',
@@ -47,7 +42,7 @@ export default function Dashboard() {
             ringColor: 'border-primary-500/20'
         },
         { 
-            title: 'المعلمين', value: '86', change: '+3%', up: true,
+            title: 'المعلمين', value: backendStats?.teachers || '0', change: '+0%', up: true,
             icon: Users, color: 'emerald',
             iconBg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400',
             progress: 'w-[91%] bg-gradient-to-r from-emerald-400 to-emerald-600',
@@ -57,7 +52,7 @@ export default function Dashboard() {
             ringColor: 'border-emerald-500/20'
         },
         { 
-            title: 'المواد الدراسية', value: '24', change: '0%', up: true,
+            title: 'المواد الدراسية', value: backendStats?.subjects || '0', change: '0%', up: true,
             icon: BookOpen, color: 'dark',
             iconBg: 'bg-dark-100 text-dark-700 dark:bg-dark-900/40 dark:text-dark-300',
             progress: 'w-[100%] bg-gradient-to-r from-dark-500 to-dark-700 dark:from-dark-400 dark:to-dark-600',
@@ -67,10 +62,10 @@ export default function Dashboard() {
             ringColor: 'border-dark-500/20'
         },
         { 
-            title: 'نسبة الحضور اليوم', value: '94.2%', change: '-1.3%', up: false,
+            title: 'نسبة الحضور اليوم', value: backendStats?.attendance_percentage || '0%', change: '0%', up: false,
             icon: CheckSquare, color: 'accent',
             iconBg: 'bg-accent-50 text-accent-600 dark:bg-accent-950/20 dark:text-accent-400',
-            progress: 'w-[94.2%] bg-gradient-to-r from-accent-400 to-accent-600',
+            progress: `w-[${parseFloat(backendStats?.attendance_percentage || 0)}%] bg-gradient-to-r from-accent-400 to-accent-600`,
             glowBg: 'bg-accent-500/5',
             hoverBorder: 'hover:border-accent-200 dark:hover:border-accent-800/30',
             topLineHover: 'group-hover:bg-accent-500/20',
@@ -78,13 +73,7 @@ export default function Dashboard() {
         },
     ];
 
-    const recentActivities = [
-        { text: 'تم تسجيل 15 طالب جديد في الفصل الدراسي الثالث', time: 'منذ 5 دقائق', type: 'success' },
-        { text: 'تم تحديث جدول الحصص للمرحلة المتوسطة', time: 'منذ 30 دقيقة', type: 'info' },
-        { text: 'تنبيه: 3 معلمين لم يرفعوا دفاتر التحضير للأسبوع الحالي', time: 'منذ ساعة', type: 'warning' },
-        { text: 'تم رصد درجات الشهر الأول لمادة الرياضيات', time: 'منذ ساعتين', type: 'success' },
-        { text: 'تم تقديم طلب إجازة اضطرارية من المعلم أحمد محمد', time: 'منذ 3 ساعات', type: 'info' },
-    ];
+    // Using recentActivities from props
 
     const filteredActivities = recentActivities.filter(act => {
         if (activityFilter === 'all') return true;
@@ -255,7 +244,7 @@ export default function Dashboard() {
                                     </defs>
                                 </svg>
                                 <div className="absolute text-center">
-                                    <p className="text-2xl font-black text-slate-800 dark:text-white font-mono leading-none">94.2%</p>
+                                    <p className="text-2xl font-black text-slate-800 dark:text-white font-mono leading-none">{backendStats?.attendance_percentage || '0%'}</p>
                                     <p className="text-[9px] text-slate-400 dark:text-slate-500 font-black mt-2">معدل الحضور</p>
                                 </div>
                             </div>
@@ -263,20 +252,20 @@ export default function Dashboard() {
                             <div className="space-y-3.5 pt-2">
                                 <div>
                                     <div className="flex items-center justify-between mb-1.5 text-xs font-semibold">
-                                        <span className="text-slate-500 font-bold">الطلاب الحاضرون</span>
-                                        <span className="font-bold text-primary-700 dark:text-primary-400">1,174 (94%)</span>
+                                        <span className="text-slate-500 font-bold">الموظفون الحاضرون</span>
+                                        <span className="font-bold text-primary-700 dark:text-primary-400">{backendStats?.present_today || '0'}</span>
                                     </div>
                                     <div className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100/50 dark:border-transparent h-2 rounded-full overflow-hidden">
-                                        <div className="bg-gradient-to-r from-primary-400 to-primary-600 h-full rounded-full transition-all duration-700" style={{ width: '94%' }} />
+                                        <div className="bg-gradient-to-r from-primary-400 to-primary-600 h-full rounded-full transition-all duration-700" style={{ width: backendStats?.attendance_percentage || '0%' }} />
                                     </div>
                                 </div>
                                 <div>
                                     <div className="flex items-center justify-between mb-1.5 text-xs font-semibold">
-                                        <span className="text-slate-500 font-bold">الطلاب الغائبون</span>
-                                        <span className="font-bold text-rose-600 dark:text-rose-400">73 (6%)</span>
+                                        <span className="text-slate-500 font-bold">الموظفون الغائبون</span>
+                                        <span className="font-bold text-rose-600 dark:text-rose-400">{backendStats?.absent_today || '0'}</span>
                                     </div>
                                     <div className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100/50 dark:border-transparent h-2 rounded-full overflow-hidden">
-                                        <div className="bg-gradient-to-r from-rose-400 to-rose-600 h-full rounded-full transition-all duration-700" style={{ width: '6%' }} />
+                                        <div className="bg-gradient-to-r from-rose-400 to-rose-600 h-full rounded-full transition-all duration-700" style={{ width: (100 - parseFloat(backendStats?.attendance_percentage || 0)) + '%' }} />
                                     </div>
                                 </div>
                             </div>

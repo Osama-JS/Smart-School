@@ -3,8 +3,9 @@ import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
     Search, Plus, ShieldCheck, Star, Users, Edit2, Trash2,
-    MoreVertical, X, Check, AlertTriangle, Save, SlidersHorizontal, RotateCcw, Award, ChevronDown
+    MoreVertical, X, Check, AlertTriangle, Save, SlidersHorizontal, RotateCcw, Award, ChevronDown, Network, LayoutGrid
 } from 'lucide-react';
+import OrgChart from './OrgChart';
 
 // ─── Modal Component ───────────────────────────────────────────────────────────
 function Modal({ isOpen, onClose, title, children }) {
@@ -104,13 +105,13 @@ function Pagination({ data }) {
 
 // ─── Level Badge Styles ────────────────────────────────────────────────────────
 const levelColor = (level) => {
-    if (level >= 9) return 'bg-accent-50 text-accent-700 border-accent-100 dark:bg-accent-950/30 dark:text-accent-400 dark:border-accent-900/30';
-    if (level >= 5) return 'bg-primary-50 text-primary-700 border-primary-100 dark:bg-primary-950/30 dark:text-primary-400 dark:border-primary-900/30';
+    if (level <= 4) return 'bg-accent-50 text-accent-700 border-accent-100 dark:bg-accent-950/30 dark:text-accent-400 dark:border-accent-900/30';
+    if (level <= 9) return 'bg-primary-50 text-primary-700 border-primary-100 dark:bg-primary-950/30 dark:text-primary-400 dark:border-primary-900/30';
     return 'bg-slate-50 text-slate-650 border-slate-200 dark:bg-slate-900/60 dark:text-slate-300 dark:border-slate-800/80';
 };
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-export default function JobGradesIndex({ jobGrades, stats, filters }) {
+export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filters, branches = [], isAdmin = false }) {
     const { flash } = usePage().props;
 
     const [searchValue, setSearch]  = useState(filters?.search ?? '');
@@ -120,11 +121,12 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
     const [staffFilter, setStaffFilter] = useState(filters?.staff_range ?? 'all');
     const [sortBy, setSortBy]       = useState(filters?.sort_by ?? 'all');
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    const [viewMode, setViewMode]   = useState('cards'); // 'cards' | 'tree'
 
     const [showAdd, setShowAdd]     = useState(false);
     const [editGrade, setEditGrade] = useState(null);
     const [deleteGrade, setDeleteGrade] = useState(null);
-    const [form, setForm]           = useState({ name: '', level: '' });
+    const [form, setForm]           = useState({ name: '', level: '', branch_id: '', parent_id: '' });
     const [processing, setProcessing] = useState(false);
     const searchTimeout = useRef(null);
     const searchInputRef = useRef(null);
@@ -207,8 +209,8 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
         (staffFilter !== 'all' ? 1 : 0) + 
         (sortBy !== 'all' ? 1 : 0);
 
-    const openAdd  = () => { setForm({ name: '', level: '' }); setShowAdd(true); };
-    const openEdit = (g) => { setForm({ name: g.name, level: g.level }); setEditGrade(g); };
+    const openAdd  = () => { setForm({ name: '', level: '', branch_id: '', parent_id: '' }); setShowAdd(true); };
+    const openEdit = (g) => { setForm({ name: g.name, level: g.level, branch_id: g.branch_id || '', parent_id: g.parent?.id || '' }); setEditGrade(g); };
 
     const handleStore = (e) => {
         e.preventDefault();
@@ -242,6 +244,13 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
             {flash?.success && (
                 <div className="mb-6 flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-3.5 rounded-2xl text-sm font-semibold animate-slide-down">
                     <Check size={18} className="text-emerald-600" /> {flash.success}
+                </div>
+            )}
+            
+            {/* Flash Error */}
+            {flash?.error && (
+                <div className="mb-6 flex items-center gap-3 bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3.5 rounded-2xl text-sm font-semibold animate-slide-down">
+                    <AlertTriangle size={18} className="text-rose-600" /> {flash.error}
                 </div>
             )}
 
@@ -374,6 +383,32 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
                     </div>
 
                     <div className="flex items-center gap-3 flex-wrap">
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center bg-slate-100 dark:bg-slate-900 rounded-2xl p-1 border border-slate-200 dark:border-slate-800">
+                            <button
+                                onClick={() => setViewMode('cards')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                    viewMode === 'cards' 
+                                        ? 'bg-white dark:bg-[#121820] text-primary-600 dark:text-primary-400 shadow-sm' 
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                <LayoutGrid size={16} />
+                                <span className="hidden sm:inline">البطاقات</span>
+                            </button>
+                            <button
+                                onClick={() => setViewMode('tree')}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                    viewMode === 'tree' 
+                                        ? 'bg-white dark:bg-[#121820] text-primary-600 dark:text-primary-400 shadow-sm' 
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                <Network size={16} />
+                                <span className="hidden sm:inline">الهيكل التنظيمي</span>
+                            </button>
+                        </div>
+
                         {/* Advanced Filter Toggle Button */}
                         <button
                             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -581,8 +616,12 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
                 )}
             </div>
 
-            {/* ── Cards Grid ── */}
-            {gradesData.length === 0 ? (
+            {/* ── Content Area ── */}
+            {viewMode === 'tree' ? (
+                <OrgChart data={allGrades} />
+            ) : (
+                <>
+                    {gradesData.length === 0 ? (
                 <div className="text-center py-16 text-slate-450 dark:text-slate-500 bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 rounded-3xl shadow-sm">
                     <ShieldCheck size={40} className="mx-auto mb-3 opacity-40 text-primary-500" />
                     <p className="font-bold">لا توجد درجات وظيفية مطابقة للمرشحات</p>
@@ -654,9 +693,17 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
                                     
                                     <div className="relative z-10 mb-6 transition-transform duration-300 group-hover:translate-x-1">
                                         <h3 className="text-lg font-black text-dark-900 dark:text-white mb-2.5 group-hover:text-primary-650 dark:group-hover:text-primary-400 transition-colors">{grade.name}</h3>
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${levelColor(grade.level)}`}>
-                                            <Star size={12} className="fill-current" /> مستوى {grade.level}
-                                        </span>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${levelColor(grade.level)}`}>
+                                                <Star size={12} className="fill-current" /> مستوى {grade.level}
+                                            </span>
+                                            {grade.parent && (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700">
+                                                    <span>تبعية لـ:</span>
+                                                    <span className="text-primary-600 dark:text-primary-400">{grade.parent.name}</span>
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     
                                     <div className="relative z-10 flex items-center justify-between pt-4 border-t border-slate-100/80 dark:border-slate-800/80">
@@ -677,6 +724,8 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
                     </div>
                     <Pagination data={jobGrades} />
                 </div>
+            )}
+            </>
             )}
 
             {/* ── Add Modal ── */}
@@ -709,6 +758,19 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
                                 required
                             />
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">يرفع تقاريره إلى (التبعية)</label>
+                        <select
+                            className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl px-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-semibold cursor-pointer"
+                            value={form.parent_id}
+                            onChange={e => setForm({ ...form, parent_id: e.target.value })}
+                        >
+                            <option value="">بدون تبعية (مستوى قيادي أعلى)</option>
+                            {allGrades.filter(g => g.level < (parseInt(form.level) || 16)).map(g => (
+                                <option key={g.id} value={g.id}>{g.name} (مستوى {g.level})</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <button type="button" onClick={() => setShowAdd(false)} className="px-5 py-2.5 text-sm font-bold text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
@@ -750,6 +812,19 @@ export default function JobGradesIndex({ jobGrades, stats, filters }) {
                                 required
                             />
                         </div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">يرفع تقاريره إلى (التبعية)</label>
+                        <select
+                            className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl px-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-semibold cursor-pointer"
+                            value={form.parent_id}
+                            onChange={e => setForm({ ...form, parent_id: e.target.value })}
+                        >
+                            <option value="">بدون تبعية (مستوى قيادي أعلى)</option>
+                            {allGrades.filter(g => g.id !== editGrade?.id && g.level < (parseInt(form.level) || 16)).map(g => (
+                                <option key={g.id} value={g.id}>{g.name} (مستوى {g.level})</option>
+                            ))}
+                        </select>
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <button type="button" onClick={() => setEditGrade(null)} className="px-5 py-2.5 text-sm font-bold text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>

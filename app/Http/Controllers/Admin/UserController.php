@@ -15,7 +15,14 @@ class UserController extends Controller
 {
     public function index(Request $request)
     {
+        $userAuth = auth()->user();
+        $isAdmin = $userAuth && $userAuth->role && in_array($userAuth->role->name, ['مدير عام', 'مدير النظام']);
+
         $query = User::with('role', 'branch');
+
+        if (!$isAdmin) {
+            $query->where('branch_id', $userAuth->branch_id);
+        }
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -90,23 +97,31 @@ class UserController extends Controller
         $roles    = Role::select('id', 'name')->orderBy('name')->get();
         $branches = Branch::select('id', 'name')->orderBy('name')->get();
 
+        $baseStatQuery = User::query();
+        if (!$isAdmin) {
+            $baseStatQuery->where('branch_id', $userAuth->branch_id);
+        }
+
         $stats = [
-            'total'    => User::count(),
-            'teachers' => User::whereHas('role', function ($q) {
+            'total'    => (clone $baseStatQuery)->count(),
+            'teachers' => (clone $baseStatQuery)->whereHas('role', function ($q) {
                 $q->where('name', 'like', '%معلم%');
             })->count(),
-            'admins'   => User::whereHas('role', function ($q) {
+            'admins'   => (clone $baseStatQuery)->whereHas('role', function ($q) {
                 $q->where('name', 'like', '%مدير%');
             })->count(),
-            'inactive' => User::where('is_active', 0)->count(),
+            'inactive' => (clone $baseStatQuery)->where('is_active', 0)->count(),
         ];
+
+
 
         return Inertia::render('Users/Index', [
             'users'    => $users,
             'roles'    => $roles,
-            'branches' => $branches,
+            'branches' => $isAdmin ? $branches : [],
             'filters'  => $request->only(['search', 'role_id', 'status', 'branch_id', 'created_at', 'sort_by', 'sort_dir']),
             'stats'    => $stats,
+            'isAdmin'  => $isAdmin,
         ]);
     }
 
@@ -125,11 +140,17 @@ class UserController extends Controller
 
     public function quickUpdate(Request $request, User $user)
     {
+        $isAdmin = auth()->user()->role && in_array(auth()->user()->role->name, ['مدير عام', 'مدير النظام']);
+        
         $validated = $request->validate([
             'is_active' => ['nullable', 'boolean'],
-            'branch_id' => ['nullable', 'exists:branches,id'],
+            'branch_id' => [$isAdmin ? 'nullable' : '', $isAdmin ? 'exists:branches,id' : ''],
             'role_id'   => ['nullable', 'exists:roles,id'],
         ]);
+
+        if (!$isAdmin && $user->branch_id !== auth()->user()->branch_id) {
+            abort(403, 'لا يمكنك تعديل مستخدم خارج فرعك');
+        }
 
         $user->update(array_filter($validated, function ($value) {
             return $value !== null;
@@ -149,8 +170,20 @@ class UserController extends Controller
 
         $ids = $validated['ids'];
         $action = $validated['action'];
+        
+        $isAdmin = auth()->user()->role && in_array(auth()->user()->role->name, ['مدير عام', 'مدير النظام']);
+        if (!$isAdmin) {
+            // Verify all IDs belong to manager's branch
+            $validIds = User::whereIn('id', $ids)->where('branch_id', auth()->user()->branch_id)->pluck('id')->toArray();
+            if (count($validIds) !== count($ids)) {
+                abort(403, 'بعض المستخدمين لا يتبعون لفرعك');
+            }
+        }
 
         if ($action === 'delete') {
+            if (in_array(auth()->user()->id, $ids)) {
+                abort(403, 'لا يمكنك حذف حسابك الشخصي ضمن العملية المجمعة');
+            }
             User::whereIn('id', $ids)->delete();
             $message = 'تم حذف المستخدمين المحددين بنجاح';
         } elseif ($action === 'activate') {
@@ -169,12 +202,14 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        $isAdmin = auth()->user()->role && in_array(auth()->user()->role->name, ['مدير عام', 'مدير النظام']);
+        
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
             'username'  => ['required', 'string', 'max:255', 'unique:users'],
             'password'  => ['required', 'string', 'min:8'],
             'role_id'   => ['required', 'exists:roles,id'],
-            'branch_id' => ['required', 'exists:branches,id'],
+            'branch_id' => [$isAdmin ? 'required' : 'nullable', $isAdmin ? 'exists:branches,id' : ''],
             'is_active' => ['boolean'],
         ]);
 
@@ -183,7 +218,7 @@ class UserController extends Controller
             'username'  => $validated['username'],
             'password'  => Hash::make($validated['password']),
             'role_id'   => $validated['role_id'],
-            'branch_id' => $validated['branch_id'],
+            'branch_id' => $isAdmin ? $validated['branch_id'] : auth()->user()->branch_id,
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
@@ -192,22 +227,31 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        $isAdmin = auth()->user()->role && in_array(auth()->user()->role->name, ['مدير عام', 'مدير النظام']);
+        
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
             'username'  => ['required', 'string', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password'  => ['nullable', 'string', 'min:8'],
             'role_id'   => ['required', 'exists:roles,id'],
-            'branch_id' => ['required', 'exists:branches,id'],
+            'branch_id' => [$isAdmin ? 'required' : 'nullable', $isAdmin ? 'exists:branches,id' : ''],
             'is_active' => ['boolean'],
         ]);
+
+        if (!$isAdmin && $user->branch_id !== auth()->user()->branch_id) {
+            abort(403, 'لا يمكنك تعديل مستخدم خارج فرعك');
+        }
 
         $data = [
             'name'      => $validated['name'],
             'username'  => $validated['username'],
             'role_id'   => $validated['role_id'],
-            'branch_id' => $validated['branch_id'],
             'is_active' => $validated['is_active'] ?? $user->is_active,
         ];
+        
+        if ($isAdmin) {
+            $data['branch_id'] = $validated['branch_id'];
+        }
 
         if (!empty($validated['password'])) {
             $data['password'] = Hash::make($validated['password']);
@@ -220,25 +264,42 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        $userAuth = auth()->user();
+        if ($user->id === $userAuth->id) {
+            abort(403, 'لا يمكنك حذف حسابك الشخصي');
+        }
+
+        $isAdmin = $userAuth->role && in_array($userAuth->role->name, ['مدير عام', 'مدير النظام']);
+        if (!$isAdmin && $user->branch_id !== $userAuth->branch_id) {
+            abort(403, 'لا يمكنك حذف مستخدم خارج فرعك');
+        }
+
         $user->delete();
         return redirect()->route('users.index')->with('success', 'تم حذف المستخدم بنجاح');
     }
 
     public function create()
     {
+        $userAuth = auth()->user();
+        $isAdmin = $userAuth && $userAuth->role && in_array($userAuth->role->name, ['مدير عام', 'مدير النظام']);
+        
         $roles    = Role::select('id', 'name')->get();
-        $branches = Branch::select('id', 'name')->get();
-        return Inertia::render('Users/Create', compact('roles', 'branches'));
+        $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];
+        return Inertia::render('Users/Create', compact('roles', 'branches', 'isAdmin'));
     }
 
     public function edit(User $user)
     {
+        $userAuth = auth()->user();
+        $isAdmin = $userAuth && $userAuth->role && in_array($userAuth->role->name, ['مدير عام', 'مدير النظام']);
+        
         $roles    = Role::select('id', 'name')->get();
-        $branches = Branch::select('id', 'name')->get();
+        $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];
         return Inertia::render('Users/Edit', [
             'user'     => $user,
             'roles'    => $roles,
             'branches' => $branches,
+            'isAdmin'  => $isAdmin,
         ]);
     }
 }

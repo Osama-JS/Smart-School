@@ -29,11 +29,18 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $isAdmin = false;
+        if ($user && clone $user->loadMissing('role')) {
+            $isAdmin = $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            'isAdmin' => $isAdmin,
             'logo_url' => asset('images/logo.png') . '?v=' . (file_exists(public_path('images/logo.png')) ? filemtime(public_path('images/logo.png')) : time()),
         ];
     }

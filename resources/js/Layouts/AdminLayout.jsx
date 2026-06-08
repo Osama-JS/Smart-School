@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 export default function AdminLayout({ children, activeMenu = 'المستخدمون' }) {
-    const { auth, logo_url } = usePage().props;
+    const { auth, logo_url, isAdmin } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [sidebarClosing, setSidebarClosing] = useState(false);
@@ -79,6 +79,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         }, 250);
     }, []);
 
+    // Check if user is system admin - reading from global prop
+
     const menuGroups = [
         {
             title: 'القائمة الرئيسية',
@@ -92,7 +94,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'الأقسام والإدارات', icon: BookOpen, url: route('hr.departments') },
                 { name: 'الدرجات الوظيفية', icon: ShieldCheck, url: route('hr.job-grades') },
-                { name: 'الفروع', icon: Store, url: route('hr.branches') },
+                ...(isAdmin ? [{ name: 'الفروع', icon: Store, url: route('hr.branches') }] : []),
                 { name: 'الشفتات', icon: Clock, url: route('hr.shifts') },
                 { name: 'دليل الموظفين', icon: UserPlus, url: route('hr.employees') },
             ]
@@ -108,6 +110,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'تقديم طلب', icon: FileText, url: route('hr.requests') },
                 { name: 'صندوق الموافقات', icon: Bell, url: route('hr.approvals') },
+                { name: 'التقارير', icon: FileText, url: route('reports.index') },
+                { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates') },
+                { name: 'الإجتماعات', icon: Users, url: route('meetings.index') },
             ]
         },
         {
@@ -140,13 +145,13 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'المخالفات والإبداع', icon: AlertTriangle },
             ]
         },
-        {
+        ...(isAdmin ? [{
             title: 'الإدارة',
             items: [
                 { name: 'إدارة الصلاحيات', icon: Shield, url: route('admin.permissions') },
                 { name: 'إعدادات النظام', icon: Settings, url: route('admin.settings') },
             ]
-        },
+        }] : []),
     ];
 
     // Bottom navigation items

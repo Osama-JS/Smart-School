@@ -83,12 +83,18 @@ class DepartmentController extends Controller
             'total_employees' => \App\Models\Employee::count(),
         ];
 
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $branches = $isAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
+
         return Inertia::render('HR/Departments/Index', [
             'departments'   => $departments,
             'tree'          => $tree,
             'parentOptions' => $parentOptions,
             'stats'         => $stats,
             'filters'       => $request->only(['search', 'type', 'parent_filter_id', 'staff_range', 'sort_by']),
+            'branches'      => $branches,
+            'isAdmin'       => $isAdmin,
         ]);
     }
 
@@ -97,6 +103,7 @@ class DepartmentController extends Controller
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
             'parent_id' => 'nullable|exists:departments,id',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         Department::create($validated);
@@ -109,6 +116,7 @@ class DepartmentController extends Controller
         $validated = $request->validate([
             'name'      => 'required|string|max:255',
             'parent_id' => 'nullable|exists:departments,id',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $department->update($validated);

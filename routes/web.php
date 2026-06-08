@@ -10,9 +10,7 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -32,15 +30,24 @@ Route::middleware('auth')->group(function () {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
-    // ── Permissions & Roles ──
-    Route::get('/admin/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'index'])->name('admin.permissions');
-    Route::post('/admin/roles', [\App\Http\Controllers\Admin\PermissionController::class, 'storeRole'])->name('admin.roles.store');
-    Route::delete('/admin/roles/{role}', [\App\Http\Controllers\Admin\PermissionController::class, 'destroyRole'])->name('admin.roles.destroy');
-    Route::post('/admin/roles/{role}/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'syncRolePermissions'])->name('admin.roles.permissions');
+    // ── System Admin Only Routes ──
+    Route::middleware([\App\Http\Middleware\SystemAdminOnly::class])->group(function () {
+        // ── Permissions & Roles ──
+        Route::get('/admin/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'index'])->name('admin.permissions');
+        Route::post('/admin/roles', [\App\Http\Controllers\Admin\PermissionController::class, 'storeRole'])->name('admin.roles.store');
+        Route::delete('/admin/roles/{role}', [\App\Http\Controllers\Admin\PermissionController::class, 'destroyRole'])->name('admin.roles.destroy');
+        Route::post('/admin/roles/{role}/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'syncRolePermissions'])->name('admin.roles.permissions');
 
-    // ── Settings ──
-    Route::get('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings');
-    Route::post('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('admin.settings.update');
+        // ── Settings ──
+        Route::get('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings');
+        Route::post('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('admin.settings.update');
+
+        // ── Branches ──
+        Route::get('/hr/branches', [\App\Http\Controllers\HR\BranchController::class, 'index'])->name('hr.branches');
+        Route::post('/hr/branches', [\App\Http\Controllers\HR\BranchController::class, 'store'])->name('hr.branches.store');
+        Route::put('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'update'])->name('hr.branches.update');
+        Route::delete('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'destroy'])->name('hr.branches.destroy');
+    });
 
     // ── HR Routes ──
     Route::resource('/hr/departments', \App\Http\Controllers\HR\DepartmentController::class)->names([
@@ -66,11 +73,6 @@ Route::middleware('auth')->group(function () {
         'index' => 'hr.approvals'
     ]);
 
-    // ── Branches ──
-    Route::get('/hr/branches', [\App\Http\Controllers\HR\BranchController::class, 'index'])->name('hr.branches');
-    Route::post('/hr/branches', [\App\Http\Controllers\HR\BranchController::class, 'store'])->name('hr.branches.store');
-    Route::put('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'update'])->name('hr.branches.update');
-    Route::delete('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'destroy'])->name('hr.branches.destroy');
 
     // ── Shifts ──
     Route::get('/hr/shifts', [\App\Http\Controllers\HR\ShiftController::class, 'index'])->name('hr.shifts');
@@ -83,6 +85,30 @@ Route::middleware('auth')->group(function () {
     Route::post('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'store'])->name('hr.attendance.store');
     Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
     Route::put('/hr/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceController::class, 'update'])->name('hr.attendance.update');
+    // ── Reports ──
+    Route::resource('/hr/reports/templates', \App\Http\Controllers\HR\ReportTemplateController::class)->names([
+        'index'   => 'reports.templates',
+        'store'   => 'reports.templates.store',
+        'update'  => 'reports.templates.update',
+        'destroy' => 'reports.templates.destroy',
+    ])->except(['create', 'show', 'edit']);
+
+    Route::get('/hr/reports', [\App\Http\Controllers\HR\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/hr/reports/template/{template}', [\App\Http\Controllers\HR\ReportController::class, 'showTemplate'])->name('reports.submit.view');
+    Route::post('/hr/reports/template/{template}', [\App\Http\Controllers\HR\ReportController::class, 'store'])->name('reports.store');
+    Route::get('/hr/reports/{report}', [\App\Http\Controllers\HR\ReportController::class, 'show'])->name('reports.show');
+    Route::post('/hr/reports/{report}/review', [\App\Http\Controllers\HR\ReportController::class, 'review'])->name('reports.review');
+
+    // ── Meetings ──
+    Route::resource('/meetings', \App\Http\Controllers\HR\MeetingController::class)->names([
+        'index'   => 'meetings.index',
+        'store'   => 'meetings.store',
+        'show'    => 'meetings.show',
+        'destroy' => 'meetings.destroy',
+    ])->except(['create', 'edit', 'update']);
+    
+    Route::post('/meetings/{meeting}/attendance', [\App\Http\Controllers\HR\MeetingController::class, 'updateAttendance'])->name('meetings.attendance');
+    Route::post('/meetings/{meeting}/complete', [\App\Http\Controllers\HR\MeetingController::class, 'completeMeeting'])->name('meetings.complete');
 });
 
 require __DIR__.'/auth.php';

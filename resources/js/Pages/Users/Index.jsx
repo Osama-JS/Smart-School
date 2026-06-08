@@ -25,7 +25,7 @@ function Modal({ isOpen, onClose, title, children }) {
 }
 
 // ── Action Menu ───────────────────────────────────────────────────────────────
-function ActionMenu({ user, onDelete, onResetPassword }) {
+function ActionMenu({ user, onDelete, onResetPassword, currentUser }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
     useEffect(() => {
@@ -49,10 +49,12 @@ function ActionMenu({ user, onDelete, onResetPassword }) {
                         className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
                         <Key size={14} className="text-slate-400" /> تعيين كلمة المرور
                     </button>
-                    <button onClick={() => { onDelete(user); setOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-colors">
-                        <Trash2 size={14} /> حذف المستخدم
-                    </button>
+                    {user.id !== currentUser?.id && (
+                        <button onClick={() => { onDelete(user); setOpen(false); }}
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-colors">
+                            <Trash2 size={14} /> حذف المستخدم
+                        </button>
+                    )}
                 </div>
             )}
         </div>
@@ -87,8 +89,8 @@ function Pagination({ data }) {
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
-export default function UsersIndex({ users, roles, branches, filters, stats }) {
-    const { flash } = usePage().props;
+export default function UsersIndex({ users, roles, branches, filters, stats, isAdmin = false }) {
+    const { flash, auth } = usePage().props;
     const [searchValue, setSearch] = useState(filters?.search ?? '');
     const [roleFilter, setRoleFilter] = useState(filters?.role_id ?? '');
     const [statusFilter, setStatusFilter] = useState(filters?.status ?? '');
@@ -690,23 +692,25 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                             </div>
 
                             {/* Branch Filter */}
-                            <div className="group/select flex flex-col">
-                                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الفرع المدرسي</label>
-                                <div className="relative flex items-center">
-                                    <div className="absolute right-4 text-slate-400 dark:text-slate-500 pointer-events-none">
-                                        <Store size={16} />
+                            {isAdmin && (
+                                <div className="group/select flex flex-col">
+                                    <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الفرع المدرسي</label>
+                                    <div className="relative flex items-center">
+                                        <div className="absolute right-4 text-slate-400 dark:text-slate-500 pointer-events-none">
+                                            <Store size={16} />
+                                        </div>
+                                        <select
+                                            className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-10 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all appearance-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700"
+                                            value={branchFilter}
+                                            onChange={e => handleFilterChange(roleFilter, statusFilter, e.target.value, dateFilter)}
+                                        >
+                                            <option value="">كل الفروع</option>
+                                            {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                        </select>
+                                        <ChevronDown size={14} className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
                                     </div>
-                                    <select
-                                        className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-10 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all appearance-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700"
-                                        value={branchFilter}
-                                        onChange={e => handleFilterChange(roleFilter, statusFilter, e.target.value, dateFilter)}
-                                    >
-                                        <option value="">كل الفروع</option>
-                                        {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                    </select>
-                                    <ChevronDown size={14} className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
                                 </div>
-                            </div>
+                            )}
 
                             {/* Date Registered Filter */}
                             <div className="group/select flex flex-col">
@@ -885,7 +889,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                                                             </span>
                                                         )}
                                                     </button>
-                                                    <ActionMenu user={user} onDelete={setShowDel} onResetPassword={setResetUser} />
+                                                    <ActionMenu user={user} onDelete={setShowDel} onResetPassword={setResetUser} currentUser={auth?.user} />
                                                 </div>
                                             </div>
 
@@ -1056,7 +1060,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                                                     
                                                     {/* Action Menu */}
                                                     <td className="px-6 py-4.5 whitespace-nowrap text-center no-print">
-                                                        <ActionMenu user={user} onDelete={setShowDel} onResetPassword={setResetUser} />
+                                                        <ActionMenu user={user} onDelete={setShowDel} onResetPassword={setResetUser} currentUser={auth?.user} />
                                                     </td>
                                                 </tr>
                                             );
@@ -1090,11 +1094,13 @@ export default function UsersIndex({ users, roles, branches, filters, stats }) {
                             <AlertTriangle size={14} className="text-amber-400" />
                             <span>تعطيل</span>
                         </button>
-                        <button onClick={() => setBulkBranchModal(true)}
-                            className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3.5 py-2.5 rounded-xl transition-all">
-                            <Store size={14} className="text-blue-400" />
-                            <span>تغيير الفرع</span>
-                        </button>
+                        {isAdmin && branches?.length > 0 && (
+                            <button onClick={() => setBulkBranchModal(true)}
+                                className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3.5 py-2.5 rounded-xl transition-all">
+                                <Store size={14} className="text-blue-400" />
+                                <span>تغيير الفرع</span>
+                            </button>
+                        )}
                         <button onClick={() => setShowBulkDel(true)}
                             className="flex items-center gap-1.5 text-xs font-bold bg-accent-500/20 hover:bg-accent-500/30 text-accent-400 px-3.5 py-2.5 rounded-xl transition-all">
                             <Trash2 size={14} />

@@ -136,7 +136,7 @@ function Pagination({ data }) {
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-export default function DepartmentsIndex({ departments, tree, parentOptions, stats, filters }) {
+export default function DepartmentsIndex({ departments, tree, parentOptions, stats, filters, branches = [], isAdmin = false }) {
     const { flash } = usePage().props;
 
     const [view, setView]           = useState('grid'); // 'grid' | 'tree'
@@ -150,7 +150,7 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
     const [showAdd, setShowAdd]     = useState(false);
     const [editDept, setEditDept]   = useState(null);
     const [deleteDept, setDeleteDept] = useState(null);
-    const [form, setForm]           = useState({ name: '', parent_id: '' });
+    const [form, setForm]           = useState({ name: '', parent_id: '', branch_id: '' });
     const [processing, setProcessing] = useState(false);
     const searchTimeout = useRef(null);
     const searchInputRef = useRef(null);
@@ -214,8 +214,8 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
         (staffFilter !== 'all' ? 1 : 0) + 
         (sortBy !== 'all' ? 1 : 0);
 
-    const openAdd = () => { setForm({ name: '', parent_id: '' }); setShowAdd(true); };
-    const openEdit = (dept) => { setForm({ name: dept.name, parent_id: dept.parent_id ?? '' }); setEditDept(dept); };
+    const openAdd = () => { setForm({ name: '', parent_id: '', branch_id: '' }); setShowAdd(true); };
+    const openEdit = (dept) => { setForm({ name: dept.name, parent_id: dept.parent_id ?? '', branch_id: dept.branch_id || '' }); setEditDept(dept); };
 
     const handleStore = (e) => {
         e.preventDefault();

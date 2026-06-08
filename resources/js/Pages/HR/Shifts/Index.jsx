@@ -123,7 +123,7 @@ function Pagination({ data }) {
     );
 }
 
-export default function ShiftsIndex({ shifts, filters, stats }) {
+export default function ShiftsIndex({ shifts, filters, stats, branches = [], isAdmin = false }) {
     const { flash } = usePage().props;
 
     const getFilterVal = (key, fallback = '') => {
@@ -142,7 +142,7 @@ export default function ShiftsIndex({ shifts, filters, stats }) {
     const [showAdd, setShowAdd] = useState(false);
     const [editShift, setEditShift] = useState(null);
     const [deleteShift, setDeleteShift] = useState(null);
-    const [form, setForm] = useState({ name: '', start_time: '', end_time: '', grace_period_minutes: 15, is_active: true });
+    const [form, setForm] = useState({ name: '', start_time: '', end_time: '', grace_period_minutes: 15, is_active: true, branch_id: '' });
     const [processing, setProcessing] = useState(false);
     
     const isFirstRender = useRef(true);
@@ -184,14 +184,15 @@ export default function ShiftsIndex({ shifts, filters, stats }) {
         router.get(route('hr.shifts'), {}, { preserveState: true, replace: true });
     };
 
-    const openAdd = () => { setForm({ name: '', start_time: '', end_time: '', grace_period_minutes: 15, is_active: true }); setShowAdd(true); };
+    const openAdd = () => { setForm({ name: '', start_time: '', end_time: '', grace_period_minutes: 15, is_active: true, branch_id: '' }); setShowAdd(true); };
     const openEdit = (s) => { 
         setForm({ 
             name: s.name, 
             start_time: s.start_time.substring(0,5), 
             end_time: s.end_time.substring(0,5), 
             grace_period_minutes: s.grace_period_minutes, 
-            is_active: s.is_active 
+            is_active: s.is_active,
+            branch_id: s.branch_id || ''
         }); 
         setEditShift(s); 
     };
@@ -506,6 +507,18 @@ export default function ShiftsIndex({ shifts, filters, stats }) {
                             className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold font-sans" 
                             value={form.grace_period_minutes} onChange={e => setForm({ ...form, grace_period_minutes: e.target.value })} />
                     </div>
+
+                    {isAdmin && branches.length > 0 && (
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">الفرع التابع له الشفت <span className="text-rose-500">*</span></label>
+                            <select required
+                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold" 
+                                value={form.branch_id} onChange={e => setForm({ ...form, branch_id: e.target.value })}>
+                                <option value="" disabled>-- اختر الفرع --</option>
+                                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                            </select>
+                        </div>
+                    )}
                     
                     <label className="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         <div className="relative flex items-center">
@@ -553,6 +566,18 @@ export default function ShiftsIndex({ shifts, filters, stats }) {
                             className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold font-sans" 
                             value={form.grace_period_minutes} onChange={e => setForm({ ...form, grace_period_minutes: e.target.value })} />
                     </div>
+
+                    {isAdmin && branches.length > 0 && (
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">الفرع التابع له الشفت <span className="text-rose-500">*</span></label>
+                            <select required
+                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold" 
+                                value={form.branch_id} onChange={e => setForm({ ...form, branch_id: e.target.value })}>
+                                <option value="" disabled>-- اختر الفرع --</option>
+                                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                            </select>
+                        </div>
+                    )}
                     
                     <label className="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                         <div className="relative flex items-center">

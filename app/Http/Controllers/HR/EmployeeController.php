@@ -18,6 +18,15 @@ class EmployeeController extends Controller
             ->select('employees.*')
             ->with(['user', 'department', 'jobGrade']);
 
+        // Check if not system admin, restrict to user's branch
+        $user = auth()->user();
+        if ($user && clone $user->loadMissing('role')) {
+            $isAdmin = $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+            if (!$isAdmin) {
+                $query->where('users.branch_id', $user->branch_id);
+            }
+        }
+
         // Apply filters
         if ($request->filled('search')) {
             $search = $request->search;
@@ -78,11 +87,16 @@ class EmployeeController extends Controller
         });
 
         // Calculate Stats
+        $baseStatQuery = Employee::query();
+        if (isset($isAdmin) && !$isAdmin && isset($user)) {
+            $baseStatQuery->whereHas('user', fn($q) => $q->where('branch_id', $user->branch_id));
+        }
+
         $stats = [
-            'total'    => Employee::count(),
-            'active'   => Employee::whereHas('user', fn($q) => $q->where('is_active', 1))->count(),
-            'inactive' => Employee::whereHas('user', fn($q) => $q->where('is_active', 0))->count(),
-            'new_hires'=> Employee::where('hire_date', '>=', now()->subMonth())->count(),
+            'total'    => (clone $baseStatQuery)->count(),
+            'active'   => (clone $baseStatQuery)->whereHas('user', fn($q) => $q->where('is_active', 1))->count(),
+            'inactive' => (clone $baseStatQuery)->whereHas('user', fn($q) => $q->where('is_active', 0))->count(),
+            'new_hires'=> (clone $baseStatQuery)->where('hire_date', '>=', now()->subMonth())->count(),
         ];
 
         $departments = Department::select('id', 'name')->orderBy('name')->get();

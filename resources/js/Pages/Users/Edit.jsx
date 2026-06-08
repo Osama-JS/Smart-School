@@ -1,27 +1,23 @@
 import React, { useState } from 'react';
-import { Head, router, Link, usePage } from '@inertiajs/react';
+import { Head, router, Link, usePage, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { ArrowRight, Save, User, Lock, Shield, Store, ChevronDown, Eye, EyeOff, UserCheck } from 'lucide-react';
 
-export default function UsersEdit({ user, roles, branches }) {
-    const { errors } = usePage().props;
-    const [form, setForm] = useState({
+export default function UsersEdit({ user, roles, branches = [], isAdmin = false }) {
+    const { data, setData, put, processing, errors } = useForm({
         name: user.name || '',
         username: user.username || '',
         password: '',
         role_id: user.role_id || '',
         branch_id: user.branch_id || '',
-        is_active: user.is_active,
+        is_active: user.is_active === 1 || user.is_active === true,
     });
-    const [saving, setSaving] = useState(false);
+    
     const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setSaving(true);
-        router.put(route('users.update', user.id), form, {
-            onFinish: () => setSaving(false),
-        });
+        put(route('users.update', user.id));
     };
 
     return (
@@ -71,7 +67,7 @@ export default function UsersEdit({ user, roles, branches }) {
                                     <input type="text" required
                                         placeholder="الاسم الكامل باللغة العربية"
                                         className={`w-full border rounded-2xl pr-11 pl-4 py-3.5 text-sm outline-none transition-all focus:ring-4 ${errors.name ? 'border-accent-300 focus:ring-accent-500/10 focus:border-accent-400' : 'border-slate-200 focus:ring-primary-500/10 focus:border-primary-400'}`}
-                                        value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                        value={data.name} onChange={e => setData('name', e.target.value)} />
                                 </div>
                                 {errors.name && <p className="text-xs text-accent-500 mt-1">{errors.name}</p>}
                             </div>
@@ -84,7 +80,7 @@ export default function UsersEdit({ user, roles, branches }) {
                                     <input type="text" required dir="ltr"
                                         placeholder="username"
                                         className={`w-full border rounded-2xl pr-11 pl-4 py-3.5 text-sm outline-none transition-all focus:ring-4 ${errors.username ? 'border-accent-300 focus:ring-accent-500/10 focus:border-accent-400' : 'border-slate-200 focus:ring-primary-500/10 focus:border-primary-400'}`}
-                                        value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} />
+                                        value={data.username} onChange={e => setData('username', e.target.value)} />
                                 </div>
                                 {errors.username && <p className="text-xs text-accent-500 mt-1">{errors.username}</p>}
                             </div>
@@ -96,7 +92,7 @@ export default function UsersEdit({ user, roles, branches }) {
                                     <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     <input type={showPassword ? "text" : "password"} minLength="8" dir="ltr" placeholder="اتركه فارغاً للإبقاء على الحالية"
                                         className={`w-full border rounded-2xl pr-11 pl-12 py-3.5 text-sm outline-none transition-all focus:ring-4 ${errors.password ? 'border-accent-300 focus:ring-accent-500/10 focus:border-accent-400' : 'border-slate-200 focus:ring-primary-500/10 focus:border-primary-400'}`}
-                                        value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                                        value={data.password} onChange={e => setData('password', e.target.value)} />
                                     <button type="button" onClick={() => setShowPassword(!showPassword)}
                                         className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-xl">
                                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -114,7 +110,7 @@ export default function UsersEdit({ user, roles, branches }) {
                                     </div>
                                     <select required
                                         className="w-full border border-slate-200 rounded-2xl pr-13 pl-10 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 bg-white transition-all appearance-none cursor-pointer text-slate-700 font-bold hover:border-slate-300"
-                                        value={form.role_id} onChange={e => setForm({ ...form, role_id: e.target.value })}>
+                                        value={data.role_id} onChange={e => setData('role_id', e.target.value)}>
                                         {roles?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                                     </select>
                                     <ChevronDown size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -122,22 +118,25 @@ export default function UsersEdit({ user, roles, branches }) {
                                 {errors.role_id && <p className="text-xs text-accent-500 mt-1">{errors.role_id}</p>}
                             </div>
 
-                            {/* Branch Selection with separator and custom icon */}
-                            <div>
-                                <label className="block text-sm font-bold text-dark-900 mb-2">الفرع <span className="text-accent-500">*</span></label>
-                                <div className="relative flex items-center">
-                                    <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 border-l border-slate-200/80 pl-2.5">
-                                        <Store size={18} />
+                            {/* Branch Selection - Only for Admins */}
+                            {isAdmin && (
+                                <div>
+                                    <label className="block text-sm font-bold text-dark-900 mb-2">الفرع <span className="text-accent-500">*</span></label>
+                                    <div className="relative flex items-center">
+                                        <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 border-l border-slate-200/80 pl-2.5">
+                                            <Store size={18} />
+                                        </div>
+                                        <select required
+                                            className="w-full border border-slate-200 rounded-2xl pr-13 pl-10 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 bg-white transition-all appearance-none cursor-pointer text-slate-700 font-bold hover:border-slate-300"
+                                            value={data.branch_id} onChange={e => setData('branch_id', e.target.value)}>
+                                            <option value="" disabled>اختر الفرع</option>
+                                            {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                                        </select>
+                                        <ChevronDown size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                     </div>
-                                    <select required
-                                        className="w-full border border-slate-200 rounded-2xl pr-13 pl-10 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 bg-white transition-all appearance-none cursor-pointer text-slate-700 font-bold hover:border-slate-300"
-                                        value={form.branch_id} onChange={e => setForm({ ...form, branch_id: e.target.value })}>
-                                        {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                    </select>
-                                    <ChevronDown size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                    {errors.branch_id && <p className="text-xs text-accent-500 mt-1">{errors.branch_id}</p>}
                                 </div>
-                                {errors.branch_id && <p className="text-xs text-accent-500 mt-1">{errors.branch_id}</p>}
-                            </div>
+                            )}
 
                             {/* Custom Toggle Switch for Active Status */}
                             <div className="flex items-center pt-8">
@@ -145,9 +144,9 @@ export default function UsersEdit({ user, roles, branches }) {
                                     <div className="relative">
                                         <input type="checkbox"
                                             className="sr-only"
-                                            checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })} />
-                                        <div className={`w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${form.is_active ? 'bg-primary-500' : 'bg-slate-200'}`} />
-                                        <div className={`absolute top-1 right-1 bg-white w-5 h-5 rounded-full shadow transform transition-transform duration-200 ease-in-out ${form.is_active ? '-translate-x-5' : 'translate-x-0'}`} />
+                                            checked={data.is_active} onChange={e => setData('is_active', e.target.checked)} />
+                                        <div className={`w-12 h-7 rounded-full transition-colors duration-200 ease-in-out ${data.is_active ? 'bg-primary-500' : 'bg-slate-200'}`} />
+                                        <div className={`absolute top-1 right-1 bg-white w-5 h-5 rounded-full shadow transform transition-transform duration-200 ease-in-out ${data.is_active ? '-translate-x-5' : 'translate-x-0'}`} />
                                     </div>
                                     <span className="text-sm font-bold text-slate-700">حساب نشط</span>
                                 </label>
@@ -160,8 +159,8 @@ export default function UsersEdit({ user, roles, branches }) {
                         <Link href={route('users.index')} className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-colors">
                             إلغاء
                         </Link>
-                        <button type="submit" disabled={saving} className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-primary-500 rounded-2xl hover:bg-primary-600 hover:shadow-lg hover:shadow-primary-500/10 transition-all disabled:opacity-60">
-                            <Save size={16} /> {saving ? 'جاري الحفظ...' : 'تحديث البيانات'}
+                        <button type="submit" disabled={processing} className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-primary-500 rounded-2xl hover:bg-primary-600 hover:shadow-lg hover:shadow-primary-500/10 transition-all disabled:opacity-60">
+                            <Save size={16} /> {processing ? 'جاري الحفظ...' : 'تحديث البيانات'}
                         </button>
                     </div>
                 </form>

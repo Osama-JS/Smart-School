@@ -30,6 +30,18 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    href={route('reports.index')}
+                                    active={route().current('reports.index')}
+                                >
+                                    التقارير
+                                </NavLink>
+                                <NavLink
+                                    href={route('reports.templates')}
+                                    active={route().current('reports.templates')}
+                                >
+                                    إدارة قوالب التقارير
+                                </NavLink>
                             </div>
                         </div>
 
@@ -133,6 +145,18 @@ export default function AuthenticatedLayout({ header, children }) {
                             active={route().current('dashboard')}
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('reports.index')}
+                            active={route().current('reports.index')}
+                        >
+                            التقارير
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('reports.templates')}
+                            active={route().current('reports.templates')}
+                        >
+                            إدارة قوالب التقارير
                         </ResponsiveNavLink>
                     </div>
 

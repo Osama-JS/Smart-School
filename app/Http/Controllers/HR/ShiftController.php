@@ -74,6 +74,10 @@ class ShiftController extends Controller
             ->distinct()
             ->count('employee_id');
 
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $branches = $isAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
+
         return Inertia::render('HR/Shifts/Index', [
             'shifts'  => $shifts,
             'filters' => (object) $request->only(['search', 'status', 'min_grace', 'max_grace', 'sort']),
@@ -83,6 +87,8 @@ class ShiftController extends Controller
                 'avg_grace' => $avg_grace,
                 'total_assigned_employees' => $total_assigned_employees,
             ],
+            'branches' => $branches,
+            'isAdmin' => $isAdmin,
         ]);
     }
 
@@ -94,6 +100,7 @@ class ShiftController extends Controller
             'end_time'             => 'required',
             'grace_period_minutes' => 'required|integer|min:0',
             'is_active'            => 'boolean',
+            'branch_id'            => 'nullable|exists:branches,id',
         ]);
 
         Shift::create($validated);
@@ -109,6 +116,7 @@ class ShiftController extends Controller
             'end_time'             => 'required',
             'grace_period_minutes' => 'required|integer|min:0',
             'is_active'            => 'boolean',
+            'branch_id'            => 'nullable|exists:branches,id',
         ]);
 
         $shift->update($validated);
