@@ -88,7 +88,7 @@ class ReportTemplateController extends Controller
             'branch_id' => $branchId,
             'job_grade_id' => $validated['job_grade_id'],
             'name' => $validated['name'],
-            'description' => $validated['description'],
+            'description' => $validated['description'] ?? null,
         ]);
 
         if (!empty($validated['fields'])) {
@@ -106,7 +106,7 @@ class ReportTemplateController extends Controller
         return redirect()->back()->with('success', 'تم إنشاء القالب بنجاح');
     }
 
-    public function update(Request $request, ReportTemplate $reportTemplate)
+    public function update(Request $request, ReportTemplate $template)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -120,10 +120,10 @@ class ReportTemplateController extends Controller
             'fields.*.is_required' => 'boolean',
         ]);
 
-        $reportTemplate->update([
+        $template->update([
             'job_grade_id' => $validated['job_grade_id'],
             'name' => $validated['name'],
-            'description' => $validated['description'],
+            'description' => $validated['description'] ?? null,
         ]);
 
         // If 'fields' key is not present or null, maybe we shouldn't delete existing fields.
@@ -132,10 +132,10 @@ class ReportTemplateController extends Controller
             $fields = $validated['fields'] ?? [];
             $keptFieldIds = collect($fields)->pluck('id')->filter()->toArray();
             
-            $reportTemplate->fields()->whereNotIn('id', $keptFieldIds)->delete();
+            $template->fields()->whereNotIn('id', $keptFieldIds)->delete();
 
             foreach ($fields as $index => $fieldData) {
-                $reportTemplate->fields()->updateOrCreate(
+                $template->fields()->updateOrCreate(
                     ['id' => $fieldData['id'] ?? null],
                     [
                         'name' => $fieldData['name'],
@@ -151,9 +151,9 @@ class ReportTemplateController extends Controller
         return redirect()->back()->with('success', 'تم تحديث القالب بنجاح');
     }
 
-    public function destroy(ReportTemplate $reportTemplate)
+    public function destroy(ReportTemplate $template)
     {
-        $reportTemplate->delete();
+        $template->delete();
         return redirect()->back()->with('success', 'تم حذف القالب بنجاح');
     }
 }

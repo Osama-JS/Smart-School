@@ -31,14 +31,21 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $isAdmin = false;
-        if ($user && clone $user->loadMissing('role')) {
+        $userPermissions = [];
+
+        if ($user) {
+            $user->loadMissing(['role.permissions']);
             $isAdmin = $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+            if ($user->role) {
+                $userPermissions = $user->role->permissions->pluck('name')->toArray();
+            }
         }
 
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user,
+                'permissions' => $userPermissions,
             ],
             'isAdmin' => $isAdmin,
             'logo_url' => asset('images/logo.png') . '?v=' . (file_exists(public_path('images/logo.png')) ? filemtime(public_path('images/logo.png')) : time()),

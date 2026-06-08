@@ -81,28 +81,34 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
 
     // Check if user is system admin - reading from global prop
 
+    const hasPermission = (permissionName) => {
+        if (isAdmin) return true;
+        if (!permissionName) return true;
+        return auth?.permissions?.includes(permissionName);
+    };
+
     const menuGroups = [
         {
             title: 'القائمة الرئيسية',
             items: [
                 { name: 'الرئيسية', icon: Home, url: route('dashboard') },
-                { name: 'المستخدمون', icon: Users, url: route('users.index') },
+                { name: 'المستخدمون', icon: Users, url: route('users.index'), permission: 'إدارة المستخدمين' },
             ]
         },
         {
             title: 'النظام الإداري (HR)',
             items: [
-                { name: 'الأقسام والإدارات', icon: BookOpen, url: route('hr.departments') },
-                { name: 'الدرجات الوظيفية', icon: ShieldCheck, url: route('hr.job-grades') },
+                { name: 'الأقسام والإدارات', icon: BookOpen, url: route('hr.departments'), permission: 'إدارة الأقسام' },
+                { name: 'الدرجات الوظيفية', icon: ShieldCheck, url: route('hr.job-grades'), permission: 'إدارة الدرجات الوظيفية' },
                 ...(isAdmin ? [{ name: 'الفروع', icon: Store, url: route('hr.branches') }] : []),
-                { name: 'الشفتات', icon: Clock, url: route('hr.shifts') },
-                { name: 'دليل الموظفين', icon: UserPlus, url: route('hr.employees') },
+                { name: 'الشفتات', icon: Clock, url: route('hr.shifts'), permission: 'إدارة الموظفين' },
+                { name: 'دليل الموظفين', icon: UserPlus, url: route('hr.employees'), permission: 'إدارة الموظفين' },
             ]
         },
         {
             title: 'الحضور والانصراف',
             items: [
-                { name: 'سجل الحضور', icon: CheckSquare, url: route('hr.attendance') },
+                { name: 'سجل الحضور', icon: CheckSquare, url: route('hr.attendance'), permission: 'إدارة الحضور والانصراف' },
             ]
         },
         {
@@ -110,19 +116,19 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'تقديم طلب', icon: FileText, url: route('hr.requests') },
                 { name: 'صندوق الموافقات', icon: Bell, url: route('hr.approvals') },
-                { name: 'التقارير', icon: FileText, url: route('reports.index') },
-                { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates') },
-                { name: 'الإجتماعات', icon: Users, url: route('meetings.index') },
+                { name: 'التقارير', icon: FileText, url: route('reports.index'), permission: 'إدارة التقارير' },
+                { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates'), permission: 'إدارة قوالب التقارير' },
+                { name: 'الإجتماعات', icon: Users, url: route('meetings.index'), permission: 'إدارة الاجتماعات' },
             ]
         },
         {
             title: 'الشؤون الأكاديمية',
             items: [
                 { name: 'الفصول والمواد', icon: BookOpen },
-                { name: 'جدول الحصص', icon: Calendar },
-                { name: 'جداول الاختبارات', icon: FileText },
-                { name: 'النتائج الشهرية', icon: BarChart },
-                { name: 'الطلاب المسجلين', icon: UserPlus },
+                { name: 'جدول الحصص', icon: Calendar, permission: 'إدارة الجداول' },
+                { name: 'جداول الاختبارات', icon: FileText, permission: 'إدارة الجداول' },
+                { name: 'النتائج الشهرية', icon: BarChart, permission: 'إدارة الدرجات' },
+                { name: 'الطلاب المسجلين', icon: UserPlus, permission: 'إدارة الطلاب' },
             ]
         },
         {
@@ -154,14 +160,21 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         }] : []),
     ];
 
+    const filteredMenuGroups = menuGroups.map(group => ({
+        ...group,
+        items: group.items.filter(item => !item.permission || hasPermission(item.permission))
+    })).filter(group => group.items.length > 0);
+
     // Bottom navigation items
     const bottomNavItems = [
         { name: 'الرئيسية', icon: Home, url: route('dashboard'), key: 'الرئيسية' },
-        { name: 'الموظفين', icon: Users, url: route('hr.employees'), key: 'دليل الموظفين' },
-        { name: 'الحضور', icon: CheckSquare, url: route('hr.attendance'), key: 'سجل الحضور' },
+        { name: 'الموظفين', icon: Users, url: route('hr.employees'), key: 'دليل الموظفين', permission: 'إدارة الموظفين' },
+        { name: 'الحضور', icon: CheckSquare, url: route('hr.attendance'), key: 'سجل الحضور', permission: 'إدارة الحضور والانصراف' },
         { name: 'الطلبات', icon: FileText, url: route('hr.requests'), key: 'تقديم طلب' },
         { name: 'المزيد', icon: Menu, action: 'sidebar', key: '__more' },
     ];
+
+    const filteredBottomNavItems = bottomNavItems.filter(item => !item.permission || hasPermission(item.permission));
 
     const SidebarContent = () => (
         <div className="flex flex-col h-full">
@@ -187,7 +200,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
 
             {/* Menu Groups */}
             <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
-                {menuGroups.map((group, gIdx) => (
+                {filteredMenuGroups.map((group, gIdx) => (
                     <div key={gIdx}>
                         <p className="erp-sidebar-section">{group.title}</p>
                         <ul className="space-y-0.5">
@@ -371,7 +384,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             {/* Bottom Navigation — Mobile Only */}
             <nav className="bottom-nav" aria-label="التنقل السريع">
                 <div className="bottom-nav-inner">
-                    {bottomNavItems.map((item, idx) => {
+                    {filteredBottomNavItems.map((item, idx) => {
                         const isActive = item.key === activeMenu;
                         const isMore = item.action === 'sidebar';
                         

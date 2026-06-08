@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Head, useForm, router, Link } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import Select from "react-select";
-import { Plus, Trash2, X, Users, Calendar, Clock, MapPin, Eye, FileText, CheckCircle, Search, Filter, PlusCircle } from "lucide-react";
+import { Plus, Trash2, X, Users, Calendar, Clock, MapPin, Eye, FileText, CheckCircle, Search, Filter, PlusCircle, ArrowUpRight } from "lucide-react";
 
 export default function MeetingsIndex({ auth, meetings, users, stats, filters }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -78,48 +78,114 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
             <Head title="الإجتماعات" />
             <div className="p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
-                    {/* Header */}
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-1">الإجتماعات</h1>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">إدارة الاجتماعات واللجان والتوصيات</p>
+                    {/* Header Banner */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-6 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
+                        <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                        
+                        {/* Visual geometric lines */}
+                        <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                            <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                                <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                                <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                            </svg>
                         </div>
-                        <button 
-                            onClick={() => setIsCreateModalOpen(true)}
-                            className="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-primary-500/30 flex items-center gap-2"
-                        >
-                            <Plus size={20} />
-                            اجتماع جديد
-                        </button>
-                    </div>
 
-                    {/* Stats */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                                <Users size={24} />
-                            </div>
+                        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                             <div>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">إجمالي الاجتماعات</p>
-                                <p className="text-2xl font-black text-slate-800 dark:text-white">{stats.total}</p>
+                                <h1 className="text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight">إدارة الاجتماعات</h1>
+                                <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة الاجتماعات واللجان والقرارات والتوصيات</p>
                             </div>
+                            
+                            <button 
+                                onClick={() => setIsCreateModalOpen(true)}
+                                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95"
+                            >
+                                <Plus size={18} /> 
+                                <span>جدولة اجتماع جدي                    {/* Stats */}
+                    {stats && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            {[
+                                {
+                                    title: 'إجمالي الاجتماعات',
+                                    value: stats.total,
+                                    icon: Users,
+                                    progressWidth: '100%',
+                                    progressColor: 'bg-gradient-to-r from-primary-400 to-primary-600',
+                                    glowBg: 'bg-primary-500/5',
+                                    hoverBorder: 'hover:border-primary-200 dark:hover:border-primary-800/30',
+                                    topLineHover: 'group-hover:bg-primary-500/20',
+                                    ringColor: 'border-primary-500/20',
+                                    iconBg: 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400',
+                                    badgeClass: 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 border-primary-100/30 dark:border-primary-500/20',
+                                    badgeText: '100%',
+                                    subText: 'لقاءات مجدولة ومكتملة'
+                                },
+                                {
+                                    title: 'المجدولة',
+                                    value: stats.scheduled,
+                                    icon: Calendar,
+                                    progressWidth: stats.total > 0 ? `${((stats.scheduled / stats.total) * 100).toFixed(1)}%` : '0%',
+                                    progressColor: 'bg-gradient-to-r from-amber-400 to-amber-600',
+                                    glowBg: 'bg-amber-500/5',
+                                    hoverBorder: 'hover:border-amber-200 dark:hover:border-amber-800/30',
+                                    topLineHover: 'group-hover:bg-amber-500/20',
+                                    ringColor: 'border-amber-500/20',
+                                    iconBg: 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400',
+                                    badgeClass: 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-100/30 dark:border-amber-500/20',
+                                    badgeText: stats.total > 0 ? `${((stats.scheduled / stats.total) * 100).toFixed(0)}%` : '0%',
+                                    subText: 'نسبة اللقاءات القادمة'
+                                },
+                                {
+                                    title: 'المكتملة',
+                                    value: stats.completed,
+                                    icon: CheckCircle,
+                                    progressWidth: stats.total > 0 ? `${((stats.completed / stats.total) * 100).toFixed(1)}%` : '0%',
+                                    progressColor: 'bg-gradient-to-r from-emerald-400 to-emerald-600',
+                                    glowBg: 'bg-emerald-500/5',
+                                    hoverBorder: 'hover:border-emerald-200 dark:hover:border-emerald-800/30',
+                                    topLineHover: 'group-hover:bg-emerald-500/20',
+                                    ringColor: 'border-emerald-500/20',
+                                    iconBg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400',
+                                    badgeClass: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-100/30 dark:border-emerald-500/20',
+                                    badgeText: stats.total > 0 ? `${((stats.completed / stats.total) * 100).toFixed(0)}%` : '0%',
+                                    subText: 'نسبة اللقاءات المنعقدة'
+                                }
+                            ].map((stat, idx) => (
+                                <div key={idx} className={`bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.015)] dark:shadow-none hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#f1f5f9_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:16px_16px] ${stat.hoverBorder}`}>
+                                    {/* Glowing ambient light */}
+                                    <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glowBg} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
+                                    <div className={`absolute top-0 right-0 left-0 h-1 bg-transparent ${stat.topLineHover} transition-colors`} />
+
+                                    <div className="relative z-10 flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="text-xs font-bold text-slate-505 dark:text-slate-400 truncate">{stat.title}</p>
+                                            <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 leading-none font-mono tracking-tight">{stat.value}</h3>
+                                        </div>
+                                        <div className={`relative h-11 w-11 rounded-2xl ${stat.iconBg} flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-all duration-350 group-hover:scale-110 group-hover:-rotate-3`}>
+                                            {/* Double ring hover overlay */}
+                                            <span className={`absolute inset-0 rounded-2xl border ${stat.ringColor} scale-100 group-hover:scale-125 opacity-0 group-hover:opacity-100 transition-all duration-300`} />
+                                            <stat.icon size={20} strokeWidth={2.5} />
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Progress bar and trend badge */}
+                                    <div className="relative z-10 space-y-2.5 mt-1">
+                                        <div className="w-full bg-slate-100/80 dark:bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                                            <div className={`h-full rounded-full transition-all duration-1000 ease-out ${stat.progressColor}`} style={{ width: stat.progressWidth }} />
+                                        </div>
+                                        <div className="flex items-center justify-between text-[10px] font-bold">
+                                            <div className={`inline-flex items-center gap-0.5 px-2.5 py-1 rounded-full border ${stat.badgeClass}`}>
+                                                <ArrowUpRight size={10} strokeWidth={3} />
+                                                <span>{stat.badgeText}</span>
+                                            </div>
+                                            <span className="text-slate-400 dark:text-slate-500">{stat.subText}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-                                <Calendar size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">المجدولة</p>
-                                <p className="text-2xl font-black text-slate-800 dark:text-white">{stats.scheduled}</p>
-                            </div>
-                        </div>
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                <CheckCircle size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">المكتملة</p>
-                                <p className="text-2xl font-black text-slate-800 dark:text-white">{stats.completed}</p>
+                    )}ate-800 dark:text-white">{stats.completed}</p>
                             </div>
                         </div>
                     </div>

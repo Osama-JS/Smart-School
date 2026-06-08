@@ -73,5 +73,26 @@ class HRSeeder extends Seeder
                 'hire_date'     => $data['hire'],
             ]);
         }
+
+        // إنشاء ملف تعريف موظف (Employee) لمديري الفروع الافتراضيين
+        $mainManagerUser = \App\Models\User::where('username', 'manager.main')->first();
+        if ($mainManagerUser) {
+            \App\Models\Employee::create([
+                'user_id'       => $mainManagerUser->id,
+                'department_id' => $topDept->id,
+                'job_grade_id'  => $gradeIds['مدير إدارة'],
+                'hire_date'     => '2020-01-01',
+            ]);
+        }
+
+        $jeddahManagerUser = \App\Models\User::where('username', 'manager.jeddah')->first();
+        if ($jeddahManagerUser) {
+            \App\Models\Employee::create([
+                'user_id'       => $jeddahManagerUser->id,
+                'department_id' => $topDept->id,
+                'job_grade_id'  => $gradeIds['مدير إدارة'],
+                'hire_date'     => '2020-01-01',
+            ]);
+        }
     }
 }

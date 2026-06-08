@@ -86,29 +86,35 @@ Route::middleware('auth')->group(function () {
     Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
     Route::put('/hr/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceController::class, 'update'])->name('hr.attendance.update');
     // ── Reports ──
-    Route::resource('/hr/reports/templates', \App\Http\Controllers\HR\ReportTemplateController::class)->names([
-        'index'   => 'reports.templates',
-        'store'   => 'reports.templates.store',
-        'update'  => 'reports.templates.update',
-        'destroy' => 'reports.templates.destroy',
-    ])->except(['create', 'show', 'edit']);
+    Route::middleware('permission:إدارة قوالب التقارير')->group(function () {
+        Route::resource('/hr/reports/templates', \App\Http\Controllers\HR\ReportTemplateController::class)->names([
+            'index'   => 'reports.templates',
+            'store'   => 'reports.templates.store',
+            'update'  => 'reports.templates.update',
+            'destroy' => 'reports.templates.destroy',
+        ])->except(['create', 'show', 'edit']);
+    });
 
-    Route::get('/hr/reports', [\App\Http\Controllers\HR\ReportController::class, 'index'])->name('reports.index');
-    Route::get('/hr/reports/template/{template}', [\App\Http\Controllers\HR\ReportController::class, 'showTemplate'])->name('reports.submit.view');
-    Route::post('/hr/reports/template/{template}', [\App\Http\Controllers\HR\ReportController::class, 'store'])->name('reports.store');
-    Route::get('/hr/reports/{report}', [\App\Http\Controllers\HR\ReportController::class, 'show'])->name('reports.show');
-    Route::post('/hr/reports/{report}/review', [\App\Http\Controllers\HR\ReportController::class, 'review'])->name('reports.review');
+    Route::middleware('permission:إدارة التقارير')->group(function () {
+        Route::get('/hr/reports', [\App\Http\Controllers\HR\ReportController::class, 'index'])->name('reports.index');
+        Route::get('/hr/reports/template/{template}', [\App\Http\Controllers\HR\ReportController::class, 'showTemplate'])->name('reports.submit.view');
+        Route::post('/hr/reports/template/{template}', [\App\Http\Controllers\HR\ReportController::class, 'store'])->name('reports.store');
+        Route::get('/hr/reports/{report}', [\App\Http\Controllers\HR\ReportController::class, 'show'])->name('reports.show');
+        Route::post('/hr/reports/{report}/review', [\App\Http\Controllers\HR\ReportController::class, 'review'])->name('reports.review');
+    });
 
     // ── Meetings ──
-    Route::resource('/meetings', \App\Http\Controllers\HR\MeetingController::class)->names([
-        'index'   => 'meetings.index',
-        'store'   => 'meetings.store',
-        'show'    => 'meetings.show',
-        'destroy' => 'meetings.destroy',
-    ])->except(['create', 'edit', 'update']);
-    
-    Route::post('/meetings/{meeting}/attendance', [\App\Http\Controllers\HR\MeetingController::class, 'updateAttendance'])->name('meetings.attendance');
-    Route::post('/meetings/{meeting}/complete', [\App\Http\Controllers\HR\MeetingController::class, 'completeMeeting'])->name('meetings.complete');
+    Route::middleware('permission:إدارة الاجتماعات')->group(function () {
+        Route::resource('/meetings', \App\Http\Controllers\HR\MeetingController::class)->names([
+            'index'   => 'meetings.index',
+            'store'   => 'meetings.store',
+            'show'    => 'meetings.show',
+            'destroy' => 'meetings.destroy',
+        ])->except(['create', 'edit', 'update']);
+        
+        Route::post('/meetings/{meeting}/attendance', [\App\Http\Controllers\HR\MeetingController::class, 'updateAttendance'])->name('meetings.attendance');
+        Route::post('/meetings/{meeting}/complete', [\App\Http\Controllers\HR\MeetingController::class, 'completeMeeting'])->name('meetings.complete');
+    });
 });
 
 require __DIR__.'/auth.php';

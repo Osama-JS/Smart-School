@@ -38,6 +38,10 @@ class DatabaseSeeder extends Seeder
             ['name' => 'إدارة الطلاب', 'module' => 'academic'],
             ['name' => 'إدارة الدرجات', 'module' => 'academic'],
             ['name' => 'إدارة الجداول', 'module' => 'academic'],
+
+            ['name' => 'إدارة التقارير', 'module' => 'reports'],
+            ['name' => 'إدارة قوالب التقارير', 'module' => 'reports'],
+            ['name' => 'إدارة الاجتماعات', 'module' => 'reports'],
         ];
 
         foreach ($permissions as $p) {
