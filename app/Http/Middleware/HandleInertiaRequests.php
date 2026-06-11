@@ -34,7 +34,7 @@ class HandleInertiaRequests extends Middleware
         $userPermissions = [];
 
         if ($user) {
-            $user->loadMissing(['role.permissions']);
+            $user->loadMissing(['role.permissions', 'branch']);
             $isAdmin = $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
             if ($user->role) {
                 $userPermissions = $user->role->permissions->pluck('name')->toArray();

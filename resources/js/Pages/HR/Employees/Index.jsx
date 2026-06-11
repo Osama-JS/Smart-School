@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import {
+import FlatpickrInput from '@/Components/FlatpickrInput';
+import { 
     Search, Plus, Filter, Mail, Building, ShieldCheck,
     MoreVertical, Edit2, Trash2, X, Check, Users, Calendar, 
     AlertTriangle, LayoutGrid, List, Download, Printer, RotateCcw,
@@ -514,22 +515,20 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                             {/* Hire Date Start */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">التعيين من تاريخ</label>
-                                <input 
+                                <FlatpickrInput 
                                     type="date"
                                     value={hireDateStart}
-                                    onChange={e => setHireDateStart(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-205 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 dark:text-white font-semibold font-sans"
+                                    onChange={date => setHireDateStart(date)}
                                 />
                             </div>
 
                             {/* Hire Date End */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">التعيين إلى تاريخ</label>
-                                <input 
+                                <FlatpickrInput 
                                     type="date"
                                     value={hireDateEnd}
-                                    onChange={e => setHireDateEnd(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-205 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 dark:text-white font-semibold font-sans"
+                                    onChange={date => setHireDateEnd(date)}
                                 />
                             </div>
                         </div>

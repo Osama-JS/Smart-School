@@ -23,7 +23,10 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "flatpickr": "^4.6.13",
         "lucide-react": "^1.14.0",
-        "react-select": "^5.10.2"
+        "react-flatpickr": "^4.0.11",
+        "react-select": "^5.10.2",
+        "sweetalert2": "^11.26.25"
     }
 }

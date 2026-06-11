@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 import { 
     Search, Filter, MoreVertical, CheckCircle, XCircle, Clock, Info,
     X, RotateCcw, Download, Printer, LayoutGrid, List, FileText, ChevronDown,
@@ -573,16 +574,8 @@ export default function ApprovalsIndex() {
 
                             {/* Date Hired Start */}
                             <div>
-                                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">من تاريخ</label>
-                                <div className="relative group">
-                                    <Calendar size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-450 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none" />
-                                    <input 
-                                        type="date"
-                                        value={startDate}
-                                        onChange={e => setStartDate(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-205 dark:border-slate-800 rounded-2xl pr-10 pl-4 py-2.5 text-xs outline-none focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:shadow-[0_0_15px_rgba(91,138,45,0.15)] dark:focus:shadow-[0_0_20px_rgba(91,138,45,0.25)] dark:text-white font-semibold font-sans transition-all duration-300"
-                                    />
-                                </div>
+                                <label className="block text-[10px] font-bold text-slate-450 mb-1">تاريخ البدء</label>
+                                <FlatpickrInput type="date" value={startDate} onChange={date => setStartDate(date)} />
                             </div>
 
                             {/* Date Hired End */}

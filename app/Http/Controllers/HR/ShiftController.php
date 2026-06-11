@@ -13,7 +13,7 @@ class ShiftController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Shift::query()->withCount('employees');
+        $query = Shift::query()->with('branch')->withCount('employees');
 
         // Apply filters
         if ($request->filled('search')) {
@@ -22,6 +22,10 @@ class ShiftController extends Controller
 
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('is_active', $request->status === 'active');
+        }
+
+        if ($request->filled('branch_id') && $request->branch_id !== 'all') {
+            $query->where('branch_id', $request->branch_id);
         }
 
         if ($request->filled('min_grace')) {
@@ -80,7 +84,7 @@ class ShiftController extends Controller
 
         return Inertia::render('HR/Shifts/Index', [
             'shifts'  => $shifts,
-            'filters' => (object) $request->only(['search', 'status', 'min_grace', 'max_grace', 'sort']),
+            'filters' => (object) $request->only(['search', 'status', 'branch_id', 'min_grace', 'max_grace', 'sort']),
             'stats'   => [
                 'total_shifts' => $total_shifts,
                 'active_shifts' => $active_shifts,

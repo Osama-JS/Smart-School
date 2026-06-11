@@ -151,6 +151,40 @@ class ReportTemplateController extends Controller
         return redirect()->back()->with('success', 'تم تحديث القالب بنجاح');
     }
 
+    public function updateFields(Request $request, ReportTemplate $template)
+    {
+        $validated = $request->validate([
+            'fields' => 'nullable|array',
+            'fields.*.id' => 'nullable|exists:report_template_fields,id',
+            'fields.*.name' => 'required|string|max:255',
+            'fields.*.type' => 'required|in:text,number,select,checkbox,image',
+            'fields.*.options' => 'nullable|array',
+            'fields.*.is_required' => 'boolean',
+        ]);
+
+        if ($request->has('fields')) {
+            $fields = $validated['fields'] ?? [];
+            $keptFieldIds = collect($fields)->pluck('id')->filter()->toArray();
+            
+            $template->fields()->whereNotIn('id', $keptFieldIds)->delete();
+
+            foreach ($fields as $index => $fieldData) {
+                $template->fields()->updateOrCreate(
+                    ['id' => $fieldData['id'] ?? null],
+                    [
+                        'name' => $fieldData['name'],
+                        'type' => $fieldData['type'],
+                        'options' => $fieldData['options'] ?? null,
+                        'is_required' => $fieldData['is_required'] ?? false,
+                        'order' => $index,
+                    ]
+                );
+            }
+        }
+
+        return redirect()->back()->with('success', 'تم تحديث الحقول بنجاح');
+    }
+
     public function destroy(ReportTemplate $template)
     {
         $template->delete();

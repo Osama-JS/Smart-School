@@ -49,6 +49,42 @@ Route::middleware('auth')->group(function () {
         Route::delete('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'destroy'])->name('hr.branches.destroy');
     });
 
+    // ── Academic Routes ──
+    Route::middleware('permission:إدارة السنوات الدراسية')->group(function () {
+        Route::get('/academic/years', [\App\Http\Controllers\Academic\AcademicYearController::class, 'index'])->name('academic.years');
+        Route::post('/academic/years', [\App\Http\Controllers\Academic\AcademicYearController::class, 'store'])->name('academic.years.store');
+        Route::put('/academic/years/{academicYear}', [\App\Http\Controllers\Academic\AcademicYearController::class, 'update'])->name('academic.years.update');
+        Route::delete('/academic/years/{academicYear}', [\App\Http\Controllers\Academic\AcademicYearController::class, 'destroy'])->name('academic.years.destroy');
+        Route::post('/academic/years/{academicYear}/toggle', [\App\Http\Controllers\Academic\AcademicYearController::class, 'toggleActive'])->name('academic.years.toggle');
+
+        Route::post('/academic/years/{academicYear}/semesters', [\App\Http\Controllers\Academic\AcademicYearController::class, 'storeSemester'])->name('academic.semesters.store');
+        Route::put('/academic/semesters/{semester}', [\App\Http\Controllers\Academic\AcademicYearController::class, 'updateSemester'])->name('academic.semesters.update');
+        Route::delete('/academic/semesters/{semester}', [\App\Http\Controllers\Academic\AcademicYearController::class, 'destroySemester'])->name('academic.semesters.destroy');
+        Route::post('/academic/semesters/{semester}/toggle', [\App\Http\Controllers\Academic\AcademicYearController::class, 'toggleSemesterActive'])->name('academic.semesters.toggle');
+        
+        // Structure (Sections, Grades, Divisions)
+        Route::get('/academic/structure', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'index'])->name('academic.structure');
+        
+        Route::post('/academic/sections', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'storeSection'])->name('academic.sections.store');
+        Route::put('/academic/sections/{section}', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'updateSection'])->name('academic.sections.update');
+        Route::delete('/academic/sections/{section}', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'destroySection'])->name('academic.sections.destroy');
+        
+        Route::post('/academic/grades', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'storeGrade'])->name('academic.grades.store');
+        Route::put('/academic/grades/{grade}', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'updateGrade'])->name('academic.grades.update');
+        Route::delete('/academic/grades/{grade}', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'destroyGrade'])->name('academic.grades.destroy');
+        
+        Route::post('/academic/divisions', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'storeDivision'])->name('academic.divisions.store');
+        Route::put('/academic/divisions/{division}', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'updateDivision'])->name('academic.divisions.update');
+        Route::delete('/academic/divisions/{division}', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'destroyDivision'])->name('academic.divisions.destroy');
+        Route::post('/academic/divisions/copy', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'copyDivisions'])->name('academic.divisions.copy');
+
+        // Subjects
+        Route::get('/academic/subjects', [\App\Http\Controllers\Academic\SubjectController::class, 'index'])->name('academic.subjects.index');
+        Route::post('/academic/subjects', [\App\Http\Controllers\Academic\SubjectController::class, 'store'])->name('academic.subjects.store');
+        Route::put('/academic/subjects/{subject}', [\App\Http\Controllers\Academic\SubjectController::class, 'update'])->name('academic.subjects.update');
+        Route::delete('/academic/subjects/{subject}', [\App\Http\Controllers\Academic\SubjectController::class, 'destroy'])->name('academic.subjects.destroy');
+    });
+
     // ── HR Routes ──
     Route::resource('/hr/departments', \App\Http\Controllers\HR\DepartmentController::class)->names([
         'index'   => 'hr.departments',
@@ -93,6 +129,8 @@ Route::middleware('auth')->group(function () {
             'update'  => 'reports.templates.update',
             'destroy' => 'reports.templates.destroy',
         ])->except(['create', 'show', 'edit']);
+
+        Route::put('/hr/reports/templates/{template}/fields', [\App\Http\Controllers\HR\ReportTemplateController::class, 'updateFields'])->name('reports.templates.fields.update');
     });
 
     Route::middleware('permission:إدارة التقارير')->group(function () {

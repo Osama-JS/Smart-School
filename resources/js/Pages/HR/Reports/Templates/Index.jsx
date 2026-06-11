@@ -30,8 +30,6 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
     const fieldsForm = useForm({
         id: '',
-        name: '', // We need to send name and job_grade_id to satisfy backend validation
-        job_grade_id: '',
         fields: []
     });
 
@@ -120,8 +118,6 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
         setEditingTemplate(template);
         fieldsForm.setData({
             id: template.id,
-            name: template.name,
-            job_grade_id: template.job_grade_id,
             fields: template.fields || []
         });
         setIsFieldsModalOpen(true);
@@ -139,7 +135,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
     const handleFieldsSubmit = (e) => {
         e.preventDefault();
-        fieldsForm.put(route('reports.templates.update', editingTemplate.id), {
+        fieldsForm.put(route('reports.templates.fields.update', editingTemplate.id), {
             onSuccess: () => {
                 setIsFieldsModalOpen(false);
                 fieldsForm.reset();
@@ -286,7 +282,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
         <AdminLayout activeMenu="إدارة القوالب">
             <Head title="إدارة قوالب التقارير" />
 
-            <div className="py-8 px-4 md:px-8 space-y-8 animate-fade-in" style={{ direction: 'rtl' }}>
+            <div className="p-6 space-y-6" style={{ direction: 'rtl' }}>
                 
                 {/* Header Section */}
                 <div className="relative overflow-hidden bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-slate-800/80 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">

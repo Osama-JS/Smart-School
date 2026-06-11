@@ -59,8 +59,8 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('student_id')->constrained('students')->cascadeOnDelete();
             $table->foreignId('division_id')->constrained('divisions')->cascadeOnDelete();
-            $table->string('academic_year'); // e.g., 2025-2026
-            $table->boolean('is_result_blocked')->default(false); // للحظر المالي
+            // academic_year_id و status يُضافان في migration منفصل (2026_06_10_000004)
+            $table->boolean('is_result_blocked')->default(false);
             $table->timestamps();
         });
     }

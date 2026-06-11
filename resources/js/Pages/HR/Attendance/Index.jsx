@@ -6,6 +6,7 @@ import {
     Calendar, Search, Filter, MapPin, Building2, Edit2,
     X, Save, Users, TimerOff, ChevronDown, Download, Printer, ArrowUp, ArrowDown, ArrowUpDown
 } from 'lucide-react';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 
 // ── Status Badge ─────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -118,13 +119,11 @@ const EditModal = ({ record, onClose }) => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-bold text-slate-600 dark:text-slate-450 mb-1.5">وقت الدخول</label>
-                            <input type="time" value={form.check_in} onChange={e => setForm({...form, check_in: e.target.value})}
-                                className="w-full border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl px-4 py-2.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" />
+                            <FlatpickrInput type="time" value={form.check_in} onChange={time => setForm({...form, check_in: time})} />
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-slate-600 dark:text-slate-450 mb-1.5">وقت الخروج</label>
-                            <input type="time" value={form.check_out} onChange={e => setForm({...form, check_out: e.target.value})}
-                                className="w-full border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl px-4 py-2.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" />
+                            <FlatpickrInput type="time" value={form.check_out} onChange={time => setForm({...form, check_out: time})} />
                         </div>
                     </div>
 
@@ -406,13 +405,11 @@ const BulkEditModal = ({ selectedCount, onClose, onSubmit }) => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-[10px] font-bold text-slate-650 dark:text-slate-400 mb-1">وقت الدخول</label>
-                            <input type="time" value={form.check_in} onChange={e => setForm({...form, check_in: e.target.value})}
-                                className="w-full border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" />
+                            <FlatpickrInput type="time" value={form.check_in} onChange={time => setForm({...form, check_in: time})} />
                         </div>
                         <div>
                             <label className="block text-[10px] font-bold text-slate-650 dark:text-slate-400 mb-1">وقت الخروج</label>
-                            <input type="time" value={form.check_out} onChange={e => setForm({...form, check_out: e.target.value})}
-                                className="w-full border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" />
+                            <FlatpickrInput type="time" value={form.check_out} onChange={time => setForm({...form, check_out: time})} />
                         </div>
                     </div>
 
@@ -789,13 +786,11 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div>
                                                     <label className="block text-[9px] font-bold text-slate-500 mb-1">من</label>
-                                                    <input type="date" value={customStartDate} onChange={e => setCustomStartDate(e.target.value)}
-                                                        className="w-full bg-slate-50 dark:bg-slate-900 text-dark-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-xs font-bold outline-none" />
+                                                    <FlatpickrInput type="date" value={customStartDate} onChange={date => setCustomStartDate(date)} />
                                                 </div>
                                                 <div>
                                                     <label className="block text-[9px] font-bold text-slate-500 mb-1">إلى</label>
-                                                    <input type="date" value={customEndDate} onChange={e => setCustomEndDate(e.target.value)}
-                                                        className="w-full bg-slate-50 dark:bg-slate-900 text-dark-900 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 text-xs font-bold outline-none" />
+                                                    <FlatpickrInput type="date" value={customEndDate} onChange={date => setCustomEndDate(date)} />
                                                 </div>
                                             </div>
                                             <button onClick={() => { setShowDatePicker(false); applyFilter({ start_date: customStartDate, end_date: customEndDate }); }}

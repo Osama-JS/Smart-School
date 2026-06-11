@@ -2,91 +2,49 @@
 
 namespace Database\Seeders;
 
-use App\Models\Branch;
-use App\Models\Role;
-use App\Models\User;
-use App\Models\Permission;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * ترتيب تشغيل الـ Seeders مهم جداً بسبب العلاقات بين الجداول.
+     * لا تغير الترتيب إلا إذا كنت متأكداً من العلاقات.
+     */
     public function run(): void
     {
-        // 1. إنشاء فروع افتراضية
-        $branch = Branch::create(['name' => 'الفرع الرئيسي']);
-        $branch2 = Branch::create(['name' => 'فرع جدة']);
+        $this->command->info('🚀 Starting Smart School database seeding...');
+        $this->command->newLine();
 
-        // 2. إنشاء الأدوار الأساسية
-        $adminRole = Role::create(['name' => 'مدير النظام']);
-        $managerRole = Role::create(['name' => 'مدير فرع']);
-        $teacherRole = Role::create(['name' => 'معلم']);
-        $studentRole = Role::create(['name' => 'طالب']);
-        $parentRole = Role::create(['name' => 'ولي أمر']);
+        // المرحلة 1: الصلاحيات والأدوار (لا تعتمد على أي شيء)
+        $this->command->info('── المرحلة 1: الصلاحيات والأدوار ──');
+        $this->call(PermissionsSeeder::class);
+        $this->call(RolesSeeder::class);
 
-        // 3. إنشاء الصلاحيات الأساسية
-        $permissions = [
-            ['name' => 'إدارة المستخدمين', 'module' => 'admin'],
-            ['name' => 'إدارة الصلاحيات', 'module' => 'admin'],
-            ['name' => 'إعدادات النظام', 'module' => 'admin'],
-            
-            ['name' => 'إدارة الأقسام', 'module' => 'hr'],
-            ['name' => 'إدارة الموظفين', 'module' => 'hr'],
-            ['name' => 'إدارة الدرجات الوظيفية', 'module' => 'hr'],
-            ['name' => 'إدارة الحضور والانصراف', 'module' => 'hr'],
-            
-            ['name' => 'إدارة الطلاب', 'module' => 'academic'],
-            ['name' => 'إدارة الدرجات', 'module' => 'academic'],
-            ['name' => 'إدارة الجداول', 'module' => 'academic'],
+        // المرحلة 2: الفروع (تعتمد عليها باقي البيانات)
+        $this->command->info('── المرحلة 2: الفروع ──');
+        $this->call(BranchesSeeder::class);
 
-            ['name' => 'إدارة التقارير', 'module' => 'reports'],
-            ['name' => 'إدارة قوالب التقارير', 'module' => 'reports'],
-            ['name' => 'إدارة الاجتماعات', 'module' => 'reports'],
-        ];
+        // المرحلة 3: المستخدمون الأساسيون (تعتمد على الفروع والأدوار)
+        $this->command->info('── المرحلة 3: المستخدمون الأساسيون ──');
+        $this->call(UsersSeeder::class);
 
-        foreach ($permissions as $p) {
-            Permission::create($p);
-        }
-
-        // إعطاء مدير النظام جميع الصلاحيات
-        $adminRole->permissions()->sync(Permission::all());
-
-        // إعطاء مدير الفرع الصلاحيات المرتبطة بالعمليات والإدارة والأكاديميا + إدارة المستخدمين
-        $managerPermissions = Permission::where('module', '!=', 'admin')
-            ->orWhere('name', 'إدارة المستخدمين')
-            ->pluck('id');
-        $managerRole->permissions()->sync($managerPermissions);
-
-        // 4. إنشاء مستخدم مدير للنظام
-        User::create([
-            'branch_id' => $branch->id,
-            'role_id' => $adminRole->id,
-            'name' => 'مدير النظام',
-            'username' => 'admin',
-            'password' => Hash::make('admin123'),
-            'is_active' => true,
-        ]);
-
-        // إنشاء مستخدمين وهميين يحملون دور "مدير فرع"
-        User::create([
-            'branch_id' => $branch->id,
-            'role_id' => $managerRole->id,
-            'name' => 'عبدالله العتيبي (مدير الفرع الرئيسي)',
-            'username' => 'manager.main',
-            'password' => Hash::make('manager123'),
-            'is_active' => true,
-        ]);
-
-        User::create([
-            'branch_id' => $branch2->id,
-            'role_id' => $managerRole->id,
-            'name' => 'فيصل الزهراني (مدير فرع جدة)',
-            'username' => 'manager.jeddah',
-            'password' => Hash::make('manager123'),
-            'is_active' => true,
-        ]);
-
-        // 5. استدعاء بيانات النظام الإداري (HR)
+        // المرحلة 4: بيانات الموارد البشرية (تعتمد على المستخدمين والفروع)
+        $this->command->info('── المرحلة 4: الموارد البشرية ──');
         $this->call(HRSeeder::class);
+
+        // المرحلة 5: أنواع الطلبات الإدارية
+        $this->command->info('── المرحلة 5: أنواع الطلبات ──');
+        $this->call(RequestTypesSeeder::class);
+
+        // المرحلة 6: السنوات والفصول الدراسية (تعتمد على الفروع)
+        $this->command->info('── المرحلة 6: السنوات الدراسية والفصول ──');
+        $this->call(AcademicYearSeeder::class);
+
+        // المرحلة 7: الهيكل الأكاديمي (مراحل، صفوف، شعب، مواد) - تعتمد على السنوات الدراسية
+        $this->command->info('── المرحلة 7: الهيكل الأكاديمي ──');
+        $this->call(AcademicStructureSeeder::class);
+
+        $this->command->newLine();
+        $this->command->info('🎉 Database seeding completed successfully!');
     }
 }

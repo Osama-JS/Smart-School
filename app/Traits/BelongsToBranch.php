@@ -54,4 +54,12 @@ trait BelongsToBranch
             }
         });
     }
+
+    /**
+     * العلاقة مع الفرع التابع له هذا النموذج
+     */
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class, 'branch_id');
+    }
 }

@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subject extends Model
 {
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'icon', 'branch_id'];
+
+    // الفرع الذي تتبعه المادة
+    public function branch() {
+        return $this->belongsTo(Branch::class);
+    }
 
     // الدرجات المرتبطة بهذه المادة
     public function monthlyGrades(): HasMany { 

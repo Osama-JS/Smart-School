@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import Modal from '@/Components/Modal';
+import Pagination from '@/Components/Pagination';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 import { 
     Search, Plus, Clock, Edit2, Trash2, MoreVertical, X, Check, 
     AlertTriangle, AlertCircle, Filter, RotateCcw,
-    CheckCircle2, Hourglass, Users, ChevronDown, Activity, Sparkles
+    CheckCircle2, Hourglass, Users, ChevronDown, Activity, Sparkles,
+    LayoutGrid, Table2, MapPin
 } from 'lucide-react';
 
 function Modal({ isOpen, onClose, title, children }) {
@@ -125,6 +129,7 @@ function Pagination({ data }) {
 
 export default function ShiftsIndex({ shifts, filters, stats, branches = [], isAdmin = false }) {
     const { flash } = usePage().props;
+    const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
 
     const getFilterVal = (key, fallback = '') => {
         if (!filters || Array.isArray(filters)) return fallback;
@@ -133,8 +138,9 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
     };
 
     const [searchValue, setSearch] = useState(getFilterVal('search'));
-    const [statusValue, setStatusValue] = useState(getFilterVal('status', 'all'));
-    const [minGrace, setMinGrace] = useState(getFilterVal('min_grace'));
+    const [statusValue, setStatusValue] = useState(filters?.status ?? 'all');
+    const [branchFilter, setBranchFilter] = useState(filters?.branch_id ?? 'all');
+    const [minGrace, setMinGrace] = useState(filters?.min_grace ?? '');
     const [maxGrace, setMaxGrace] = useState(getFilterVal('max_grace'));
     const [sortValue, setSortValue] = useState(getFilterVal('sort', 'name_asc'));
 
@@ -151,13 +157,14 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
         const params = {
             search: updates.hasOwnProperty('search') ? updates.search : searchValue,
             status: updates.hasOwnProperty('status') ? updates.status : statusValue,
+            branch_id: updates.hasOwnProperty('branch_id') ? updates.branch_id : branchFilter,
             min_grace: updates.hasOwnProperty('min_grace') ? updates.min_grace : minGrace,
             max_grace: updates.hasOwnProperty('max_grace') ? updates.max_grace : maxGrace,
             sort: updates.hasOwnProperty('sort') ? updates.sort : sortValue,
         };
 
         Object.keys(params).forEach(key => {
-            if (params[key] === '' || params[key] === null || params[key] === undefined || (key === 'status' && params[key] === 'all') || (key === 'sort' && params[key] === 'name_asc')) {
+            if (params[key] === '' || params[key] === null || params[key] === undefined || (key === 'status' && params[key] === 'all') || (key === 'branch_id' && params[key] === 'all') || (key === 'sort' && params[key] === 'name_asc')) {
                 delete params[key];
             }
         });
@@ -180,7 +187,7 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
     const handleSortChange = (val) => { setSortValue(val); applyFilters({ sort: val }); };
 
     const resetAllFilters = () => {
-        setSearch(''); setStatusValue('all'); setMinGrace(''); setMaxGrace(''); setSortValue('name_asc');
+        setSearch(''); setStatusValue('all'); setBranchFilter('all'); setMinGrace(''); setMaxGrace(''); setSortValue('name_asc');
         router.get(route('hr.shifts'), {}, { preserveState: true, replace: true });
     };
 
@@ -223,11 +230,13 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
         return `${hours}:${m} ${ampm}`;
     };
 
-    const hasActiveFilters = searchValue !== '' || statusValue !== 'all' || minGrace !== '' || maxGrace !== '' || sortValue !== 'name_asc';
+    const hasActiveFilters = searchValue !== '' || statusValue !== 'all' || branchFilter !== 'all' || minGrace !== '' || maxGrace !== '' || sortValue !== 'name_asc';
 
     return (
         <AdminLayout activeMenu="الشفتات">
             <Head title="إدارة الشفتات | النظام الإداري" />
+
+            <div className="p-6 space-y-6">
 
             {flash?.success && (
                 <div className="mb-8 flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-6 py-4 rounded-3xl text-sm font-bold shadow-sm shadow-emerald-500/5 animate-in fade-in slide-in-from-top-4 duration-500">
@@ -240,56 +249,61 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                 </div>
             )}
             
-            {/* Header Hero Section */}
-            <div className="relative overflow-hidden bg-white dark:bg-[#0B1120] rounded-[2.5rem] p-8 md:p-12 mb-10 shadow-[0_15px_40px_-15px_rgba(0,0,0,0.05)] border border-slate-100/80 dark:border-slate-800/80 dark:shadow-2xl">
-                {/* Abstract Background Elements */}
-                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[500px] h-[500px] bg-gradient-to-br from-primary-100/80 to-indigo-100/80 dark:from-primary-500/20 dark:to-indigo-500/20 rounded-full blur-[80px] pointer-events-none opacity-80 dark:opacity-100" />
-                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-[400px] h-[400px] bg-gradient-to-tr from-sky-100/80 to-blue-100/80 dark:from-sky-500/20 dark:to-blue-500/20 rounded-full blur-[80px] pointer-events-none opacity-80 dark:opacity-100" />
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.02] dark:opacity-5 pointer-events-none" />
+            {/* Header Section with Brand Colors and Geometric Accent */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none">
+                {/* Brand Line Accent */}
+                <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                {/* Fine abstract geometric background lines */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                    <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                        <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
+                        <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                        <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                        <circle cx="750" cy="60" r="3" className="fill-primary-300" />
+                    </svg>
+                </div>
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div>
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/60 dark:bg-white/10 border border-slate-200/60 dark:border-white/20 text-slate-700 dark:text-white/90 text-sm font-bold mb-5 backdrop-blur-md shadow-sm">
-                            <Activity size={18} className="text-primary-600 dark:text-primary-400" />
-                            <span>نظام الموارد البشرية</span>
-                        </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
-                            إدارة <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-600 dark:from-primary-400 dark:to-indigo-400">شفتات العمل</span>
-                        </h1>
-                        <p className="text-slate-600 dark:text-slate-400 mt-4 text-lg font-semibold max-w-xl leading-relaxed">
-                            تحكم كامل في أوقات الدوام الرسمي، فترات السماح، وتعيين الموظفين بكفاءة ومرونة عالية.
-                        </p>
+                        <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">إدارة شفتات العمل</h1>
+                        <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">تحكم كامل في أوقات الدوام الرسمي وفترات السماح للموظفين</p>
                     </div>
-                    <button onClick={openAdd}
-                        className="group flex items-center justify-center gap-3 px-8 py-4 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-50 text-white dark:text-slate-900 rounded-2xl shadow-[0_10px_30px_-10px_rgba(15,23,42,0.3)] dark:hover:shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] text-base font-black transition-all duration-300 shrink-0 transform hover:-translate-y-1 active:translate-y-0 active:scale-95">
-                        <div className="bg-white/20 dark:bg-primary-100 text-white dark:text-primary-600 p-1.5 rounded-xl group-hover:rotate-90 transition-transform duration-300">
-                            <Plus size={20} /> 
-                        </div>
+                    <button
+                        onClick={openAdd}
+                        className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95 self-end sm:self-auto"
+                    >
+                        <Plus size={18} /> 
                         <span>إضافة شفت جديد</span>
                     </button>
                 </div>
             </div>
 
             {/* Premium Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                {[
-                    { title: 'إجمالي الشفتات', value: stats?.total_shifts ?? 0, icon: Clock, color: 'from-primary-400 to-primary-600', bg: 'bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-500/10 dark:to-primary-500/5', text: 'text-primary-600 dark:text-primary-400', shadow: 'shadow-primary-500/10' },
-                    { title: 'الشفتات النشطة', value: stats?.active_shifts ?? 0, icon: CheckCircle2, color: 'from-emerald-400 to-emerald-600', bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-500/10 dark:to-emerald-500/5', text: 'text-emerald-600 dark:text-emerald-400', shadow: 'shadow-emerald-500/10' },
-                    { title: 'متوسط السماح', value: (stats?.avg_grace ?? 0) + ' د', icon: Hourglass, color: 'from-dark-400 to-dark-600', bg: 'bg-gradient-to-br from-dark-50 to-dark-100 dark:from-dark-500/15 dark:to-dark-500/5', text: 'text-dark-700 dark:text-dark-300', shadow: 'shadow-dark-500/10' },
-                    { title: 'الموظفون المسجلون', value: stats?.total_assigned_employees ?? 0, icon: Users, color: 'from-accent-400 to-accent-600', bg: 'bg-gradient-to-br from-accent-50 to-accent-100 dark:from-accent-500/10 dark:to-accent-500/5', text: 'text-accent-600 dark:text-accent-400', shadow: 'shadow-accent-500/10' },
-                ].map((stat, i) => (
-                    <div key={i} className={`group relative overflow-hidden bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 transition-all duration-300 hover:shadow-2xl ${stat.shadow} dark:hover:shadow-none hover:-translate-y-1`}>
-                        <div className={`absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r ${stat.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                        <div className="flex items-center justify-between mb-6">
-                            <div className={`w-16 h-16 rounded-2xl ${stat.bg} flex items-center justify-center ${stat.text} transition-transform duration-300 group-hover:scale-110 shadow-sm border border-white/50 dark:border-transparent`}>
-                                <stat.icon size={28} strokeWidth={2.5} />
+            {stats && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                    {[
+                        { title: 'إجمالي الشفتات', value: stats.total_shifts ?? 0, icon: Clock, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-500/10', glow: 'bg-primary-500/5 dark:bg-primary-500/10', grad: 'from-primary-400 to-primary-600' },
+                        { title: 'الشفتات النشطة', value: stats.active_shifts ?? 0, icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10', glow: 'bg-emerald-500/5 dark:bg-emerald-500/10', grad: 'from-emerald-400 to-emerald-600' },
+                        { title: 'متوسط السماح', value: (stats.avg_grace ?? 0) + ' د', icon: Hourglass, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/10', glow: 'bg-amber-500/5 dark:bg-amber-500/10', grad: 'from-amber-400 to-amber-600' },
+                        { title: 'الموظفون', value: stats.total_assigned_employees ?? 0, icon: Users, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800/40', glow: 'bg-slate-500/5 dark:bg-slate-800/10', grad: 'from-slate-400 to-slate-600 dark:from-slate-600 dark:to-slate-800' }
+                    ].map((stat, idx) => (
+                        <div key={idx} className="bg-white dark:bg-[#121820]/40 backdrop-blur-xl border border-slate-100 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default">
+                            <div className={`absolute top-0 right-0 left-0 h-1 bg-gradient-to-r ${stat.grad} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
+                            <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glow} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
+                            
+                            <div className="relative z-10 min-w-0">
+                                <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">{stat.title}</p>
+                                <h3 className="text-2xl font-black text-dark-900 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
+                            </div>
+                            <div className={`relative z-10 w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}>
+                                <stat.icon size={20} strokeWidth={2.5} />
                             </div>
                         </div>
-                        <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">{stat.title}</p>
-                        <p className="text-4xl font-black text-slate-800 dark:text-white font-sans tracking-tight">{stat.value}</p>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {/* Modern Filter Section */}
             <div className="bg-white/80 backdrop-blur-xl dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-[2rem] p-4 sm:p-6 mb-8 shadow-sm">
@@ -349,6 +363,23 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                         </select>
                     </div>
 
+                    {/* Branch Filter */}
+                    {isAdmin && (
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الفرع</label>
+                            <select 
+                                value={branchFilter} 
+                                onChange={e => { setBranchFilter(e.target.value); applyFilters({ branch_id: e.target.value }); }}
+                                className="w-full bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 dark:text-white font-bold transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900"
+                            >
+                                <option value="all">كل الفروع</option>
+                                {branches?.map(b => (
+                                    <option key={b.id} value={b.id}>{b.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
                     {/* Min Grace */}
                     <div className="space-y-2">
                         <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">السماح من (دقائق)</label>
@@ -385,7 +416,33 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                 </div>
             </div>
 
-            {/* Shift Cards Grid */}
+            {/* View Toggle */}
+            <div className="flex items-center justify-end gap-2">
+                <button
+                    onClick={() => setViewMode('cards')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all border ${
+                        viewMode === 'cards'
+                            ? 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/30'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                >
+                    <LayoutGrid size={16} />
+                    <span>بطاقات</span>
+                </button>
+                <button
+                    onClick={() => setViewMode('table')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all border ${
+                        viewMode === 'table'
+                            ? 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/30'
+                            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
+                >
+                    <Table2 size={16} />
+                    <span>جدول</span>
+                </button>
+            </div>
+
+            {/* Shift Content */}
             {shiftsData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800 shadow-sm">
                     <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
@@ -393,6 +450,80 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                     </div>
                     <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">لا توجد نتائج مطابقة</h3>
                     <p className="text-slate-500 dark:text-slate-400 font-medium">حاول تغيير معايير البحث أو إضافة شفت جديد</p>
+                </div>
+            ) : viewMode === 'table' ? (
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50">
+                                    <th className="text-right px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">اسم الشفت</th>
+                                    {isAdmin && <th className="text-right px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الفرع</th>}
+                                    <th className="text-right px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">وقت الحضور</th>
+                                    <th className="text-right px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">وقت الانصراف</th>
+                                    <th className="text-right px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">فترة السماح</th>
+                                    <th className="text-right px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الموظفون</th>
+                                    <th className="text-right px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحالة</th>
+                                    <th className="text-center px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {shiftsData.map((shift) => (
+                                    <tr key={shift.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${shift.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
+                                                <span className="font-black text-slate-800 dark:text-white text-sm">{shift.name}</span>
+                                            </div>
+                                        </td>
+                                        {isAdmin && (
+                                            <td className="px-6 py-4">
+                                                <span className="font-bold text-slate-600 dark:text-slate-400 text-sm">{shift.branch?.name || 'عام'}</span>
+                                            </td>
+                                        )}
+                                        <td className="px-6 py-4">
+                                            <span className="font-bold text-slate-700 dark:text-slate-300 text-sm font-sans">{formatTime(shift.start_time)}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-bold text-slate-700 dark:text-slate-300 text-sm font-sans">{formatTime(shift.end_time)}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-xl text-xs font-bold border border-amber-100/50 dark:border-transparent">
+                                                <AlertCircle size={13} />
+                                                {shift.grace_period_minutes} دقيقة
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-bold">
+                                                <Users size={13} />
+                                                {shift.employees_count ?? 0}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black ${
+                                                shift.is_active
+                                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/60'
+                                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200'
+                                            }`}>
+                                                {shift.is_active ? 'نشط' : 'متوقف'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button onClick={() => openEdit(shift)} className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-all">
+                                                    <Edit2 size={15} />
+                                                </button>
+                                                <button onClick={() => setDeleteShift(shift)} className="p-2 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all">
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <Pagination data={shifts} />
                 </div>
             ) : (
                 <div className="space-y-8">
@@ -429,13 +560,21 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                                             </div>
                                             
                                             <div>
-                                                <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-1">
+                                                <h3 className="text-xl font-black text-slate-900 dark:text-white leading-tight mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                                     {shift.name}
                                                 </h3>
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm ${shift.is_active ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/60' : 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200'}`}>
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${shift.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
-                                                    {shift.is_active ? 'نشط' : 'متوقف'}
-                                                </span>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm ${shift.is_active ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200/60' : 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200'}`}>
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${shift.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                                                        {shift.is_active ? 'نشط' : 'متوقف'}
+                                                    </span>
+                                                    {isAdmin && (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 border border-indigo-200/60">
+                                                            <MapPin size={10} />
+                                                            {shift.branch?.name || 'عام'}
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                         <ActionMenu shift={shift} onEdit={openEdit} onDelete={setDeleteShift} />
@@ -476,6 +615,8 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                 </div>
             )}
 
+            </div>
+
             {/* Modal Components */}
             <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="إضافة شفت جديد">
                 <form onSubmit={handleStore} className="space-y-5">
@@ -489,15 +630,13 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                     <div className="grid grid-cols-2 gap-5">
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">وقت البدء <span className="text-rose-500">*</span></label>
-                            <input type="time" required 
-                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold font-sans" 
-                                value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} />
+                            <FlatpickrInput type="time" required 
+                                value={form.start_time} onChange={time => setForm({ ...form, start_time: time })} />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">وقت الانتهاء <span className="text-rose-500">*</span></label>
-                            <input type="time" required 
-                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold font-sans" 
-                                value={form.end_time} onChange={e => setForm({ ...form, end_time: e.target.value })} />
+                            <FlatpickrInput type="time" required 
+                                value={form.end_time} onChange={time => setForm({ ...form, end_time: time })} />
                         </div>
                     </div>
                     
@@ -548,15 +687,13 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                     <div className="grid grid-cols-2 gap-5">
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">وقت البدء <span className="text-rose-500">*</span></label>
-                            <input type="time" required 
-                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold font-sans" 
-                                value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} />
+                            <FlatpickrInput type="time" required 
+                                value={form.start_time} onChange={time => setForm({ ...form, start_time: time })} />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">وقت الانتهاء <span className="text-rose-500">*</span></label>
-                            <input type="time" required 
-                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold font-sans" 
-                                value={form.end_time} onChange={e => setForm({ ...form, end_time: e.target.value })} />
+                            <FlatpickrInput type="time" required 
+                                value={form.end_time} onChange={time => setForm({ ...form, end_time: time })} />
                         </div>
                     </div>
                     

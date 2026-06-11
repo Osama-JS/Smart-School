@@ -3,7 +3,7 @@ import { Head, useForm, router, Link } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import Select from "react-select";
 import { Plus, Trash2, X, Users, Calendar, Clock, MapPin, Eye, FileText, CheckCircle, Search, Filter, PlusCircle, ArrowUpRight } from "lucide-react";
-
+import FlatpickrInput from "@/Components/FlatpickrInput";
 export default function MeetingsIndex({ auth, meetings, users, stats, filters }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
@@ -102,7 +102,12 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                 className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95"
                             >
                                 <Plus size={18} /> 
-                                <span>جدولة اجتماع جدي                    {/* Stats */}
+                                <span>جدولة اجتماع جديد</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Stats */}
                     {stats && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                             {[
@@ -185,10 +190,8 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                 </div>
                             ))}
                         </div>
-                    )}ate-800 dark:text-white">{stats.completed}</p>
-                            </div>
-                        </div>
-                    </div>
+                    )}
+
 
                     {/* Filters & Search */}
                     <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm">
@@ -327,22 +330,20 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تاريخ الاجتماع <span className="text-red-500">*</span></label>
-                                        <input 
-                                            type="date" 
+                                        <FlatpickrInput 
+                                            type="date"
                                             value={form.data.date}
-                                            onChange={e => form.setData('date', e.target.value)}
-                                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
+                                            onChange={(date) => form.setData('date', date)}
                                             required
                                         />
                                         {form.errors.date && <p className="text-red-500 text-xs mt-1">{form.errors.date}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت الاجتماع <span className="text-red-500">*</span></label>
-                                        <input 
-                                            type="time" 
+                                        <FlatpickrInput 
+                                            type="time"
                                             value={form.data.time}
-                                            onChange={e => form.setData('time', e.target.value)}
-                                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
+                                            onChange={(time) => form.setData('time', time)}
                                             required
                                         />
                                         {form.errors.time && <p className="text-red-500 text-xs mt-1">{form.errors.time}</p>}

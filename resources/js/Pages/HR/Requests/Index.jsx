@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import {
+import FlatpickrInput from '@/Components/FlatpickrInput';
+import { 
     Search, Plus, Filter, MoreVertical, FileText, CheckCircle, Clock, XCircle, Send,
     Calendar, RotateCcw, X, ChevronDown, SlidersHorizontal, Printer
 } from 'lucide-react';
@@ -551,13 +552,11 @@ export default function RequestsIndex() {
                                             <div className="grid grid-cols-2 gap-2">
                                                 <div>
                                                     <label className="block text-[10px] font-bold text-slate-450 mb-1">تاريخ البدء</label>
-                                                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-                                                        className="w-full border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-xl px-2.5 py-1.5 text-xs focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" />
+                                                    <FlatpickrInput type="date" value={startDate} onChange={date => setStartDate(date)} />
                                                 </div>
                                                 <div>
                                                     <label className="block text-[10px] font-bold text-slate-450 mb-1">تاريخ الانتهاء</label>
-                                                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-                                                        className="w-full border border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-xl px-2.5 py-1.5 text-xs focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" />
+                                                    <FlatpickrInput type="date" value={endDate} onChange={date => setEndDate(date)} />
                                                 </div>
                                             </div>
 

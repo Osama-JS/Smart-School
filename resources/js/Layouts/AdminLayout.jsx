@@ -6,7 +6,7 @@ import {
     ClipboardList, Map, Book, Library, BarChart, UserPlus, Settings,
     Menu, ChevronDown, LogOut, User, Search, X,
     PanelLeftClose, PanelLeftOpen, ShieldCheck, Store, Clock,
-    LayoutDashboard, Briefcase, Sun, Moon
+    LayoutDashboard, Briefcase, Sun, Moon, Layers
 } from 'lucide-react';
 
 export default function AdminLayout({ children, activeMenu = 'المستخدمون' }) {
@@ -17,6 +17,10 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
     const [profileDropdown, setProfileDropdown] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [showSearchDropdown, setShowSearchDropdown] = useState(false);
 
     const [theme, setTheme] = useState(() => {
         if (typeof window !== 'undefined') {
@@ -41,12 +45,15 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Profile dropdown close on outside click
+    // Profile & Search dropdown close on outside click
     useEffect(() => {
-        const handleClick = () => setProfileDropdown(false);
-        if (profileDropdown) document.addEventListener('click', handleClick);
+        const handleClick = () => {
+            setProfileDropdown(false);
+            setShowSearchDropdown(false);
+        };
+        if (profileDropdown || showSearchDropdown) document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
-    }, [profileDropdown]);
+    }, [profileDropdown, showSearchDropdown]);
 
     // Escape key to close sidebar & search
     useEffect(() => {
@@ -124,7 +131,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'الشؤون الأكاديمية',
             items: [
-                { name: 'الفصول والمواد', icon: BookOpen },
+                { name: 'السنوات الدراسية', icon: Calendar, url: route('academic.years') },
+                { name: 'الصفوف والشعب', icon: Layers, url: route('academic.structure') },
+                { name: 'المواد الدراسية', icon: BookOpen, url: route('academic.subjects.index') },
                 { name: 'جدول الحصص', icon: Calendar, permission: 'إدارة الجداول' },
                 { name: 'جداول الاختبارات', icon: FileText, permission: 'إدارة الجداول' },
                 { name: 'النتائج الشهرية', icon: BarChart, permission: 'إدارة الدرجات' },
@@ -164,6 +173,12 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         ...group,
         items: group.items.filter(item => !item.permission || hasPermission(item.permission))
     })).filter(group => group.items.length > 0);
+
+    // Compute Search Results
+    const allNavItems = filteredMenuGroups.flatMap(group => group.items);
+    const searchResults = searchQuery.trim() 
+        ? allNavItems.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) && item.url)
+        : [];
 
     // Bottom navigation items
     const bottomNavItems = [
@@ -279,14 +294,59 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                             {sidebarOpen ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
                         </button>
 
+                        {/* Branch Badge */}
+                        {auth?.user?.branch && (
+                            <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-primary-50 dark:bg-primary-500/10 border border-primary-100 dark:border-primary-500/20 rounded-xl text-primary-700 dark:text-primary-400 mr-2">
+                                <Store size={16} />
+                                <span className="text-sm font-bold">{auth.user.branch.name}</span>
+                            </div>
+                        )}
+
                         {/* Desktop Search */}
-                        <div className="hidden md:flex items-center relative">
-                            <Search size={16} className="absolute right-3 text-slate-400 pointer-events-none" />
+                        <div className="hidden md:flex items-center relative" onClick={(e) => e.stopPropagation()}>
+                            <Search size={16} className={`absolute right-3 pointer-events-none transition-colors ${showSearchDropdown && searchQuery ? 'text-primary-500' : 'text-slate-400'}`} />
                             <input 
                                 type="text" 
-                                placeholder="بحث سريع..." 
-                                className="erp-input w-56 lg:w-64 pr-9 text-sm !py-2 !border-slate-200 bg-slate-50/80 focus:bg-white"
+                                placeholder="بحث في النظام..." 
+                                className="erp-input w-56 lg:w-72 pr-9 text-sm !py-2 !border-slate-200 dark:!border-slate-700 bg-slate-50/80 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-sm"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setShowSearchDropdown(true);
+                                }}
+                                onFocus={() => setShowSearchDropdown(true)}
                             />
+                            
+                            {/* Search Results Dropdown */}
+                            {showSearchDropdown && searchQuery.trim() !== '' && (
+                                <div className="absolute top-full mt-2 right-0 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 py-2 animate-scale-in z-50 overflow-hidden">
+                                    {searchResults.length > 0 ? (
+                                        <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                                            <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase">نتائج البحث</div>
+                                            {searchResults.map((item, idx) => (
+                                                <Link 
+                                                    key={idx} 
+                                                    href={item.url}
+                                                    className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                                    onClick={() => {
+                                                        setShowSearchDropdown(false);
+                                                        setSearchQuery('');
+                                                    }}
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-primary-500">
+                                                        <item.icon size={16} />
+                                                    </div>
+                                                    <span>{item.name}</span>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="px-4 py-6 text-center text-sm text-slate-500 font-medium">
+                                            لم يتم العثور على نتائج لـ <span className="font-bold text-slate-700 dark:text-slate-300">"{searchQuery}"</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Mobile Search Button */}
@@ -351,24 +411,86 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
 
                 {/* Mobile Search Overlay */}
                 {mobileSearchOpen && (
-                    <div className="search-overlay md:hidden">
-                        <div className="flex items-center gap-3">
-                            <div className="flex-1 relative">
-                                <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <div className="search-overlay md:hidden z-[100] fixed inset-0 bg-slate-50 dark:bg-[#0B1120] flex flex-col animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center gap-3 p-4 bg-white dark:bg-[#121820] border-b border-slate-100 dark:border-slate-800 shadow-sm">
+                            <div className="flex-1 relative flex items-center group">
+                                <Search size={18} className="absolute right-4 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
                                 <input 
                                     type="text"
                                     placeholder="ابحث في النظام..."
-                                    className="search-overlay-input"
+                                    className="w-full bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-4 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none font-bold text-slate-800 dark:text-slate-100 transition-all shadow-inner"
                                     autoFocus
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
                                 />
+                                {searchQuery && (
+                                    <button 
+                                        className="absolute left-4 p-1 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                                        onClick={() => setSearchQuery('')}
+                                    >
+                                        <X size={12} strokeWidth={3} />
+                                    </button>
+                                )}
                             </div>
                             <button 
-                                className="erp-btn-ghost shrink-0" 
-                                onClick={() => setMobileSearchOpen(false)}
+                                className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:border-rose-500/30 transition-all shadow-sm shrink-0 active:scale-95" 
+                                onClick={() => {
+                                    setMobileSearchOpen(false);
+                                    setSearchQuery('');
+                                }}
                                 aria-label="إغلاق البحث"
                             >
-                                <X size={22} />
+                                <span className="text-sm font-bold px-1">إلغاء</span>
                             </button>
+                        </div>
+                        
+                        {/* Search Results Mobile */}
+                        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                            {searchQuery.trim() !== '' ? (
+                                searchResults.length > 0 ? (
+                                    <div className="space-y-2">
+                                        <div className="px-2 pb-2 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase flex items-center gap-2">
+                                            <span>نتائج البحث</span>
+                                            <span className="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-[10px] text-slate-600 dark:text-slate-400">{searchResults.length}</span>
+                                        </div>
+                                        {searchResults.map((item, idx) => (
+                                            <Link 
+                                                key={idx} 
+                                                href={item.url}
+                                                className="flex items-center gap-4 px-4 py-3.5 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 shadow-sm hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-[0.98] group"
+                                                onClick={() => {
+                                                    setMobileSearchOpen(false);
+                                                    setSearchQuery('');
+                                                }}
+                                            >
+                                                <div className="w-11 h-11 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-400 border border-primary-100/50 dark:border-primary-500/20 group-hover:scale-110 transition-transform">
+                                                    <item.icon size={20} />
+                                                </div>
+                                                <span className="flex-1 text-base">{item.name}</span>
+                                                <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 group-hover:text-primary-500 transition-colors">
+                                                    <ChevronDown size={16} className="transform -rotate-90" />
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-full text-center pb-20 animate-in fade-in duration-300">
+                                        <div className="w-20 h-20 bg-white dark:bg-[#121820] shadow-sm border border-slate-100 dark:border-slate-800 rounded-full flex items-center justify-center mb-5">
+                                            <Search size={32} className="text-slate-300 dark:text-slate-600" />
+                                        </div>
+                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-2">لم يتم العثور على نتائج</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 font-medium">حاول استخدام كلمات مفتاحية أخرى للبحث عن <span className="font-bold text-slate-700 dark:text-slate-300">"{searchQuery}"</span></p>
+                                    </div>
+                                )
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full text-center pb-20 opacity-60">
+                                    <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-5 border border-slate-200 dark:border-slate-700">
+                                        <Search size={32} className="text-slate-400 dark:text-slate-500" />
+                                    </div>
+                                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-2">بحث سريع الملاحة</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 font-medium">ابدأ بالكتابة للبحث عن أي صفحة في النظام...</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
