@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import SelectInput from '@/Components/SelectInput';
 import { 
     Calendar, Plus, Edit2, Trash2, CheckCircle2, 
     X, AlertTriangle, AlertCircle, ChevronDown, Check, LayoutList, Layers, Sparkles
@@ -369,12 +370,14 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
                     {isAdmin && (
                         <div>
                             <label className="block text-sm font-black text-slate-800 dark:text-slate-300 mb-1.5">الفرع (اختياري)</label>
-                            <select value={yearForm.branch_id} onChange={e => setYearForm({...yearForm, branch_id: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-800 dark:text-white font-bold cursor-pointer">
-                                <option value="">عام للكل</option>
-                                {branches.map(b => (
-                                    <option key={b.id} value={b.id}>{b.name}</option>
-                                ))}
-                            </select>
+                            <SelectInput 
+                                value={yearForm.branch_id} 
+                                onChange={val => setYearForm({...yearForm, branch_id: val})} 
+                                options={[
+                                    { value: '', label: 'عام للكل' },
+                                    ...branches.map(b => ({ value: b.id, label: b.name }))
+                                ]}
+                            />
                         </div>
                     )}
 

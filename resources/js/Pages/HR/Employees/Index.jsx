@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import SelectInput from '@/Components/SelectInput';
 import { 
     Search, Plus, Filter, Mail, Building, ShieldCheck,
     MoreVertical, Edit2, Trash2, X, Check, Users, Calendar, 
@@ -48,15 +49,15 @@ function ActionMenu({ emp }) {
             </button>
             {open && (
                 <div className="absolute left-0 top-full mt-1.5 w-44 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 z-20 overflow-hidden animate-slide-down">
-                    <button className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
+                    <Link href={route('hr.employees.edit', emp.id)} className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
                         <Edit2 size={14} className="text-primary-500" /> تعديل البيانات
-                    </button>
+                    </Link>
                     <button className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
                         <Calendar size={14} className="text-amber-500" /> سجل الإجازات
                     </button>
-                    <button className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-500/10 transition-colors text-right">
+                    <Link href={route('hr.employees.destroy', emp.id)} method="delete" as="button" className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-500/10 transition-colors text-right">
                         <Trash2 size={14} /> حذف الموظف
-                    </button>
+                    </Link>
                 </div>
             )}
         </div>
@@ -356,10 +357,10 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                 title="طباعة الكشف">
                                 <Printer size={18} />
                             </button>
-                            <button className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95">
+                            <Link href={route('hr.employees.create')} className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95">
                                 <Plus size={18} />
                                 <span>إضافة موظف جديد</span>
-                            </button>
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -478,38 +479,41 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                             {/* Status Filter */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الحالة التشغيلية</label>
-                                <select 
+                                <SelectInput 
                                     value={statusValue} 
-                                    onChange={e => handleStatusChange(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 dark:text-white font-semibold">
-                                    <option value="all">الكل</option>
-                                    <option value="active">نشط</option>
-                                    <option value="inactive">معطل</option>
-                                </select>
+                                    onChange={val => handleStatusChange(val)}
+                                    options={[
+                                        { value: 'all', label: 'الكل' },
+                                        { value: 'active', label: 'نشط' },
+                                        { value: 'inactive', label: 'معطل' }
+                                    ]}
+                                />
                             </div>
 
                             {/* Department Filter */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">القسم الإداري</label>
-                                <select 
+                                <SelectInput 
                                     value={deptFilter} 
-                                    onChange={e => handleDeptChange(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 dark:text-white font-semibold">
-                                    <option value="">جميع الأقسام</option>
-                                    {departments?.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                </select>
+                                    onChange={val => handleDeptChange(val)}
+                                    options={[
+                                        { value: '', label: 'جميع الأقسام' },
+                                        ...(departments || []).map(d => ({ value: d.id, label: d.name }))
+                                    ]}
+                                />
                             </div>
 
                             {/* Job Grade Filter */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الدرجة الوظيفية</label>
-                                <select 
+                                <SelectInput 
                                     value={gradeFilter} 
-                                    onChange={e => handleGradeChange(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 dark:text-white font-semibold">
-                                    <option value="">جميع الدرجات</option>
-                                    {jobGrades?.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                                </select>
+                                    onChange={val => handleGradeChange(val)}
+                                    options={[
+                                        { value: '', label: 'جميع الدرجات' },
+                                        ...(jobGrades || []).map(g => ({ value: g.id, label: g.name }))
+                                    ]}
+                                />
                             </div>
 
                             {/* Hire Date Start */}

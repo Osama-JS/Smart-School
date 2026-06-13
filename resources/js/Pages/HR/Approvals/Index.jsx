@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Head, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import SelectInput from '@/Components/SelectInput';
 import { 
     Search, Filter, MoreVertical, CheckCircle, XCircle, Clock, Info,
     X, RotateCcw, Download, Printer, LayoutGrid, List, FileText, ChevronDown,
@@ -540,36 +541,30 @@ export default function ApprovalsIndex() {
                             {/* Type Filter */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">نوع الطلب</label>
-                                <div className="relative group">
-                                    <Lock size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none" />
-                                    <select 
-                                        value={typeFilter} 
-                                        onChange={e => setTypeFilter(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-2xl pr-10 pl-10 py-2.5 text-xs outline-none focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:shadow-[0_0_15px_rgba(91,138,45,0.15)] dark:focus:shadow-[0_0_20px_rgba(91,138,45,0.25)] dark:text-white font-semibold appearance-none transition-all duration-300">
-                                        <option value="all">كل الأنواع</option>
-                                        <option value="leave">طلبات الإجازات</option>
-                                        <option value="financial">طلبات السلف المالية</option>
-                                        <option value="maghadara">طلبات المغادرة</option>
-                                    </select>
-                                    <ChevronDown size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                </div>
+                                <SelectInput 
+                                    value={typeFilter} 
+                                    onChange={val => setTypeFilter(val)}
+                                    options={[
+                                        { value: 'all', label: 'كل الأنواع' },
+                                        { value: 'leave', label: 'طلبات الإجازات' },
+                                        { value: 'financial', label: 'طلبات السلف المالية' },
+                                        { value: 'maghadara', label: 'طلبات المغادرة' }
+                                    ]}
+                                />
                             </div>
 
                             {/* Priority Filter */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الأهمية</label>
-                                <div className="relative group">
-                                    <Flag size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none" />
-                                    <select 
-                                        value={priorityFilter} 
-                                        onChange={e => setPriorityFilter(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-205 dark:border-slate-800 rounded-2xl pr-10 pl-10 py-2.5 text-xs outline-none focus:ring-4 focus:ring-primary-500/20 focus:border-primary-500 focus:shadow-[0_0_15px_rgba(91,138,45,0.15)] dark:focus:shadow-[0_0_20px_rgba(91,138,45,0.25)] dark:text-white font-semibold appearance-none transition-all duration-300">
-                                        <option value="all">الكل</option>
-                                        <option value="high">عالية</option>
-                                        <option value="normal">عادية</option>
-                                    </select>
-                                    <ChevronDown size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                </div>
+                                <SelectInput 
+                                    value={priorityFilter} 
+                                    onChange={val => setPriorityFilter(val)}
+                                    options={[
+                                        { value: 'all', label: 'الكل' },
+                                        { value: 'high', label: 'عالية' },
+                                        { value: 'normal', label: 'عادية' }
+                                    ]}
+                                />
                             </div>
 
                             {/* Date Hired Start */}

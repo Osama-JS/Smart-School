@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
 import { 
     BookOpen, Plus, Edit2, Trash2, Search, X, Layers, AlertCircle, CheckCircle2,
     Calculator, FlaskConical, Globe, Laptop, Music, Palette, Microscope, Languages, Feather,
@@ -454,17 +455,14 @@ export default function SubjectsIndex({ subjects, sections, branches = [], isAdm
                     {isAdmin && (
                         <div>
                             <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">الفرع <span className="text-rose-500">*</span></label>
-                            <select 
+                            <SelectInput 
                                 value={form.branch_id} 
-                                onChange={e => setForm({...form, branch_id: e.target.value})} 
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-800 dark:text-white font-bold" 
-                                required={isAdmin}
-                            >
-                                <option value="">اختر الفرع...</option>
-                                {branches.map(b => (
-                                    <option key={b.id} value={b.id}>{b.name}</option>
-                                ))}
-                            </select>
+                                onChange={val => setForm({...form, branch_id: val})}
+                                options={[
+                                    { value: '', label: 'اختر الفرع...' },
+                                    ...branches.map(b => ({ value: b.id, label: b.name }))
+                                ]}
+                            />
                             {errors.branch_id && <p className="text-rose-500 text-xs font-bold mt-1.5">{errors.branch_id}</p>}
                         </div>
                     )}

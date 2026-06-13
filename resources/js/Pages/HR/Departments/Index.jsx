@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
 import {
     Search, Plus, Building, Users, FolderTree, ChevronRight,
     ChevronDown, Edit2, Trash2, MoreVertical, X, Check, AlertTriangle, Save,
@@ -457,74 +458,72 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
                                 {/* 1. Department Type */}
                                 <div className="flex flex-col gap-1.5 text-right">
                                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">نوع القسم</label>
-                                    <select 
+                                    <SelectInput 
                                         value={typeFilter} 
-                                        onChange={e => {
-                                            setTypeFilter(e.target.value);
-                                            applyFilters({ type: e.target.value, parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: sortBy });
+                                        onChange={val => {
+                                            setTypeFilter(val);
+                                            applyFilters({ type: val, parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: sortBy });
                                         }}
-                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                    >
-                                        <option value="all">الكل</option>
-                                        <option value="main">قسم رئيسي (إدارة)</option>
-                                        <option value="sub">قسم فرعي</option>
-                                    </select>
+                                        options={[
+                                            { value: 'all', label: 'الكل' },
+                                            { value: 'main', label: 'قسم رئيسي (إدارة)' },
+                                            { value: 'sub', label: 'قسم فرعي' }
+                                        ]}
+                                    />
                                 </div>
 
                                 {/* 2. Parent Department */}
                                 <div className="flex flex-col gap-1.5 text-right">
                                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">القسم الرئيسي الأب</label>
-                                    <select 
+                                    <SelectInput 
                                         value={parentFilter} 
-                                        onChange={e => {
-                                            setParentFilter(e.target.value);
-                                            applyFilters({ type: typeFilter, parent_filter_id: e.target.value, staff_range: staffFilter, sort_by: sortBy });
+                                        onChange={val => {
+                                            setParentFilter(val);
+                                            applyFilters({ type: typeFilter, parent_filter_id: val, staff_range: staffFilter, sort_by: sortBy });
                                         }}
-                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                    >
-                                        <option value="all">الكل</option>
-                                        {parentOptions?.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
+                                        options={[
+                                            { value: 'all', label: 'الكل' },
+                                            ...(parentOptions?.map(p => ({ value: p.id, label: p.name })) || [])
+                                        ]}
+                                    />
                                 </div>
 
                                 {/* 3. Employee Density */}
                                 <div className="flex flex-col gap-1.5 text-right">
                                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">كثافة الموظفين</label>
-                                    <select 
+                                    <SelectInput 
                                         value={staffFilter} 
-                                        onChange={e => {
-                                            setStaffFilter(e.target.value);
-                                            applyFilters({ type: typeFilter, parent_filter_id: parentFilter, staff_range: e.target.value, sort_by: sortBy });
+                                        onChange={val => {
+                                            setStaffFilter(val);
+                                            applyFilters({ type: typeFilter, parent_filter_id: parentFilter, staff_range: val, sort_by: sortBy });
                                         }}
-                                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                    >
-                                        <option value="all">الكل</option>
-                                        <option value="empty">أقسام فارغة (0 موظف)</option>
-                                        <option value="low">كثافة منخفضة (1-2 موظفين)</option>
-                                        <option value="medium">كثافة متوسطة (3-9 موظفين)</option>
-                                        <option value="high">كثافة عالية (10+ موظفين)</option>
-                                    </select>
+                                        options={[
+                                            { value: 'all', label: 'الكل' },
+                                            { value: 'empty', label: 'أقسام فارغة (0 موظف)' },
+                                            { value: 'low', label: 'كثافة منخفضة (1-2 موظفين)' },
+                                            { value: 'medium', label: 'كثافة متوسطة (3-9 موظفين)' },
+                                            { value: 'high', label: 'كثافة عالية (10+ موظفين)' }
+                                        ]}
+                                    />
                                 </div>
 
                                 {/* 4. Sort By */}
                                 <div className="flex flex-col gap-1.5 text-right">
                                     <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ترتيب حسب</label>
-                                    <select 
+                                    <SelectInput 
                                         value={sortBy} 
-                                        onChange={e => {
-                                            setSortBy(e.target.value);
-                                            applyFilters({ type: typeFilter, parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: e.target.value });
+                                        onChange={val => {
+                                            setSortBy(val);
+                                            applyFilters({ type: typeFilter, parent_filter_id: parentFilter, staff_range: staffFilter, sort_by: val });
                                         }}
-                                        className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-205 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                                    >
-                                        <option value="all">الافتراضي (حسب الهيكل)</option>
-                                        <option value="name_asc">الاسم (أبجدي تصاعدي)</option>
-                                        <option value="name_desc">الاسم (أبجدي تنازلي)</option>
-                                        <option value="employees_desc">عدد الموظفين (الأكثر أولاً)</option>
-                                        <option value="employees_asc">عدد الموظفين (الأقل أولاً)</option>
-                                    </select>
+                                        options={[
+                                            { value: 'all', label: 'الافتراضي (حسب الهيكل)' },
+                                            { value: 'name_asc', label: 'الاسم (أبجدي تصاعدي)' },
+                                            { value: 'name_desc', label: 'الاسم (أبجدي تنازلي)' },
+                                            { value: 'employees_desc', label: 'عدد الموظفين (الأكثر أولاً)' },
+                                            { value: 'employees_asc', label: 'عدد الموظفين (الأقل أولاً)' }
+                                        ]}
+                                    />
                                 </div>
                             </div>
                         )}
@@ -677,17 +676,15 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">القسم الأب (اختياري)</label>
-                        <div className="relative flex items-center group">
-                            <FolderTree size={16} className="absolute right-4 text-slate-450 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200" />
-                            <select
-                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-150 rounded-2xl pr-11 pl-10 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-bold appearance-none cursor-pointer"
+                        <div className="relative group">
+                            <SelectInput
                                 value={form.parent_id}
-                                onChange={e => setForm({ ...form, parent_id: e.target.value })}
-                            >
-                                <option value="">— قسم رئيسي —</option>
-                                {parentOptions?.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                            </select>
-                            <ChevronDown size={16} className="absolute left-4 text-slate-450 dark:text-slate-500 pointer-events-none" />
+                                onChange={val => setForm({ ...form, parent_id: val })}
+                                options={[
+                                    { value: '', label: '— قسم رئيسي —' },
+                                    ...(parentOptions?.map(p => ({ value: p.id, label: p.name })) || [])
+                                ]}
+                            />
                         </div>
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
@@ -718,19 +715,15 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">القسم الأب (اختياري)</label>
-                        <div className="relative flex items-center group">
-                            <FolderTree size={16} className="absolute right-4 text-slate-450 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200" />
-                            <select
-                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-150 rounded-2xl pr-11 pl-10 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-bold appearance-none cursor-pointer"
+                        <div className="relative group">
+                            <SelectInput
                                 value={form.parent_id}
-                                onChange={e => setForm({ ...form, parent_id: e.target.value })}
-                            >
-                                <option value="">— قسم رئيسي —</option>
-                                {parentOptions?.filter(p => p.id !== editDept?.id).map(p => (
-                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown size={16} className="absolute left-4 text-slate-450 dark:text-slate-500 pointer-events-none" />
+                                onChange={val => setForm({ ...form, parent_id: val })}
+                                options={[
+                                    { value: '', label: '— قسم رئيسي —' },
+                                    ...(parentOptions?.filter(p => p.id !== editDept?.id).map(p => ({ value: p.id, label: p.name })) || [])
+                                ]}
+                            />
                         </div>
                     </div>
                     <div className="flex justify-end gap-3 pt-4">

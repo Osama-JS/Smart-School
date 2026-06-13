@@ -16,7 +16,7 @@ class ReportController extends Controller
         $user = $request->user();
         $employee = $user->employee;
         
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
 
         // 1. Templates available for this employee to fill
@@ -99,7 +99,7 @@ class ReportController extends Controller
         }
 
         $user = $request->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
 
         Report::create([

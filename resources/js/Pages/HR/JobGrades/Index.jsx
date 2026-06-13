@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
 import {
     Search, Plus, ShieldCheck, Star, Users, Edit2, Trash2,
     MoreVertical, X, Check, AlertTriangle, Save, SlidersHorizontal, RotateCcw, Award, ChevronDown, Network, LayoutGrid
@@ -450,19 +451,19 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
                         {/* 1. Level Range Category */}
                         <div className="flex flex-col gap-1.5 text-right">
                             <label className="text-xs font-bold text-slate-500 dark:text-slate-400">فئة المستوى</label>
-                            <select 
+                            <SelectInput 
                                 value={levelFilter} 
-                                onChange={e => {
-                                    setLevelFilter(e.target.value);
-                                    applyFilters({ level_range: e.target.value, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: sortBy });
+                                onChange={val => {
+                                    setLevelFilter(val);
+                                    applyFilters({ level_range: val, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: sortBy });
                                 }}
-                                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                            >
-                                <option value="all">الكل</option>
-                                <option value="executive">مستوى قيادي / تنفيذي (10 - 15)</option>
-                                <option value="supervisory">مستوى إشرافي (5 - 9)</option>
-                                <option value="entry">مستوى تشغيلي (1 - 4)</option>
-                            </select>
+                                options={[
+                                    { value: 'all', label: 'الكل' },
+                                    { value: 'executive', label: 'مستوى قيادي / تنفيذي (10 - 15)' },
+                                    { value: 'supervisory', label: 'مستوى إشرافي (5 - 9)' },
+                                    { value: 'entry', label: 'مستوى تشغيلي (1 - 4)' }
+                                ]}
+                            />
                         </div>
 
                         {/* 2. Precise Min Level */}
@@ -496,40 +497,40 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
                         {/* 4. Employee Density */}
                         <div className="flex flex-col gap-1.5 text-right">
                             <label className="text-xs font-bold text-slate-500 dark:text-slate-400">كثافة الموظفين</label>
-                            <select 
+                            <SelectInput 
                                 value={staffFilter} 
-                                onChange={e => {
-                                    setStaffFilter(e.target.value);
-                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: e.target.value, sort_by: sortBy });
+                                onChange={val => {
+                                    setStaffFilter(val);
+                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: val, sort_by: sortBy });
                                 }}
-                                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                            >
-                                <option value="all">الكل</option>
-                                <option value="empty">درجات شاغرة (0 موظف)</option>
-                                <option value="low">كثافة منخفضة (1 - 5 موظفين)</option>
-                                <option value="medium">كثافة متوسطة (6 - 15 موظفاً)</option>
-                                <option value="high">كثافة عالية (16+ موظفاً)</option>
-                            </select>
+                                options={[
+                                    { value: 'all', label: 'الكل' },
+                                    { value: 'empty', label: 'درجات شاغرة (0 موظف)' },
+                                    { value: 'low', label: 'كثافة منخفضة (1 - 5 موظفين)' },
+                                    { value: 'medium', label: 'كثافة متوسطة (6 - 15 موظفاً)' },
+                                    { value: 'high', label: 'كثافة عالية (16+ موظفاً)' }
+                                ]}
+                            />
                         </div>
 
                         {/* 5. Sort By */}
                         <div className="flex flex-col gap-1.5 text-right">
                             <label className="text-xs font-bold text-slate-500 dark:text-slate-400">ترتيب حسب</label>
-                            <select 
+                            <SelectInput 
                                 value={sortBy} 
-                                onChange={e => {
-                                    setSortBy(e.target.value);
-                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: e.target.value });
+                                onChange={val => {
+                                    setSortBy(val);
+                                    applyFilters({ level_range: levelFilter, min_level: minLevel, max_level: maxLevel, staff_range: staffFilter, sort_by: val });
                                 }}
-                                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer"
-                            >
-                                <option value="all">المستوى الوظيفي (الأعلى أولاً)</option>
-                                <option value="level_asc">المستوى الوظيفي (الأقل أولاً)</option>
-                                <option value="name_asc">الاسم (أبجدي تصاعدي)</option>
-                                <option value="name_desc">الاسم (أبجدي تنازلي)</option>
-                                <option value="employees_desc">عدد الموظفين (الأكثر أولاً)</option>
-                                <option value="employees_asc">عدد الموظفين (الأقل أولاً)</option>
-                            </select>
+                                options={[
+                                    { value: 'all', label: 'المستوى الوظيفي (الأعلى أولاً)' },
+                                    { value: 'level_asc', label: 'المستوى الوظيفي (الأقل أولاً)' },
+                                    { value: 'name_asc', label: 'الاسم (أبجدي تصاعدي)' },
+                                    { value: 'name_desc', label: 'الاسم (أبجدي تنازلي)' },
+                                    { value: 'employees_desc', label: 'عدد الموظفين (الأكثر أولاً)' },
+                                    { value: 'employees_asc', label: 'عدد الموظفين (الأقل أولاً)' }
+                                ]}
+                            />
                         </div>
                     </div>
                 )}
@@ -761,16 +762,17 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">يرفع تقاريره إلى (التبعية)</label>
-                        <select
-                            className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl px-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-semibold cursor-pointer"
+                        <SelectInput
                             value={form.parent_id}
-                            onChange={e => setForm({ ...form, parent_id: e.target.value })}
-                        >
-                            <option value="">بدون تبعية (مستوى قيادي أعلى)</option>
-                            {allGrades.filter(g => g.level < (parseInt(form.level) || 16)).map(g => (
-                                <option key={g.id} value={g.id}>{g.name} (مستوى {g.level})</option>
-                            ))}
-                        </select>
+                            onChange={val => setForm({ ...form, parent_id: val })}
+                            options={[
+                                { value: '', label: 'بدون تبعية (مستوى قيادي أعلى)' },
+                                ...allGrades.filter(g => g.level < (parseInt(form.level) || 16)).map(g => ({
+                                    value: g.id,
+                                    label: `${g.name} (مستوى ${g.level})`
+                                }))
+                            ]}
+                        />
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <button type="button" onClick={() => setShowAdd(false)} className="px-5 py-2.5 text-sm font-bold text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
@@ -815,16 +817,17 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">يرفع تقاريره إلى (التبعية)</label>
-                        <select
-                            className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl px-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-semibold cursor-pointer"
+                        <SelectInput
                             value={form.parent_id}
-                            onChange={e => setForm({ ...form, parent_id: e.target.value })}
-                        >
-                            <option value="">بدون تبعية (مستوى قيادي أعلى)</option>
-                            {allGrades.filter(g => g.id !== editGrade?.id && g.level < (parseInt(form.level) || 16)).map(g => (
-                                <option key={g.id} value={g.id}>{g.name} (مستوى {g.level})</option>
-                            ))}
-                        </select>
+                            onChange={val => setForm({ ...form, parent_id: val })}
+                            options={[
+                                { value: '', label: 'بدون تبعية (مستوى قيادي أعلى)' },
+                                ...allGrades.filter(g => g.id !== editGrade?.id && g.level < (parseInt(form.level) || 16)).map(g => ({
+                                    value: g.id,
+                                    label: `${g.name} (مستوى ${g.level})`
+                                }))
+                            ]}
+                        />
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <button type="button" onClick={() => setEditGrade(null)} className="px-5 py-2.5 text-sm font-bold text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>

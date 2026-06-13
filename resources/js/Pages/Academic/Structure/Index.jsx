@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
 import { 
     Layers, Plus, Edit2, Trash2, ChevronDown, CheckCircle2, 
     X, AlertTriangle, Users, Copy, GraduationCap, Sparkles
@@ -33,6 +34,7 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
     const { errors, flash } = usePage().props;
     const [activeTab, setActiveTab] = useState('sections'); // 'sections' or 'divisions'
     const [expandedSections, setExpandedSections] = useState({});
+    const [activeBranchId, setActiveBranchId] = useState(null);
     
     // Expand first section by default
     useEffect(() => {
@@ -148,11 +150,12 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
     };
 
     // --- Division Handlers ---
-    const openDivisionModal = (gradeId, division = null) => {
+    const openDivisionModal = (gradeId, branchId, division = null) => {
         if (!selectedYearId) {
             alert('الرجاء اختيار السنة الدراسية أولاً');
             return;
         }
+        setActiveBranchId(branchId);
         setEditingItem(division);
         setSelectedParentId(gradeId);
         setDivisionForm(division ? { 
@@ -210,18 +213,14 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
             <div className="max-w-7xl mx-auto space-y-8">
                 
                 {/* Header */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none">
-                    {/* Brand Line Accent */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none no-print bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
-                    {/* Fine abstract geometric background lines */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                         <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
-                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
                             <circle cx="250" cy="90" r="4" className="fill-primary-500" />
                             <circle cx="500" cy="160" r="6" className="fill-primary-400" />
-                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
                         </svg>
                     </div>
 
@@ -250,7 +249,7 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
 
                 {/* --- Content: Sections & Grades --- */}
                 {activeTab === 'sections' && (
-                    <div className="space-y-6">
+                    <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl shadow-sm dark:shadow-none p-6 animate-fade-in space-y-6">
                         <div className="flex justify-between items-center">
                             <h2 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
                                 <GraduationCap className="w-5 h-5 text-primary-500" /> المراحل الدراسية
@@ -322,16 +321,20 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
 
                 {/* --- Content: Divisions --- */}
                 {activeTab === 'divisions' && (
-                    <div className="space-y-6">
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl shadow-sm dark:shadow-none p-6 animate-fade-in space-y-6">
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
                                 <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1">عرض الشعب للسنة الدراسية:</label>
-                                <select value={selectedYearId || ''} onChange={handleYearChange} className="w-64 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 font-bold dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                                    <option value="">-- اختر السنة الدراسية --</option>
-                                    {academicYears.map(y => (
-                                        <option key={y.id} value={y.id}>{y.name} {y.is_active ? '(النشطة)' : ''}</option>
-                                    ))}
-                                </select>
+                                <div className="w-64">
+                                    <SelectInput 
+                                        value={selectedYearId || ''} 
+                                        onChange={val => handleYearChange({target: {value: val}})}
+                                        options={[
+                                            { value: '', label: '-- اختر السنة الدراسية --' },
+                                            ...academicYears.map(y => ({ value: y.id, label: `${y.name} ${y.is_active ? '(النشطة)' : ''}` }))
+                                        ]}
+                                    />
+                                </div>
                             </div>
                             
                             <button onClick={() => setIsCopyModalOpen(true)} className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-all">
@@ -358,7 +361,7 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
                                                         <div className="w-2 h-6 bg-primary-500 rounded-full"></div>
                                                         {grade.name}
                                                     </h4>
-                                                    <button onClick={() => openDivisionModal(grade.id)} className="text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 dark:bg-primary-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
+                                                    <button onClick={() => openDivisionModal(grade.id, section.branch_id)} className="text-xs font-bold text-primary-600 bg-primary-50 hover:bg-primary-100 dark:bg-primary-500/10 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
                                                         <Plus size={14} /> إضافة شعبة
                                                     </button>
                                                 </div>
@@ -372,7 +375,7 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
                                                                 <div className="flex justify-between items-start mb-2">
                                                                     <h5 className="font-black text-primary-600 dark:text-primary-400 text-lg">{division.name}</h5>
                                                                     <div className="flex gap-1">
-                                                                        <button onClick={() => openDivisionModal(grade.id, division)} className="p-1 text-slate-400 hover:text-primary-600">
+                                                                        <button onClick={() => openDivisionModal(grade.id, section.branch_id, division)} className="p-1 text-slate-400 hover:text-primary-600">
                                                                             <Edit2 className="w-4 h-4" />
                                                                         </button>
                                                                         <button onClick={() => deleteDivision(division.id)} className="p-1 text-slate-400 hover:text-red-600">
@@ -448,12 +451,14 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">رائد الصف / المرشد (اختياري)</label>
-                        <select value={divisionForm.homeroom_teacher_id} onChange={e => setDivisionForm({...divisionForm, homeroom_teacher_id: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                            <option value="">-- بدون رائد صف حالياً --</option>
-                            {teachers.map(t => (
-                                <option key={t.id} value={t.id}>{t.name}</option>
-                            ))}
-                        </select>
+                        <SelectInput 
+                            value={divisionForm.homeroom_teacher_id} 
+                            onChange={val => setDivisionForm({...divisionForm, homeroom_teacher_id: val})} 
+                            options={[
+                                { value: '', label: '-- بدون رائد صف حالياً --' },
+                                ...teachers.filter(t => t.branch_id === activeBranchId).map(t => ({ value: t.id, label: t.name }))
+                            ]}
+                        />
                     </div>
                     <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
                         <button type="button" onClick={() => setIsDivisionModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">إلغاء</button>
@@ -471,12 +476,14 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
                     <div className="grid grid-cols-1 gap-4">
                         <div>
                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5">نسخ الشعب من سنة:</label>
-                            <select required value={copyForm.from_academic_year_id} onChange={e => setCopyForm({...copyForm, from_academic_year_id: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500/20 dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                                <option value="">-- اختر السنة المصدر --</option>
-                                {academicYears.map(y => (
-                                    <option key={y.id} value={y.id}>{y.name}</option>
-                                ))}
-                            </select>
+                            <SelectInput 
+                                value={copyForm.from_academic_year_id} 
+                                onChange={val => setCopyForm({...copyForm, from_academic_year_id: val})} 
+                                options={[
+                                    { value: '', label: '-- اختر السنة المصدر --' },
+                                    ...academicYears.map(y => ({ value: y.id, label: y.name }))
+                                ]}
+                            />
                         </div>
                         <div className="flex justify-center text-slate-300 dark:text-slate-600 py-1">
                             <ChevronDown className="w-6 h-6" />

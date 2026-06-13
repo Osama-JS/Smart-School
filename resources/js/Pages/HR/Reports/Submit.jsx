@@ -1,6 +1,7 @@
 import React from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
 import { Send, ArrowRight } from 'lucide-react';
 
 export default function SubmitReport({ auth, template }) {
@@ -52,17 +53,12 @@ export default function SubmitReport({ auth, template }) {
                 break;
             case 'select':
                 inputElement = (
-                    <select 
+                    <SelectInput 
                         value={data[key]}
-                        onChange={e => setData(key, e.target.value)}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                        onChange={val => setData(key, val)}
+                        options={field.options ? field.options.map(opt => ({ value: opt, label: opt })) : []}
                         required={field.is_required}
-                    >
-                        <option value="">اختر...</option>
-                        {field.options && field.options.map((opt, idx) => (
-                            <option key={idx} value={opt}>{opt}</option>
-                        ))}
-                    </select>
+                    />
                 );
                 break;
             case 'checkbox':

@@ -17,7 +17,7 @@ class AcademicStructureController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         
         // --- 1. Load Academic Years ---
         $academicYearsQuery = AcademicYear::query();
@@ -58,9 +58,13 @@ class AcademicStructureController extends Controller
         // Load all active users who can be teachers
         $teachersQuery = User::whereHas('role', function($q) {
             $q->where('name', '!=', 'طالب')->where('name', '!=', 'ولي أمر');
-        })->where('branch_id', $user->branch_id);
+        });
+
+        if (!$isAdmin) {
+            $teachersQuery->where('branch_id', $user->branch_id);
+        }
         
-        $teachers = $teachersQuery->select('id', 'name')->get();
+        $teachers = $teachersQuery->select('id', 'name', 'branch_id')->get();
 
         return Inertia::render('Academic/Structure/Index', [
             'academicYears' => $academicYears,
@@ -80,7 +84,7 @@ class AcademicStructureController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;
@@ -115,7 +119,7 @@ class AcademicStructureController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;
@@ -154,7 +158,7 @@ class AcademicStructureController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;
@@ -190,7 +194,7 @@ class AcademicStructureController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         $fromYearId = $request->from_academic_year_id;
         $toYearId = $request->to_academic_year_id;

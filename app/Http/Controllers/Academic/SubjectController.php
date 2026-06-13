@@ -14,7 +14,7 @@ class SubjectController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         // Load subjects with their attached grades and branch
         $query = Subject::with(['grades.section', 'branch']);
@@ -53,7 +53,7 @@ class SubjectController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         $rules = [
             'name'        => 'required|string|max:255',
@@ -95,7 +95,7 @@ class SubjectController extends Controller
     public function update(Request $request, Subject $subject)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         $rules = [
             'name'        => 'required|string|max:255',
@@ -137,7 +137,7 @@ class SubjectController extends Controller
     public function destroy(Subject $subject)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         if (!$isAdmin && $subject->branch_id !== $user->branch_id) {
             abort(403, 'غير مصرح لك');

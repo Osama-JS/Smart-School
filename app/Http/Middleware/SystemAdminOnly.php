@@ -16,7 +16,7 @@ class SystemAdminOnly
     public function handle(Request $request, Closure $next): Response
     {
         $user = auth()->user();
-        if (!$user || !$user->role || !in_array($user->role->name, ['مدير عام', 'مدير النظام'])) {
+        if (!$user || !$user->role || $user->role->name !== 'مدير النظام') {
             abort(403, 'غير مصرح لك بالوصول لهذه الصفحة. هذه الصفحة مخصصة لمدير النظام فقط.');
         }
 

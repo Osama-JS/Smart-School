@@ -11,7 +11,7 @@ class BranchController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Branch::query();
+        $query = Branch::query()->with(['manager']);
 
         // Search by name, address, or phone
         if ($request->filled('search')) {
@@ -63,9 +63,12 @@ class BranchController extends Controller
         }
 
         $branches = $query->paginate(12)->withQueryString();
+        
+        $users = \App\Models\User::select('id', 'name', 'national_id')->get();
 
         return Inertia::render('HR/Branches/Index', [
             'branches' => $branches,
+            'users' => $users,
             'filters'  => $request->only(['search', 'status', 'staff_range', 'sort_by']),
         ]);
     }
@@ -102,6 +105,29 @@ class BranchController extends Controller
         $branch->update($validated);
 
         return redirect()->route('hr.branches')->with('success', 'تم تعديل الفرع بنجاح');
+    }
+
+    public function assignManager(Request $request, Branch $branch)
+    {
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $managerRole = \App\Models\Role::where('name', 'مدير الفرع')->firstOrFail();
+
+        // إزالة صلاحية "مدير الفرع" من أي مدير سابق لهذا الفرع
+        \App\Models\User::where('branch_id', $branch->id)
+            ->where('role_id', $managerRole->id)
+            ->update(['role_id' => null]);
+
+        // تعيين المستخدم الجديد كمدير الفرع للفرع
+        $user = \App\Models\User::findOrFail($validated['user_id']);
+        $user->update([
+            'branch_id' => $branch->id,
+            'role_id' => $managerRole->id
+        ]);
+
+        return redirect()->route('hr.branches')->with('success', 'تم تعيين مدير الفرع بنجاح');
     }
 
     public function destroy(Branch $branch)

@@ -1,0 +1,239 @@
+import React, { useState, useEffect } from 'react';
+import { Head } from '@inertiajs/react';
+import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
+import { FileText, Calendar, CheckCircle2, Clock, UserX, UserCheck, AlertTriangle, Printer, Loader2, Download } from 'lucide-react';
+
+export default function AttendanceReport({ employees, isAdmin }) {
+    const [selectedEmployee, setSelectedEmployee] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    
+    const [loading, setLoading] = useState(false);
+    const [reportData, setReportData] = useState(null);
+
+    const months = [
+        { value: 1, label: 'يناير' }, { value: 2, label: 'فبراير' }, { value: 3, label: 'مارس' },
+        { value: 4, label: 'أبريل' }, { value: 5, label: 'مايو' }, { value: 6, label: 'يونيو' },
+        { value: 7, label: 'يوليو' }, { value: 8, label: 'أغسطس' }, { value: 9, label: 'سبتمبر' },
+        { value: 10, label: 'أكتوبر' }, { value: 11, label: 'نوفمبر' }, { value: 12, label: 'ديسمبر' }
+    ];
+
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({length: 5}, (_, i) => ({ value: currentYear - i, label: (currentYear - i).toString() }));
+
+    const fetchReport = async () => {
+        if (!selectedEmployee) return;
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/attendance/employee/${selectedEmployee}/report?month=${selectedMonth}&year=${selectedYear}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setReportData(data.data);
+            }
+        } catch (error) {
+            console.error('Error fetching report:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedEmployee) {
+            fetchReport();
+        }
+    }, [selectedEmployee, selectedMonth, selectedYear]);
+
+    const getArabicDayName = (dayOfWeek) => {
+        const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        return days[dayOfWeek];
+    };
+
+    const StatusBadge = ({ status }) => {
+        const map = {
+            present: { label: 'حاضر', bg: 'bg-emerald-100 text-emerald-700', icon: UserCheck },
+            late: { label: 'متأخر', bg: 'bg-warning-100 text-warning-700', icon: Clock },
+            absent: { label: 'غائب', bg: 'bg-rose-100 text-rose-700', icon: UserX },
+            excused: { label: 'بعذر', bg: 'bg-slate-100 text-slate-700', icon: AlertTriangle },
+            holiday: { label: 'إجازة رسمية', bg: 'bg-indigo-100 text-indigo-700', icon: Calendar },
+            leave: { label: 'إجازة خاصة', bg: 'bg-purple-100 text-purple-700', icon: FileText },
+            weekend: { label: 'إجازة أسبوعية', bg: 'bg-slate-100 text-slate-500', icon: Calendar },
+            future: { label: 'لم يحن', bg: 'bg-slate-50 text-slate-400', icon: Clock },
+        };
+        const s = map[status] || map.absent;
+        const Icon = s.icon;
+        return (
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${s.bg} w-max`}>
+                <Icon size={14} />
+                {s.label}
+            </span>
+        );
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
+
+    return (
+        <AdminLayout>
+            <Head title="تقرير الحضور الشهري" />
+
+            {/* Print Styles */}
+            <style dangerouslySetInnerHTML={{__html: `
+                @media print {
+                    aside, nav, header, .no-print, button, select, input { display: none !important; }
+                    main { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+                    body { background-color: white !important; color: black !important; }
+                    .print-break { page-break-inside: avoid; }
+                }
+            `}} />
+
+            <div className="max-w-7xl mx-auto space-y-6">
+                {/* Header */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#121820]/60 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm no-print">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-primary-50 dark:bg-primary-500/10 rounded-2xl flex items-center justify-center text-primary-500">
+                            <FileText size={24} />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold text-dark-900 dark:text-white">تقرير الحضور المتقدم</h1>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">عرض تقرير مفصل يشمل أيام الدوام والإجازات</p>
+                        </div>
+                    </div>
+                    {reportData && (
+                        <div className="flex gap-2">
+                            <button onClick={handlePrint} className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl font-bold transition-all">
+                                <Printer size={18} /> طباعة التقرير
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Filters */}
+                <div className="bg-white dark:bg-[#121820]/60 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm no-print">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اختر الموظف <span className="text-accent-500">*</span></label>
+                            <SelectInput
+                                options={employees.map(e => ({ value: e.id, label: `${e.first_name} ${e.last_name} (${e.employee_number || ''})` }))}
+                                value={employees.map(e => ({ value: e.id, label: `${e.first_name} ${e.last_name}` })).find(o => o.value == selectedEmployee) || null}
+                                onChange={(selected) => setSelectedEmployee(selected?.value || '')}
+                                placeholder="ابحث عن الموظف..."
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الشهر</label>
+                            <SelectInput
+                                options={months}
+                                value={months.find(o => o.value == selectedMonth) || null}
+                                onChange={(selected) => setSelectedMonth(selected?.value || selectedMonth)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">السنة</label>
+                            <SelectInput
+                                options={years}
+                                value={years.find(o => o.value == selectedYear) || null}
+                                onChange={(selected) => setSelectedYear(selected?.value || selectedYear)}
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800">
+                        <Loader2 className="animate-spin text-primary-500 mb-4" size={40} />
+                        <p className="text-slate-500 font-bold">جاري جلب بيانات التقرير...</p>
+                    </div>
+                )}
+
+                {/* Report Content */}
+                {!loading && reportData && (
+                    <div className="space-y-6">
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print-break">
+                            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
+                                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">أيام الحضور</p>
+                                <h3 className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{reportData.summary.present}</h3>
+                            </div>
+                            <div className="bg-warning-50 dark:bg-warning-900/20 p-5 rounded-2xl border border-warning-100 dark:border-warning-800/30">
+                                <p className="text-xs font-bold text-warning-600 dark:text-warning-400 mb-1">حضور بتأخير</p>
+                                <h3 className="text-2xl font-black text-warning-700 dark:text-warning-300">{reportData.summary.late}</h3>
+                            </div>
+                            <div className="bg-rose-50 dark:bg-rose-900/20 p-5 rounded-2xl border border-rose-100 dark:border-rose-800/30">
+                                <p className="text-xs font-bold text-rose-600 dark:text-rose-400 mb-1">أيام الغياب</p>
+                                <h3 className="text-2xl font-black text-rose-700 dark:text-rose-300">{reportData.summary.absent}</h3>
+                            </div>
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-800/30">
+                                <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-1">الإجازات المستهلكة (رسمية وخاصة)</p>
+                                <h3 className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{reportData.summary.holiday + reportData.summary.leave}</h3>
+                            </div>
+                        </div>
+
+                        {/* Detailed Table */}
+                        <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden print-break">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-right">
+                                    <thead>
+                                        <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
+                                            <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">التاريخ</th>
+                                            <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">اليوم</th>
+                                            <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الحالة</th>
+                                            <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الدخول / الخروج</th>
+                                            <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">التأخير (دقائق)</th>
+                                            <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">ملاحظات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                        {reportData.records.map((record, index) => (
+                                            <tr key={index} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                                <td className="py-4 px-6 font-mono text-sm text-dark-900 dark:text-white">
+                                                    {record.date}
+                                                </td>
+                                                <td className="py-4 px-6 text-slate-600 dark:text-slate-300 font-bold text-sm">
+                                                    {getArabicDayName(record.day_of_week)}
+                                                </td>
+                                                <td className="py-4 px-6">
+                                                    <StatusBadge status={record.status} />
+                                                </td>
+                                                <td className="py-4 px-6 text-slate-600 dark:text-slate-300 font-mono text-sm">
+                                                    {record.attendance ? (
+                                                        <>{record.attendance.check_in || '-'} / {record.attendance.check_out || '-'}</>
+                                                    ) : '-'}
+                                                </td>
+                                                <td className="py-4 px-6 text-slate-600 dark:text-slate-300 font-mono text-sm">
+                                                    {record.attendance?.late_minutes > 0 ? (
+                                                        <span className="text-warning-600">{record.attendance.late_minutes}</span>
+                                                    ) : '-'}
+                                                </td>
+                                                <td className="py-4 px-6 text-slate-500 text-sm max-w-[200px] truncate">
+                                                    {record.notes || '-'}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                {/* Empty State */}
+                {!loading && !reportData && !selectedEmployee && (
+                    <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 text-center no-print">
+                        <UserCheck className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
+                        <h3 className="text-lg font-bold text-dark-900 dark:text-white mb-2">اختر موظفاً لعرض التقرير</h3>
+                        <p className="text-slate-500 max-w-md">يرجى تحديد الموظف من القائمة العلوية لعرض التقرير الشهري المفصل للحضور والانصراف.</p>
+                    </div>
+                )}
+            </div>
+        </AdminLayout>
+    );
+}

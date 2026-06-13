@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router, Link, usePage, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
 import { ArrowRight, Save, User, Lock, Shield, Store, ChevronDown, Eye, EyeOff, UserCheck } from 'lucide-react';
 
 export default function UsersEdit({ user, roles, branches = [], isAdmin = false }) {
@@ -104,17 +105,14 @@ export default function UsersEdit({ user, roles, branches = [], isAdmin = false 
                             {/* Role Selection with separator and custom icon */}
                             <div>
                                 <label className="block text-sm font-bold text-dark-900 mb-2">الدور والصلاحية <span className="text-accent-500">*</span></label>
-                                <div className="relative flex items-center">
-                                    <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 border-l border-slate-200/80 pl-2.5">
-                                        <Shield size={18} />
-                                    </div>
-                                    <select required
-                                        className="w-full border border-slate-200 rounded-2xl pr-13 pl-10 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 bg-white transition-all appearance-none cursor-pointer text-slate-700 font-bold hover:border-slate-300"
-                                        value={data.role_id} onChange={e => setData('role_id', e.target.value)}>
-                                        {roles?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                    </select>
-                                    <ChevronDown size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                </div>
+                                <SelectInput
+                                    value={data.role_id}
+                                    onChange={val => setData('role_id', val)}
+                                    options={[
+                                        ...(roles || []).map(r => ({ value: r.id, label: r.name }))
+                                    ]}
+                                    required
+                                />
                                 {errors.role_id && <p className="text-xs text-accent-500 mt-1">{errors.role_id}</p>}
                             </div>
 
@@ -122,18 +120,15 @@ export default function UsersEdit({ user, roles, branches = [], isAdmin = false 
                             {isAdmin && (
                                 <div>
                                     <label className="block text-sm font-bold text-dark-900 mb-2">الفرع <span className="text-accent-500">*</span></label>
-                                    <div className="relative flex items-center">
-                                        <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 border-l border-slate-200/80 pl-2.5">
-                                            <Store size={18} />
-                                        </div>
-                                        <select required
-                                            className="w-full border border-slate-200 rounded-2xl pr-13 pl-10 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 bg-white transition-all appearance-none cursor-pointer text-slate-700 font-bold hover:border-slate-300"
-                                            value={data.branch_id} onChange={e => setData('branch_id', e.target.value)}>
-                                            <option value="" disabled>اختر الفرع</option>
-                                            {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                        </select>
-                                        <ChevronDown size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                    </div>
+                                    <SelectInput
+                                        value={data.branch_id}
+                                        onChange={val => setData('branch_id', val)}
+                                        options={[
+                                            { value: '', label: 'اختر الفرع' },
+                                            ...(branches || []).map(b => ({ value: b.id, label: b.name }))
+                                        ]}
+                                        required
+                                    />
                                     {errors.branch_id && <p className="text-xs text-accent-500 mt-1">{errors.branch_id}</p>}
                                 </div>
                             )}

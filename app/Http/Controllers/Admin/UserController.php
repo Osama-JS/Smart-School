@@ -16,7 +16,7 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && in_array($userAuth->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
 
         $query = User::with('role', 'branch');
 
@@ -140,7 +140,7 @@ class UserController extends Controller
 
     public function quickUpdate(Request $request, User $user)
     {
-        $isAdmin = auth()->user()->role && in_array(auth()->user()->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
         
         $validated = $request->validate([
             'is_active' => ['nullable', 'boolean'],
@@ -171,7 +171,7 @@ class UserController extends Controller
         $ids = $validated['ids'];
         $action = $validated['action'];
         
-        $isAdmin = auth()->user()->role && in_array(auth()->user()->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
         if (!$isAdmin) {
             // Verify all IDs belong to manager's branch
             $validIds = User::whereIn('id', $ids)->where('branch_id', auth()->user()->branch_id)->pluck('id')->toArray();
@@ -202,7 +202,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $isAdmin = auth()->user()->role && in_array(auth()->user()->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
         
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
@@ -227,7 +227,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $isAdmin = auth()->user()->role && in_array(auth()->user()->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
         
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
@@ -269,7 +269,7 @@ class UserController extends Controller
             abort(403, 'لا يمكنك حذف حسابك الشخصي');
         }
 
-        $isAdmin = $userAuth->role && in_array($userAuth->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $userAuth->role && $userAuth->role->name === 'مدير الفرع';
         if (!$isAdmin && $user->branch_id !== $userAuth->branch_id) {
             abort(403, 'لا يمكنك حذف مستخدم خارج فرعك');
         }
@@ -281,7 +281,7 @@ class UserController extends Controller
     public function create()
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && in_array($userAuth->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
         
         $roles    = Role::select('id', 'name')->get();
         $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];
@@ -291,7 +291,7 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && in_array($userAuth->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
         
         $roles    = Role::select('id', 'name')->get();
         $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];

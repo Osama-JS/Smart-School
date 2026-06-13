@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Head, useForm, router, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Select from 'react-select';
+import SelectInput from '@/Components/SelectInput';
 import { 
     Plus, Edit, Trash2, X, PlusCircle, AlignLeft, List, Hash, 
     CheckSquare, Image as ImageIcon, Search, FileText, Settings, 
@@ -207,20 +208,19 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10">
                                                 {getFieldIcon(field.type)}
                                             </div>
-                                            <select 
+                                            <SelectInput 
                                                 value={field.type}
-                                                onChange={(e) => updateField(index, 'type', e.target.value)}
-                                                className="w-full bg-slate-50/50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-10 py-2.5 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all appearance-none dark:text-white font-semibold cursor-pointer"
-                                            >
-                                                <option value="text">نص (Text)</option>
-                                                <option value="number">رقم (Number)</option>
-                                                <option value="select">قائمة خيارات (Select)</option>
-                                                <option value="checkbox">خانة اختيار (Checkbox)</option>
-                                                <option value="image">صورة (Image)</option>
-                                            </select>
-                                            <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-                                                <ChevronDown size={14} />
-                                            </div>
+                                                onChange={(val) => updateField(index, 'type', val)}
+                                                className="w-full [&>div]:pr-10 [&>div]:pl-10"
+                                                options={[
+                                                    { value: 'text', label: 'نص (Text)' },
+                                                    { value: 'number', label: 'رقم (Number)' },
+                                                    { value: 'select', label: 'قائمة خيارات (Select)' },
+                                                    { value: 'checkbox', label: 'خانة اختيار (Checkbox)' },
+                                                    { value: 'image', label: 'صورة (Image)' }
+                                                ]}
+                                                isClearable={false}
+                                            />
                                         </div>
                                     </div>
                                 </div>

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Subject extends Model
 {
+    use \App\Traits\LogsActivity;
     protected $fillable = ['name', 'icon', 'branch_id'];
 
     // الفرع الذي تتبعه المادة

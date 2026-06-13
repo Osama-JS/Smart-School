@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, router, usePage, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
 import { Search, Plus, Filter, MoreVertical, Edit2, Trash2, ShieldCheck, Check, AlertTriangle, Users as UsersIcon, Shield, Store, ChevronDown, UserCheck, RotateCcw, Key, Lock, Eye, EyeOff, Calendar, LayoutGrid, List, Download, Printer, ArrowUpDown, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
@@ -655,82 +656,58 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                             {/* Role Filter */}
                             <div className="group/select flex flex-col">
                                 <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الدور والصلاحية</label>
-                                <div className="relative flex items-center">
-                                    <div className="absolute right-4 text-slate-400 dark:text-slate-500 pointer-events-none">
-                                        <Shield size={16} />
-                                    </div>
-                                    <select
-                                        className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-10 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all appearance-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700"
-                                        value={roleFilter}
-                                        onChange={e => handleFilterChange(e.target.value, statusFilter, branchFilter, dateFilter)}
-                                    >
-                                        <option value="">كل الأدوار</option>
-                                        {roles?.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                                    </select>
-                                    <ChevronDown size={14} className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
-                                </div>
+                                <SelectInput
+                                    value={roleFilter}
+                                    onChange={val => handleFilterChange(val, statusFilter, branchFilter, dateFilter)}
+                                    options={[
+                                        { value: '', label: 'كل الأدوار' },
+                                        ...(roles || []).map(r => ({ value: r.id, label: r.name }))
+                                    ]}
+                                />
                             </div>
 
                             {/* Status Filter */}
                             <div className="group/select flex flex-col">
                                 <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الحالة</label>
-                                <div className="relative flex items-center">
-                                    <div className="absolute right-4 text-slate-400 dark:text-slate-500 pointer-events-none">
-                                        <UserCheck size={16} />
-                                    </div>
-                                    <select
-                                        className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-10 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all appearance-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700"
-                                        value={statusFilter}
-                                        onChange={e => handleFilterChange(roleFilter, e.target.value, branchFilter, dateFilter)}
-                                    >
-                                        <option value="">كل الحالات</option>
-                                        <option value="active">نشط</option>
-                                        <option value="inactive">معطل</option>
-                                    </select>
-                                    <ChevronDown size={14} className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
-                                </div>
+                                <SelectInput
+                                    value={statusFilter}
+                                    onChange={val => handleFilterChange(roleFilter, val, branchFilter, dateFilter)}
+                                    options={[
+                                        { value: '', label: 'كل الحالات' },
+                                        { value: 'active', label: 'نشط' },
+                                        { value: 'inactive', label: 'معطل' }
+                                    ]}
+                                />
                             </div>
 
                             {/* Branch Filter */}
                             {isAdmin && (
                                 <div className="group/select flex flex-col">
                                     <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الفرع المدرسي</label>
-                                    <div className="relative flex items-center">
-                                        <div className="absolute right-4 text-slate-400 dark:text-slate-500 pointer-events-none">
-                                            <Store size={16} />
-                                        </div>
-                                        <select
-                                            className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-10 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all appearance-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700"
+                                        <SelectInput
                                             value={branchFilter}
-                                            onChange={e => handleFilterChange(roleFilter, statusFilter, e.target.value, dateFilter)}
-                                        >
-                                            <option value="">كل الفروع</option>
-                                            {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                        </select>
-                                        <ChevronDown size={14} className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
-                                    </div>
+                                            onChange={val => handleFilterChange(roleFilter, statusFilter, val, dateFilter)}
+                                            options={[
+                                                { value: '', label: 'كل الفروع' },
+                                                ...(branches || []).map(b => ({ value: b.id, label: b.name }))
+                                            ]}
+                                        />
                                 </div>
                             )}
 
                             {/* Date Registered Filter */}
                             <div className="group/select flex flex-col">
                                 <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">تاريخ التسجيل</label>
-                                <div className="relative flex items-center">
-                                    <div className="absolute right-4 text-slate-400 dark:text-slate-500 pointer-events-none">
-                                        <Calendar size={16} />
-                                    </div>
-                                    <select
-                                        className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-10 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all appearance-none cursor-pointer hover:border-slate-300 dark:hover:border-slate-700"
+                                    <SelectInput
                                         value={dateFilter}
-                                        onChange={e => handleFilterChange(roleFilter, statusFilter, branchFilter, e.target.value)}
-                                    >
-                                        <option value="">كل الأوقات</option>
-                                        <option value="today">اليوم</option>
-                                        <option value="week">هذا الأسبوع</option>
-                                        <option value="month">هذا الشهر</option>
-                                    </select>
-                                    <ChevronDown size={14} className="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none" />
-                                </div>
+                                        onChange={val => handleFilterChange(roleFilter, statusFilter, branchFilter, val)}
+                                        options={[
+                                            { value: '', label: 'كل الأوقات' },
+                                            { value: 'today', label: 'اليوم' },
+                                            { value: 'week', label: 'هذا الأسبوع' },
+                                            { value: 'month', label: 'هذا الشهر' }
+                                        ]}
+                                    />
                             </div>
                         </div>
 
@@ -1152,17 +1129,14 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                 <div className="space-y-5">
                     <div>
                         <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">اختر الفرع الجديد</label>
-                        <div className="relative flex items-center">
-                            <div className="absolute right-4 flex items-center gap-2 pointer-events-none text-slate-400 border-l border-slate-200/80 dark:border-slate-800 pl-2.5">
-                                <Store size={18} className="text-[#6b9b37] dark:text-primary-450" />
-                            </div>
-                            <select className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl pr-13 pl-10 py-3.5 text-sm bg-white dark:bg-slate-900 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all appearance-none cursor-pointer text-slate-700 dark:text-slate-200 font-bold hover:border-slate-300 dark:hover:border-slate-700"
-                                value={bulkBranchId} onChange={e => setBulkBranchId(e.target.value)}>
-                                <option value="" disabled>اختر الفرع</option>
-                                {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
-                            <ChevronDown size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        </div>
+                        <SelectInput
+                            value={bulkBranchId} 
+                            onChange={val => setBulkBranchId(val)}
+                            options={[
+                                { value: '', label: 'اختر الفرع' },
+                                ...(branches || []).map(b => ({ value: b.id, label: b.name }))
+                            ]}
+                        />
                     </div>
                     <div className="flex justify-end gap-3 pt-3">
                         <button onClick={() => setBulkBranchModal(false)}

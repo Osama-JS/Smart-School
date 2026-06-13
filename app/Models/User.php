@@ -11,10 +11,11 @@ use App\Traits\BelongsToBranch;
 
 class User extends Authenticatable
 {
+    use \App\Traits\LogsActivity;
     use Notifiable, BelongsToBranch;
 
     protected $fillable = [
-        'branch_id', 'role_id', 'name', 'username', 'password', 'is_active'
+        'branch_id', 'role_id', 'name', 'username', 'password', 'is_active', 'email', 'phone', 'avatar'
     ];
 
     protected $hidden = ['password', 'remember_token'];

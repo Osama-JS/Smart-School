@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Branch extends Model
 {
+    use \App\Traits\LogsActivity;
     use HasFactory;
 
     protected $fillable = [
@@ -22,6 +23,13 @@ class Branch extends Model
         'longitude'      => 'float',
         'radius_meters'  => 'integer',
     ];
+
+    public function manager()
+    {
+        return $this->hasOne(User::class)->whereHas('role', function($q) {
+            $q->where('name', 'مدير الفرع');
+        });
+    }
 
     /**
      * الموظفون المعيّنون لهذا الفرع (عبر جدول التوزيع)

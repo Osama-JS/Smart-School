@@ -79,7 +79,7 @@ class ShiftController extends Controller
             ->count('employee_id');
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         $branches = $isAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
 
         return Inertia::render('HR/Shifts/Index', [

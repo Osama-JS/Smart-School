@@ -16,7 +16,7 @@ class MeetingController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
 
         // Fetch meetings for the branch (BelongsToBranch scope will handle this if applied, but let's be explicit)
@@ -72,7 +72,7 @@ class MeetingController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
 
         $meeting = Meeting::create([

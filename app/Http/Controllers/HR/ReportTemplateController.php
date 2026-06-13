@@ -13,7 +13,7 @@ class ReportTemplateController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
         
         $query = ReportTemplate::with(['jobGrade', 'fields'])->withCount('fields')
@@ -81,7 +81,7 @@ class ReportTemplateController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
 
         $template = ReportTemplate::create([

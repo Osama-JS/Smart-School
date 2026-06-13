@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Head, useForm, router, Link } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import Select from "react-select";
+import SelectInput from "@/Components/SelectInput";
 import { Plus, Trash2, X, Users, Calendar, Clock, MapPin, Eye, FileText, CheckCircle, Search, Filter, PlusCircle, ArrowUpRight } from "lucide-react";
 import FlatpickrInput from "@/Components/FlatpickrInput";
 export default function MeetingsIndex({ auth, meetings, users, stats, filters }) {
@@ -208,20 +209,17 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                     className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
                                 />
                             </div>
-                            <div className="w-full md:w-48 relative">
-                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                                    <Filter size={18} />
-                                </div>
-                                <select
+                            <div className="w-full md:w-48">
+                                <SelectInput
                                     value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all appearance-none dark:text-white"
-                                >
-                                    <option value="">جميع الحالات</option>
-                                    <option value="scheduled">مجدول</option>
-                                    <option value="completed">مكتمل</option>
-                                    <option value="cancelled">ملغي</option>
-                                </select>
+                                    onChange={val => setStatusFilter(val)}
+                                    options={[
+                                        { value: '', label: 'جميع الحالات' },
+                                        { value: 'scheduled', label: 'مجدول' },
+                                        { value: 'completed', label: 'مكتمل' },
+                                        { value: 'cancelled', label: 'ملغي' }
+                                    ]}
+                                />
                             </div>
                             <button type="submit" className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-6 py-2.5 rounded-xl font-bold transition-colors">
                                 بحث

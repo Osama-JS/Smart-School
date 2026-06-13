@@ -17,6 +17,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // ── System Logs ──
+    Route::get('/admin/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
+
     // ── Users ──
     Route::middleware('permission:إدارة المستخدمين')->group(function () {
         Route::post('/users/bulk', [UserController::class, 'bulk'])->name('users.bulk');
@@ -47,6 +50,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/hr/branches', [\App\Http\Controllers\HR\BranchController::class, 'store'])->name('hr.branches.store');
         Route::put('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'update'])->name('hr.branches.update');
         Route::delete('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'destroy'])->name('hr.branches.destroy');
+        Route::post('/hr/branches/{branch}/assign-manager', [\App\Http\Controllers\HR\BranchController::class, 'assignManager'])->name('hr.branches.assign-manager');
     });
 
     // ── Academic Routes ──
@@ -83,6 +87,42 @@ Route::middleware('auth')->group(function () {
         Route::post('/academic/subjects', [\App\Http\Controllers\Academic\SubjectController::class, 'store'])->name('academic.subjects.store');
         Route::put('/academic/subjects/{subject}', [\App\Http\Controllers\Academic\SubjectController::class, 'update'])->name('academic.subjects.update');
         Route::delete('/academic/subjects/{subject}', [\App\Http\Controllers\Academic\SubjectController::class, 'destroy'])->name('academic.subjects.destroy');
+
+        // Timetables & Periods
+        Route::resource('/academic/periods', \App\Http\Controllers\Academic\DailyPeriodController::class)->names([
+            'index'   => 'academic.periods',
+            'store'   => 'academic.periods.store',
+            'update'  => 'academic.periods.update',
+            'destroy' => 'academic.periods.destroy',
+        ])->except(['create', 'edit', 'show']);
+
+        Route::get('/academic/timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'index'])->name('academic.timetable');
+        Route::post('/academic/timetable/assign', [\App\Http\Controllers\Academic\TimetableController::class, 'assign'])->name('academic.timetable.assign');
+        Route::post('/academic/timetable/unassign', [\App\Http\Controllers\Academic\TimetableController::class, 'unassign'])->name('academic.timetable.unassign');
+        
+        // Teacher's Timetable
+        Route::get('/academic/my-timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'myTimetable'])->name('academic.my-timetable');
+
+        // Parents
+        Route::post('/academic/parents/quick-store', [\App\Http\Controllers\Academic\ParentController::class, 'quickStore'])->name('academic.parents.quick-store');
+        Route::resource('/academic/parents', \App\Http\Controllers\Academic\ParentController::class)->names([
+            'index'   => 'academic.parents',
+            'create'  => 'academic.parents.create',
+            'store'   => 'academic.parents.store',
+            'edit'    => 'academic.parents.edit',
+            'update'  => 'academic.parents.update',
+            'destroy' => 'academic.parents.destroy',
+        ]);
+
+        // Students & Enrollments
+        Route::resource('/academic/students', \App\Http\Controllers\Academic\StudentController::class)->names([
+            'index'   => 'academic.students',
+            'create'  => 'academic.students.create',
+            'store'   => 'academic.students.store',
+            'edit'    => 'academic.students.edit',
+            'update'  => 'academic.students.update',
+            'destroy' => 'academic.students.destroy',
+        ]);
     });
 
     // ── HR Routes ──
@@ -100,7 +140,12 @@ Route::middleware('auth')->group(function () {
     ]);
     Route::patch('/hr/employees/{employee}/quick-update', [\App\Http\Controllers\HR\EmployeeController::class, 'quickUpdate'])->name('hr.employees.quick-update');
     Route::resource('/hr/employees', \App\Http\Controllers\HR\EmployeeController::class)->names([
-        'index' => 'hr.employees'
+        'index'   => 'hr.employees',
+        'create'  => 'hr.employees.create',
+        'store'   => 'hr.employees.store',
+        'edit'    => 'hr.employees.edit',
+        'update'  => 'hr.employees.update',
+        'destroy' => 'hr.employees.destroy',
     ]);
     Route::resource('/hr/requests', \App\Http\Controllers\HR\RequestController::class)->names([
         'index' => 'hr.requests'
@@ -116,8 +161,24 @@ Route::middleware('auth')->group(function () {
     Route::put('/hr/shifts/{shift}', [\App\Http\Controllers\HR\ShiftController::class, 'update'])->name('hr.shifts.update');
     Route::delete('/hr/shifts/{shift}', [\App\Http\Controllers\HR\ShiftController::class, 'destroy'])->name('hr.shifts.destroy');
 
+    // ── Holidays & Leaves ──
+    Route::resource('/hr/holidays', \App\Http\Controllers\HR\HolidayController::class)->names([
+        'index'   => 'hr.holidays',
+        'store'   => 'hr.holidays.store',
+        'update'  => 'hr.holidays.update',
+        'destroy' => 'hr.holidays.destroy',
+    ])->except(['create', 'edit', 'show']);
+
+    Route::resource('/hr/leaves', \App\Http\Controllers\HR\LeaveController::class)->names([
+        'index'   => 'hr.leaves',
+        'store'   => 'hr.leaves.store',
+        'update'  => 'hr.leaves.update',
+        'destroy' => 'hr.leaves.destroy',
+    ])->except(['create', 'edit', 'show']);
+
     // ── Attendance ──
     Route::get('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'index'])->name('hr.attendance');
+    Route::get('/hr/attendance/report', [\App\Http\Controllers\HR\AttendanceController::class, 'report'])->name('hr.attendance.report');
     Route::post('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'store'])->name('hr.attendance.store');
     Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
     Route::put('/hr/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceController::class, 'update'])->name('hr.attendance.update');

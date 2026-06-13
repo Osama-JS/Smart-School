@@ -26,7 +26,7 @@ class AcademicYearController extends Controller
         }
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         
         if ($isAdmin) {
             if ($request->filled('branch_id') && $request->branch_id !== 'all') {
@@ -63,15 +63,21 @@ class AcademicYearController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'       => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'end_date'   => 'required|date|after:start_date',
-            'branch_id'  => 'nullable|exists:branches,id',
-            'notes'      => 'nullable|string',
+            'name'         => 'required|string|max:255',
+            'start_date'   => 'required|date',
+            'end_date'     => 'required|date|after:start_date',
+            'working_days' => 'nullable|array',
+            'working_days.*'=> 'string',
+            'branch_id'    => 'nullable|exists:branches,id',
+            'notes'        => 'nullable|string',
         ]);
 
+        if (empty($validated['working_days'])) {
+            $validated['working_days'] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+        }
+
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;
@@ -112,15 +118,21 @@ class AcademicYearController extends Controller
     public function update(Request $request, AcademicYear $academicYear)
     {
         $validated = $request->validate([
-            'name'       => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'end_date'   => 'required|date|after:start_date',
-            'branch_id'  => 'nullable|exists:branches,id',
-            'notes'      => 'nullable|string',
+            'name'         => 'required|string|max:255',
+            'start_date'   => 'required|date',
+            'end_date'     => 'required|date|after:start_date',
+            'working_days' => 'nullable|array',
+            'working_days.*'=> 'string',
+            'branch_id'    => 'nullable|exists:branches,id',
+            'notes'        => 'nullable|string',
         ]);
 
+        if (empty($validated['working_days'])) {
+            $validated['working_days'] = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+        }
+
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         if (!$isAdmin && $academicYear->branch_id !== $user->branch_id) {
             abort(403, 'غير مصرح لك بتعديل بيانات هذا الفرع');
@@ -138,7 +150,7 @@ class AcademicYearController extends Controller
     public function destroy(AcademicYear $academicYear)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         if (!$isAdmin && $academicYear->branch_id !== $user->branch_id) {
             abort(403, 'غير مصرح لك');
@@ -151,7 +163,7 @@ class AcademicYearController extends Controller
     public function toggleActive(AcademicYear $academicYear)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         if (!$isAdmin && $academicYear->branch_id !== $user->branch_id) {
             abort(403, 'غير مصرح لك');

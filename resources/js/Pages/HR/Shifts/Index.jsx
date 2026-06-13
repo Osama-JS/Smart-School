@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import Modal from '@/Components/Modal';
-import Pagination from '@/Components/Pagination';
+
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import SelectInput from '@/Components/SelectInput';
 import { 
     Search, Plus, Clock, Edit2, Trash2, MoreVertical, X, Check, 
     AlertTriangle, AlertCircle, Filter, RotateCcw,
@@ -352,31 +352,29 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                     {/* Status */}
                     <div className="space-y-2">
                         <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحالة التشغيلية</label>
-                        <select 
+                        <SelectInput 
                             value={statusValue} 
-                            onChange={e => handleStatusChange(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 dark:text-white font-bold transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900"
-                        >
-                            <option value="all">الكل</option>
-                            <option value="active">نشط</option>
-                            <option value="inactive">غير نشط</option>
-                        </select>
+                            onChange={val => handleStatusChange(val)}
+                            options={[
+                                { value: 'all', label: 'الكل' },
+                                { value: 'active', label: 'نشط' },
+                                { value: 'inactive', label: 'غير نشط' }
+                            ]}
+                        />
                     </div>
 
                     {/* Branch Filter */}
                     {isAdmin && (
                         <div className="space-y-2">
                             <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الفرع</label>
-                            <select 
+                            <SelectInput 
                                 value={branchFilter} 
-                                onChange={e => { setBranchFilter(e.target.value); applyFilters({ branch_id: e.target.value }); }}
-                                className="w-full bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 dark:text-white font-bold transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900"
-                            >
-                                <option value="all">كل الفروع</option>
-                                {branches?.map(b => (
-                                    <option key={b.id} value={b.id}>{b.name}</option>
-                                ))}
-                            </select>
+                                onChange={val => { setBranchFilter(val); applyFilters({ branch_id: val }); }}
+                                options={[
+                                    { value: 'all', label: 'كل الفروع' },
+                                    ...(branches?.map(b => ({ value: b.id, label: b.name })) || [])
+                                ]}
+                            />
                         </div>
                     )}
 
@@ -401,17 +399,17 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                     {/* Sort */}
                     <div className="space-y-2">
                         <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الترتيب حسب</label>
-                        <select 
+                        <SelectInput 
                             value={sortValue} 
-                            onChange={e => handleSortChange(e.target.value)}
-                            className="w-full bg-slate-50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 dark:text-white font-bold transition-all cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-900"
-                        >
-                            <option value="name_asc">الاسم (أ-ي)</option>
-                            <option value="name_desc">الاسم (ي-أ)</option>
-                            <option value="start_time_asc">وقت البدء (مبكراً أولاً)</option>
-                            <option value="start_time_desc">وقت البدء (متأخراً أولاً)</option>
-                            <option value="employees_count_desc">الموظفين (الأكثر أولاً)</option>
-                        </select>
+                            onChange={val => handleSortChange(val)}
+                            options={[
+                                { value: 'name_asc', label: 'الاسم (أ-ي)' },
+                                { value: 'name_desc', label: 'الاسم (ي-أ)' },
+                                { value: 'start_time_asc', label: 'وقت البدء (مبكراً أولاً)' },
+                                { value: 'start_time_desc', label: 'وقت البدء (متأخراً أولاً)' },
+                                { value: 'employees_count_desc', label: 'الموظفين (الأكثر أولاً)' }
+                            ]}
+                        />
                     </div>
                 </div>
             </div>
@@ -650,12 +648,11 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                     {isAdmin && branches.length > 0 && (
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">الفرع التابع له الشفت <span className="text-rose-500">*</span></label>
-                            <select required
-                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold" 
-                                value={form.branch_id} onChange={e => setForm({ ...form, branch_id: e.target.value })}>
-                                <option value="" disabled>-- اختر الفرع --</option>
-                                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
+                            <SelectInput required
+                                value={form.branch_id} onChange={val => setForm({ ...form, branch_id: val })}
+                                placeholder="-- اختر الفرع --"
+                                options={branches.map(b => ({ value: b.id, label: b.name }))}
+                            />
                         </div>
                     )}
                     
@@ -707,12 +704,11 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                     {isAdmin && branches.length > 0 && (
                         <div className="space-y-1.5">
                             <label className="text-sm font-bold text-slate-700 dark:text-slate-300">الفرع التابع له الشفت <span className="text-rose-500">*</span></label>
-                            <select required
-                                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold" 
-                                value={form.branch_id} onChange={e => setForm({ ...form, branch_id: e.target.value })}>
-                                <option value="" disabled>-- اختر الفرع --</option>
-                                {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
+                            <SelectInput required
+                                value={form.branch_id} onChange={val => setForm({ ...form, branch_id: val })}
+                                placeholder="-- اختر الفرع --"
+                                options={branches.map(b => ({ value: b.id, label: b.name }))}
+                            />
                         </div>
                     )}
                     

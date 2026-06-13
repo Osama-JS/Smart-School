@@ -27,7 +27,7 @@ class Shift extends Model
     public function employees(): BelongsToMany
     {
         return $this->belongsToMany(Employee::class, 'branch_employee_shift')
-                    ->withPivot('branch_id')
+                    ->withPivot('branch_id', 'working_days')
                     ->withTimestamps();
     }
 

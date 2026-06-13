@@ -6,17 +6,36 @@ import {
     ClipboardList, Map, Book, Library, BarChart, UserPlus, Settings,
     Menu, ChevronDown, LogOut, User, Search, X,
     PanelLeftClose, PanelLeftOpen, ShieldCheck, Store, Clock,
-    LayoutDashboard, Briefcase, Sun, Moon, Layers
+    LayoutDashboard, Briefcase, Sun, Moon, Layers, Activity
 } from 'lucide-react';
+import ToastNotification from '@/Components/ToastNotification';
 
 export default function AdminLayout({ children, activeMenu = 'المستخدمون' }) {
-    const { auth, logo_url, isAdmin } = usePage().props;
+    const { auth, logo_url, isAdmin, isSystemAdmin } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [sidebarClosing, setSidebarClosing] = useState(false);
     const [profileDropdown, setProfileDropdown] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+    
+    // Get current URL path from Inertia
+    const { url } = usePage();
+
+    // Helper to determine if a menu item is active
+    const isMenuActive = (menuUrl, menuName, menuKey = null) => {
+        if (menuName === activeMenu || menuKey === activeMenu) return true;
+        if (!menuUrl || menuUrl === '#') return false;
+        try {
+            const path = new URL(menuUrl, window.location.origin).pathname;
+            // Exact match for root
+            if (path === '/') return url === '/' || url === '';
+            // Match sub-paths
+            return url.startsWith(path);
+        } catch (e) {
+            return false;
+        }
+    };
     
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
@@ -44,6 +63,18 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Scroll active sidebar item into view
+    useEffect(() => {
+        // small timeout to ensure DOM is updated and rendered
+        const timer = setTimeout(() => {
+            const activeItem = document.querySelector('.erp-sidebar-item.active');
+            if (activeItem) {
+                activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 100);
+        return () => clearTimeout(timer);
+    }, [url]); // Re-run when URL changes if needed, or rely on scroll-region
 
     // Profile & Search dropdown close on outside click
     useEffect(() => {
@@ -94,7 +125,24 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         return auth?.permissions?.includes(permissionName);
     };
 
-    const menuGroups = [
+    const menuGroups = isSystemAdmin ? [
+        {
+            title: 'إدارة النظام العام',
+            items: [
+                { name: 'الرئيسية', icon: Home, url: route('dashboard') },
+                { name: 'إدارة الفروع', icon: Store, url: route('hr.branches') },
+                { name: 'إدارة الصلاحيات', icon: Shield, url: route('admin.permissions') },
+                { name: 'إعدادات النظام', icon: Settings, url: route('admin.settings') },
+            ]
+        },
+        {
+            title: 'التقارير والإحصائيات',
+            items: [
+                { name: 'تقارير الأداء', icon: BarChart, url: '#' },
+                { name: 'سجلات النظام', icon: Activity, url: route('admin.activity-logs.index') },
+            ]
+        }
+    ] : [
         {
             title: 'القائمة الرئيسية',
             items: [
@@ -107,7 +155,6 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'الأقسام والإدارات', icon: BookOpen, url: route('hr.departments'), permission: 'إدارة الأقسام' },
                 { name: 'الدرجات الوظيفية', icon: ShieldCheck, url: route('hr.job-grades'), permission: 'إدارة الدرجات الوظيفية' },
-                ...(isAdmin ? [{ name: 'الفروع', icon: Store, url: route('hr.branches') }] : []),
                 { name: 'الشفتات', icon: Clock, url: route('hr.shifts'), permission: 'إدارة الموظفين' },
                 { name: 'دليل الموظفين', icon: UserPlus, url: route('hr.employees'), permission: 'إدارة الموظفين' },
             ]
@@ -116,6 +163,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             title: 'الحضور والانصراف',
             items: [
                 { name: 'سجل الحضور', icon: CheckSquare, url: route('hr.attendance'), permission: 'إدارة الحضور والانصراف' },
+                { name: 'تقرير الموظف الشهري', icon: FileText, url: route('hr.attendance.report'), permission: 'إدارة الحضور والانصراف' },
+                { name: 'الإجازات الرسمية', icon: Calendar, url: route('hr.holidays'), permission: 'إدارة الموظفين' },
+                { name: 'إجازات الموظفين', icon: Clock, url: route('hr.leaves'), permission: 'إدارة الموظفين' },
             ]
         },
         {
@@ -134,10 +184,13 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'السنوات الدراسية', icon: Calendar, url: route('academic.years') },
                 { name: 'الصفوف والشعب', icon: Layers, url: route('academic.structure') },
                 { name: 'المواد الدراسية', icon: BookOpen, url: route('academic.subjects.index') },
-                { name: 'جدول الحصص', icon: Calendar, permission: 'إدارة الجداول' },
+                { name: 'إعداد الحصص اليومية', icon: Clock, url: route('academic.periods'), permission: 'إدارة الجداول' },
+                { name: 'جدول الحصص العام', icon: Calendar, url: route('academic.timetable'), permission: 'إدارة الجداول' },
+                { name: 'جدولي الدراسي', icon: Calendar, url: route('academic.my-timetable') },
                 { name: 'جداول الاختبارات', icon: FileText, permission: 'إدارة الجداول' },
                 { name: 'النتائج الشهرية', icon: BarChart, permission: 'إدارة الدرجات' },
-                { name: 'الطلاب المسجلين', icon: UserPlus, permission: 'إدارة الطلاب' },
+                { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
+                { name: 'أولياء الأمور', icon: Users, url: route('academic.parents'), permission: 'إدارة الطلاب' },
             ]
         },
         {
@@ -160,11 +213,15 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'المخالفات والإبداع', icon: AlertTriangle },
             ]
         },
-        ...(isAdmin ? [{
+        ...((isAdmin || isSystemAdmin) ? [{
             title: 'الإدارة',
             items: [
-                { name: 'إدارة الصلاحيات', icon: Shield, url: route('admin.permissions') },
-                { name: 'إعدادات النظام', icon: Settings, url: route('admin.settings') },
+                ...(isSystemAdmin ? [
+                    { name: 'الفروع', icon: Store, url: route('hr.branches') },
+                    { name: 'إدارة الصلاحيات', icon: Shield, url: route('admin.permissions') },
+                    { name: 'إعدادات النظام', icon: Settings, url: route('admin.settings') },
+                ] : []),
+                { name: 'سجل النشاطات', icon: Activity, url: route('admin.activity-logs.index') },
             ]
         }] : []),
     ];
@@ -214,13 +271,13 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             </div>
 
             {/* Menu Groups */}
-            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-5" scroll-region="true">
                 {filteredMenuGroups.map((group, gIdx) => (
                     <div key={gIdx}>
                         <p className="erp-sidebar-section">{group.title}</p>
                         <ul className="space-y-0.5">
                             {group.items.map((menu, index) => {
-                                const isActive = menu.name === activeMenu;
+                                const isActive = isMenuActive(menu.url, menu.name);
                                 return (
                                     <li key={index}>
                                         <Link
@@ -507,7 +564,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             <nav className="bottom-nav" aria-label="التنقل السريع">
                 <div className="bottom-nav-inner">
                     {filteredBottomNavItems.map((item, idx) => {
-                        const isActive = item.key === activeMenu;
+                        const isActive = isMenuActive(item.url, item.name, item.key);
                         const isMore = item.action === 'sidebar';
                         
                         if (isMore) {
@@ -537,6 +594,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                     })}
                 </div>
             </nav>
+
+            {/* Global Toast Notifications */}
+            <ToastNotification />
         </div>
     );
 }

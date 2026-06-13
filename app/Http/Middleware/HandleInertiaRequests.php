@@ -31,11 +31,14 @@ class HandleInertiaRequests extends Middleware
     {
         $user = $request->user();
         $isAdmin = false;
+        $isAdmin = false;
+        $isSystemAdmin = false;
         $userPermissions = [];
 
         if ($user) {
             $user->loadMissing(['role.permissions', 'branch']);
-            $isAdmin = $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+            $isAdmin = $user->role && $user->role->name === 'مدير الفرع';
+            $isSystemAdmin = $user->role && $user->role->name === 'مدير النظام';
             if ($user->role) {
                 $userPermissions = $user->role->permissions->pluck('name')->toArray();
             }
@@ -48,7 +51,14 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $userPermissions,
             ],
             'isAdmin' => $isAdmin,
+            'isSystemAdmin' => $isSystemAdmin,
             'logo_url' => asset('images/logo.png') . '?v=' . (file_exists(public_path('images/logo.png')) ? filemtime(public_path('images/logo.png')) : time()),
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+                'warning' => fn () => $request->session()->get('warning'),
+                'info' => fn () => $request->session()->get('info'),
+            ],
         ];
     }
 }

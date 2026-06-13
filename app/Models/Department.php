@@ -7,6 +7,7 @@ use App\Traits\BelongsToBranch;
 
 class Department extends Model
 {
+    use \App\Traits\LogsActivity;
     use BelongsToBranch;
 
     protected $fillable = ['name', 'parent_id', 'branch_id'];

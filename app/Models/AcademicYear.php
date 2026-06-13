@@ -7,16 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class AcademicYear extends Model
 {
+    use \App\Traits\LogsActivity;
     use HasFactory;
 
     protected $fillable = [
-        'branch_id', 'name', 'start_date', 'end_date', 'is_active', 'notes'
+        'branch_id', 'name', 'start_date', 'end_date', 'working_days', 'is_active', 'notes'
     ];
 
     protected $casts = [
-        'start_date' => 'date',
-        'end_date'   => 'date',
-        'is_active'  => 'boolean',
+        'start_date'   => 'date',
+        'end_date'     => 'date',
+        'working_days' => 'array',
+        'is_active'    => 'boolean',
     ];
 
     // ── العلاقات ──

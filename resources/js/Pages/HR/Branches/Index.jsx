@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import SelectInput from '@/Components/SelectInput';
 import {
     Search, Plus, MapPin, Phone, Users, Edit2, Trash2,
     MoreVertical, X, Check, AlertTriangle, Store, Compass, Crosshair, Save, SlidersHorizontal, RotateCcw,
@@ -36,7 +37,7 @@ function Modal({ isOpen, onClose, title, children }) {
 }
 
 // ─── Action Menu ──────────────────────────────────────────────────────────────
-function ActionMenu({ branch, onEdit, onDelete }) {
+function ActionMenu({ branch, onEdit, onDelete, onAssignManager }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -55,7 +56,13 @@ function ActionMenu({ branch, onEdit, onDelete }) {
                 <MoreVertical size={16} />
             </button>
             {open && (
-                <div className="absolute left-0 top-full mt-1.5 w-40 bg-white dark:bg-[#121820] rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 border border-slate-100 dark:border-slate-800 z-20 overflow-hidden animate-scale-in">
+                <div className="absolute left-0 top-full mt-1.5 w-48 bg-white dark:bg-[#121820] rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 border border-slate-100 dark:border-slate-800 z-20 overflow-hidden animate-scale-in">
+                    <button
+                        onClick={() => { onAssignManager(branch); setOpen(false); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:pr-5 transition-all duration-200"
+                    >
+                        <Users size={14} className="text-emerald-500" /> تعيين مدير الفرع
+                    </button>
                     <button
                         onClick={() => { onEdit(branch); setOpen(false); }}
                         className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-700 dark:hover:text-primary-450 hover:pr-5 transition-all duration-200"
@@ -104,7 +111,7 @@ function Pagination({ data }) {
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────────
-export default function BranchesIndex({ branches, filters }) {
+export default function BranchesIndex({ branches, users, filters }) {
     const { flash, errors } = usePage().props;
 
     const [searchValue, setSearch]  = useState(filters?.search ?? '');
@@ -116,9 +123,10 @@ export default function BranchesIndex({ branches, filters }) {
     const [showAdd, setShowAdd]     = useState(false);
     const [editBranch, setEditBranch] = useState(null);
     const [deleteBranch, setDeleteBranch] = useState(null);
+    const [assignManagerBranch, setAssignManagerBranch] = useState(null);
     const [form, setForm]           = useState({
         name: '', address: '', phone: '', is_active: true,
-        latitude: '', longitude: '', radius_meters: 100
+        latitude: '', longitude: '', radius_meters: 100, user_id: ''
     });
     const [processing, setProcessing] = useState(false);
     const searchTimeout = useRef(null);
@@ -220,6 +228,14 @@ export default function BranchesIndex({ branches, filters }) {
     const handleDelete = () => {
         router.delete(route('hr.branches.destroy', deleteBranch.id), {
             onFinish: () => setDeleteBranch(null)
+        });
+    };
+
+    const handleAssignManager = (e) => {
+        e.preventDefault();
+        setProcessing(true);
+        router.post(route('hr.branches.assign-manager', assignManagerBranch.id), { user_id: form.user_id }, {
+            onFinish: () => { setProcessing(false); setAssignManagerBranch(null); }
         });
     };
 
@@ -415,25 +431,20 @@ export default function BranchesIndex({ branches, filters }) {
                                 <span className="text-xs font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5 justify-end">
                                     <span>ترتيب حسب</span>
                                 </span>
-                                <div className="relative group/sort">
-                                    <select
+                                    <SelectInput
                                         value={sortBy}
-                                        onChange={e => {
-                                            setSortBy(e.target.value);
-                                            applyFilters({ status: statusFilter, staff_range: staffFilter, sort_by: e.target.value });
+                                        onChange={val => {
+                                            setSortBy(val);
+                                            applyFilters({ status: statusFilter, staff_range: staffFilter, sort_by: val });
                                         }}
-                                        className="w-full bg-white dark:bg-[#121820] border border-slate-200/80 dark:border-slate-800 rounded-2xl pr-4 pl-10 py-2.5 text-xs font-black text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all cursor-pointer appearance-none"
-                                    >
-                                        <option value="all">الاسم (أبجدي تصاعدي) 🔠</option>
-                                        <option value="name_desc">الاسم (أبجدي تنازلي) 🔡</option>
-                                        <option value="employees_desc">عدد الموظفين (الأكثر أولاً) 👥</option>
-                                        <option value="employees_asc">عدد الموظفين (الأقل أولاً) 👤</option>
-                                        <option value="active_first">الفروع النشطة أولاً 🟢</option>
-                                    </select>
-                                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-450 group-focus-within/sort:text-primary-500 transition-colors">
-                                        <ChevronDown size={16} />
-                                    </div>
-                                </div>
+                                        options={[
+                                            { value: 'all', label: 'الاسم (أبجدي تصاعدي) 🔠' },
+                                            { value: 'name_desc', label: 'الاسم (أبجدي تنازلي) 🔡' },
+                                            { value: 'employees_desc', label: 'عدد الموظفين (الأكثر أولاً) 👥' },
+                                            { value: 'employees_asc', label: 'عدد الموظفين (الأقل أولاً) 👤' },
+                                            { value: 'active_first', label: 'الفروع النشطة أولاً 🟢' }
+                                        ]}
+                                    />
                             </div>
                         </div>
                     </div>
@@ -551,7 +562,7 @@ export default function BranchesIndex({ branches, filters }) {
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-900/20 text-primary-600 dark:text-primary-400 shadow-inner border border-primary-100/30 dark:border-primary-900/20 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 flex items-center justify-center">
                                         <Store size={22} strokeWidth={2.5} />
                                     </div>
-                                    <ActionMenu branch={branch} onEdit={openEdit} onDelete={setDeleteBranch} />
+                                    <ActionMenu branch={branch} onEdit={openEdit} onDelete={setDeleteBranch} onAssignManager={setAssignManagerBranch} />
                                 </div>
                                 
                                 <div className="relative z-10 mb-6 transition-transform duration-300 group-hover:translate-x-1">
@@ -587,18 +598,45 @@ export default function BranchesIndex({ branches, filters }) {
                                         )}
                                     </div>
                                 </div>
-                                
-                                <div className="relative z-10 flex items-center justify-between pt-4 border-t border-slate-100/80 dark:border-slate-800/80">
-                                    <div className="flex items-center gap-2">
-                                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-450 border border-primary-100/30 dark:border-primary-900/20 text-[10px] font-bold group-hover:bg-primary-500 dark:group-hover:bg-primary-600 group-hover:text-white dark:group-hover:text-white transition-colors duration-300"><Users size={12}/></span>
-                                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors duration-300">{branch.employees_count} موظف</span>
+                                <div className="relative z-10 flex flex-col gap-3 pt-4 border-t border-slate-100/80 dark:border-slate-800/80 mt-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-primary-50 dark:bg-primary-950/30 text-primary-600 dark:text-primary-450 border border-primary-100/30 dark:border-primary-900/20 text-[10px] font-bold group-hover:bg-primary-500 dark:group-hover:bg-primary-600 group-hover:text-white dark:group-hover:text-white transition-colors duration-300"><Users size={12}/></span>
+                                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors duration-300">{branch.employees_count} موظف</span>
+                                        </div>
+                                        <button
+                                            onClick={() => openEdit(branch)}
+                                            className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-primary-500 dark:hover:bg-primary-600 hover:text-white dark:hover:text-white transition-all duration-300 border border-transparent dark:border-slate-850 hover:shadow-md hover:shadow-primary-500/10 dark:hover:shadow-none hover:scale-105 active:scale-95"
+                                        >
+                                            <Edit2 size={13} strokeWidth={2.5}/>
+                                        </button>
                                     </div>
-                                    <button
-                                        onClick={() => openEdit(branch)}
-                                        className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-primary-500 dark:hover:bg-primary-600 hover:text-white dark:hover:text-white transition-all duration-300 border border-transparent dark:border-slate-850 hover:shadow-md hover:shadow-primary-500/10 dark:hover:shadow-none hover:scale-105 active:scale-95"
-                                    >
-                                        <Edit2 size={13} />
-                                    </button>
+                                    <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-700/50">
+                                        <div className="flex items-center gap-2">
+                                            {branch.manager ? (
+                                                <>
+                                                    <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(branch.manager.name)}&background=0d9488&color=fff&bold=true`} alt={branch.manager.name} className="w-6 h-6 rounded-full" />
+                                                    <div>
+                                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight">{branch.manager.name}</p>
+                                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">مدير الفرع</p>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                        <Users size={10} className="text-slate-400" />
+                                                    </div>
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">لم يتم تعيين مدير</span>
+                                                </>
+                                            )}
+                                        </div>
+                                        <button 
+                                            onClick={() => setAssignManagerBranch(branch)}
+                                            className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:underline px-2"
+                                        >
+                                            {branch.manager ? 'تغيير' : 'تعيين'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -805,7 +843,6 @@ export default function BranchesIndex({ branches, filters }) {
                             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">المسافة المسموحة للموظف لتسجيل الحضور عبر التطبيق من موقعه الجغرافي الفعلي.</p>
                         </div>
                     </div>
-
                     <div className="flex items-center pt-2">
                         <label className="flex items-center gap-3 cursor-pointer select-none">
                             <div className="relative">
@@ -827,7 +864,7 @@ export default function BranchesIndex({ branches, filters }) {
                 </form>
             </Modal>
 
-            {/* ── Delete Confirm Modal ── */}
+            {/* ── Delete Modal ── */}
             <Modal isOpen={!!deleteBranch} onClose={() => setDeleteBranch(null)} title="تأكيد الحذف">
                 <div className="flex flex-col items-center text-center gap-4">
                     <div className="w-16 h-16 rounded-2xl bg-accent-50 dark:bg-accent-950/20 flex items-center justify-center animate-pulse">
@@ -842,6 +879,44 @@ export default function BranchesIndex({ branches, filters }) {
                         <button onClick={handleDelete} className="flex-1 py-3 text-sm font-bold text-white bg-accent-500 dark:bg-accent-600 hover:bg-accent-600 dark:hover:bg-accent-750 rounded-2xl shadow-md shadow-accent-500/10 dark:shadow-none transition-all">حذف نهائياً</button>
                     </div>
                 </div>
+            </Modal>
+
+            {/* ── Assign Manager Modal ── */}
+            <Modal isOpen={!!assignManagerBranch} onClose={() => setAssignManagerBranch(null)} title="تعيين مدير للفرع">
+                <form onSubmit={handleAssignManager} className="space-y-4">
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                        الفرع: <span className="font-bold text-slate-700 dark:text-slate-300">{assignManagerBranch?.name}</span>
+                        <br />
+                        المدير الحالي: {assignManagerBranch?.manager ? <span className="font-bold text-primary-600 dark:text-primary-400">{assignManagerBranch.manager.name}</span> : <span className="text-slate-400">لا يوجد</span>}
+                    </p>
+
+                    <div>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">اختر المستخدم ليكون مديراً <span className="text-accent-500">*</span></label>
+                        <SelectInput
+                            value={form.user_id}
+                            onChange={(val) => setForm({ ...form, user_id: val })}
+                            options={users?.map(u => ({ value: u.id, label: `${u.name} ${u.national_id ? '(' + u.national_id + ')' : ''}` })) || []}
+                            placeholder="ابحث عن مستخدم..."
+                        />
+                    </div>
+                    
+                    <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button
+                            type="button"
+                            onClick={() => setAssignManagerBranch(null)}
+                            className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        >
+                            إلغاء
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={processing || !form.user_id}
+                            className="px-6 py-2.5 bg-emerald-500 text-white rounded-2xl text-sm font-bold hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                        >
+                            <Save size={16} /> تعيين كمدير
+                        </button>
+                    </div>
+                </form>
             </Modal>
         </AdminLayout>
     );

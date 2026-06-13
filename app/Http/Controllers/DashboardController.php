@@ -18,6 +18,33 @@ class DashboardController extends Controller
         $isSystemAdmin = $user->role && $user->role->name === 'مدير النظام';
         $branchId = $isSystemAdmin ? null : $user->branch_id;
 
+        if ($isSystemAdmin) {
+            $totalBranches = \App\Models\Branch::count();
+            $activeBranches = \App\Models\Branch::where('is_active', true)->count();
+            $totalUsers = User::count();
+            
+            $roleBranchManager = \App\Models\Role::where('name', 'مدير الفرع')->first();
+            $totalManagers = $roleBranchManager ? User::where('role_id', $roleBranchManager->id)->count() : 0;
+            
+            $recentActivities = ActivityLog::with('user')->latest()->take(8)->get()->map(function($log) {
+                return [
+                    'text' => $log->action . ' بواسطة ' . ($log->user ? $log->user->name : 'نظام'),
+                    'time' => $log->created_at->diffForHumans(),
+                    'type' => 'info'
+                ];
+            });
+
+            return Inertia::render('SystemAdminDashboard', [
+                'stats' => [
+                    'branches' => number_format($totalBranches),
+                    'active_branches' => number_format($activeBranches),
+                    'users' => number_format($totalUsers),
+                    'managers' => number_format($totalManagers),
+                ],
+                'recentActivities' => $recentActivities
+            ]);
+        }
+
         // Total Students
         $studentsQuery = User::whereHas('role', function($q) {
             $q->where('name', 'طالب');

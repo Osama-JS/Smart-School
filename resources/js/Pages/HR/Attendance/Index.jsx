@@ -7,6 +7,7 @@ import {
     X, Save, Users, TimerOff, ChevronDown, Download, Printer, ArrowUp, ArrowDown, ArrowUpDown
 } from 'lucide-react';
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import SelectInput from '@/Components/SelectInput';
 
 // ── Status Badge ─────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -129,13 +130,14 @@ const EditModal = ({ record, onClose }) => {
 
                     <div>
                         <label className="block text-xs font-bold text-slate-600 dark:text-slate-450 mb-1.5">الحالة</label>
-                        <select value={form.status} onChange={e => setForm({...form, status: e.target.value})}
-                            className="w-full border border-slate-200 dark:border-slate-850 bg-white dark:bg-[#121820] text-dark-900 dark:text-slate-100 rounded-2xl px-4 py-2.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all">
-                            <option value="present">حاضر</option>
-                            <option value="late">متأخر</option>
-                            <option value="absent">غائب</option>
-                            <option value="excused">غياب بعذر</option>
-                        </select>
+                        <SelectInput value={form.status} onChange={val => setForm({...form, status: val})}
+                            options={[
+                                { value: 'present', label: 'حاضر' },
+                                { value: 'late', label: 'متأخر' },
+                                { value: 'absent', label: 'غائب' },
+                                { value: 'excused', label: 'غياب بعذر' }
+                            ]}
+                        />
                     </div>
 
                     {(form.status === 'late') && (
@@ -415,13 +417,14 @@ const BulkEditModal = ({ selectedCount, onClose, onSubmit }) => {
 
                     <div>
                         <label className="block text-[10px] font-bold text-slate-650 dark:text-slate-400 mb-1">الحالة</label>
-                        <select value={form.status} onChange={e => setForm({...form, status: e.target.value})}
-                            className="w-full border border-slate-200 dark:border-slate-850 bg-white dark:bg-[#121820] text-dark-900 dark:text-slate-100 rounded-xl px-3 py-2 text-xs focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all">
-                            <option value="present">حاضر</option>
-                            <option value="late">متأخر</option>
-                            <option value="absent">غائب</option>
-                            <option value="excused">غياب بعذر</option>
-                        </select>
+                        <SelectInput value={form.status} onChange={val => setForm({...form, status: val})}
+                            options={[
+                                { value: 'present', label: 'حاضر' },
+                                { value: 'late', label: 'متأخر' },
+                                { value: 'absent', label: 'غائب' },
+                                { value: 'excused', label: 'غياب بعذر' }
+                            ]}
+                        />
                     </div>
 
                     {(form.status === 'late') && (
@@ -953,29 +956,32 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                 {/* Department Filter */}
                                 <div className="group/select flex flex-col">
                                     <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">القسم</label>
-                                    <select value={departmentId} onChange={e => { setDepartmentId(e.target.value); applyFilter({ department_id: e.target.value }); }}
-                                        className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 transition-all appearance-none cursor-pointer">
-                                        <option value="">كل الأقسام</option>
-                                        {departments?.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                                    </select>
+                                    <SelectInput value={departmentId} onChange={val => { setDepartmentId(val); applyFilter({ department_id: val }); }}
+                                        options={[
+                                            { value: '', label: 'كل الأقسام' },
+                                            ...(departments?.map(d => ({ value: d.id, label: d.name })) || [])
+                                        ]}
+                                    />
                                 </div>
                                 {/* Branch Filter */}
                                 <div className="group/select flex flex-col">
                                     <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الفرع</label>
-                                    <select value={branchId} onChange={e => { setBranchId(e.target.value); applyFilter({ branch_id: e.target.value }); }}
-                                        className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 transition-all appearance-none cursor-pointer">
-                                        <option value="">كل الفروع</option>
-                                        {branches?.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                                    </select>
+                                    <SelectInput value={branchId} onChange={val => { setBranchId(val); applyFilter({ branch_id: val }); }}
+                                        options={[
+                                            { value: '', label: 'كل الفروع' },
+                                            ...(branches?.map(b => ({ value: b.id, label: b.name })) || [])
+                                        ]}
+                                    />
                                 </div>
                                 {/* Shift Filter */}
                                 <div className="group/select flex flex-col">
                                     <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الشفت</label>
-                                    <select value={shiftId} onChange={e => { setShiftId(e.target.value); applyFilter({ shift_id: e.target.value }); }}
-                                        className="w-full border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-xs bg-white dark:bg-[#121820] text-slate-700 dark:text-slate-200 font-bold outline-none focus:ring-4 focus:ring-primary-500/10 transition-all appearance-none cursor-pointer">
-                                        <option value="">كل الشفتات</option>
-                                        {shifts?.map(s => <option key={s.id} value={s.id}>{s.name} ({s.start_time?.slice(0,5)} - {s.end_time?.slice(0,5)})</option>)}
-                                    </select>
+                                    <SelectInput value={shiftId} onChange={val => { setShiftId(val); applyFilter({ shift_id: val }); }}
+                                        options={[
+                                            { value: '', label: 'كل الشفتات' },
+                                            ...(shifts?.map(s => ({ value: s.id, label: `${s.name} (${s.start_time?.slice(0,5)} - ${s.end_time?.slice(0,5)})` })) || [])
+                                        ]}
+                                    />
                                 </div>
                                 
                                 <div className="flex gap-2 justify-end items-end h-full mt-4 lg:mt-0">

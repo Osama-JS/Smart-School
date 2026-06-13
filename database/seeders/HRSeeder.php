@@ -24,7 +24,7 @@ class HRSeeder extends Seeder
 
         // ── 1. الدرجات الوظيفية (مشتركة) ──
         $gradesData = [
-            ['name' => 'مدير عام',       'level' => 1],
+            ['name' => 'مدير الفرع',       'level' => 1],
             ['name' => 'مدير إدارة',     'level' => 2],
             ['name' => 'رئيس قسم',       'level' => 3],
             ['name' => 'مشرف تربوي',     'level' => 4],
@@ -77,7 +77,7 @@ class HRSeeder extends Seeder
 
         // ── 4. الموظفون (الفرع الرئيسي) ──
         $employeesData = [
-            ['name' => 'أحمد محمود الزهراني',   'username' => 'ahmed.z',   'dept' => $topDept->id,  'grade' => $gradeIds['مدير عام'],     'hire' => '2018-09-01', 'role' => $adminRole],
+            ['name' => 'أحمد محمود الزهراني',   'username' => 'ahmed.z',   'dept' => $topDept->id,  'grade' => $gradeIds['مدير الفرع'],     'hire' => '2018-09-01', 'role' => $adminRole],
             ['name' => 'سارة خالد العمري',        'username' => 'sara.o',    'dept' => $hr->id,        'grade' => $gradeIds['مدير إدارة'],   'hire' => '2019-03-15', 'role' => $adminRole],
             ['name' => 'عمر عبدالله القحطاني',   'username' => 'omar.q',    'dept' => $it->id,        'grade' => $gradeIds['رئيس قسم'],     'hire' => '2020-01-10', 'role' => $adminRole],
             ['name' => 'فهد علي الدوسري',          'username' => 'fahad.d',   'dept' => $academic->id,  'grade' => $gradeIds['مشرف تربوي'],   'hire' => '2020-09-05', 'role' => $supervisorRole],

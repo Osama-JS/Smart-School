@@ -14,6 +14,27 @@ use Carbon\Carbon;
 class AttendanceController extends Controller
 {
     /**
+     * صفحة التقرير المتقدم للحضور والانصراف (شهري للموظف)
+     */
+    public function report(Request $request)
+    {
+        $user = $request->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        
+        $employeesQuery = Employee::query();
+        if (!$isAdmin) {
+            $employeesQuery->whereHas('user', function($q) use ($user) {
+                $q->where('branch_id', $user->branch_id);
+            });
+        }
+        $employees = $employeesQuery->get(['id', 'first_name', 'last_name', 'employee_number']);
+
+        return Inertia::render('HR/Attendance/Report', [
+            'employees' => $employees,
+            'isAdmin' => $isAdmin
+        ]);
+    }
+    /**
      * عرض لوحة الحضور والانصراف اليومية
      */
     public function index(Request $request)

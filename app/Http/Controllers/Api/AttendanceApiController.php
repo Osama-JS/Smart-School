@@ -180,26 +180,140 @@ class AttendanceApiController extends Controller
     }
 
     /**
-     * جلب تقرير حضور موظف لشهر محدد
+     * جلب تقرير حضور موظف لشهر محدد (مع احتساب الإجازات والعطلات)
      */
     public function employeeReport(Request $request, int $employeeId): JsonResponse
     {
-        $month = $request->get('month', Carbon::now()->month);
-        $year  = $request->get('year', Carbon::now()->year);
+        $monthNum = $request->get('month', Carbon::now()->month);
+        $yearNum  = $request->get('year', Carbon::now()->year);
+        
+        $month = Carbon::createFromDate($yearNum, $monthNum, 1)->startOfDay();
+        $daysInMonth = $month->daysInMonth;
 
-        $records = Attendance::where('employee_id', $employeeId)
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year)
+        $employee = Employee::with(['shifts', 'user'])->findOrFail($employeeId);
+        
+        $workingDays = [];
+        if ($employee->shifts->isNotEmpty()) {
+            foreach ($employee->shifts as $shift) {
+                if ($shift->pivot && $shift->pivot->working_days) {
+                    $shiftDays = json_decode($shift->pivot->working_days, true);
+                    if (is_array($shiftDays)) {
+                        $workingDays = array_merge($workingDays, $shiftDays);
+                    }
+                }
+            }
+            $workingDays = array_unique($workingDays);
+        } else {
+            $workingDays = [0,1,2,3,4]; // Default if no shift is assigned
+        }
+
+        // 1. Get actual attendance records
+        $actualAttendances = Attendance::where('employee_id', $employeeId)
+            ->whereMonth('date', $monthNum)
+            ->whereYear('date', $yearNum)
             ->with(['branch:id,name', 'shift:id,name,start_time,end_time'])
-            ->orderBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // 2. Get Leaves
+        $leaves = \App\Models\Leave::where('employee_id', $employeeId)
+            ->where('status', 'approved')
+            ->where(function($q) use ($monthNum, $yearNum) {
+                $q->whereMonth('start_date', $monthNum)->whereYear('start_date', $yearNum)
+                  ->orWhereMonth('end_date', $monthNum)->whereYear('end_date', $yearNum);
+            })
             ->get();
 
+        // 3. Get Holidays
+        $branchId = $employee->user ? $employee->user->branch_id : null;
+        $holidays = \App\Models\Holiday::where(function($q) use ($branchId) {
+                if ($branchId) {
+                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+                } else {
+                    $q->whereNull('branch_id');
+                }
+            })
+            ->where(function($q) use ($monthNum, $yearNum) {
+                $q->whereMonth('start_date', $monthNum)->whereYear('start_date', $yearNum)
+                  ->orWhereMonth('end_date', $monthNum)->whereYear('end_date', $yearNum);
+            })
+            ->get();
+
+        $todayDate = Carbon::now()->startOfDay();
+        $records = [];
         $summary = [
-            'present' => $records->where('status', 'present')->count(),
-            'late'    => $records->where('status', 'late')->count(),
-            'absent'  => $records->where('status', 'absent')->count(),
-            'excused' => $records->where('status', 'excused')->count(),
+            'present' => 0, 'late' => 0, 'absent' => 0, 'excused' => 0, 
+            'holiday' => 0, 'leave' => 0, 'weekend' => 0, 'future' => 0,
         ];
+
+        for ($d = 1; $d <= $daysInMonth; $d++) {
+            $currentDate = clone $month;
+            $currentDate->day($d);
+            $dateString = $currentDate->toDateString();
+            $dayOfWeek = $currentDate->dayOfWeek; // 0=Sun, 6=Sat
+            
+            // Check Holiday
+            $isHoliday = false;
+            $holidayName = '';
+            foreach ($holidays as $h) {
+                if ($currentDate->between($h->start_date, $h->end_date)) {
+                    $isHoliday = true;
+                    $holidayName = $h->name;
+                    break;
+                }
+            }
+
+            // Check Leave
+            $isLeave = false;
+            $leaveType = '';
+            foreach ($leaves as $l) {
+                if ($currentDate->between($l->start_date, $l->end_date)) {
+                    $isLeave = true;
+                    $leaveType = $l->type;
+                    break;
+                }
+            }
+
+            $actualRecord = $actualAttendances->get($dateString);
+
+            if ($isHoliday) {
+                $status = 'holiday';
+                $notes = $holidayName;
+            } elseif ($isLeave) {
+                $status = 'leave';
+                $notes = 'إجازة: ' . $leaveType;
+            } else {
+                $isWorkingDay = in_array($dayOfWeek, $workingDays);
+                
+                if (!$isWorkingDay) {
+                    $status = 'weekend';
+                    $notes = 'إجازة أسبوعية';
+                } else {
+                    if ($actualRecord) {
+                        $status = $actualRecord->status;
+                        $notes = '';
+                    } else {
+                        if ($currentDate->isAfter($todayDate)) {
+                            $status = 'future';
+                            $notes = '-';
+                        } else {
+                            $status = 'absent';
+                            $notes = $currentDate->isSameDay($todayDate) ? 'لم يحضر (اليوم)' : 'غياب بدون عذر';
+                        }
+                    }
+                }
+            }
+
+            $summary[$status]++;
+
+            $records[] = [
+                'date' => $dateString,
+                'day_of_week' => $dayOfWeek,
+                'status' => $status,
+                'notes' => $notes,
+                'attendance' => $actualRecord,
+            ];
+        }
 
         return response()->json([
             'success' => true,

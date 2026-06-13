@@ -14,7 +14,7 @@ class RolesSeeder extends Seeder
         $rolesConfig = [
             'مدير النظام' => 'all', // جميع الصلاحيات
 
-            'مدير عام' => [
+            'مدير الفرع' => [
                 'modules' => ['hr', 'academic', 'students', 'reports', 'supervision'],
                 'extra'   => ['إدارة المستخدمين'],
             ],

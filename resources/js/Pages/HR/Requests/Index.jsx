@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import SelectInput from '@/Components/SelectInput';
 import { 
     Search, Plus, Filter, MoreVertical, FileText, CheckCircle, Clock, XCircle, Send,
     Calendar, RotateCcw, X, ChevronDown, SlidersHorizontal, Printer
@@ -572,31 +573,31 @@ export default function RequestsIndex() {
                             {/* Request Type Selector */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400">نوع الطلب</label>
-                                <select 
+                                <SelectInput 
                                     value={typeFilter} 
-                                    onChange={e => setTypeFilter(e.target.value)}
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all"
-                                >
-                                    <option value="all">الكل</option>
-                                    <option value="إجازة اعتيادية">إجازة اعتيادية</option>
-                                    <option value="طلب مغادرة مبكرة">طلب مغادرة مبكرة</option>
-                                    <option value="سلفة مالية">سلفة مالية</option>
-                                    <option value="إجازة مرضية">إجازة مرضية</option>
-                                </select>
+                                    onChange={val => setTypeFilter(val)}
+                                    options={[
+                                        { value: 'all', label: 'الكل' },
+                                        { value: 'إجازة اعتيادية', label: 'إجازة اعتيادية' },
+                                        { value: 'طلب مغادرة مبكرة', label: 'طلب مغادرة مبكرة' },
+                                        { value: 'سلفة مالية', label: 'سلفة مالية' },
+                                        { value: 'إجازة مرضية', label: 'إجازة مرضية' }
+                                    ]}
+                                />
                             </div>
 
                             {/* Priority Selector */}
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-500 dark:text-slate-400">الأولوية</label>
-                                <select 
+                                <SelectInput 
                                     value={priorityFilter} 
-                                    onChange={e => setPriorityFilter(e.target.value)}
-                                    className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all"
-                                >
-                                    <option value="all">الكل</option>
-                                    <option value="عالية">عالية</option>
-                                    <option value="عادية">عادية</option>
-                                </select>
+                                    onChange={val => setPriorityFilter(val)}
+                                    options={[
+                                        { value: 'all', label: 'الكل' },
+                                        { value: 'عالية', label: 'عالية' },
+                                        { value: 'عادية', label: 'عادية' }
+                                    ]}
+                                />
                             </div>
                         </div>
                     </div>

@@ -88,7 +88,7 @@ class JobGradeController extends Controller
         });
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
         $branches = $isAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
 
         $allGrades = JobGrade::select('id', 'name', 'level', 'parent_id')->orderBy('level', 'asc')->get();
@@ -130,7 +130,7 @@ class JobGradeController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         if (!$isAdmin) {
             // مدراء الفروع لا يمكنهم سوى إنشاء درجات وظيفية لفروعهم
@@ -164,7 +164,7 @@ class JobGradeController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير عام', 'مدير النظام']);
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
 
         if (!$isAdmin) {
             // لا يجوز لمدير الفرع أن يغير فرع الدرجة الوظيفية أو يجعلها عامة
