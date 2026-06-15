@@ -15,11 +15,11 @@ function Modal({ isOpen, onClose, title, children }) {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden border border-slate-100 animate-scale-in">
-                <div className="flex items-center justify-between p-6 border-b border-slate-50">
-                    <div className="text-lg font-bold text-dark-900">{title}</div>
-                    <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-50 text-slate-400 transition-colors">✕</button>
+            <div className="absolute inset-0 bg-dark-900/60 dark:bg-black/70 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden border border-slate-100 dark:border-slate-800 animate-scale-in">
+                <div className="flex items-center justify-between p-6 border-b border-slate-50 dark:border-slate-800">
+                    <div className="text-lg font-bold text-dark-900 dark:text-white">{title}</div>
+                    <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 transition-colors">✕</button>
                 </div>
                 <div className="p-6">{children}</div>
             </div>
@@ -33,12 +33,12 @@ function PermissionToggle({ enabled, onChange }) {
         <button
             type="button"
             onClick={() => onChange(!enabled)}
-            className={`relative inline-flex h-5.5 w-10.5 items-center rounded-full transition-colors focus:outline-none ${
-                enabled ? 'bg-primary-500' : 'bg-slate-200'
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
+                enabled ? 'bg-primary-500' : 'bg-slate-200 dark:bg-slate-700'
             }`}
         >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-                enabled ? 'translate-x-5.5' : 'translate-x-1'
+            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                enabled ? '-translate-x-5' : 'translate-x-0'
             }`} />
         </button>
     );
@@ -56,6 +56,7 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
     const [showAdd, setShowAdd]   = useState(false);
     const [showDel, setShowDel]   = useState(null);
     const [newRoleName, setNewRoleName] = useState('');
+    const [newRoleAccessType, setNewRoleAccessType] = useState('dashboard');
     const [expandedModules, setExpandedModules] = useState({});
 
     const selectRole = (role) => {
@@ -79,8 +80,8 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
 
     const addRole = (e) => {
         e.preventDefault();
-        router.post(route('admin.roles.store'), { name: newRoleName }, {
-            onFinish: () => { setShowAdd(false); setNewRoleName(''); }
+        router.post(route('admin.roles.store'), { name: newRoleName, access_type: newRoleAccessType }, {
+            onFinish: () => { setShowAdd(false); setNewRoleName(''); setNewRoleAccessType('dashboard'); }
         });
     };
 
@@ -160,39 +161,42 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* ── Roles List ── */}
                 <div className="lg:col-span-1">
-                    <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                        <div className="px-5 py-4 border-b border-slate-50 bg-slate-50/50">
-                            <h2 className="text-sm font-bold text-dark-900">الأدوار المتاحة</h2>
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                            <h2 className="text-sm font-bold text-dark-900 dark:text-white">الأدوار المتاحة</h2>
                         </div>
-                        <ul className="divide-y divide-slate-100">
+                        <ul className="divide-y divide-slate-100 dark:divide-slate-800/50">
                             {roles.map(role => (
                                 <li key={role.id}
                                     className={`flex items-center justify-between px-5 py-4 cursor-pointer transition-colors group ${
                                         selectedRole?.id === role.id
-                                            ? 'bg-primary-50/40 border-r-4 border-r-primary-500'
-                                            : 'hover:bg-slate-50/60'
+                                            ? 'bg-primary-50/40 dark:bg-primary-500/10 border-r-4 border-r-primary-500'
+                                            : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/50'
                                     }`}
                                     onClick={() => selectRole(role)}
                                 >
                                     <div>
-                                        <p className={`text-sm font-bold ${selectedRole?.id === role.id ? 'text-primary-700' : 'text-slate-750'}`}>
+                                        <p className={`text-sm font-bold flex items-center gap-2 ${selectedRole?.id === role.id ? 'text-primary-700 dark:text-primary-400' : 'text-slate-750 dark:text-slate-300'}`}>
                                             {role.name}
+                                            {role.is_system_role && <Shield size={12} className="text-primary-400" title="دور أساسي بالنظام" />}
                                         </p>
-                                        <p className="text-xs text-slate-400 mt-1 font-semibold">
-                                            <Users size={10} className="inline ml-1" />
-                                            {role.users_count} مستخدم
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-semibold flex items-center gap-1.5">
+                                            <span className="flex items-center gap-1"><Users size={10} /> {role.users_count}</span>
+                                            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">{role.access_type}</span>
                                         </p>
                                     </div>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setShowDel(role); }}
-                                        className="opacity-0 group-hover:opacity-100 text-slate-350 hover:text-accent-500 transition-all p-1.5 rounded-xl hover:bg-slate-100"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
+                                    {!role.is_system_role && (
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setShowDel(role); }}
+                                            className="opacity-0 group-hover:opacity-100 text-slate-350 dark:text-slate-500 hover:text-accent-500 dark:hover:text-accent-400 transition-all p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    )}
                                 </li>
                             ))}
                             {roles.length === 0 && (
-                                <li className="px-5 py-8 text-center text-slate-400 text-sm">لا توجد أدوار بعد</li>
+                                <li className="px-5 py-8 text-center text-slate-400 dark:text-slate-500 text-sm">لا توجد أدوار بعد</li>
                             )}
                         </ul>
                     </div>
@@ -201,13 +205,13 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
                 {/* ── Permissions Panel ── */}
                 <div className="lg:col-span-3">
                     {selectedRole ? (
-                        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-                            <div className="px-6 py-5 border-b border-slate-50 flex items-center justify-between bg-gradient-to-b from-white to-slate-50/20">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="px-6 py-5 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-gradient-to-b from-white to-slate-50/20 dark:from-slate-900 dark:to-slate-800/20">
                                 <div>
-                                    <h2 className="text-base font-bold text-dark-900">
-                                        صلاحيات دور: <span className="text-primary-600">{selectedRole.name}</span>
+                                    <h2 className="text-base font-bold text-dark-900 dark:text-white">
+                                        صلاحيات دور: <span className="text-primary-600 dark:text-primary-400">{selectedRole.name}</span>
                                     </h2>
-                                    <p className="text-xs text-slate-400 mt-1 font-semibold">{rolePerms.size} صلاحية مفعّلة</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-semibold">{rolePerms.size} صلاحية مفعّلة</p>
                                 </div>
                                 <button onClick={savePermissions} disabled={saving}
                                     className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all disabled:opacity-60">
@@ -218,7 +222,7 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
 
                             <div className="p-5 space-y-4">
                                 {permissions.length === 0 && (
-                                    <div className="text-center py-12 text-slate-400">
+                                    <div className="text-center py-12 text-slate-400 dark:text-slate-600">
                                         <Lock size={32} className="mx-auto mb-2 opacity-30" />
                                         <p className="text-sm">لا توجد صلاحيات معرَّفة في النظام بعد</p>
                                     </div>
@@ -227,17 +231,17 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
                                     const isExpanded = expandedModules[module] !== false; // default open
                                     const allSelected = allModuleSelected(module);
                                     return (
-                                        <div key={module} className="border border-slate-100 rounded-2xl overflow-hidden">
+                                        <div key={module} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
                                             <div
-                                                className="flex items-center justify-between px-4 py-3 bg-slate-50/60 cursor-pointer select-none"
+                                                className="flex items-center justify-between px-4 py-3 bg-slate-50/60 dark:bg-slate-800/40 cursor-pointer select-none"
                                                 onClick={() => toggleModule(module)}
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <Shield size={15} className="text-primary-500" />
-                                                    <span className="text-sm font-bold text-slate-700">
+                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                                         {moduleLabels[module] ?? module}
                                                     </span>
-                                                    <span className="text-xs text-slate-450 font-bold">({items.length} صلاحية)</span>
+                                                    <span className="text-xs text-slate-450 dark:text-slate-500 font-bold">({items.length} صلاحية)</span>
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <button
@@ -245,23 +249,23 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
                                                         onClick={(e) => { e.stopPropagation(); toggleModule_perms(module); }}
                                                         className={`text-xs font-bold px-2.5 py-1 rounded-xl transition-all ${
                                                             allSelected
-                                                                ? 'bg-primary-50 text-primary-700 border border-primary-100'
-                                                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200/80'
+                                                                ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 border border-primary-100 dark:border-primary-500/20'
+                                                                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-700'
                                                         }`}
                                                     >
                                                         {allSelected ? 'إلغاء الكل' : 'تحديد الكل'}
                                                     </button>
-                                                    {isExpanded ? <ChevronUp size={16} className="text-slate-400" /> : <ChevronDown size={16} className="text-slate-400" />}
+                                                    {isExpanded ? <ChevronUp size={16} className="text-slate-400 dark:text-slate-500" /> : <ChevronDown size={16} className="text-slate-400 dark:text-slate-500" />}
                                                 </div>
                                             </div>
 
                                             {isExpanded && (
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0 divide-y divide-slate-100/50">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0 divide-y divide-slate-100/50 dark:divide-slate-800/50">
                                                     {items.map(perm => (
                                                         <div key={perm.name}
-                                                            className="flex items-center justify-between px-4 py-3.5 hover:bg-slate-50/30 transition-colors">
+                                                            className="flex items-center justify-between px-4 py-3.5 hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors">
                                                             <div>
-                                                                 <p className="text-sm font-semibold text-slate-700">{perm.name}</p>
+                                                                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{perm.name}</p>
                                                             </div>
                                                             <PermissionToggle
                                                                 enabled={rolePerms.has(perm.name)}
@@ -277,8 +281,8 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center justify-center min-h-[300px]">
-                            <div className="text-center text-slate-400">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center justify-center min-h-[300px]">
+                            <div className="text-center text-slate-400 dark:text-slate-600">
                                 <Shield size={40} className="mx-auto mb-3 opacity-30" />
                                 <p className="font-medium">اختر دوراً من القائمة لعرض صلاحياته</p>
                             </div>
@@ -291,17 +295,27 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
             <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="إضافة دور جديد">
                 <form onSubmit={addRole} className="space-y-5">
                     <div>
-                        <label className="block text-sm font-bold text-dark-900 mb-2">اسم الدور <span className="text-accent-500">*</span></label>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم الدور <span className="text-accent-500">*</span></label>
                         <input type="text" required
                             placeholder="مثال: وكيل مدرسة، أمين المختبر..."
-                            className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all"
+                            className="w-full bg-slate-50 dark:bg-slate-900/50 dark:text-white border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all"
                             value={newRoleName} onChange={e => setNewRoleName(e.target.value)} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">نوع واجهة الوصول (Access Type)</label>
+                        <select 
+                            className="w-full bg-slate-50 dark:bg-slate-900/50 dark:text-white border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all"
+                            value={newRoleAccessType} onChange={e => setNewRoleAccessType(e.target.value)}>
+                            <option value="dashboard" className="dark:bg-slate-800">لوحة التحكم (Dashboard)</option>
+                            <option value="app" className="dark:bg-slate-800">التطبيق (App)</option>
+                            <option value="both" className="dark:bg-slate-800">الكل (Both)</option>
+                        </select>
                     </div>
                     <div className="flex justify-end gap-3 pt-2">
                         <button type="button" onClick={() => setShowAdd(false)}
-                            className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200/70 transition-colors">إلغاء</button>
-                        <button type="submit"
-                            className="px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all">إضافة الدور</button>
+                            className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors">إلغاء</button>
+                        <button type="submit" disabled={!newRoleName}
+                            className="px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all disabled:opacity-50">إضافة الدور</button>
                     </div>
                 </form>
             </Modal>
@@ -309,16 +323,16 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
             {/* Delete Role Modal */}
             <Modal isOpen={!!showDel} onClose={() => setShowDel(null)} title="حذف الدور">
                 <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-accent-50 flex items-center justify-center animate-pulse">
-                        <AlertTriangle size={32} className="text-accent-500" />
+                    <div className="w-16 h-16 rounded-2xl bg-accent-50 dark:bg-accent-500/10 flex items-center justify-center animate-pulse">
+                        <AlertTriangle size={32} className="text-accent-500 dark:text-accent-400" />
                     </div>
                     <div>
-                        <p className="font-bold text-dark-900 text-lg mb-1">تأكيد حذف الدور</p>
-                        <p className="text-sm text-slate-500">هل أنت متأكد من حذف دور "{showDel?.name}"؟ سيفقد جميع مستخدمي هذا الدور صلاحياتهم المرتبطة به.</p>
+                        <p className="font-bold text-dark-900 dark:text-white text-lg mb-1">تأكيد حذف الدور</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">هل أنت متأكد من حذف دور "{showDel?.name}"؟ سيفقد جميع مستخدمي هذا الدور صلاحياتهم المرتبطة به.</p>
                     </div>
                     <div className="flex gap-3 w-full mt-2">
                         <button onClick={() => setShowDel(null)}
-                            className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200/70 transition-colors">إلغاء</button>
+                            className="flex-1 py-3 text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-700 transition-colors">إلغاء</button>
                         <button onClick={deleteRole}
                             className="flex-1 py-3 text-sm font-bold text-white bg-accent-500 hover:bg-accent-600 rounded-2xl shadow-md shadow-accent-500/10 transition-all">حذف الدور</button>
                     </div>

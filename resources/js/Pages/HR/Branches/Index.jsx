@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import {
@@ -124,6 +124,10 @@ export default function BranchesIndex({ branches, users, filters }) {
     const [editBranch, setEditBranch] = useState(null);
     const [deleteBranch, setDeleteBranch] = useState(null);
     const [assignManagerBranch, setAssignManagerBranch] = useState(null);
+    const [isCreatingManager, setIsCreatingManager] = useState(false);
+    const [managerForm, setManagerForm] = useState({
+        name: '', username: '', national_id: '', password: ''
+    });
     const [form, setForm]           = useState({
         name: '', address: '', phone: '', is_active: true,
         latitude: '', longitude: '', radius_meters: 100, user_id: ''
@@ -236,6 +240,19 @@ export default function BranchesIndex({ branches, users, filters }) {
         setProcessing(true);
         router.post(route('hr.branches.assign-manager', assignManagerBranch.id), { user_id: form.user_id }, {
             onFinish: () => { setProcessing(false); setAssignManagerBranch(null); }
+        });
+    };
+
+    const handleStoreManager = (e) => {
+        e.preventDefault();
+        setProcessing(true);
+        router.post(route('hr.branches.store-manager', assignManagerBranch.id), managerForm, {
+            onSuccess: () => { 
+                setAssignManagerBranch(null);
+                setIsCreatingManager(false);
+                setManagerForm({name: '', username: '', national_id: '', password: ''});
+            },
+            onFinish: () => setProcessing(false)
         });
     };
 
@@ -882,41 +899,87 @@ export default function BranchesIndex({ branches, users, filters }) {
             </Modal>
 
             {/* ── Assign Manager Modal ── */}
-            <Modal isOpen={!!assignManagerBranch} onClose={() => setAssignManagerBranch(null)} title="تعيين مدير للفرع">
-                <form onSubmit={handleAssignManager} className="space-y-4">
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-                        الفرع: <span className="font-bold text-slate-700 dark:text-slate-300">{assignManagerBranch?.name}</span>
-                        <br />
-                        المدير الحالي: {assignManagerBranch?.manager ? <span className="font-bold text-primary-600 dark:text-primary-400">{assignManagerBranch.manager.name}</span> : <span className="text-slate-400">لا يوجد</span>}
-                    </p>
+            <Modal isOpen={!!assignManagerBranch} onClose={() => { setAssignManagerBranch(null); setIsCreatingManager(false); }} title={isCreatingManager ? "إضافة وتعيين مدير جديد" : "تعيين مدير للفرع"}>
+                {isCreatingManager ? (
+                    <form onSubmit={handleStoreManager} className="space-y-4">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                            سيتم إضافة هذا المستخدم كمدير لفرع: <span className="font-bold text-slate-700 dark:text-slate-300">{assignManagerBranch?.name}</span>
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">الاسم الكامل <span className="text-accent-500">*</span></label>
+                                <input type="text" className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-xl px-3 py-2.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" value={managerForm.name} onChange={e => setManagerForm({...managerForm, name: e.target.value})} required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">رقم الهوية <span className="text-accent-500">*</span></label>
+                                <input type="text" className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-xl px-3 py-2.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" value={managerForm.national_id} onChange={e => setManagerForm({...managerForm, national_id: e.target.value})} required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">اسم المستخدم (للدخول) <span className="text-accent-500">*</span></label>
+                                <input type="text" dir="ltr" className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-xl px-3 py-2.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" value={managerForm.username} onChange={e => setManagerForm({...managerForm, username: e.target.value})} required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">كلمة المرور <span className="text-accent-500">*</span></label>
+                                <input type="password" dir="ltr" className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-xl px-3 py-2.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" value={managerForm.password} onChange={e => setManagerForm({...managerForm, password: e.target.value})} required minLength={6} />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <button type="button" onClick={() => setIsCreatingManager(false)} className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">رجوع للقائمة</button>
+                            <button type="submit" disabled={processing || !managerForm.name || !managerForm.username || !managerForm.password || !managerForm.national_id} className="px-6 py-2.5 bg-emerald-500 text-white rounded-2xl text-sm font-bold hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"><Plus size={16} /> {processing ? 'جاري الحفظ...' : 'إضافة وتعيين'}</button>
+                        </div>
+                    </form>
+                ) : (
+                    <form onSubmit={handleAssignManager} className="space-y-4">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                            الفرع: <span className="font-bold text-slate-700 dark:text-slate-300">{assignManagerBranch?.name}</span>
+                            <br />
+                            المدير الحالي: {assignManagerBranch?.manager ? <span className="font-bold text-primary-600 dark:text-primary-400">{assignManagerBranch.manager.name}</span> : <span className="text-slate-400">لا يوجد</span>}
+                        </p>
 
-                    <div>
-                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">اختر المستخدم ليكون مديراً <span className="text-accent-500">*</span></label>
-                        <SelectInput
-                            value={form.user_id}
-                            onChange={(val) => setForm({ ...form, user_id: val })}
-                            options={users?.map(u => ({ value: u.id, label: `${u.name} ${u.national_id ? '(' + u.national_id + ')' : ''}` })) || []}
-                            placeholder="ابحث عن مستخدم..."
-                        />
-                    </div>
-                    
-                    <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <button
-                            type="button"
-                            onClick={() => setAssignManagerBranch(null)}
-                            className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                        >
-                            إلغاء
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={processing || !form.user_id}
-                            className="px-6 py-2.5 bg-emerald-500 text-white rounded-2xl text-sm font-bold hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
-                        >
-                            <Save size={16} /> تعيين كمدير
-                        </button>
-                    </div>
-                </form>
+                        <div>
+                            <div className="flex justify-between items-end mb-2">
+                                <label className="block text-sm font-bold text-dark-900 dark:text-slate-350">اختر المستخدم ليكون مديراً <span className="text-accent-500">*</span></label>
+                                <button 
+                                    type="button"
+                                    onClick={() => setIsCreatingManager(true)}
+                                    className="text-xs font-bold text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center gap-1 transition-colors bg-primary-50 dark:bg-primary-500/10 px-2 py-1.5 rounded-lg"
+                                >
+                                    <Plus size={14} /> إضافة مدير جديد
+                                </button>
+                            </div>
+                            <SelectInput
+                                value={form.user_id}
+                                onChange={(val) => setForm({ ...form, user_id: val })}
+                                options={users?.map(u => {
+                                    const isOtherManager = u.branch_id && (u.role?.name === 'مدير فرع' || u.role?.name === 'مدير الفرع') && u.branch_id !== assignManagerBranch?.id;
+                                    return { 
+                                        value: u.id, 
+                                        label: `${u.name} ${u.national_id ? '(' + u.national_id + ')' : ''} ${isOtherManager ? ` - (مدير لـ: ${u.branch?.name || 'فرع آخر'})` : ''}`,
+                                        isDisabled: isOtherManager
+                                    };
+                                }) || []}
+                                placeholder="ابحث عن مستخدم..."
+                            />
+                        </div>
+                        
+                        <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <button
+                                type="button"
+                                onClick={() => { setAssignManagerBranch(null); setIsCreatingManager(false); }}
+                                className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-sm font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                إلغاء
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={processing || !form.user_id}
+                                className="px-6 py-2.5 bg-emerald-500 text-white rounded-2xl text-sm font-bold hover:bg-emerald-600 transition-all shadow-md shadow-emerald-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                            >
+                                <Save size={16} /> تعيين كمدير
+                            </button>
+                        </div>
+                    </form>
+                )}
             </Modal>
         </AdminLayout>
     );

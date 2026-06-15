@@ -7,7 +7,7 @@ import {
     Plus, Edit, Trash2, X, PlusCircle, AlignLeft, List, Hash, 
     CheckSquare, Image as ImageIcon, Search, FileText, Settings, 
     ShieldCheck, Calendar, Sparkles, ChevronDown, FileSpreadsheet, 
-    AlertCircle 
+    AlertCircle, Type, Clock, Paperclip, Star, Table2 
 } from 'lucide-react';
 
 export default function TemplatesIndex({ auth, templates, jobGrades, stats, filters }) {
@@ -19,14 +19,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
     const form = useForm({
         name: '',
         description: '',
-        job_grade_id: ''
+        job_grade_id: '',
+        period_type: 'weekly'
     });
 
     const editForm = useForm({
         id: '',
         name: '',
         description: '',
-        job_grade_id: ''
+        job_grade_id: '',
+        period_type: 'weekly'
     });
 
     const fieldsForm = useForm({
@@ -46,20 +48,20 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
     // Helper for react-select tailwind classes
     const selectClassNames = {
-        control: (state) => `bg-slate-50/50 dark:bg-slate-955/40 border border-slate-200 dark:border-slate-800/85 rounded-2xl px-3 shadow-none !min-h-[46px] text-sm transition-all duration-205 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
-        menu: () => 'bg-white/95 dark:bg-slate-955/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800/85 rounded-2xl shadow-xl mt-2 overflow-hidden z-50 animate-scale-in',
+        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+        menu: () => 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl mt-2 overflow-hidden z-[100] animate-scale-in',
         option: (state) => `px-4 py-2.5 text-sm cursor-pointer transition-all duration-200 ${
             state.isSelected 
                 ? 'bg-primary-600 text-white font-bold shadow-sm shadow-primary-500/10' 
                 : state.isFocused 
                     ? 'bg-primary-50 dark:bg-primary-600/15 text-primary-700 dark:text-primary-400 font-semibold' 
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 font-medium'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 font-medium'
         }`,
-        singleValue: () => 'text-slate-850 dark:text-slate-202 text-sm font-semibold',
-        input: () => 'text-slate-855 dark:text-slate-202 text-sm font-semibold',
-        placeholder: () => 'text-slate-400 dark:text-slate-650 text-sm font-semibold',
+        singleValue: () => 'text-slate-800 dark:text-slate-200 text-sm font-semibold',
+        input: () => 'text-slate-800 dark:text-slate-200 text-sm font-semibold',
+        placeholder: () => 'text-slate-400 dark:text-slate-500 text-sm font-semibold',
         menuList: () => 'p-1.5 space-y-0.5',
-        dropdownIndicator: () => 'text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 p-2 cursor-pointer transition-colors',
+        dropdownIndicator: () => 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 cursor-pointer transition-colors',
         clearIndicator: () => 'text-slate-400 hover:text-red-500 p-2 cursor-pointer transition-colors',
         indicatorSeparator: () => 'bg-slate-200 dark:bg-slate-800 w-[1px] my-2 mx-1'
     };
@@ -67,10 +69,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
     const getFieldIcon = (type) => {
         switch (type) {
             case 'text': return <AlignLeft size={16} />;
+            case 'textarea': return <Type size={16} />;
             case 'number': return <Hash size={16} />;
             case 'select': return <List size={16} />;
             case 'checkbox': return <CheckSquare size={16} />;
             case 'image': return <ImageIcon size={16} />;
+            case 'date': return <Calendar size={16} />;
+            case 'time': return <Clock size={16} />;
+            case 'file': return <Paperclip size={16} />;
+            case 'rating': return <Star size={16} />;
+            case 'matrix_text': return <Table2 size={16} />;
             default: return <AlignLeft size={16} />;
         }
     };
@@ -110,7 +118,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
             id: template.id,
             name: template.name,
             description: template.description || '',
-            job_grade_id: template.job_grade_id || ''
+            job_grade_id: template.job_grade_id || '',
+            period_type: template.period_type || 'weekly'
         });
         setIsEditModalOpen(true);
     };
@@ -213,11 +222,17 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                 onChange={(val) => updateField(index, 'type', val)}
                                                 className="w-full [&>div]:pr-10 [&>div]:pl-10"
                                                 options={[
-                                                    { value: 'text', label: 'نص (Text)' },
+                                                    { value: 'text', label: 'نص قصير (Text)' },
+                                                    { value: 'textarea', label: 'نص طويل (Textarea)' },
                                                     { value: 'number', label: 'رقم (Number)' },
                                                     { value: 'select', label: 'قائمة خيارات (Select)' },
                                                     { value: 'checkbox', label: 'خانة اختيار (Checkbox)' },
-                                                    { value: 'image', label: 'صورة (Image)' }
+                                                    { value: 'image', label: 'صورة (Image)' },
+                                                    { value: 'date', label: 'تاريخ (Date)' },
+                                                    { value: 'time', label: 'وقت (Time)' },
+                                                    { value: 'file', label: 'ملف مرفق (File)' },
+                                                    { value: 'rating', label: 'تقييم (Rating)' },
+                                                    { value: 'matrix_text', label: 'جدول ملاحظات (Matrix Text)' }
                                                 ]}
                                                 isClearable={false}
                                             />
@@ -235,18 +250,24 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 </button>
                             </div>
                             
-                            {/* Options for Select Type */}
-                            {field.type === 'select' && (
+                            {/* Options for Select or Matrix Type */}
+                            {(field.type === 'select' || field.type === 'matrix_text') && (
                                 <div className="mt-1 bg-slate-50/50 dark:bg-slate-900/10 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 animate-slide-down">
-                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">الخيارات (افصل بينها بفاصلة ,)</label>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
+                                        {field.type === 'matrix_text' ? 'البنود / الأسئلة (افصل بينها بفاصلة ,)' : 'الخيارات (افصل بينها بفاصلة ,)'}
+                                    </label>
                                     <input 
                                         type="text" 
                                         value={field.options ? field.options.join(', ') : ''}
                                         onChange={(e) => updateField(index, 'options', e.target.value.split(',').map(s => s.trim()).filter(s => s))}
                                         className="w-full bg-white dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none dark:text-white font-semibold"
-                                        placeholder="مثال: ممتاز, جيد جدا, جيد"
+                                        placeholder={field.type === 'matrix_text' ? "مثال: الطابور والإذاعة المدرسية, المدير التنفيذي, الإعلام" : "مثال: ممتاز, جيد جدا, جيد"}
                                     />
-                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 block font-semibold">ملاحظة: سيتم عرض هذه الكلمات كخيارات قائمة منسدلة للموظف عند تعبئة التقرير.</span>
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 block font-semibold">
+                                        {field.type === 'matrix_text' 
+                                            ? 'ملاحظة: سيتم رسم جدول يحتوي على هذه البنود ويقوم الموظف بكتابة ملاحظته أمام كل بند.' 
+                                            : 'ملاحظة: سيتم عرض هذه الكلمات كخيارات قائمة منسدلة للموظف عند تعبئة التقرير.'}
+                                    </span>
                                 </div>
                             )}
 
@@ -515,7 +536,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             </div>
                             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                                 <form id="createForm" onSubmit={handleCreateSubmit} className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>اسم القالب</span>
@@ -550,11 +571,40 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     unstyled
                                                     classNames={{
                                                         ...selectClassNames,
-                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-955/40 border border-slate-202 dark:border-slate-800/80 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-205 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
                                                 />
                                             </div>
                                             {form.errors.job_grade_id && <p className="text-red-500 text-xs mt-1 font-bold">{form.errors.job_grade_id}</p>}
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-2 flex items-center gap-1">
+                                                <span>دورية التقرير</span>
+                                                <span className="text-red-500">*</span>
+                                            </label>
+                                            <div className="relative group">
+                                                <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
+                                                <Select
+                                                    options={[
+                                                        { value: 'daily', label: 'يومي (Daily)' },
+                                                        { value: 'weekly', label: 'أسبوعي (Weekly)' },
+                                                        { value: 'monthly', label: 'شهري (Monthly)' },
+                                                        { value: 'quarterly', label: 'فصلي (Quarterly)' },
+                                                        { value: 'yearly', label: 'سنوي (Yearly)' },
+                                                        { value: 'custom', label: 'مخصص / بدون فترة (Custom)' },
+                                                    ]}
+                                                    value={form.data.period_type ? { value: form.data.period_type, label: ['يومي (Daily)', 'أسبوعي (Weekly)', 'شهري (Monthly)', 'فصلي (Quarterly)', 'سنوي (Yearly)', 'مخصص / بدون فترة (Custom)'][['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'custom'].indexOf(form.data.period_type)] } : null}
+                                                    onChange={(selected) => form.setData('period_type', selected ? selected.value : 'weekly')}
+                                                    placeholder="اختر دورية التقرير..."
+                                                    isClearable={false}
+                                                    unstyled
+                                                    classNames={{
+                                                        ...selectClassNames,
+                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+                                                    }}
+                                                />
+                                            </div>
+                                            {form.errors.period_type && <p className="text-red-500 text-xs mt-1 font-bold">{form.errors.period_type}</p>}
                                         </div>
                                     </div>
                                     <div>
@@ -619,7 +669,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             </div>
                             <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                                 <form id="editForm" onSubmit={handleEditSubmit} className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>اسم القالب</span>
@@ -652,7 +702,35 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     unstyled
                                                     classNames={{
                                                         ...selectClassNames,
-                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-955/40 border border-slate-202 dark:border-slate-800/80 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-205 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-2 flex items-center gap-1">
+                                                <span>دورية التقرير</span>
+                                                <span className="text-red-500">*</span>
+                                            </label>
+                                            <div className="relative group">
+                                                <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
+                                                <Select
+                                                    options={[
+                                                        { value: 'daily', label: 'يومي (Daily)' },
+                                                        { value: 'weekly', label: 'أسبوعي (Weekly)' },
+                                                        { value: 'monthly', label: 'شهري (Monthly)' },
+                                                        { value: 'quarterly', label: 'فصلي (Quarterly)' },
+                                                        { value: 'yearly', label: 'سنوي (Yearly)' },
+                                                        { value: 'custom', label: 'مخصص / بدون فترة (Custom)' },
+                                                    ]}
+                                                    value={editForm.data.period_type ? { value: editForm.data.period_type, label: ['يومي (Daily)', 'أسبوعي (Weekly)', 'شهري (Monthly)', 'فصلي (Quarterly)', 'سنوي (Yearly)', 'مخصص / بدون فترة (Custom)'][['daily', 'weekly', 'monthly', 'quarterly', 'yearly', 'custom'].indexOf(editForm.data.period_type)] } : null}
+                                                    onChange={(selected) => editForm.setData('period_type', selected ? selected.value : 'weekly')}
+                                                    placeholder="اختر دورية التقرير..."
+                                                    isClearable={false}
+                                                    unstyled
+                                                    classNames={{
+                                                        ...selectClassNames,
+                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
                                                 />
                                             </div>

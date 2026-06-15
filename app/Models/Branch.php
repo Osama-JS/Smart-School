@@ -27,7 +27,7 @@ class Branch extends Model
     public function manager()
     {
         return $this->hasOne(User::class)->whereHas('role', function($q) {
-            $q->where('name', 'مدير الفرع');
+            $q->whereIn('name', ['مدير فرع', 'مدير الفرع']);
         });
     }
 

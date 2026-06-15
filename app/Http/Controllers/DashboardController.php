@@ -59,15 +59,17 @@ class DashboardController extends Controller
         if ($branchId) $teachersQuery->where('branch_id', $branchId);
         $totalTeachers = $teachersQuery->count();
 
-        // Total Subjects (assuming global for now since Subject has no branch_id)
-        $totalSubjects = Subject::count();
+        // Total Subjects
+        $subjectsQuery = Subject::query();
+        if ($branchId) $subjectsQuery->where('branch_id', $branchId);
+        $totalSubjects = $subjectsQuery->count();
 
         // Attendance Today
         $attendanceQuery = Attendance::whereDate('date', Carbon::today());
         if ($branchId) $attendanceQuery->where('branch_id', $branchId);
-        $presentToday = $attendanceQuery->where('status', 'present')->count();
-        $absentToday = $attendanceQuery->where('status', 'absent')->count();
-        $totalAttendance = $presentToday + $absentToday;
+        $totalAttendance = $attendanceQuery->count();
+        $presentToday = (clone $attendanceQuery)->whereIn('status', ['present', 'late'])->count();
+        $absentToday = (clone $attendanceQuery)->whereIn('status', ['absent', 'excused'])->count();
         $attendancePercentage = $totalAttendance > 0 ? round(($presentToday / $totalAttendance) * 100, 1) : 0;
 
         // Recent Activities
@@ -92,9 +94,9 @@ class DashboardController extends Controller
             $dayAttendanceQuery = Attendance::whereDate('date', $date);
             if ($branchId) $dayAttendanceQuery->where('branch_id', $branchId);
             
-            $present = (clone $dayAttendanceQuery)->where('status', 'present')->count();
-            $absent = (clone $dayAttendanceQuery)->where('status', 'absent')->count();
-            $total = $present + $absent;
+            $total = (clone $dayAttendanceQuery)->count();
+            $present = (clone $dayAttendanceQuery)->whereIn('status', ['present', 'late'])->count();
+            $absent = (clone $dayAttendanceQuery)->whereIn('status', ['absent', 'excused'])->count();
             
             $percentage = $total > 0 ? round(($present / $total) * 100, 1) : 0;
             

@@ -59,17 +59,32 @@ class PermissionController extends Controller
      */
     public function storeRole(Request $request)
     {
-        $request->validate(['name' => 'required|string|max:255|unique:roles,name']);
-        Role::create(['name' => $request->name]);
-        return redirect()->route('admin.permissions')->with('success', 'تم إضافة الدور بنجاح');
+        $validated = $request->validate([
+            'name' => 'required|string|unique:roles,name|max:255',
+            'access_type' => 'nullable|in:dashboard,app,both'
+        ]);
+
+        Role::create([
+            'name' => $validated['name'],
+            'access_type' => $validated['access_type'] ?? 'dashboard',
+            'is_system_role' => false
+        ]);
+
+        return back()->with('success', 'تم إضافة الدور بنجاح');
     }
 
-    /**
-     * حذف دور
-     */
     public function destroyRole(Role $role)
     {
+        if ($role->is_system_role) {
+            return back()->with('error', 'لا يمكن حذف دور أساسي في النظام');
+        }
+
+        if ($role->users()->count() > 0) {
+            return back()->with('error', 'لا يمكن حذف الدور لارتباطه بمستخدمين');
+        }
+
         $role->delete();
-        return redirect()->route('admin.permissions')->with('success', 'تم حذف الدور بنجاح');
+
+        return back()->with('success', 'تم حذف الدور بنجاح');
     }
 }

@@ -16,49 +16,41 @@ class ReportController extends Controller
         $user = $request->user();
         $employee = $user->employee;
         
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
-        $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير الفرع', 'مدير النظام', 'مدير عام']);
+        $branchId = session('active_branch_id') ?: $user->branch_id;
 
-        // 1. Templates available for this employee to fill
-        $availableTemplates = [];
-        if ($employee && $employee->job_grade_id) {
-            $availableTemplates = ReportTemplate::where(function($q) use ($branchId) {
-                if ($branchId) {
-                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
-                }
-            })
-            ->where('job_grade_id', $employee->job_grade_id)
-            ->get();
-        }
-
-        // 2. Reports submitted by this employee
-        $myReports = Report::with('template', 'reviewer')
-            ->where('submitter_id', $user->id)
-            ->latest()
-            ->get();
-
-        // 3. Reports pending review by this manager
-        // This manager can review reports if they are the direct manager
-        // or based on job grade hierarchy. Using explicit manager_id for now.
-        $reportsToReview = [];
-        if ($employee) {
-            $reportsToReview = Report::with(['template', 'submitter.employee.jobGrade'])
-                ->whereHas('submitter.employee', function($q) use ($employee) {
-                    $q->where('manager_id', $employee->id);
-                })
-                ->where(function($q) use ($branchId) {
-                    if ($branchId) {
+        // Reports pending review by this manager or all reports for branch managers
+        if ($isAdmin) {
+            $reportsQuery = Report::with(['template', 'submitter.employee.jobGrade'])
+                ->when($branchId, function($q) use ($branchId) {
+                    $q->where('branch_id', $branchId);
+                });
+        } else {
+            if ($employee) {
+                $reportsQuery = Report::with(['template', 'submitter.employee.jobGrade'])
+                    ->whereHas('submitter.employee', function($q) use ($employee) {
+                        $q->where('manager_id', $employee->id);
+                    })
+                    ->when($branchId, function($q) use ($branchId) {
                         $q->where('branch_id', $branchId);
-                    }
-                })
-                ->latest()
-                ->get();
+                    });
+            } else {
+                $reportsQuery = Report::where('id', 0);
+            }
         }
+
+        $reportsToReview = $reportsQuery->latest()->get();
+
+        $stats = [
+            'total' => $reportsToReview->count(),
+            'pending' => $reportsToReview->where('status', 'pending')->count(),
+            'reviewed' => $reportsToReview->where('status', 'reviewed')->count(),
+            'returned' => $reportsToReview->where('status', 'returned')->count(),
+        ];
 
         return Inertia::render('HR/Reports/Index', [
-            'availableTemplates' => $availableTemplates,
-            'myReports' => $myReports,
             'reportsToReview' => $reportsToReview,
+            'stats' => $stats,
         ]);
     }
 

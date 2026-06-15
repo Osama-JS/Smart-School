@@ -123,7 +123,7 @@ export default function AttendanceReport({ employees, isAdmin }) {
                             <SelectInput
                                 options={employees.map(e => ({ value: e.id, label: `${e.first_name} ${e.last_name} (${e.employee_number || ''})` }))}
                                 value={employees.map(e => ({ value: e.id, label: `${e.first_name} ${e.last_name}` })).find(o => o.value == selectedEmployee) || null}
-                                onChange={(selected) => setSelectedEmployee(selected?.value || '')}
+                                onChange={(selected) => setSelectedEmployee(selected || '')}
                                 placeholder="ابحث عن الموظف..."
                             />
                         </div>
@@ -132,7 +132,7 @@ export default function AttendanceReport({ employees, isAdmin }) {
                             <SelectInput
                                 options={months}
                                 value={months.find(o => o.value == selectedMonth) || null}
-                                onChange={(selected) => setSelectedMonth(selected?.value || selectedMonth)}
+                                onChange={(selected) => setSelectedMonth(selected || selectedMonth)}
                             />
                         </div>
                         <div>
@@ -140,7 +140,7 @@ export default function AttendanceReport({ employees, isAdmin }) {
                             <SelectInput
                                 options={years}
                                 value={years.find(o => o.value == selectedYear) || null}
-                                onChange={(selected) => setSelectedYear(selected?.value || selectedYear)}
+                                onChange={(selected) => setSelectedYear(selected || selectedYear)}
                             />
                         </div>
                     </div>
@@ -237,3 +237,4 @@ export default function AttendanceReport({ employees, isAdmin }) {
         </AdminLayout>
     );
 }
+

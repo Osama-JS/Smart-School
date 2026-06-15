@@ -12,7 +12,7 @@ class Role extends Model
     use \App\Traits\LogsActivity;
     use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'is_system_role', 'access_type'];
 
     /**
      * جلب المستخدمين الذين يحملون هذا الدور

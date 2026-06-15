@@ -34,6 +34,40 @@ export default function ReviewReport({ auth, report }) {
                         <img src={`/storage/${value}`} alt="مرفق" className="w-full h-full object-cover" />
                     </a>
                 );
+            case 'matrix_text':
+                if (typeof value === 'object' && value !== null) {
+                    return (
+                        <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl mt-2">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50">
+                                    <tr>
+                                        <th className="px-4 py-2 font-bold text-slate-600 dark:text-slate-300 w-1/3">البند / المجال</th>
+                                        <th className="px-4 py-2 font-bold text-slate-600 dark:text-slate-300">الملاحظات</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {Object.entries(value).map(([key, val], i) => (
+                                        <tr key={i}>
+                                            <td className="px-4 py-2 font-semibold text-slate-700 dark:text-slate-300">{key}</td>
+                                            <td className="px-4 py-2 text-slate-600 dark:text-slate-400">{val || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
+                return <span>{String(value)}</span>;
+            case 'textarea':
+                return <div className="prose dark:prose-invert max-w-none text-sm" dangerouslySetInnerHTML={{ __html: value }} />;
+            case 'rating':
+                return (
+                    <div className="flex gap-1 text-yellow-400 text-lg">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <span key={i} className={i < value ? '' : 'text-slate-200 dark:text-slate-700'}>★</span>
+                        ))}
+                    </div>
+                );
             default:
                 return <span className="text-slate-800 dark:text-slate-200">{value}</span>;
         }
@@ -105,7 +139,7 @@ export default function ReviewReport({ auth, report }) {
                                 <div key={field.id} className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700/50">
                                     <h4 className="text-sm font-bold text-slate-600 dark:text-slate-400 mb-2">{field.name}</h4>
                                     <div className="mt-1">
-                                        {renderFieldValue(field, report.data ? report.data[field.id] : null)}
+                                        {renderFieldValue(field, report.data ? report.data[field.name] : null)}
                                     </div>
                                 </div>
                             ))}

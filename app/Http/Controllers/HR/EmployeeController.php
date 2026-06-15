@@ -27,7 +27,7 @@ class EmployeeController extends Controller
         // Check if not system admin, restrict to user's branch
         $user = auth()->user();
         if ($user && clone $user->loadMissing('role')) {
-            $isAdmin = $user->role && $user->role->name === 'مدير الفرع';
+            $isAdmin = $user->role && $user->role->name === 'مدير النظام';
             if (!$isAdmin) {
                 $query->where('users.branch_id', $user->branch_id);
             }
@@ -86,7 +86,7 @@ class EmployeeController extends Controller
                 'department_id' => $emp->department_id,
                 'job_grade_id'  => $emp->job_grade_id,
                 'jobGrade'      => $emp->jobGrade->name ?? 'غير محدد',
-                'hire_date'     => $emp->hire_date,
+                'hire_date'     => $emp->hire_date ? \Carbon\Carbon::parse($emp->hire_date)->format('Y-m-d') : '—',
                 'is_active'     => (bool)($emp->user->is_active ?? true),
                 'avatar'        => 'https://ui-avatars.com/api/?name=' . urlencode($emp->user->name ?? 'U') . '&background=5b8a2d&color=fff&bold=true',
             ];
@@ -139,11 +139,17 @@ class EmployeeController extends Controller
     public function create()
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
         
         $departments = Department::select('id', 'name')->orderBy('name')->get();
         $jobGrades   = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
-        $roles       = Role::select('id', 'name')->get();
+        
+        if (!$isAdmin) {
+            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع'])->select('id', 'name')->get();
+        } else {
+            $roles = Role::select('id', 'name')->get();
+        }
+        
         $branches    = $isAdmin ? Branch::select('id', 'name')->get() : [];
 
         $managerCandidates = Employee::with(['user:id,name', 'jobGrade:id,name,level'])
@@ -166,7 +172,7 @@ class EmployeeController extends Controller
 
     public function store(Request $request)
     {
-        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير النظام';
         
         $validated = $request->validate([
             // بيانات الحساب
@@ -257,7 +263,7 @@ class EmployeeController extends Controller
         $employee->load(['user', 'shifts']);
         
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
         
         if (!$isAdmin && $employee->user->branch_id !== $userAuth->branch_id) {
             abort(403, 'لا يمكنك تعديل موظف خارج فرعك');
@@ -265,7 +271,12 @@ class EmployeeController extends Controller
 
         $departments = Department::select('id', 'name')->orderBy('name')->get();
         $jobGrades   = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
-        $roles       = Role::select('id', 'name')->get();
+        
+        if (!$isAdmin) {
+            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع'])->select('id', 'name')->get();
+        } else {
+            $roles = Role::select('id', 'name')->get();
+        }
         $branches    = $isAdmin ? Branch::select('id', 'name')->get() : [];
 
         $managerCandidates = Employee::with(['user:id,name', 'jobGrade:id,name,level'])
@@ -290,7 +301,7 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee)
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
         
         if (!$isAdmin && $employee->user->branch_id !== $userAuth->branch_id) {
             abort(403, 'لا يمكنك تعديل موظف خارج فرعك');
@@ -392,7 +403,7 @@ class EmployeeController extends Controller
     public function destroy(Employee $employee)
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth->role && $userAuth->role->name === 'مدير الفرع';
+        $isAdmin = $userAuth->role && $userAuth->role->name === 'مدير النظام';
         
         if (!$isAdmin && $employee->user->branch_id !== $userAuth->branch_id) {
             abort(403, 'لا يمكنك حذف موظف خارج فرعك');

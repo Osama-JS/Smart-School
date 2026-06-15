@@ -174,7 +174,7 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
                                         <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">تاريخ البدء <span className="text-accent-500">*</span></label>
                                         <FlatpickrInput
                                             value={data.start_date}
-                                            onChange={(selectedDates, dateStr) => setData('start_date', dateStr)}
+                                            onChange={(dateStr) => setData('start_date', dateStr)}
                                             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
                                         />
                                         {errors.start_date && <p className="text-xs text-accent-500 mt-1">{errors.start_date}</p>}
@@ -183,7 +183,7 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
                                         <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">تاريخ الانتهاء <span className="text-accent-500">*</span></label>
                                         <FlatpickrInput
                                             value={data.end_date}
-                                            onChange={(selectedDates, dateStr) => setData('end_date', dateStr)}
+                                            onChange={(dateStr) => setData('end_date', dateStr)}
                                             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
                                         />
                                         {errors.end_date && <p className="text-xs text-accent-500 mt-1">{errors.end_date}</p>}
@@ -202,7 +202,7 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
                                                 { value: '', label: 'عام - ينطبق على جميع الفروع' },
                                                 ...branches.map(b => ({ value: b.id, label: b.name }))
                                             ].find(o => o.value == data.branch_id) || null}
-                                            onChange={(selected) => setData('branch_id', selected?.value || '')}
+                                            onChange={(selected) => setData('branch_id', selected || '')}
                                         />
                                         <p className="text-xs text-slate-500 mt-1">اتركه فارغاً لتطبيق الإجازة على جميع فروع المؤسسة.</p>
                                     </div>
@@ -242,3 +242,4 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
         </AdminLayout>
     );
 }
+

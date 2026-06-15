@@ -9,7 +9,9 @@ class ReportTemplate extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['branch_id', 'job_grade_id', 'name', 'description'];
+    protected $fillable = [
+        'branch_id', 'job_grade_id', 'name', 'description', 'period_type'
+    ];
 
     public function branch()
     {

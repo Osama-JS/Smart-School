@@ -16,9 +16,16 @@ class UserController extends Controller
     public function index(Request $request)
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
 
         $query = User::with('role', 'branch');
+
+        // إخفاء مدير النظام من قائمة المستخدمين
+        $query->where(function ($q) {
+            $q->whereHas('role', function ($r) {
+                $r->where('name', '!=', 'مدير النظام');
+            })->orWhereNull('role_id');
+        });
 
         if (!$isAdmin) {
             $query->where('branch_id', $userAuth->branch_id);
@@ -94,10 +101,25 @@ class UserController extends Controller
             ];
         });
 
-        $roles    = Role::select('id', 'name')->orderBy('name')->get();
+        $userAuth = auth()->user();
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
+
+        if (!$isAdmin) {
+            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع'])
+                         ->select('id', 'name')
+                         ->orderBy('name')
+                         ->get();
+        } else {
+            $roles = Role::select('id', 'name')->orderBy('name')->get();
+        }
         $branches = Branch::select('id', 'name')->orderBy('name')->get();
 
-        $baseStatQuery = User::query();
+        $baseStatQuery = User::where(function ($q) {
+            $q->whereHas('role', function ($r) {
+                $r->where('name', '!=', 'مدير النظام');
+            })->orWhereNull('role_id');
+        });
+        
         if (!$isAdmin) {
             $baseStatQuery->where('branch_id', $userAuth->branch_id);
         }
@@ -140,7 +162,7 @@ class UserController extends Controller
 
     public function quickUpdate(Request $request, User $user)
     {
-        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير النظام';
         
         $validated = $request->validate([
             'is_active' => ['nullable', 'boolean'],
@@ -171,7 +193,7 @@ class UserController extends Controller
         $ids = $validated['ids'];
         $action = $validated['action'];
         
-        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير النظام';
         if (!$isAdmin) {
             // Verify all IDs belong to manager's branch
             $validIds = User::whereIn('id', $ids)->where('branch_id', auth()->user()->branch_id)->pluck('id')->toArray();
@@ -202,7 +224,7 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير النظام';
         
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
@@ -227,7 +249,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير الفرع';
+        $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير النظام';
         
         $validated = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
@@ -281,9 +303,13 @@ class UserController extends Controller
     public function create()
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
         
-        $roles    = Role::select('id', 'name')->get();
+        if (!$isAdmin) {
+            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع'])->select('id', 'name')->get();
+        } else {
+            $roles = Role::select('id', 'name')->get();
+        }
         $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];
         return Inertia::render('Users/Create', compact('roles', 'branches', 'isAdmin'));
     }
@@ -291,9 +317,13 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $userAuth = auth()->user();
-        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير الفرع';
+        $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
         
-        $roles    = Role::select('id', 'name')->get();
+        if (!$isAdmin) {
+            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير عام', 'مدير فرع', 'مدير الفرع'])->select('id', 'name')->get();
+        } else {
+            $roles = Role::select('id', 'name')->get();
+        }
         $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];
         return Inertia::render('Users/Edit', [
             'user'     => $user,

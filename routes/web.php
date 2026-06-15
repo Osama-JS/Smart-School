@@ -6,6 +6,10 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// ── Installation Routes ──
+Route::get('/install', [\App\Http\Controllers\InstallController::class, 'index'])->name('install');
+Route::post('/install/step', [\App\Http\Controllers\InstallController::class, 'runStep'])->name('install.step');
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -51,6 +55,7 @@ Route::middleware('auth')->group(function () {
         Route::put('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'update'])->name('hr.branches.update');
         Route::delete('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'destroy'])->name('hr.branches.destroy');
         Route::post('/hr/branches/{branch}/assign-manager', [\App\Http\Controllers\HR\BranchController::class, 'assignManager'])->name('hr.branches.assign-manager');
+        Route::post('/hr/branches/{branch}/store-manager', [\App\Http\Controllers\HR\BranchController::class, 'storeManager'])->name('hr.branches.store-manager');
     });
 
     // ── Academic Routes ──
@@ -126,27 +131,37 @@ Route::middleware('auth')->group(function () {
     });
 
     // ── HR Routes ──
-    Route::resource('/hr/departments', \App\Http\Controllers\HR\DepartmentController::class)->names([
-        'index'   => 'hr.departments',
-        'store'   => 'hr.departments.store',
-        'update'  => 'hr.departments.update',
-        'destroy' => 'hr.departments.destroy',
-    ]);
-    Route::resource('/hr/job-grades', \App\Http\Controllers\HR\JobGradeController::class)->names([
-        'index'   => 'hr.job-grades',
-        'store'   => 'hr.job-grades.store',
-        'update'  => 'hr.job-grades.update',
-        'destroy' => 'hr.job-grades.destroy',
-    ]);
-    Route::patch('/hr/employees/{employee}/quick-update', [\App\Http\Controllers\HR\EmployeeController::class, 'quickUpdate'])->name('hr.employees.quick-update');
-    Route::resource('/hr/employees', \App\Http\Controllers\HR\EmployeeController::class)->names([
-        'index'   => 'hr.employees',
-        'create'  => 'hr.employees.create',
-        'store'   => 'hr.employees.store',
-        'edit'    => 'hr.employees.edit',
-        'update'  => 'hr.employees.update',
-        'destroy' => 'hr.employees.destroy',
-    ]);
+    Route::middleware('permission:إدارة الأقسام')->group(function () {
+        Route::resource('/hr/departments', \App\Http\Controllers\HR\DepartmentController::class)->names([
+            'index'   => 'hr.departments',
+            'store'   => 'hr.departments.store',
+            'update'  => 'hr.departments.update',
+            'destroy' => 'hr.departments.destroy',
+        ]);
+    });
+
+    Route::middleware('permission:إدارة الدرجات الوظيفية')->group(function () {
+        Route::resource('/hr/job-grades', \App\Http\Controllers\HR\JobGradeController::class)->names([
+            'index'   => 'hr.job-grades',
+            'store'   => 'hr.job-grades.store',
+            'update'  => 'hr.job-grades.update',
+            'destroy' => 'hr.job-grades.destroy',
+        ]);
+    });
+
+    Route::middleware('permission:إدارة الموظفين')->group(function () {
+        Route::patch('/hr/employees/{employee}/quick-update', [\App\Http\Controllers\HR\EmployeeController::class, 'quickUpdate'])->name('hr.employees.quick-update');
+        Route::resource('/hr/employees', \App\Http\Controllers\HR\EmployeeController::class)->names([
+            'index'   => 'hr.employees',
+            'create'  => 'hr.employees.create',
+            'store'   => 'hr.employees.store',
+            'edit'    => 'hr.employees.edit',
+            'update'  => 'hr.employees.update',
+            'destroy' => 'hr.employees.destroy',
+        ]);
+    });
+
+    // Requests and Approvals can be accessed by employees and managers. No strict permission wrapping here for 'index' or we could wrap it with auth. It's already wrapped with auth.
     Route::resource('/hr/requests', \App\Http\Controllers\HR\RequestController::class)->names([
         'index' => 'hr.requests'
     ]);
@@ -154,34 +169,39 @@ Route::middleware('auth')->group(function () {
         'index' => 'hr.approvals'
     ]);
 
-
     // ── Shifts ──
-    Route::get('/hr/shifts', [\App\Http\Controllers\HR\ShiftController::class, 'index'])->name('hr.shifts');
-    Route::post('/hr/shifts', [\App\Http\Controllers\HR\ShiftController::class, 'store'])->name('hr.shifts.store');
-    Route::put('/hr/shifts/{shift}', [\App\Http\Controllers\HR\ShiftController::class, 'update'])->name('hr.shifts.update');
-    Route::delete('/hr/shifts/{shift}', [\App\Http\Controllers\HR\ShiftController::class, 'destroy'])->name('hr.shifts.destroy');
+    Route::middleware('permission:إدارة الشفتات')->group(function () {
+        Route::get('/hr/shifts', [\App\Http\Controllers\HR\ShiftController::class, 'index'])->name('hr.shifts');
+        Route::post('/hr/shifts', [\App\Http\Controllers\HR\ShiftController::class, 'store'])->name('hr.shifts.store');
+        Route::put('/hr/shifts/{shift}', [\App\Http\Controllers\HR\ShiftController::class, 'update'])->name('hr.shifts.update');
+        Route::delete('/hr/shifts/{shift}', [\App\Http\Controllers\HR\ShiftController::class, 'destroy'])->name('hr.shifts.destroy');
+    });
 
     // ── Holidays & Leaves ──
-    Route::resource('/hr/holidays', \App\Http\Controllers\HR\HolidayController::class)->names([
-        'index'   => 'hr.holidays',
-        'store'   => 'hr.holidays.store',
-        'update'  => 'hr.holidays.update',
-        'destroy' => 'hr.holidays.destroy',
-    ])->except(['create', 'edit', 'show']);
+    Route::middleware('permission:إدارة الموظفين')->group(function () {
+        Route::resource('/hr/holidays', \App\Http\Controllers\HR\HolidayController::class)->names([
+            'index'   => 'hr.holidays',
+            'store'   => 'hr.holidays.store',
+            'update'  => 'hr.holidays.update',
+            'destroy' => 'hr.holidays.destroy',
+        ])->except(['create', 'edit', 'show']);
 
-    Route::resource('/hr/leaves', \App\Http\Controllers\HR\LeaveController::class)->names([
-        'index'   => 'hr.leaves',
-        'store'   => 'hr.leaves.store',
-        'update'  => 'hr.leaves.update',
-        'destroy' => 'hr.leaves.destroy',
-    ])->except(['create', 'edit', 'show']);
+        Route::resource('/hr/leaves', \App\Http\Controllers\HR\LeaveController::class)->names([
+            'index'   => 'hr.leaves',
+            'store'   => 'hr.leaves.store',
+            'update'  => 'hr.leaves.update',
+            'destroy' => 'hr.leaves.destroy',
+        ])->except(['create', 'edit', 'show']);
+    });
 
     // ── Attendance ──
-    Route::get('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'index'])->name('hr.attendance');
-    Route::get('/hr/attendance/report', [\App\Http\Controllers\HR\AttendanceController::class, 'report'])->name('hr.attendance.report');
-    Route::post('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'store'])->name('hr.attendance.store');
-    Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
-    Route::put('/hr/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceController::class, 'update'])->name('hr.attendance.update');
+    Route::middleware('permission:إدارة الحضور والانصراف')->group(function () {
+        Route::get('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'index'])->name('hr.attendance');
+        Route::get('/hr/attendance/report', [\App\Http\Controllers\HR\AttendanceController::class, 'report'])->name('hr.attendance.report');
+        Route::post('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'store'])->name('hr.attendance.store');
+        Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
+        Route::put('/hr/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceController::class, 'update'])->name('hr.attendance.update');
+    });
     // ── Reports ──
     Route::middleware('permission:إدارة قوالب التقارير')->group(function () {
         Route::resource('/hr/reports/templates', \App\Http\Controllers\HR\ReportTemplateController::class)->names([
@@ -192,7 +212,14 @@ Route::middleware('auth')->group(function () {
         ])->except(['create', 'show', 'edit']);
 
         Route::put('/hr/reports/templates/{template}/fields', [\App\Http\Controllers\HR\ReportTemplateController::class, 'updateFields'])->name('reports.templates.fields.update');
+
     });
+
+    // My Reports (Employee Side) - Accessible to all authenticated users
+    Route::get('/hr/reports/my-reports', [\App\Http\Controllers\HR\MyReportController::class, 'index'])->name('hr.reports.my-reports.index');
+    Route::get('/hr/reports/my-reports/create/{template}', [\App\Http\Controllers\HR\MyReportController::class, 'create'])->name('hr.reports.my-reports.create');
+    Route::post('/hr/reports/my-reports/{template}', [\App\Http\Controllers\HR\MyReportController::class, 'store'])->name('hr.reports.my-reports.store');
+    Route::get('/hr/reports/my-reports/show/{report}', [\App\Http\Controllers\HR\MyReportController::class, 'show'])->name('hr.reports.my-reports.show');
 
     Route::middleware('permission:إدارة التقارير')->group(function () {
         Route::get('/hr/reports', [\App\Http\Controllers\HR\ReportController::class, 'index'])->name('reports.index');

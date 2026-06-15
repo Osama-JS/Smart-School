@@ -26,6 +26,7 @@
         "flatpickr": "^4.6.13",
         "lucide-react": "^1.14.0",
         "react-flatpickr": "^4.0.11",
+        "react-quill": "^2.0.0",
         "react-select": "^5.10.2",
         "sweetalert2": "^11.26.25"
     }

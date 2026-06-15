@@ -13,7 +13,7 @@ class ReportTemplateController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
         
         $query = ReportTemplate::with(['jobGrade', 'fields'])->withCount('fields')
@@ -48,11 +48,7 @@ class ReportTemplateController extends Controller
 
         // JobGrade HAS BelongsToBranch trait.
         $jobGrades = JobGrade::withoutGlobalScope('branch_isolation')
-            ->where(function($q) use ($branchId) {
-                if ($branchId) {
-                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
-                }
-            })
+            ->where('branch_id', $branchId)
             ->get();
 
         return Inertia::render('HR/Reports/Templates/Index', [
@@ -72,23 +68,25 @@ class ReportTemplateController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'period_type' => 'required|in:daily,weekly,monthly,quarterly,yearly,custom',
             'job_grade_id' => 'required|exists:job_grades,id',
             'fields' => 'nullable|array',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|in:text,number,select,checkbox,image',
+            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text',
             'fields.*.options' => 'nullable|array',
             'fields.*.is_required' => 'boolean',
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         $branchId = $isAdmin ? session('active_branch_id') : $user->branch_id;
 
         $template = ReportTemplate::create([
             'branch_id' => $branchId,
             'job_grade_id' => $validated['job_grade_id'],
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
+            'description' => $validated['description'],
+            'period_type' => $validated['period_type'],
         ]);
 
         if (!empty($validated['fields'])) {
@@ -111,11 +109,12 @@ class ReportTemplateController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'period_type' => 'required|in:daily,weekly,monthly,quarterly,yearly,custom',
             'job_grade_id' => 'required|exists:job_grades,id',
             'fields' => 'nullable|array',
             'fields.*.id' => 'nullable|exists:report_template_fields,id',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|in:text,number,select,checkbox,image',
+            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text',
             'fields.*.options' => 'nullable|array',
             'fields.*.is_required' => 'boolean',
         ]);
@@ -123,7 +122,8 @@ class ReportTemplateController extends Controller
         $template->update([
             'job_grade_id' => $validated['job_grade_id'],
             'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
+            'description' => $validated['description'],
+            'period_type' => $validated['period_type'],
         ]);
 
         // If 'fields' key is not present or null, maybe we shouldn't delete existing fields.
@@ -157,7 +157,7 @@ class ReportTemplateController extends Controller
             'fields' => 'nullable|array',
             'fields.*.id' => 'nullable|exists:report_template_fields,id',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|in:text,number,select,checkbox,image',
+            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text',
             'fields.*.options' => 'nullable|array',
             'fields.*.is_required' => 'boolean',
         ]);

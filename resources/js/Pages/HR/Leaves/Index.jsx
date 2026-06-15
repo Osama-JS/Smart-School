@@ -184,7 +184,7 @@ export default function LeavesIndex({ leaves, employees, isAdmin }) {
                                     <SelectInput
                                         options={employees.map(e => ({ value: e.id, label: `${e.first_name} ${e.last_name}` }))}
                                         value={employees.map(e => ({ value: e.id, label: `${e.first_name} ${e.last_name}` })).find(o => o.value == data.employee_id) || null}
-                                        onChange={(selected) => setData('employee_id', selected?.value || '')}
+                                        onChange={(selected) => setData('employee_id', selected || '')}
                                         placeholder="ابحث عن الموظف..."
                                     />
                                     {errors.employee_id && <p className="text-xs text-accent-500 mt-1">{errors.employee_id}</p>}
@@ -196,7 +196,7 @@ export default function LeavesIndex({ leaves, employees, isAdmin }) {
                                         <SelectInput
                                             options={leaveTypes}
                                             value={leaveTypes.find(o => o.value == data.type) || null}
-                                            onChange={(selected) => setData('type', selected?.value || '')}
+                                            onChange={(selected) => setData('type', selected || '')}
                                         />
                                         {errors.type && <p className="text-xs text-accent-500 mt-1">{errors.type}</p>}
                                     </div>
@@ -205,7 +205,7 @@ export default function LeavesIndex({ leaves, employees, isAdmin }) {
                                         <SelectInput
                                             options={leaveStatuses}
                                             value={leaveStatuses.find(o => o.value == data.status) || null}
-                                            onChange={(selected) => setData('status', selected?.value || '')}
+                                            onChange={(selected) => setData('status', selected || '')}
                                         />
                                         {errors.status && <p className="text-xs text-accent-500 mt-1">{errors.status}</p>}
                                     </div>
@@ -216,7 +216,7 @@ export default function LeavesIndex({ leaves, employees, isAdmin }) {
                                         <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">تاريخ البدء <span className="text-accent-500">*</span></label>
                                         <FlatpickrInput
                                             value={data.start_date}
-                                            onChange={(selectedDates, dateStr) => setData('start_date', dateStr)}
+                                            onChange={(dateStr) => setData('start_date', dateStr)}
                                             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
                                         />
                                         {errors.start_date && <p className="text-xs text-accent-500 mt-1">{errors.start_date}</p>}
@@ -225,7 +225,7 @@ export default function LeavesIndex({ leaves, employees, isAdmin }) {
                                         <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">تاريخ الانتهاء <span className="text-accent-500">*</span></label>
                                         <FlatpickrInput
                                             value={data.end_date}
-                                            onChange={(selectedDates, dateStr) => setData('end_date', dateStr)}
+                                            onChange={(dateStr) => setData('end_date', dateStr)}
                                             className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
                                         />
                                         {errors.end_date && <p className="text-xs text-accent-500 mt-1">{errors.end_date}</p>}
@@ -266,3 +266,4 @@ export default function LeavesIndex({ leaves, employees, isAdmin }) {
         </AdminLayout>
     );
 }
+

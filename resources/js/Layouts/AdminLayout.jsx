@@ -155,7 +155,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'الأقسام والإدارات', icon: BookOpen, url: route('hr.departments'), permission: 'إدارة الأقسام' },
                 { name: 'الدرجات الوظيفية', icon: ShieldCheck, url: route('hr.job-grades'), permission: 'إدارة الدرجات الوظيفية' },
-                { name: 'الشفتات', icon: Clock, url: route('hr.shifts'), permission: 'إدارة الموظفين' },
+                { name: 'الشفتات', icon: Clock, url: route('hr.shifts'), permission: 'إدارة الشفتات' },
                 { name: 'دليل الموظفين', icon: UserPlus, url: route('hr.employees'), permission: 'إدارة الموظفين' },
             ]
         },
@@ -175,19 +175,20 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'صندوق الموافقات', icon: Bell, url: route('hr.approvals') },
                 { name: 'التقارير', icon: FileText, url: route('reports.index'), permission: 'إدارة التقارير' },
                 { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates'), permission: 'إدارة قوالب التقارير' },
+                { name: 'تقاريري', icon: FileText, url: route('hr.reports.my-reports.index'), permission: null },
                 { name: 'الإجتماعات', icon: Users, url: route('meetings.index'), permission: 'إدارة الاجتماعات' },
             ]
         },
         {
             title: 'الشؤون الأكاديمية',
             items: [
-                { name: 'السنوات الدراسية', icon: Calendar, url: route('academic.years') },
-                { name: 'الصفوف والشعب', icon: Layers, url: route('academic.structure') },
-                { name: 'المواد الدراسية', icon: BookOpen, url: route('academic.subjects.index') },
-                { name: 'إعداد الحصص اليومية', icon: Clock, url: route('academic.periods'), permission: 'إدارة الجداول' },
-                { name: 'جدول الحصص العام', icon: Calendar, url: route('academic.timetable'), permission: 'إدارة الجداول' },
+                { name: 'السنوات الدراسية', icon: Calendar, url: route('academic.years'), permission: 'إدارة السنوات الدراسية' },
+                { name: 'الصفوف والشعب', icon: Layers, url: route('academic.structure'), permission: 'إدارة الفصول الدراسية' },
+                { name: 'المواد الدراسية', icon: BookOpen, url: route('academic.subjects.index'), permission: 'إدارة المواد الدراسية' },
+                { name: 'إعداد الحصص اليومية', icon: Clock, url: route('academic.periods'), permission: 'إدارة الجداول الدراسية' },
+                { name: 'جدول الحصص العام', icon: Calendar, url: route('academic.timetable'), permission: 'إدارة الجداول الدراسية' },
                 { name: 'جدولي الدراسي', icon: Calendar, url: route('academic.my-timetable') },
-                { name: 'جداول الاختبارات', icon: FileText, permission: 'إدارة الجداول' },
+                { name: 'جداول الاختبارات', icon: FileText, permission: 'إدارة الجداول الدراسية' },
                 { name: 'النتائج الشهرية', icon: BarChart, permission: 'إدارة الدرجات' },
                 { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
                 { name: 'أولياء الأمور', icon: Users, url: route('academic.parents'), permission: 'إدارة الطلاب' },
@@ -198,10 +199,10 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'الحضور', icon: CheckSquare },
                 { name: 'التقييم', icon: Star },
-                { name: 'الزيارات الصفية', icon: Eye },
+                { name: 'الزيارات الصفية', icon: Eye, permission: 'إدارة الزيارات الصفية' },
                 { name: 'دفاتر المتابعة', icon: ClipboardList },
-                { name: 'الخطط الدراسية', icon: Map },
-                { name: 'دفاتر تحضير المعلمين', icon: Book },
+                { name: 'الخطط الدراسية', icon: Map, permission: 'إدارة خطط الدراسة' },
+                { name: 'دفاتر تحضير المعلمين', icon: Book, permission: 'إدارة دفاتر التحضير' },
             ]
         },
         {

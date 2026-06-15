@@ -64,8 +64,13 @@ class BranchController extends Controller
 
         $branches = $query->paginate(12)->withQueryString();
         
-        $users = \App\Models\User::select('id', 'name', 'national_id')->get();
-
+        $excludedRoles = ['مدير النظام', 'طالب', 'ولي أمر', 'معلم'];
+        $users = \App\Models\User::with(['role', 'branch'])
+            ->whereHas('role', function($q) use ($excludedRoles) {
+                $q->whereNotIn('name', $excludedRoles);
+            })
+            ->select('id', 'name', 'national_id', 'role_id', 'branch_id')
+            ->get();
         return Inertia::render('HR/Branches/Index', [
             'branches' => $branches,
             'users' => $users,
@@ -113,7 +118,7 @@ class BranchController extends Controller
             'user_id' => 'required|exists:users,id'
         ]);
 
-        $managerRole = \App\Models\Role::where('name', 'مدير الفرع')->firstOrFail();
+        $managerRole = \App\Models\Role::whereIn('name', ['مدير فرع', 'مدير الفرع'])->firstOrFail();
 
         // إزالة صلاحية "مدير الفرع" من أي مدير سابق لهذا الفرع
         \App\Models\User::where('branch_id', $branch->id)
@@ -128,6 +133,35 @@ class BranchController extends Controller
         ]);
 
         return redirect()->route('hr.branches')->with('success', 'تم تعيين مدير الفرع بنجاح');
+    }
+
+    public function storeManager(Request $request, Branch $branch)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username',
+            'national_id' => 'required|string|max:50|unique:users,national_id',
+            'password' => 'required|string|min:6',
+        ]);
+
+        $managerRole = \App\Models\Role::whereIn('name', ['مدير فرع', 'مدير الفرع'])->firstOrFail();
+
+        // إزالة صلاحية "مدير الفرع" من أي مدير سابق لهذا الفرع
+        \App\Models\User::where('branch_id', $branch->id)
+            ->where('role_id', $managerRole->id)
+            ->update(['role_id' => null]);
+
+        \App\Models\User::create([
+            'name' => $validated['name'],
+            'username' => $validated['username'],
+            'national_id' => $validated['national_id'],
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'branch_id' => $branch->id,
+            'role_id' => $managerRole->id,
+            'is_active' => true,
+        ]);
+
+        return redirect()->route('hr.branches')->with('success', 'تم إضافة مدير الفرع وتعيينه بنجاح');
     }
 
     public function destroy(Branch $branch)

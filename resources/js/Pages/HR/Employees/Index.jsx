@@ -116,6 +116,28 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
     const searchInputRef = useRef(null);
     const isFirstRender = useRef(true);
 
+    // Column visibility toggle states
+    const [visibleColumns, setVisibleColumns] = useState({
+        employee: true,
+        email: true,
+        details: true,
+        hire_date: true,
+        status: true,
+        actions: true
+    });
+    const [showColumnToggle, setShowColumnToggle] = useState(false);
+    const columnToggleRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (columnToggleRef.current && !columnToggleRef.current.contains(e.target)) {
+                setShowColumnToggle(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     // Keyboard Shortcut (/) to focus search
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -405,7 +427,7 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                 )}
 
                 {/* Search & Filter Panel */}
-                <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+                <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm relative z-40">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="relative flex-1 max-w-md group">
                             <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-405 group-focus-within:text-primary-500 transition-colors" />
@@ -450,6 +472,37 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                     title="عرض البطاقات">
                                     <LayoutGrid size={18} />
                                 </button>
+                            </div>
+
+                            <div className="relative" ref={columnToggleRef}>
+                                <button onClick={() => setShowColumnToggle(!showColumnToggle)}
+                                    className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold shadow-sm transition-all border ${
+                                        showColumnToggle
+                                            ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-300 dark:border-primary-500/30 text-primary-700 dark:text-primary-400'
+                                            : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50'
+                                    }`}>
+                                    <Users size={16} className={showColumnToggle ? 'text-primary-500' : 'text-slate-500'} />
+                                    <span>الأعمدة</span>
+                                </button>
+                                {showColumnToggle && (
+                                    <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-3 flex flex-col gap-2">
+                                        <span className="text-[10px] font-bold text-slate-400 mb-1">تحديد الأعمدة الظاهرة:</span>
+                                        {Object.keys(visibleColumns).map((col) => (
+                                            <label key={col} className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-650 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
+                                                <input type="checkbox" checked={visibleColumns[col]}
+                                                    onChange={() => setVisibleColumns({...visibleColumns, [col]: !visibleColumns[col]})}
+                                                    className="rounded text-primary-500 focus:ring-primary-500/10" />
+                                                <span>{
+                                                    col === 'employee' ? 'الموظف' :
+                                                    col === 'email' ? 'بريد المستخدم' :
+                                                    col === 'details' ? 'القسم / الدرجة' :
+                                                    col === 'hire_date' ? 'تاريخ التعيين' :
+                                                    col === 'status' ? 'الحالة' : 'إجراء'
+                                                }</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <button onClick={() => setShowFilters(!showFilters)}
@@ -618,42 +671,55 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                 <thead>
                                     <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
                                         {/* Sortable headers */}
+                                        {visibleColumns.employee && (
                                         <th onClick={() => handleSort('name')} className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 transition-colors">
                                             <div className="flex items-center gap-1.5">
                                                 <span>الموظف</span>
                                                 <ArrowUpDown size={12} className="opacity-60" />
                                             </div>
                                         </th>
+                                        )}
+                                        {visibleColumns.email && (
                                         <th onClick={() => handleSort('username')} className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 transition-colors">
                                             <div className="flex items-center gap-1.5">
                                                 <span>بريد المستخدم</span>
                                                 <ArrowUpDown size={12} className="opacity-60" />
                                             </div>
                                         </th>
+                                        )}
+                                        {visibleColumns.details && (
                                         <th onClick={() => handleSort('department_id')} className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 transition-colors">
                                             <div className="flex items-center gap-1.5">
                                                 <span>القسم / الدرجة</span>
                                                 <ArrowUpDown size={12} className="opacity-60" />
                                             </div>
                                         </th>
+                                        )}
+                                        {visibleColumns.hire_date && (
                                         <th onClick={() => handleSort('hire_date')} className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 transition-colors">
                                             <div className="flex items-center gap-1.5">
                                                 <span>تاريخ التعيين</span>
                                                 <ArrowUpDown size={12} className="opacity-60" />
                                             </div>
                                         </th>
+                                        )}
+                                        {visibleColumns.status && (
                                         <th onClick={() => handleSort('is_active')} className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 transition-colors">
                                             <div className="flex items-center gap-1.5">
                                                 <span>الحالة</span>
                                                 <ArrowUpDown size={12} className="opacity-60" />
                                             </div>
                                         </th>
+                                        )}
+                                        {visibleColumns.actions && (
                                         <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider w-16 text-center">إجراء</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100/70 dark:divide-slate-800/60">
                                     {empData.map((emp) => (
                                         <tr key={emp.id} className="group border-r-4 border-r-transparent hover:border-r-primary-500 dark:hover:bg-primary-500/5 hover:bg-slate-50/40 transition-all duration-200">
+                                            {visibleColumns.employee && (
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     {/* Glowing Double Ring Avatar */}
@@ -679,12 +745,16 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                                     </div>
                                                 </div>
                                             </td>
+                                            )}
+                                            {visibleColumns.email && (
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2 text-sm text-slate-550 dark:text-slate-400 font-mono">
                                                     <Mail size={13} className="text-slate-350 dark:text-slate-600" />
                                                     <span className="text-xs">{emp.username}@school.com</span>
                                                 </div>
                                             </td>
+                                            )}
+                                            {visibleColumns.details && (
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex flex-col gap-1.5">
                                                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-300 text-xs font-bold border border-primary-100 dark:border-primary-500/10 w-fit">
@@ -695,9 +765,13 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                                     </span>
                                                 </div>
                                             </td>
+                                            )}
+                                            {visibleColumns.hire_date && (
                                             <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400 font-bold font-sans">
                                                 {emp.hire_date ?? '—'}
                                             </td>
+                                            )}
+                                            {visibleColumns.status && (
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {/* Premium Neon Switch Toggle */}
                                                 <button 
@@ -715,9 +789,12 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                                     />
                                                 </button>
                                             </td>
+                                            )}
+                                            {visibleColumns.actions && (
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
                                                 <ActionMenu emp={emp} />
                                             </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>

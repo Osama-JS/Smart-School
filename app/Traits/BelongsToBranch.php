@@ -23,12 +23,12 @@ trait BelongsToBranch
                 if (auth()->check()) {
                     $user = auth()->user();
                     
-                    // إذا كان مدير نظام أو مدير الفرع وقام باختيار محاكاة فرع معين عبر الجلسة (Session)
-                    if ($user->role && $user->role->name === 'مدير الفرع' && request()->hasSession() && session()->has('active_branch_id')) {
+                    // إذا كان مدير نظام وقام باختيار محاكاة فرع معين عبر الجلسة (Session)
+                    if ($user->role && $user->role->name === 'مدير النظام' && request()->hasSession() && session()->has('active_branch_id')) {
                         $builder->where($builder->getQuery()->from . '.branch_id', session('active_branch_id'));
                     } 
-                    // إذا لم يكن مديراً عاماً (مثل معلم، موظف، طالب)، نقصر البيانات على فرعه الخاص به فقط
-                    elseif ($user->role && $user->role->name !== 'مدير الفرع' && $user->role->name !== 'مدير النظام') {
+                    // إذا لم يكن مديراً نظاماً، نقصر البيانات على فرعه الخاص به فقط
+                    elseif ($user->role && $user->role->name !== 'مدير النظام') {
                         $builder->where($builder->getQuery()->from . '.branch_id', $user->branch_id);
                     }
                 }

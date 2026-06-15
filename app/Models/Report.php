@@ -10,7 +10,9 @@ class Report extends Model
     use HasFactory;
 
     protected $fillable = [
-        'branch_id', 'report_template_id', 'submitter_id', 'reviewer_id', 'status', 'data', 'manager_notes'
+        'branch_id', 'report_template_id', 'submitter_id', 'reviewer_id', 
+        'status', 'data', 'manager_notes', 'period_type', 'period_start_date', 
+        'period_end_date', 'period_label', 'academic_year_id', 'semester_id'
     ];
 
     protected $casts = [
@@ -35,5 +37,15 @@ class Report extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
     }
 }

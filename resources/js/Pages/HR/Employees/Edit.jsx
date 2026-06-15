@@ -187,7 +187,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                     <SelectInput
                                         options={departments.map(d => ({ value: d.id, label: d.name }))}
                                         value={departments.map(d => ({ value: d.id, label: d.name })).find(o => o.value === data.department_id) || null}
-                                        onChange={(selected) => setData('department_id', selected?.value || '')}
+                                        onChange={(selected) => setData('department_id', selected || '')}
                                         placeholder="القسم الإداري أو الأكاديمي..."
                                     />
                                 </div>
@@ -199,7 +199,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                         options={jobGrades.map(g => ({ value: g.id, label: g.name }))}
                                         value={jobGrades.map(g => ({ value: g.id, label: g.name })).find(o => o.value === data.job_grade_id) || null}
                                         onChange={(selected) => {
-                                            setData(data => ({ ...data, job_grade_id: selected?.value || '', manager_id: '' }));
+                                            setData(data => ({ ...data, job_grade_id: selected || '', manager_id: '' }));
                                         }}
                                         placeholder="حدد الدرجة..."
                                     />
@@ -211,7 +211,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                     <SelectInput
                                         options={filteredManagers.map(m => ({ value: m.id, label: m.name }))}
                                         value={filteredManagers.map(m => ({ value: m.id, label: m.name })).find(o => o.value === data.manager_id) || null}
-                                        onChange={(selected) => setData('manager_id', selected?.value || '')}
+                                        onChange={(selected) => setData('manager_id', selected || '')}
                                         placeholder={!data.job_grade_id ? "اختر الدرجة الوظيفية أولاً..." : (filteredManagers.length === 0 ? "لا يوجد مديرين متاحين لهذه الدرجة" : "اختر المدير المباشر...")}
                                         disabled={!data.job_grade_id || filteredManagers.length === 0}
                                     />
@@ -224,7 +224,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                         id="hire_date"
                                         placeholder="اختر تاريخ التعيين"
                                         value={data.hire_date}
-                                        onChange={(selectedDates, dateStr) => setData('hire_date', dateStr)}
+                                        onChange={(dateStr) => setData('hire_date', dateStr)}
                                     />
                                 </div>
                             </div>
@@ -260,7 +260,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                                         value={shifts.map(s => ({ value: s.id, label: `${s.name} (${s.start_time} - ${s.end_time})` })).find(o => o.value === shiftEntry.shift_id) || null}
                                                         onChange={(selected) => {
                                                             const newShifts = [...data.employee_shifts];
-                                                            newShifts[index].shift_id = selected?.value || '';
+                                                            newShifts[index].shift_id = selected || '';
                                                             setData('employee_shifts', newShifts);
                                                         }}
                                                         placeholder="اختر الشفت المخصص للموظف..."
@@ -434,7 +434,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                         <SelectInput
                                             options={roles.map(r => ({ value: r.id, label: r.name }))}
                                             value={roles.map(r => ({ value: r.id, label: r.name })).find(o => o.value === data.role_id) || null}
-                                            onChange={(selected) => setData('role_id', selected?.value || '')}
+                                            onChange={(selected) => setData('role_id', selected || '')}
                                             placeholder="اختر الصلاحية..."
                                             className={errors.role_id ? 'border-accent-300' : ''}
                                         />
@@ -447,7 +447,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                             <SelectInput
                                                 options={branches.map(b => ({ value: b.id, label: b.name }))}
                                                 value={branches.map(b => ({ value: b.id, label: b.name })).find(o => o.value === data.branch_id) || null}
-                                                onChange={(selected) => setData('branch_id', selected?.value || '')}
+                                                onChange={(selected) => setData('branch_id', selected || '')}
                                                 placeholder="اختر الفرع..."
                                             />
                                         </div>
@@ -483,3 +483,4 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
         </AdminLayout>
     );
 }
+

@@ -110,6 +110,9 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
     const [visibleColumns, setVisibleColumns] = useState({
         checkbox: true,
         user: true,
+        username: false,
+        last_login: false,
+        device: false,
         role: true,
         branch: true,
         status: true,
@@ -447,11 +450,11 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
             )}
 
             {/* Header Banner - Developed and Premium styled in Brand colors (Styled like Staff Directory) */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none no-print bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
-                <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+            <div className="relative bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none no-print bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px] z-40">
+                <div className="absolute top-0 right-0 left-0 h-1 rounded-t-3xl bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                 
                 {/* Visual geometric lines */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden rounded-3xl">
                     <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
                         <circle cx="250" cy="90" r="4" className="fill-primary-500" />
@@ -533,7 +536,25 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                         <input type="checkbox" checked={visibleColumns.user}
                                             onChange={() => setVisibleColumns({...visibleColumns, user: !visibleColumns.user})}
                                             className="rounded text-primary-500 focus:ring-primary-500/10" />
-                                        <span>المستخدم</span>
+                                        <span>المستخدم الأساسي</span>
+                                    </label>
+                                    <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
+                                        <input type="checkbox" checked={visibleColumns.username}
+                                            onChange={() => setVisibleColumns({...visibleColumns, username: !visibleColumns.username})}
+                                            className="rounded text-primary-500 focus:ring-primary-500/10" />
+                                        <span>اسم المستخدم (إضافي)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
+                                        <input type="checkbox" checked={visibleColumns.last_login}
+                                            onChange={() => setVisibleColumns({...visibleColumns, last_login: !visibleColumns.last_login})}
+                                            className="rounded text-primary-500 focus:ring-primary-500/10" />
+                                        <span>آخر ظهور</span>
+                                    </label>
+                                    <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
+                                        <input type="checkbox" checked={visibleColumns.device}
+                                            onChange={() => setVisibleColumns({...visibleColumns, device: !visibleColumns.device})}
+                                            className="rounded text-primary-500 focus:ring-primary-500/10" />
+                                        <span>الجهاز الموثوق</span>
                                     </label>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.role}
@@ -920,7 +941,10 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                     onChange={toggleAll}
                                                 />
                                             </th>
-                                            {visibleColumns.user && renderSortHeader("المستخدم", "name")}
+                                            {visibleColumns.user && renderSortHeader("المستخدم الأساسي", "name")}
+                                            {visibleColumns.username && renderSortHeader("اسم المستخدم", "username")}
+                                            {visibleColumns.last_login && renderSortHeader("آخر ظهور", "last_login_at")}
+                                            {visibleColumns.device && renderSortHeader("الجهاز", "device")}
                                             {visibleColumns.role && renderSortHeader("الدور (الصلاحية)", "role_id")}
                                             {visibleColumns.branch && renderSortHeader("الفرع", "branch_id")}
                                             {visibleColumns.status && renderSortHeader("الحالة", "is_active")}
@@ -979,7 +1003,29 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                             </div>
                                                         </td>
                                                     )}
+                                                    {/* Extra User Columns */}
+                                                    {visibleColumns.username && (
+                                                        <td className="px-6 py-4.5 whitespace-nowrap">
+                                                            <span className="text-sm font-mono text-slate-600 dark:text-slate-300">@{user.username}</span>
+                                                        </td>
+                                                    )}
                                                     
+                                                    {visibleColumns.last_login && (
+                                                        <td className="px-6 py-4.5 whitespace-nowrap">
+                                                            <span className={`text-sm font-bold ${user.last_login === 'نشط الآن' ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                                {user.last_login}
+                                                            </span>
+                                                        </td>
+                                                    )}
+                                                    
+                                                    {visibleColumns.device && (
+                                                        <td className="px-6 py-4.5 whitespace-nowrap">
+                                                            <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                                                {user.device && user.device !== '—' ? user.device : 'غير محدد'}
+                                                            </span>
+                                                        </td>
+                                                    )}
+
                                                     {/* Role Badge */}
                                                     {visibleColumns.role && (
                                                         <td className="px-6 py-4.5 whitespace-nowrap">

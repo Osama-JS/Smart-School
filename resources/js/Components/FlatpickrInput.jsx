@@ -30,24 +30,34 @@ const FlatpickrInput = forwardRef(({ type = 'date', value, onChange, placeholder
             <Flatpickr
                 ref={ref}
                 value={value}
-                onChange={([date]) => {
-                    if (date) {
-                        let formattedDate = "";
-                        if (isTime) {
-                            formattedDate = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                        } else if (isDateTime) {
-                            const year = date.getFullYear();
-                            const month = String(date.getMonth() + 1).padStart(2, '0');
-                            const day = String(date.getDate()).padStart(2, '0');
-                            const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                            formattedDate = `${year}-${month}-${day} ${time}`;
+                onChange={(dates) => {
+                    if (dates && dates.length > 0) {
+                        const isRange = options.mode === 'range';
+                        
+                        const formatDate = (dateObj) => {
+                            if (isTime) {
+                                return dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                            } else if (isDateTime) {
+                                const year = dateObj.getFullYear();
+                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                const day = String(dateObj.getDate()).padStart(2, '0');
+                                const time = dateObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                                return `${year}-${month}-${day} ${time}`;
+                            } else {
+                                const year = dateObj.getFullYear();
+                                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                                const day = String(dateObj.getDate()).padStart(2, '0');
+                                return `${year}-${month}-${day}`;
+                            }
+                        };
+
+                        if (isRange) {
+                            if (dates.length === 2) {
+                                onChange && onChange(`${formatDate(dates[0])} to ${formatDate(dates[1])}`);
+                            }
                         } else {
-                            const year = date.getFullYear();
-                            const month = String(date.getMonth() + 1).padStart(2, '0');
-                            const day = String(date.getDate()).padStart(2, '0');
-                            formattedDate = `${year}-${month}-${day}`;
+                            onChange && onChange(formatDate(dates[0]));
                         }
-                        onChange && onChange(formattedDate);
                     } else {
                         onChange && onChange('');
                     }
