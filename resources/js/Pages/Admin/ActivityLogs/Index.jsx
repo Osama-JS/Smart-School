@@ -287,8 +287,16 @@ export default function ActivityLogsIndex({ logs, filters, tables, branches = []
                 )}
             </div>
 
-            <Modal isOpen={!!selectedLog} onClose={() => setSelectedLog(null)} title="تفاصيل الحركة والتغييرات" maxWidth="3xl">
-                {renderDiff(selectedLog)}
+            <Modal show={!!selectedLog} onClose={() => setSelectedLog(null)} maxWidth="2xl">
+                <div className="p-6 dark:bg-[#121820]">
+                    <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white">تفاصيل الحركة والتغييرات</h2>
+                        <button onClick={() => setSelectedLog(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                            ✕
+                        </button>
+                    </div>
+                    {renderDiff(selectedLog)}
+                </div>
             </Modal>
         </AdminLayout>
     );

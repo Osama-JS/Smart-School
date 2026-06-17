@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EvaluationCriteria extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['name', 'target_type'];
 
     public function weeklyEvaluations(): HasMany {

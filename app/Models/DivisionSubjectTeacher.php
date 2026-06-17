@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DivisionSubjectTeacher extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['division_id', 'semester_id', 'subject_id', 'teacher_id'];
 
     public function division(): BelongsTo  { return $this->belongsTo(Division::class); }

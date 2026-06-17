@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ReportTemplateField extends Model
 {
+    use \App\Traits\LogsActivity;
+
     use HasFactory;
 
     protected $fillable = [

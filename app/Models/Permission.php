@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Permission extends Model
 {
+    use \App\Traits\LogsActivity;
+
     use HasFactory;
 
     protected $fillable = ['name', 'module', 'label'];

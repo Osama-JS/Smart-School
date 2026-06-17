@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class LeaveType extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['branch_id', 'name', 'default_days'];
 
     public function branch()

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class MasterTimetable extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $table = 'master_timetable';
 
     protected $fillable = [

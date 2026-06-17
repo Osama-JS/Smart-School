@@ -267,6 +267,17 @@ class AttendanceController extends Controller
             'late_minutes'=> 'nullable|integer|min:0',
         ]);
 
+        $academicYear = AcademicYear::where('start_date', '<=', $validated['date'])
+            ->where('end_date', '>=', $validated['date'])
+            ->first();
+            
+        $semester = \App\Models\Semester::where('start_date', '<=', $validated['date'])
+            ->where('end_date', '>=', $validated['date'])
+            ->first();
+
+        $validated['academic_year_id'] = $academicYear ? $academicYear->id : null;
+        $validated['semester_id'] = $semester ? $semester->id : null;
+
         Attendance::updateOrCreate(
             ['employee_id' => $validated['employee_id'], 'date' => $validated['date']],
             $validated

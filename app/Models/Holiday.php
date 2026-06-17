@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Holiday extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'name',
         'start_date',

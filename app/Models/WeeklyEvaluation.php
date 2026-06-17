@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WeeklyEvaluation extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'enrollment_id', 'criteria_id', 'subject_id', 'week_name', 'grade'
     ];

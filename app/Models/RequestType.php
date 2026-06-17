@@ -6,5 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class RequestType extends Model
 {
+    use \App\Traits\LogsActivity;
+
     //
 }

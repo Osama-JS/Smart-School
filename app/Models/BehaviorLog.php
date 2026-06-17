@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BehaviorLog extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'targeted_user_id', 'supervisor_id', 'record_type', 'title', 'notes'
     ];

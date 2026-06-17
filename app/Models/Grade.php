@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Grade extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['section_id', 'branch_id', 'name'];
 
     public function branch(): BelongsTo

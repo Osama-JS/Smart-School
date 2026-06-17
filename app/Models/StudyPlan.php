@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StudyPlan extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['teacher_id', 'grade_id', 'subject_id', 'title', 'attachment_path'];
 
     public function teacher(): BelongsTo { return $this->belongsTo(User::class, 'teacher_id'); }

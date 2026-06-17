@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AttendanceLog extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['user_id', 'attendance_date', 'status'];
 
     protected $casts = [

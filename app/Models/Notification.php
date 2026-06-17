@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Notification extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['user_id', 'title', 'message', 'type', 'is_read'];
 
     public function user(): BelongsTo { 

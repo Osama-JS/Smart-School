@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ResultPeriod extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'semester_id', 'branch_id', 'month_name',
         'fill_start_date', 'fill_end_date'

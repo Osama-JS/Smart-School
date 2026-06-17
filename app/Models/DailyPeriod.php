@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DailyPeriod extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['period_name', 'start_time', 'end_time'];
 
     // الحصص الموزعة في الجدول الأساسي المرتبطة بهذا التوقيت

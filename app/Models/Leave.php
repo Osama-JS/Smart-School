@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Leave extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'employee_id',
         'academic_year_id',

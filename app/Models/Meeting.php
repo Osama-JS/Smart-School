@@ -8,6 +8,8 @@ use App\Traits\BelongsToBranch;
 
 class Meeting extends Model
 {
+    use \App\Traits\LogsActivity;
+
     use HasFactory, BelongsToBranch;
 
     protected $fillable = [

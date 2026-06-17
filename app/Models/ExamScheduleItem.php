@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ExamScheduleItem extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['schedule_id', 'division_id', 'subject_id', 'exam_date', 'syllabus'];
 
     protected $casts = ['exam_date' => 'date'];

@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Student extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['user_id', 'transport_subscription'];
 
     // بيانات المستخدم الأساسية للطالب (الاسم، كلمة المرور)

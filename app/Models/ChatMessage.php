@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ChatMessage extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['chat_room_id', 'sender_id', 'message_text', 'attachment_url', 'read_at'];
 
     public function room(): BelongsTo { return $this->belongsTo(ChatRoom::class, 'chat_room_id'); }

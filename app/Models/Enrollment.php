@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Enrollment extends Model
 {
+    use \App\Traits\LogsActivity;
+
     /**
      * academic_year_id بدلاً من academic_year (string)
      * status: active | transferred | withdrawn | graduated

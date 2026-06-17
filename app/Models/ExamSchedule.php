@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ExamSchedule extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['period_id', 'title'];
 
     public function period(): BelongsTo { return $this->belongsTo(ResultPeriod::class, 'period_id'); }

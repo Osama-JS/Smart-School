@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SubjectGradeSetting extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'subject_id', 'written_weight', 'homework_weight', 'oral_weight', 'attendance_weight'
     ];

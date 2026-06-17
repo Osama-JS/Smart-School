@@ -65,12 +65,6 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
         }
     };
 
-    const leaveTypes = [
-        { value: 'سنوية', label: 'إجازة سنوية' },
-        { value: 'مرضية', label: 'إجازة مرضية' },
-        { value: 'بدون راتب', label: 'إجازة بدون راتب' },
-        { value: 'طارئة', label: 'إجازة طارئة' },
-    ];
 
     const leaveStatuses = [
         { value: 'pending', label: 'قيد الانتظار' },
@@ -138,7 +132,7 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                                                 {leave.employee?.first_name} {leave.employee?.last_name}
                                             </td>
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
-                                                {leave.type}
+                                                {leave.leave_type?.name || '-'}
                                             </td>
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300 font-mono text-sm">
                                                 {leave.start_date} <br/> <span className="text-slate-400">إلى</span> {leave.end_date}

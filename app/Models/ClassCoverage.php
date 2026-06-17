@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ClassCoverage extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'coverage_date', 'period_id', 'division_id', 
         'absent_teacher_id', 'substitute_teacher_id'

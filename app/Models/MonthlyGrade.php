@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class MonthlyGrade extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'enrollment_id', 'semester_id', 'period_id', 'subject_id',
         'written_score', 'homework_score', 'oral_score', 'attendance_score'

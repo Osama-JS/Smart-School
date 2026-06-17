@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LibraryItem extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['grade_id', 'subject_id', 'uploader_id', 'title', 'file_path'];
 
     public function grade(): BelongsTo { return $this->belongsTo(Grade::class); }

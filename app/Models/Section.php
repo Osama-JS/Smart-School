@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Section extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['branch_id', 'name'];
 
     public function branch(): BelongsTo

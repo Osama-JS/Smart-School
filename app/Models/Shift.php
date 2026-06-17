@@ -10,6 +10,8 @@ use App\Traits\BelongsToBranch;
 
 class Shift extends Model
 {
+    use \App\Traits\LogsActivity;
+
     use HasFactory, BelongsToBranch;
 
     protected $fillable = [

@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Division extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = [
         'grade_id', 'branch_id', 'academic_year_id',
         'name', 'max_students', 'homeroom_teacher_id'

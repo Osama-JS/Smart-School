@@ -13,12 +13,12 @@ class ActivityLogController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ActivityLog::with(['user:id,name,role_id', 'user.role:id,name', 'branch:id,name']);
+        $query = ActivityLog::withoutGlobalScope('branch_isolation')->with(['user:id,name,role_id', 'user.role:id,name', 'branch:id,name']);
 
         // Only System Admin can see all branches. Others only see their branch.
         $user = auth()->user();
-        if ($user->role->name !== 'مدير النظام') {
-            $query->where('branch_id', $user->branch_id);
+        if (!$user->role || $user->role->name !== 'مدير النظام') {
+            $query->where('activity_logs.branch_id', $user->branch_id);
         }
 
         // Apply filters

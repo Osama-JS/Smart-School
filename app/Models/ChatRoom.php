@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChatRoom extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['title', 'type'];
 
     // المستخدمين المشاركين في هذه الغرفة (معلم وولي أمر مثلاً)

@@ -7,6 +7,8 @@ use Carbon\Carbon;
 
 class LeaveBalance extends Model
 {
+    use \App\Traits\LogsActivity;
+
     protected $fillable = ['employee_id', 'academic_year_id', 'leave_type_id', 'total_days'];
     protected $appends = ['used_days'];
 

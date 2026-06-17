@@ -58,9 +58,18 @@ trait LogsActivity
             }
         }
 
+        // تحديد الفرع المرتبط بالحركة بدقة أكبر
+        $branchId = $user->branch_id;
+        
+        if (isset($model->branch_id)) {
+            $branchId = $model->branch_id;
+        } elseif (request()->hasSession() && session()->has('active_branch_id')) {
+            $branchId = session('active_branch_id');
+        }
+
         ActivityLog::create([
             'user_id' => $user->id,
-            'branch_id' => $user->branch_id,
+            'branch_id' => $branchId,
             'action' => $action,
             'table_name' => $model->getTable(),
             'old_values' => $oldValues,
