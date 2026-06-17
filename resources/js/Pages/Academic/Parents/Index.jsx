@@ -48,14 +48,26 @@ export default function ParentsIndex({ parents }) {
                 {/* Header */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                    
+                    {/* Fine abstract geometric background lines */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
+                        </svg>
+                    </div>
+
+                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center shadow-inner">
+                            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30">
                                 <Users size={28} strokeWidth={1.5} />
                             </div>
                             <div>
                                 <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">أولياء الأمور</h1>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">إدارة حسابات وبيانات أولياء أمور الطلاب</p>
+                                <p className="text-primary-700/80 dark:text-primary-300/80 text-sm mt-1 font-semibold">إدارة حسابات وبيانات أولياء أمور الطلاب</p>
                             </div>
                         </div>
 

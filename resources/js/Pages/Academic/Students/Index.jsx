@@ -57,22 +57,34 @@ export default function StudentsIndex({ students, academicYears, sections }) {
 
             <div className="space-y-8 animate-fade-in">
                 {/* Header & Filters */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50/70 via-white to-white dark:from-indigo-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-indigo-100 dark:border-indigo-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700" />
-                    <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                    
+                    {/* Fine abstract geometric background lines */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
+                        </svg>
+                    </div>
+
+                    <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center shadow-inner">
+                            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30">
                                 <GraduationCap size={28} strokeWidth={1.5} />
                             </div>
                             <div>
                                 <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">سجل الطلاب</h1>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">إدارة ملفات الطلاب وسجلاتهم الأكاديمية</p>
+                                <p className="text-primary-700/80 dark:text-primary-300/80 text-sm mt-1 font-semibold">إدارة ملفات الطلاب وسجلاتهم الأكاديمية</p>
                             </div>
                         </div>
 
                         <Link
                             href={route('academic.students.create')}
-                            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-0.5 shrink-0"
+                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary-500/30 transition-all shrink-0"
                         >
                             <Plus size={18} />
                             <span>تسجيل طالب جديد</span>

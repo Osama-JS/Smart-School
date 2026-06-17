@@ -110,13 +110,30 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
             <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-12">
                 
                 {/* Header */}
-                <div className="flex items-center gap-4 bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <div className="w-14 h-14 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center">
-                        <CalendarDays size={28} />
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                    
+                    {/* Fine abstract geometric background lines */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
+                        </svg>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-black text-slate-900 dark:text-white">الجدول الدراسي العام</h1>
-                        <p className="text-sm text-slate-500 mt-1">توزيع الحصص على المعلمين والفصول</p>
+
+                    <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                                <CalendarDays size={28} strokeWidth={1.5} />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">الجدول الدراسي العام</h1>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-semibold">توزيع الحصص على المعلمين والفصول</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
