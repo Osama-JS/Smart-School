@@ -66,26 +66,35 @@ class DummyDataSeeder extends Seeder
 
         // Create 3 Teachers
         for ($i = 1; $i <= 3; $i++) {
-            $user = User::create([
-                'name' => "معلم تجريبي $i",
-                'username' => "teacher$i",
-                'password' => Hash::make('password'),
-                'email' => "teacher$i@school.com",
-                'phone' => "050000000$i",
-                'role_id' => $teacherRole->id,
-                'branch_id' => $branch->id,
-                'is_active' => true,
-            ]);
+            $user = User::firstOrCreate(
+                ['username' => "teacher$i"],
+                [
+                    'name' => "معلم تجريبي $i",
+                    'password' => Hash::make('password'),
+                    'email' => "teacher$i@school.com",
+                    'phone' => "050000000$i",
+                    'role_id' => $teacherRole->id,
+                    'branch_id' => $branch->id,
+                    'is_active' => true,
+                ]
+            );
 
-            $emp = Employee::create([
-                'user_id' => $user->id,
-                'department_id' => $academicDept->id,
-                'job_grade_id' => $teacherGrade->id,
-                'job_title' => 'معلم',
-                'hire_date' => now()->subMonths(rand(1, 24)),
-            ]);
+            $emp = Employee::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'department_id' => $academicDept->id,
+                    'job_grade_id' => $teacherGrade->id,
+                    'job_title' => 'معلم',
+                    'hire_date' => now()->subMonths(rand(1, 24)),
+                ]
+            );
             
-            $emp->shifts()->sync([$shift->id]);
+            $emp->shifts()->sync([
+                $shift->id => [
+                    'branch_id' => $branch->id,
+                    'working_days' => json_encode([0, 1, 2, 3, 4])
+                ]
+            ]);
         }
     }
 }
