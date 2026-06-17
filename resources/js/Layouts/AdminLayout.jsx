@@ -6,7 +6,7 @@ import {
     ClipboardList, Map, Book, Library, BarChart, UserPlus, Settings,
     Menu, ChevronDown, LogOut, User, Search, X,
     PanelLeftClose, PanelLeftOpen, ShieldCheck, Store, Clock,
-    LayoutDashboard, Briefcase, Sun, Moon, Layers, Activity
+    LayoutDashboard, Briefcase, Sun, Moon, Layers, Activity, Sliders
 } from 'lucide-react';
 import ToastNotification from '@/Components/ToastNotification';
 
@@ -165,6 +165,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'سجل الحضور', icon: CheckSquare, url: route('hr.attendance'), permission: 'إدارة الحضور والانصراف' },
                 { name: 'تقرير الموظف الشهري', icon: FileText, url: route('hr.attendance.report'), permission: 'إدارة الحضور والانصراف' },
                 { name: 'الإجازات الرسمية', icon: Calendar, url: route('hr.holidays'), permission: 'إدارة الموظفين' },
+                { name: 'أنواع الإجازات', icon: Sliders, url: route('hr.leave-types'), permission: 'إدارة الموظفين' },
+                { name: 'أرصدة الإجازات', icon: Activity, url: route('hr.leave-balances'), permission: 'إدارة الموظفين' },
                 { name: 'إجازات الموظفين', icon: Clock, url: route('hr.leaves'), permission: 'إدارة الموظفين' },
             ]
         },

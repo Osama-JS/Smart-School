@@ -99,11 +99,16 @@ class AttendanceApiController extends Controller
             $status      = 'late';
         }
 
+        $activeYear = \App\Models\AcademicYear::currentForBranch($validAssignment->branch_id);
+        $activeSemester = $activeYear ? $activeYear->activeSemester : null;
+
         // تسجيل الحضور
         $attendance = Attendance::create([
             'employee_id'  => $employee->id,
             'branch_id'    => $validAssignment->branch_id,
             'shift_id'     => $validAssignment->shift_id,
+            'academic_year_id' => $activeYear ? $activeYear->id : null,
+            'semester_id'  => $activeSemester ? $activeSemester->id : null,
             'date'         => $today,
             'check_in'     => $time,
             'check_in_lat' => $validated['latitude'],
@@ -186,11 +191,14 @@ class AttendanceApiController extends Controller
     {
         $monthNum = $request->get('month', Carbon::now()->month);
         $yearNum  = $request->get('year', Carbon::now()->year);
+        $semesterId = $request->get('semester_id');
         
         $month = Carbon::createFromDate($yearNum, $monthNum, 1)->startOfDay();
         $daysInMonth = $month->daysInMonth;
 
         $employee = Employee::with(['shifts', 'user'])->findOrFail($employeeId);
+        
+        $semester = $semesterId ? \App\Models\Semester::find($semesterId) : null;
         
         $workingDays = [];
         if ($employee->shifts->isNotEmpty()) {
@@ -243,7 +251,7 @@ class AttendanceApiController extends Controller
         $records = [];
         $summary = [
             'present' => 0, 'late' => 0, 'absent' => 0, 'excused' => 0, 
-            'holiday' => 0, 'leave' => 0, 'weekend' => 0, 'future' => 0,
+            'holiday' => 0, 'leave' => 0, 'weekend' => 0, 'future' => 0, 'out_of_term' => 0,
         ];
 
         for ($d = 1; $d <= $daysInMonth; $d++) {
@@ -276,7 +284,18 @@ class AttendanceApiController extends Controller
 
             $actualRecord = $actualAttendances->get($dateString);
 
-            if ($isHoliday) {
+            // Check if day is out of semester bounds
+            $isOutOfTerm = false;
+            if ($semester) {
+                if ($currentDate->isBefore($semester->start_date) || $currentDate->isAfter($semester->end_date)) {
+                    $isOutOfTerm = true;
+                }
+            }
+
+            if ($isOutOfTerm && !$actualRecord) {
+                $status = 'out_of_term';
+                $notes = 'خارج الفترة الأكاديمية';
+            } elseif ($isHoliday) {
                 $status = 'holiday';
                 $notes = $holidayName;
             } elseif ($isLeave) {

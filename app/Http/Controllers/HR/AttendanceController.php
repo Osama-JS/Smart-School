@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Branch;
 use App\Models\Employee;
 use App\Models\Shift;
+use App\Models\AcademicYear;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -27,10 +28,21 @@ class AttendanceController extends Controller
                 $q->where('branch_id', $user->branch_id);
             });
         }
-        $employees = $employeesQuery->get(['id', 'first_name', 'last_name', 'employee_number']);
+        $employees = $employeesQuery->with('user:id,name')->get()->map(function($emp) {
+            $parts = explode(' ', $emp->user->name ?? '', 2);
+            return [
+                'id' => $emp->id,
+                'first_name' => $parts[0] ?? 'مجهول',
+                'last_name' => $parts[1] ?? '',
+                'employee_number' => $emp->national_id ?? '',
+            ];
+        });
+        
+        $academicYears = AcademicYear::with('semesters')->get();
 
         return Inertia::render('HR/Attendance/Report', [
             'employees' => $employees,
+            'academicYears' => $academicYears,
             'isAdmin' => $isAdmin
         ]);
     }
@@ -44,6 +56,8 @@ class AttendanceController extends Controller
         $branchId     = $request->get('branch_id');
         $shiftId      = $request->get('shift_id');
         $departmentId = $request->get('department_id');
+        $academicYearId = $request->get('academic_year_id');
+        $semesterId   = $request->get('semester_id');
         $status       = $request->get('status');
         $search       = $request->get('search');
         $sortBy       = $request->get('sort_by', 'created_at');
@@ -55,6 +69,8 @@ class AttendanceController extends Controller
 
         if ($branchId) $query->where('branch_id', $branchId);
         if ($shiftId)  $query->where('shift_id', $shiftId);
+        if ($academicYearId) $query->where('academic_year_id', $academicYearId);
+        if ($semesterId) $query->where('semester_id', $semesterId);
         if ($status)   $query->where('status', $status);
         if ($departmentId) {
             $query->whereHas('employee', fn($q) => $q->where('department_id', $departmentId));
@@ -110,6 +126,8 @@ class AttendanceController extends Controller
         $stats = Attendance::whereBetween('date', [$startDate, $endDate])
             ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->when($shiftId, fn($q) => $q->where('shift_id', $shiftId))
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($semesterId, fn($q) => $q->where('semester_id', $semesterId))
             ->when($departmentId, fn($q) => $q->whereHas('employee', fn($eq) => $eq->where('department_id', $departmentId)))
             ->selectRaw("
                 COUNT(*) as total,
@@ -127,6 +145,8 @@ class AttendanceController extends Controller
         $trendRaw = Attendance::whereBetween('date', [$trendStartDate->toDateString(), $trendEndDate->toDateString()])
             ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
             ->when($shiftId, fn($q) => $q->where('shift_id', $shiftId))
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->when($semesterId, fn($q) => $q->where('semester_id', $semesterId))
             ->when($departmentId, fn($q) => $q->whereHas('employee', fn($eq) => $eq->where('department_id', $departmentId)))
             ->selectRaw("
                 date,
@@ -168,7 +188,8 @@ class AttendanceController extends Controller
             'branches'     => Branch::where('is_active', true)->select('id', 'name')->get(),
             'shifts'       => Shift::where('is_active', true)->select('id', 'name', 'start_time', 'end_time')->get(),
             'departments'  => \App\Models\Department::select('id', 'name')->get(),
-            'filters'      => $request->only(['date', 'start_date', 'end_date', 'branch_id', 'shift_id', 'department_id', 'status', 'search', 'sort_by', 'sort_dir']),
+            'academicYears'=> AcademicYear::with('semesters')->get(),
+            'filters'      => $request->only(['date', 'start_date', 'end_date', 'branch_id', 'shift_id', 'department_id', 'academic_year_id', 'semester_id', 'status', 'search', 'sort_by', 'sort_dir']),
             'today'        => Carbon::today()->toDateString(),
             'startDate'    => $startDate,
             'endDate'      => $endDate,

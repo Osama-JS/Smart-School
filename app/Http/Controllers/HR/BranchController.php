@@ -166,6 +166,12 @@ class BranchController extends Controller
 
     public function destroy(Branch $branch)
     {
+        if ($branch->employees()->exists() || 
+            \App\Models\Department::where('branch_id', $branch->id)->exists() || 
+            \App\Models\AcademicYear::where('branch_id', $branch->id)->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف الفرع لاحتوائه على بيانات أساسية (موظفين، أقسام، أو سنوات دراسية). يرجى نقلها أو حذفها أولاً.');
+        }
+
         $branch->delete();
         return redirect()->route('hr.branches')->with('success', 'تم حذف الفرع بنجاح');
     }

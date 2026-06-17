@@ -30,7 +30,7 @@ function Modal({ isOpen, onClose, title, children }) {
     );
 }
 
-export default function AcademicStructureIndex({ academicYears, selectedYearId, sections, divisions, teachers, isAdmin }) {
+export default function AcademicStructureIndex({ academicYears, selectedYearId, sections, divisions, teachers, isAdmin, branches = [] }) {
     const { errors, flash } = usePage().props;
     const [activeTab, setActiveTab] = useState('sections'); // 'sections' or 'divisions'
     const [expandedSections, setExpandedSections] = useState({});
@@ -61,7 +61,7 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
     const [selectedParentId, setSelectedParentId] = useState(null); // section_id for Grade, grade_id for Division
 
     // --- Forms ---
-    const [sectionForm, setSectionForm] = useState({ name: '' });
+    const [sectionForm, setSectionForm] = useState({ name: '', branch_id: '' });
     const [gradeForm, setGradeForm] = useState({ name: '', section_id: '' });
     const [divisionForm, setDivisionForm] = useState({ name: '', max_students: 30, homeroom_teacher_id: '', grade_id: '', academic_year_id: selectedYearId });
     const [copyForm, setCopyForm] = useState({ from_academic_year_id: '', to_academic_year_id: selectedYearId });
@@ -69,7 +69,7 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
     // --- Section Handlers ---
     const openSectionModal = (section = null) => {
         setEditingItem(section);
-        setSectionForm(section ? { name: section.name } : { name: '' });
+        setSectionForm(section ? { name: section.name, branch_id: section.branch_id || '' } : { name: '', branch_id: '' });
         setIsSectionModalOpen(true);
     };
 
@@ -271,7 +271,19 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
                                             <button onClick={() => toggleSection(section.id)} className="p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700">
                                                 <ChevronDown className={`w-5 h-5 text-slate-600 transition-transform ${expandedSections[section.id] ? 'rotate-180' : ''}`} />
                                             </button>
-                                            <h3 className="text-lg font-black text-slate-800 dark:text-white cursor-pointer" onClick={() => toggleSection(section.id)}>{section.name}</h3>
+                                            <div className="flex items-center gap-3">
+                                                <h3 className="text-lg font-black text-slate-800 dark:text-white cursor-pointer" onClick={() => toggleSection(section.id)}>{section.name}</h3>
+                                                {isAdmin && section.branch_id && (
+                                                    <span className="px-2 py-1 rounded-md text-[10px] font-bold bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                                        {branches.find(b => b.id === section.branch_id)?.name || 'الفرع'}
+                                                    </span>
+                                                )}
+                                                {isAdmin && !section.branch_id && (
+                                                    <span className="px-2 py-1 rounded-md text-[10px] font-bold bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-400">
+                                                        عام للكل
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => openSectionModal(section)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg">
@@ -417,6 +429,22 @@ export default function AcademicStructureIndex({ academicYears, selectedYearId, 
                         <input type="text" value={sectionForm.name} onChange={e => setSectionForm({...sectionForm, name: e.target.value})} placeholder="مثال: المرحلة الابتدائية" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-white" required />
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                     </div>
+
+                    {isAdmin && (
+                        <div>
+                            <label className="block text-sm font-black text-slate-800 dark:text-slate-300 mb-1.5">الفرع التابعة له المرحلة (اختياري)</label>
+                            <SelectInput 
+                                value={sectionForm.branch_id} 
+                                onChange={val => setSectionForm({...sectionForm, branch_id: val})} 
+                                options={[
+                                    { value: '', label: 'عام لكل الفروع' },
+                                    ...branches.map(b => ({ value: b.id, label: b.name }))
+                                ]}
+                            />
+                            <p className="text-xs text-slate-500 mt-1.5">الصفوف والشعب التي ستضاف لاحقاً لهذه المرحلة سترث هذا الفرع تلقائياً.</p>
+                        </div>
+                    )}
+
                     <div className="pt-4 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800">
                         <button type="button" onClick={() => setIsSectionModalOpen(false)} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">إلغاء</button>
                         <button type="submit" className="px-5 py-2.5 rounded-xl font-bold text-white bg-primary-600 hover:bg-primary-700">حفظ</button>

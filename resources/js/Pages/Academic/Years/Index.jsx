@@ -88,22 +88,23 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
     };
 
     const deleteYear = (id) => {
+        const isDark = document.documentElement.classList.contains('dark');
         Swal.fire({
             title: 'هل أنت متأكد؟',
             text: 'هل أنت متأكد من حذف هذه السنة الدراسية بشكل نهائي؟',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
+            cancelButtonColor: isDark ? '#334155' : '#e2e8f0',
             confirmButtonText: 'نعم، احذفها',
             cancelButtonText: 'إلغاء',
             reverseButtons: true,
+            background: isDark ? '#0f172a' : '#ffffff',
+            color: isDark ? '#f8fafc' : '#1e293b',
             customClass: {
-                confirmButton: 'rounded-xl px-5 py-2.5 font-bold',
-                cancelButton: 'rounded-xl px-5 py-2.5 font-bold',
-                popup: 'rounded-3xl dark:bg-slate-900 dark:border dark:border-slate-800',
-                title: 'text-slate-800 dark:text-white',
-                htmlContainer: 'text-slate-500 dark:text-slate-400'
+                confirmButton: 'rounded-xl px-5 py-2.5 font-bold text-white',
+                cancelButton: `rounded-xl px-5 py-2.5 font-bold ${isDark ? 'text-white' : 'text-slate-700'}`,
+                popup: 'rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl',
             }
         }).then((result) => {
             if (result.isConfirmed) {
@@ -113,9 +114,29 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
     };
 
     const toggleYearActive = (id) => {
-        if (confirm('تفعيل هذه السنة سيؤدي لتعطيل بقية السنوات تلقائياً. هل أنت متأكد؟')) {
-            router.post(route('academic.years.toggle', id));
-        }
+        const isDark = document.documentElement.classList.contains('dark');
+        Swal.fire({
+            title: 'تفعيل السنة الدراسية',
+            text: 'تفعيل هذه السنة سيؤدي لتعطيل بقية السنوات تلقائياً. هل أنت متأكد؟',
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#10b981', // emerald-500
+            cancelButtonColor: isDark ? '#334155' : '#e2e8f0',
+            confirmButtonText: 'نعم، قم بالتفعيل',
+            cancelButtonText: 'إلغاء',
+            reverseButtons: true,
+            background: isDark ? '#0f172a' : '#ffffff',
+            color: isDark ? '#f8fafc' : '#1e293b',
+            customClass: {
+                confirmButton: 'rounded-xl px-5 py-2.5 font-bold text-white',
+                cancelButton: `rounded-xl px-5 py-2.5 font-bold ${isDark ? 'text-white' : 'text-slate-700'}`,
+                popup: 'rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl',
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(route('academic.years.toggle', id));
+            }
+        });
     };
 
     // --- Semester Actions ---
@@ -150,22 +171,23 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
     };
 
     const deleteSemester = (id) => {
+        const isDark = document.documentElement.classList.contains('dark');
         Swal.fire({
             title: 'هل أنت متأكد؟',
-            text: 'هل أنت متأكد من حذف هذا الفصل؟',
+            text: 'هل أنت متأكد من حذف هذا الفصل الدراسي؟',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#94a3b8',
+            cancelButtonColor: isDark ? '#334155' : '#e2e8f0',
             confirmButtonText: 'نعم، احذفه',
             cancelButtonText: 'إلغاء',
             reverseButtons: true,
+            background: isDark ? '#0f172a' : '#ffffff',
+            color: isDark ? '#f8fafc' : '#1e293b',
             customClass: {
-                confirmButton: 'rounded-xl px-5 py-2.5 font-bold',
-                cancelButton: 'rounded-xl px-5 py-2.5 font-bold',
-                popup: 'rounded-3xl dark:bg-slate-900 dark:border dark:border-slate-800',
-                title: 'text-slate-800 dark:text-white',
-                htmlContainer: 'text-slate-500 dark:text-slate-400'
+                confirmButton: 'rounded-xl px-5 py-2.5 font-bold text-white',
+                cancelButton: `rounded-xl px-5 py-2.5 font-bold ${isDark ? 'text-white' : 'text-slate-700'}`,
+                popup: 'rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl',
             }
         }).then((result) => {
             if (result.isConfirmed) {

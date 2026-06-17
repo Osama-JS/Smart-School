@@ -13,7 +13,15 @@ class ShiftController extends Controller
 {
     public function index(Request $request)
     {
+        $user = auth()->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
         $query = Shift::query()->with('branch')->withCount('employees');
+
+        // Scope to branch if not system admin
+        if (!$isSystemAdmin) {
+            $query->where('branch_id', $user->branch_id);
+        }
 
         // Apply filters
         if ($request->filled('search')) {
@@ -69,18 +77,22 @@ class ShiftController extends Controller
         $shifts = $query->paginate(12)->withQueryString();
 
         // Calculate Stats
-        $total_shifts = Shift::count();
-        $active_shifts = Shift::where('is_active', true)->count();
-        $avg_grace = round(Shift::avg('grace_period_minutes') ?? 0, 1);
+        $statsQuery = Shift::query();
+        if (!$isSystemAdmin) {
+            $statsQuery->where('branch_id', $user->branch_id);
+        }
+        $total_shifts = $statsQuery->count();
+        $active_shifts = (clone $statsQuery)->where('is_active', true)->count();
+        $avg_grace = round((clone $statsQuery)->avg('grace_period_minutes') ?? 0, 1);
         
         // Count distinct employees assigned to any shift
-        $total_assigned_employees = DB::table('branch_employee_shift')
-            ->distinct()
-            ->count('employee_id');
+        $employeesQuery = DB::table('branch_employee_shift')->distinct();
+        if (!$isSystemAdmin) {
+            $employeesQuery->where('branch_id', $user->branch_id);
+        }
+        $total_assigned_employees = $employeesQuery->count('employee_id');
 
-        $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
-        $branches = $isAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
+        $branches = $isSystemAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
 
         return Inertia::render('HR/Shifts/Index', [
             'shifts'  => $shifts,
@@ -92,7 +104,7 @@ class ShiftController extends Controller
                 'total_assigned_employees' => $total_assigned_employees,
             ],
             'branches' => $branches,
-            'isAdmin' => $isAdmin,
+            'isAdmin' => $isSystemAdmin,
         ]);
     }
 
@@ -106,6 +118,15 @@ class ShiftController extends Controller
             'is_active'            => 'boolean',
             'branch_id'            => 'nullable|exists:branches,id',
         ]);
+
+        $user = auth()->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isSystemAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            $validated['branch_id'] = $user->branch_id;
+        }
 
         Shift::create($validated);
 
@@ -123,6 +144,15 @@ class ShiftController extends Controller
             'branch_id'            => 'nullable|exists:branches,id',
         ]);
 
+        $user = auth()->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isSystemAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            $validated['branch_id'] = $shift->branch_id ?? $user->branch_id;
+        }
+
         $shift->update($validated);
 
         return redirect()->route('hr.shifts')->with('success', 'تم تعديل الشفت بنجاح');
@@ -130,6 +160,17 @@ class ShiftController extends Controller
 
     public function destroy(Shift $shift)
     {
+        $user = auth()->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isSystemAdmin && $shift->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك بحذف شفت من فرع آخر');
+        }
+
+        if ($shift->employees()->count() > 0) {
+            return redirect()->back()->with('error', 'لا يمكن حذف هذا الشفت لوجود موظفين مرتبطين به.');
+        }
+
         $shift->delete();
         return redirect()->route('hr.shifts')->with('success', 'تم حذف الشفت بنجاح');
     }

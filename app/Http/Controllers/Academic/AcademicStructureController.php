@@ -17,7 +17,7 @@ class AcademicStructureController extends Controller
     public function index(Request $request)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         
         // --- 1. Load Academic Years ---
         $academicYearsQuery = AcademicYear::query();
@@ -66,6 +66,8 @@ class AcademicStructureController extends Controller
         
         $teachers = $teachersQuery->select('id', 'name', 'branch_id')->get();
 
+        $branches = $isAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
+
         return Inertia::render('Academic/Structure/Index', [
             'academicYears' => $academicYears,
             'selectedYearId' => $selectedYearId ? (int)$selectedYearId : null,
@@ -73,6 +75,7 @@ class AcademicStructureController extends Controller
             'divisions' => $divisions,
             'teachers' => $teachers,
             'isAdmin' => $isAdmin,
+            'branches' => $branches,
         ]);
     }
 
@@ -81,12 +84,15 @@ class AcademicStructureController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         
         if (!$isAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
             $validated['branch_id'] = $user->branch_id;
         }
 
@@ -98,7 +104,21 @@ class AcademicStructureController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
+
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $section->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
+        if (!$isAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            $validated['branch_id'] = $section->branch_id ?? $user->branch_id;
+        }
 
         $section->update($validated);
         return redirect()->back()->with('success', 'تم تعديل المرحلة بنجاح');
@@ -106,6 +126,17 @@ class AcademicStructureController extends Controller
 
     public function destroySection(Section $section)
     {
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $section->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
+        if ($section->grades()->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف المرحلة لاحتوائها على صفوف دراسية.');
+        }
+
         $section->delete();
         return redirect()->back()->with('success', 'تم حذف المرحلة بنجاح');
     }
@@ -116,13 +147,17 @@ class AcademicStructureController extends Controller
         $validated = $request->validate([
             'section_id' => 'required|exists:sections,id',
             'name' => 'required|string|max:255',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            $section = Section::find($validated['section_id']);
+            $validated['branch_id'] = $section ? $section->branch_id : null;
         }
 
         Grade::create($validated);
@@ -134,7 +169,21 @@ class AcademicStructureController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'section_id' => 'required|exists:sections,id',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
+
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $grade->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
+        if (!$isAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            $validated['branch_id'] = $grade->branch_id ?? $user->branch_id;
+        }
 
         $grade->update($validated);
         return redirect()->back()->with('success', 'تم تعديل الصف بنجاح');
@@ -142,6 +191,21 @@ class AcademicStructureController extends Controller
 
     public function destroyGrade(Grade $grade)
     {
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $grade->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
+        if ($grade->divisions()->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف الصف لوجود شعب دراسية مرتبطة به.');
+        }
+
+        if ($grade->subjects()->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف الصف لوجود مواد دراسية مقررة عليه.');
+        }
+
         $grade->delete();
         return redirect()->back()->with('success', 'تم حذف الصف بنجاح');
     }
@@ -155,13 +219,17 @@ class AcademicStructureController extends Controller
             'name' => 'required|string|max:255',
             'max_students' => 'required|integer|min:1|max:100',
             'homeroom_teacher_id' => 'nullable|exists:users,id',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            $grade = Grade::find($validated['grade_id']);
+            $validated['branch_id'] = $grade ? $grade->branch_id : null;
         }
 
         Division::create($validated);
@@ -174,7 +242,21 @@ class AcademicStructureController extends Controller
             'name' => 'required|string|max:255',
             'max_students' => 'required|integer|min:1|max:100',
             'homeroom_teacher_id' => 'nullable|exists:users,id',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
+
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $division->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
+        if (!$isAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            $validated['branch_id'] = $division->branch_id ?? $user->branch_id;
+        }
 
         $division->update($validated);
         return redirect()->back()->with('success', 'تم تعديل الشعبة بنجاح');
@@ -182,6 +264,21 @@ class AcademicStructureController extends Controller
 
     public function destroyDivision(Division $division)
     {
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $division->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
+        if ($division->enrollments()->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف الشعبة لوجود طلاب مسجلين فيها.');
+        }
+
+        if ($division->timetables()->exists() || $division->subjectTeachers()->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف الشعبة لارتباطها بجداول دراسية أو مهام معلمين.');
+        }
+
         $division->delete();
         return redirect()->back()->with('success', 'تم حذف الشعبة بنجاح');
     }
@@ -194,7 +291,7 @@ class AcademicStructureController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
 
         $fromYearId = $request->from_academic_year_id;
         $toYearId = $request->to_academic_year_id;

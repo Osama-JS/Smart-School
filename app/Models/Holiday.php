@@ -11,6 +11,8 @@ class Holiday extends Model
         'start_date',
         'end_date',
         'branch_id',
+        'academic_year_id',
+        'semester_id',
         'notes',
     ];
 
@@ -22,5 +24,15 @@ class Holiday extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
     }
 }

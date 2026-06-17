@@ -5,13 +5,15 @@ import FlatpickrInput from '@/Components/FlatpickrInput';
 import { Calendar, Plus, Edit2, Trash2, X, Save, Clock, CheckCircle, XCircle } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 
-export default function LeavesIndex({ leaves, employees, isAdmin }) {
+export default function LeavesIndex({ leaves, employees, academicYears = [], leaveTypes = [], isAdmin }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingLeave, setEditingLeave] = useState(null);
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         employee_id: '',
-        type: '',
+        academic_year_id: '',
+        semester_id: '',
+        leave_type_id: '',
         start_date: '',
         end_date: '',
         status: 'pending',
@@ -23,7 +25,9 @@ export default function LeavesIndex({ leaves, employees, isAdmin }) {
             setEditingLeave(leave);
             setData({
                 employee_id: leave.employee_id,
-                type: leave.type,
+                academic_year_id: leave.academic_year_id || '',
+                semester_id: leave.semester_id || '',
+                leave_type_id: leave.leave_type_id,
                 start_date: leave.start_date,
                 end_date: leave.end_date,
                 status: leave.status,
@@ -192,20 +196,56 @@ export default function LeavesIndex({ leaves, employees, isAdmin }) {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">السنة الدراسية</label>
+                                        <SelectInput
+                                            options={academicYears.map(y => ({ value: y.id, label: y.name }))}
+                                            value={academicYears.map(y => ({ value: y.id, label: y.name })).find(o => o.value == data.academic_year_id) || null}
+                                            onChange={(val) => {
+                                                setData(prev => ({ ...prev, academic_year_id: val || '', semester_id: '' }));
+                                            }}
+                                            placeholder="اختر السنة الدراسية"
+                                        />
+                                        {errors.academic_year_id && <p className="text-xs text-accent-500 mt-1">{errors.academic_year_id}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الفصل الدراسي</label>
+                                        <SelectInput
+                                            options={(academicYears.find(y => y.id == data.academic_year_id)?.semesters || []).map(s => ({ value: s.id, label: s.name }))}
+                                            value={(academicYears.find(y => y.id == data.academic_year_id)?.semesters || []).map(s => ({ value: s.id, label: s.name })).find(o => o.value == data.semester_id) || null}
+                                            onChange={(val) => setData('semester_id', val || '')}
+                                            placeholder="اختر الفصل الدراسي"
+                                            disabled={!data.academic_year_id}
+                                        />
+                                        {errors.semester_id && <p className="text-xs text-accent-500 mt-1">{errors.semester_id}</p>}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
                                         <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">نوع الإجازة <span className="text-accent-500">*</span></label>
                                         <SelectInput
-                                            options={leaveTypes}
-                                            value={leaveTypes.find(o => o.value == data.type) || null}
-                                            onChange={(selected) => setData('type', selected || '')}
+                                            options={leaveTypes.map(t => ({ value: t.id, label: t.name }))}
+                                            value={leaveTypes.map(t => ({ value: t.id, label: t.name })).find(o => o.value == data.leave_type_id) || null}
+                                            onChange={(val) => setData('leave_type_id', val || '')}
+                                            placeholder="اختر النوع"
                                         />
-                                        {errors.type && <p className="text-xs text-accent-500 mt-1">{errors.type}</p>}
+                                        {errors.leave_type_id && <p className="text-xs text-accent-500 mt-1">{errors.leave_type_id}</p>}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">حالة الطلب <span className="text-accent-500">*</span></label>
                                         <SelectInput
-                                            options={leaveStatuses}
-                                            value={leaveStatuses.find(o => o.value == data.status) || null}
+                                            options={[
+                                                {value: 'pending', label: 'قيد الانتظار'},
+                                                {value: 'approved', label: 'مقبول'},
+                                                {value: 'rejected', label: 'مرفوض'}
+                                            ]}
+                                            value={[
+                                                {value: 'pending', label: 'قيد الانتظار'},
+                                                {value: 'approved', label: 'مقبول'},
+                                                {value: 'rejected', label: 'مرفوض'}
+                                            ].find(o => o.value == data.status) || null}
                                             onChange={(selected) => setData('status', selected || '')}
+                                            placeholder="اختر الحالة"
                                         />
                                         {errors.status && <p className="text-xs text-accent-500 mt-1">{errors.status}</p>}
                                     </div>

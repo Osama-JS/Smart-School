@@ -192,6 +192,17 @@ Route::middleware('auth')->group(function () {
             'update'  => 'hr.leaves.update',
             'destroy' => 'hr.leaves.destroy',
         ])->except(['create', 'edit', 'show']);
+
+        Route::resource('/hr/leave-types', \App\Http\Controllers\HR\LeaveTypeController::class)->names([
+            'index'   => 'hr.leave-types',
+            'store'   => 'hr.leave-types.store',
+            'update'  => 'hr.leave-types.update',
+            'destroy' => 'hr.leave-types.destroy',
+        ])->except(['create', 'edit', 'show']);
+
+        Route::get('/hr/leave-balances', [\App\Http\Controllers\HR\LeaveBalanceController::class, 'index'])->name('hr.leave-balances');
+        Route::post('/hr/leave-balances', [\App\Http\Controllers\HR\LeaveBalanceController::class, 'store'])->name('hr.leave-balances.store');
+        Route::post('/hr/leave-balances/generate', [\App\Http\Controllers\HR\LeaveBalanceController::class, 'generate'])->name('hr.leave-balances.generate');
     });
 
     // ── Attendance ──

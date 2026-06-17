@@ -5,7 +5,7 @@ import FlatpickrInput from '@/Components/FlatpickrInput';
 import { Calendar, Plus, Edit2, Trash2, X, Save, FileText, CheckCircle2 } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 
-export default function HolidaysIndex({ holidays, branches, isAdmin }) {
+export default function HolidaysIndex({ holidays, branches, academicYears, isAdmin }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingHoliday, setEditingHoliday] = useState(null);
 
@@ -14,6 +14,8 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
         start_date: '',
         end_date: '',
         branch_id: '',
+        academic_year_id: '',
+        semester_id: '',
         notes: '',
     });
 
@@ -25,6 +27,8 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
                 start_date: holiday.start_date,
                 end_date: holiday.end_date,
                 branch_id: holiday.branch_id || '',
+                academic_year_id: holiday.academic_year_id || '',
+                semester_id: holiday.semester_id || '',
                 notes: holiday.notes || '',
             });
         } else {
@@ -64,23 +68,34 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
             <Head title="الإجازات الرسمية والعطلات" />
 
             <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#121820]/60 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-primary-50 dark:bg-primary-500/10 rounded-2xl flex items-center justify-center text-primary-500">
-                            <Calendar size={24} />
-                        </div>
+                {/* Header Section */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                    
+                    {/* Visual geometric lines */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                        </svg>
+                    </div>
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <h1 className="text-2xl font-bold text-dark-900 dark:text-white">الإجازات الرسمية والعطلات</h1>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">إدارة أيام العطل الرسمية للمؤسسة والفروع</p>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight">الإجازات الرسمية والعطلات</h1>
+                            <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة أيام العطل الرسمية للمؤسسة والفروع</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                            <button
+                                onClick={() => openModal()}
+                                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95"
+                            >
+                                <Plus size={18} />
+                                <span>إضافة إجازة رسمية</span>
+                            </button>
                         </div>
                     </div>
-                    <button
-                        onClick={() => openModal()}
-                        className="flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-primary-500/20"
-                    >
-                        <Plus size={20} /> إضافة إجازة رسمية
-                    </button>
                 </div>
 
                 {/* List */}
@@ -93,6 +108,7 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">من تاريخ</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">إلى تاريخ</th>
                                     {isAdmin && <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الفرع</th>}
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الفترة الأكاديمية</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">ملاحظات</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 w-24">إجراءات</th>
                                 </tr>
@@ -121,6 +137,10 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
                                                     {holiday.branch_id ? holiday.branch?.name : 'عام (لجميع الفروع)'}
                                                 </td>
                                             )}
+                                            <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
+                                                {holiday.academic_year ? holiday.academic_year.name : '-'}
+                                                {holiday.semester ? ` / ${holiday.semester.name}` : ''}
+                                            </td>
                                             <td className="py-4 px-6 text-slate-500 text-sm max-w-xs truncate">
                                                 {holiday.notes || '-'}
                                             </td>
@@ -207,6 +227,44 @@ export default function HolidaysIndex({ holidays, branches, isAdmin }) {
                                         <p className="text-xs text-slate-500 mt-1">اتركه فارغاً لتطبيق الإجازة على جميع فروع المؤسسة.</p>
                                     </div>
                                 )}
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">السنة الدراسية (اختياري)</label>
+                                        <SelectInput
+                                            options={[
+                                                { value: '', label: 'غير محدد' },
+                                                ...(academicYears?.map(ay => ({ value: ay.id, label: ay.name })) || [])
+                                            ]}
+                                            value={[
+                                                { value: '', label: 'غير محدد' },
+                                                ...(academicYears?.map(ay => ({ value: ay.id, label: ay.name })) || [])
+                                            ].find(o => o.value == data.academic_year_id) || null}
+                                            onChange={(selected) => {
+                                                setData({
+                                                    ...data,
+                                                    academic_year_id: selected || '',
+                                                    semester_id: '' // reset semester when year changes
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الفصل الدراسي (اختياري)</label>
+                                        <SelectInput
+                                            options={[
+                                                { value: '', label: 'غير محدد' },
+                                                ...((academicYears?.find(ay => ay.id == data.academic_year_id)?.semesters || []).map(s => ({ value: s.id, label: s.name })))
+                                            ]}
+                                            value={[
+                                                { value: '', label: 'غير محدد' },
+                                                ...((academicYears?.find(ay => ay.id == data.academic_year_id)?.semesters || []).map(s => ({ value: s.id, label: s.name })))
+                                            ].find(o => o.value == data.semester_id) || null}
+                                            onChange={(selected) => setData('semester_id', selected || '')}
+                                            isDisabled={!data.academic_year_id}
+                                        />
+                                    </div>
+                                </div>
 
                                 <div>
                                     <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">ملاحظات (اختياري)</label>

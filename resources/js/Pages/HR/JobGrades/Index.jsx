@@ -628,7 +628,7 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
                     <p className="font-bold">لا توجد درجات وظيفية مطابقة للمرشحات</p>
                 </div>
             ) : (
-                <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 rounded-3xl shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-primary-500/10 rounded-3xl shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
                         {gradesData.map((grade) => {
                             // Calculate workforce distribution percentage for this grade
@@ -638,19 +638,21 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
                             return (
                                 <div
                                     key={grade.id}
-                                    className="relative bg-white dark:bg-[#121820]/40 rounded-3xl border border-slate-100 dark:border-slate-800/85 p-6 shadow-sm hover:shadow-xl dark:hover:shadow-black/30 hover:-translate-y-1.5 hover:scale-[1.01] hover:border-slate-200 dark:hover:border-primary-500/20 transition-all duration-300 group overflow-hidden"
+                                    className="relative bg-white dark:bg-[#121820]/40 rounded-3xl border border-slate-100 dark:border-slate-800/85 p-6 shadow-sm hover:shadow-xl dark:hover:shadow-black/30 hover:-translate-y-1.5 hover:scale-[1.01] hover:border-slate-200 dark:hover:border-primary-500/20 transition-all duration-300 group"
                                 >
-                                    {/* Dot Matrix Background Pattern */}
-                                    <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1.2px,transparent_1.2px)] [background-size:16px_16px] opacity-25 pointer-events-none" />
+                                    <div className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none">
+                                        {/* Dot Matrix Background Pattern */}
+                                        <div className="absolute inset-0 bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1.2px,transparent_1.2px)] [background-size:16px_16px] opacity-25" />
 
-                                    {/* Expanding top brand line accent */}
-                                    <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-primary-400 to-primary-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-right pointer-events-none z-20" />
-                                    {/* Static default subtle top border */}
-                                    <div className="absolute top-0 right-0 left-0 h-[3px] bg-slate-100 dark:bg-slate-800 group-hover:opacity-0 transition-opacity duration-300 pointer-events-none z-10" />
+                                        {/* Expanding top brand line accent */}
+                                        <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-l from-primary-400 to-primary-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-right z-20" />
+                                        {/* Static default subtle top border */}
+                                        <div className="absolute top-0 right-0 left-0 h-[3px] bg-slate-100 dark:bg-slate-800 group-hover:opacity-0 transition-opacity duration-300 z-10" />
 
-                                    {/* Glowing ambient light */}
-                                    <div className="absolute -left-6 -top-6 w-24 h-24 bg-primary-500/5 dark:bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-500/5 to-transparent rounded-bl-[100px] pointer-events-none -z-0" />
+                                        {/* Glowing ambient light */}
+                                        <div className="absolute -left-6 -top-6 w-24 h-24 bg-primary-500/5 dark:bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500" />
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary-500/5 to-transparent rounded-bl-[100px] -z-0" />
+                                    </div>
                                     
                                     <div className="relative z-10 flex justify-between items-start mb-5">
                                         <div className="relative flex items-center justify-center">

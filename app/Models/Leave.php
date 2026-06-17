@@ -8,7 +8,9 @@ class Leave extends Model
 {
     protected $fillable = [
         'employee_id',
-        'type',
+        'academic_year_id',
+        'semester_id',
+        'leave_type_id',
         'start_date',
         'end_date',
         'status',
@@ -23,5 +25,20 @@ class Leave extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function academicYear()
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function semester()
+    {
+        return $this->belongsTo(Semester::class);
+    }
+
+    public function leaveType()
+    {
+        return $this->belongsTo(LeaveType::class);
     }
 }

@@ -15,6 +15,8 @@ class Attendance extends Model
         'employee_id',
         'branch_id',
         'shift_id',
+        'academic_year_id',
+        'semester_id',
         'date',
         'check_in',
         'check_in_lat',
@@ -48,5 +50,15 @@ class Attendance extends Model
     public function shift(): BelongsTo
     {
         return $this->belongsTo(Shift::class);
+    }
+
+    public function academicYear(): BelongsTo
+    {
+        return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function semester(): BelongsTo
+    {
+        return $this->belongsTo(Semester::class);
     }
 }

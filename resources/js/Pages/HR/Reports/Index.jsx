@@ -92,27 +92,26 @@ export default function ReportsIndex({ auth, reportsToReview, stats }) {
             <div className="py-12" style={{ direction: 'rtl' }}>
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
                     
-                    {/* Header Section with Brand Colors and Geometric Accent */}
-                    <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none">
+                    {/* Header Section */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                         <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                         
+                        {/* Visual geometric lines */}
                         <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                             <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
-                                <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
                                 <circle cx="250" cy="90" r="4" className="fill-primary-500" />
                                 <circle cx="500" cy="160" r="6" className="fill-primary-400" />
-                                <circle cx="750" cy="60" r="3" className="fill-primary-300" />
                             </svg>
                         </div>
                         
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight flex items-center gap-3">
+                                <h1 className="text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight flex items-center gap-3">
                                     <ClipboardList className="text-primary-500" size={32} />
                                     متابعة التقارير المرفوعة
                                 </h1>
-                                <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">
+                                <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">
                                     الإطلاع على تقارير الموظفين التابعين للفرع وإدارة عمليات المراجعة والاعتماد.
                                 </p>
                             </div>

@@ -88,7 +88,7 @@ class JobGradeController extends Controller
         });
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         $branches = $isAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
 
         $allGrades = JobGrade::select('id', 'name', 'level', 'parent_id')->orderBy('level', 'asc')->get();
@@ -130,11 +130,18 @@ class JobGradeController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
 
         if (!$isAdmin) {
             // مدراء الفروع لا يمكنهم سوى إنشاء درجات وظيفية لفروعهم
             $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            if (!empty($validated['parent_id'])) {
+                $parent = JobGrade::find($validated['parent_id']);
+                $validated['branch_id'] = $parent ? $parent->branch_id : null;
+            } else {
+                $validated['branch_id'] = null;
+            }
         }
 
         JobGrade::create($validated);
@@ -164,11 +171,18 @@ class JobGradeController extends Controller
         ]);
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
 
         if (!$isAdmin) {
             // لا يجوز لمدير الفرع أن يغير فرع الدرجة الوظيفية أو يجعلها عامة
             $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            if (!empty($validated['parent_id'])) {
+                $parent = JobGrade::find($validated['parent_id']);
+                $validated['branch_id'] = $parent ? $parent->branch_id : null;
+            } else {
+                $validated['branch_id'] = $job_grade->branch_id ?? null;
+            }
         }
 
         $job_grade->update($validated);
@@ -178,9 +192,21 @@ class JobGradeController extends Controller
 
     public function destroy(JobGrade $job_grade)
     {
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $job_grade->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
         if ($job_grade->employees()->exists()) {
             return redirect()->route('hr.job-grades')->with('error', 'لا يمكن حذف الدرجة الوظيفية لأنها مرتبطة بموظفين');
         }
+
+        if ($job_grade->children()->exists()) {
+            return redirect()->route('hr.job-grades')->with('error', 'لا يمكن حذف المسمى الوظيفي لوجود مسميات وظيفية فرعية تابعة له.');
+        }
+
         $job_grade->delete();
         return redirect()->route('hr.job-grades')->with('success', 'تم حذف الدرجة الوظيفية بنجاح');
     }

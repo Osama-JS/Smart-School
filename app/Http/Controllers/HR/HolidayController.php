@@ -5,6 +5,7 @@ namespace App\Http\Controllers\HR;
 use App\Http\Controllers\Controller;
 use App\Models\Holiday;
 use App\Models\Branch;
+use App\Models\AcademicYear;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,9 +14,9 @@ class HolidayController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير النظام', 'Admin']);
         
-        $query = Holiday::with('branch');
+        $query = Holiday::with(['branch', 'academicYear', 'semester']);
 
         if (!$isAdmin) {
             $query->where(function($q) use ($user) {
@@ -25,10 +26,12 @@ class HolidayController extends Controller
 
         $holidays = $query->latest()->get();
         $branches = $isAdmin ? Branch::all() : [];
+        $academicYears = AcademicYear::with('semesters')->get();
 
         return Inertia::render('HR/Holidays/Index', [
             'holidays' => $holidays,
             'branches' => $branches,
+            'academicYears' => $academicYears,
             'isAdmin' => $isAdmin
         ]);
     }
@@ -40,11 +43,13 @@ class HolidayController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'branch_id' => 'nullable|exists:branches,id',
+            'academic_year_id' => 'nullable|exists:academic_years,id',
+            'semester_id' => 'nullable|exists:semesters,id',
             'notes' => 'nullable|string',
         ]);
 
         $user = $request->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير النظام', 'Admin']);
 
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;
@@ -62,11 +67,13 @@ class HolidayController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'branch_id' => 'nullable|exists:branches,id',
+            'academic_year_id' => 'nullable|exists:academic_years,id',
+            'semester_id' => 'nullable|exists:semesters,id',
             'notes' => 'nullable|string',
         ]);
 
         $user = $request->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير النظام', 'Admin']);
 
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;

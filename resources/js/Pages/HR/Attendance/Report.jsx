@@ -4,10 +4,12 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import { FileText, Calendar, CheckCircle2, Clock, UserX, UserCheck, AlertTriangle, Printer, Loader2, Download } from 'lucide-react';
 
-export default function AttendanceReport({ employees, isAdmin }) {
+export default function AttendanceReport({ employees, academicYears = [], isAdmin }) {
     const [selectedEmployee, setSelectedEmployee] = useState('');
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [selectedAcademicYear, setSelectedAcademicYear] = useState('');
+    const [selectedSemester, setSelectedSemester] = useState('');
     
     const [loading, setLoading] = useState(false);
     const [reportData, setReportData] = useState(null);
@@ -26,7 +28,12 @@ export default function AttendanceReport({ employees, isAdmin }) {
         if (!selectedEmployee) return;
         setLoading(true);
         try {
-            const res = await fetch(`/api/attendance/employee/${selectedEmployee}/report?month=${selectedMonth}&year=${selectedYear}`, {
+            let url = `/api/attendance/employee/${selectedEmployee}/report?month=${selectedMonth}&year=${selectedYear}`;
+            if (selectedSemester) {
+                url += `&semester_id=${selectedSemester}`;
+            }
+
+            const res = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
@@ -48,7 +55,7 @@ export default function AttendanceReport({ employees, isAdmin }) {
         if (selectedEmployee) {
             fetchReport();
         }
-    }, [selectedEmployee, selectedMonth, selectedYear]);
+    }, [selectedEmployee, selectedMonth, selectedYear, selectedSemester]);
 
     const getArabicDayName = (dayOfWeek) => {
         const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -64,6 +71,7 @@ export default function AttendanceReport({ employees, isAdmin }) {
             holiday: { label: 'إجازة رسمية', bg: 'bg-indigo-100 text-indigo-700', icon: Calendar },
             leave: { label: 'إجازة خاصة', bg: 'bg-purple-100 text-purple-700', icon: FileText },
             weekend: { label: 'إجازة أسبوعية', bg: 'bg-slate-100 text-slate-500', icon: Calendar },
+            out_of_term: { label: 'خارج الفترة الأكاديمية', bg: 'bg-slate-200 text-slate-600', icon: Calendar },
             future: { label: 'لم يحن', bg: 'bg-slate-50 text-slate-400', icon: Clock },
         };
         const s = map[status] || map.absent;
@@ -95,24 +103,36 @@ export default function AttendanceReport({ employees, isAdmin }) {
             `}} />
 
             <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-[#121820]/60 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm no-print">
-                    <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-primary-50 dark:bg-primary-500/10 rounded-2xl flex items-center justify-center text-primary-500">
-                            <FileText size={24} />
-                        </div>
+                {/* Header Section */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px] no-print">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                    
+                    {/* Visual geometric lines */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                        </svg>
+                    </div>
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <h1 className="text-2xl font-bold text-dark-900 dark:text-white">تقرير الحضور المتقدم</h1>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">عرض تقرير مفصل يشمل أيام الدوام والإجازات</p>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight flex items-center gap-3">
+                                <FileText className="text-primary-500" size={32} />
+                                تقرير الحضور المتقدم
+                            </h1>
+                            <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">عرض تقرير مفصل يشمل أيام الدوام والإجازات</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                            {reportData && (
+                                <button onClick={handlePrint} className="flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none text-sm font-bold transition-all active:scale-95">
+                                    <Printer size={18} />
+                                    <span>طباعة التقرير</span>
+                                </button>
+                            )}
                         </div>
                     </div>
-                    {reportData && (
-                        <div className="flex gap-2">
-                            <button onClick={handlePrint} className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl font-bold transition-all">
-                                <Printer size={18} /> طباعة التقرير
-                            </button>
-                        </div>
-                    )}
                 </div>
 
                 {/* Filters */}
@@ -128,6 +148,28 @@ export default function AttendanceReport({ employees, isAdmin }) {
                             />
                         </div>
                         <div>
+                            <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">السنة الدراسية</label>
+                            <SelectInput
+                                options={academicYears.map(y => ({ value: y.id, label: y.name }))}
+                                value={academicYears.map(y => ({ value: y.id, label: y.name })).find(o => o.value == selectedAcademicYear) || null}
+                                onChange={(val) => {
+                                    setSelectedAcademicYear(val || '');
+                                    setSelectedSemester('');
+                                }}
+                                placeholder="اختر السنة الدراسية"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الفصل الدراسي</label>
+                            <SelectInput
+                                options={(academicYears.find(y => y.id == selectedAcademicYear)?.semesters || []).map(s => ({ value: s.id, label: s.name }))}
+                                value={(academicYears.find(y => y.id == selectedAcademicYear)?.semesters || []).map(s => ({ value: s.id, label: s.name })).find(o => o.value == selectedSemester) || null}
+                                onChange={(val) => setSelectedSemester(val || '')}
+                                placeholder="اختر الفصل الدراسي"
+                                disabled={!selectedAcademicYear}
+                            />
+                        </div>
+                        <div>
                             <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الشهر</label>
                             <SelectInput
                                 options={months}
@@ -136,7 +178,7 @@ export default function AttendanceReport({ employees, isAdmin }) {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">السنة</label>
+                            <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">السنة المیلادية</label>
                             <SelectInput
                                 options={years}
                                 value={years.find(o => o.value == selectedYear) || null}

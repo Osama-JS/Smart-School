@@ -453,7 +453,7 @@ const BulkEditModal = ({ selectedCount, onClose, onSubmit }) => {
 };
 
 // ── Main Page ─────────────────────────────────────────────────
-export default function AttendanceIndex({ records, stats, weeklyTrend = [], branches, shifts, departments = [], filters, today, startDate, endDate }) {
+export default function AttendanceIndex({ records, stats, weeklyTrend = [], branches, shifts, departments = [], academicYears = [], filters, today, startDate, endDate }) {
     const { flash } = usePage().props;
     const [editRecord, setEditRecord] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
@@ -498,6 +498,8 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
     const [branchId, setBranchId]     = useState(filters.branch_id ?? '');
     const [shiftId, setShiftId]       = useState(filters.shift_id  ?? '');
     const [departmentId, setDepartmentId] = useState(filters.department_id ?? '');
+    const [academicYearId, setAcademicYearId] = useState(filters.academic_year_id ?? '');
+    const [semesterId, setSemesterId] = useState(filters.semester_id ?? '');
     const [status, setStatus]         = useState(filters.status ?? '');
     
     // Advanced features states
@@ -542,6 +544,8 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
             branch_id: branchId,
             shift_id: shiftId, 
             department_id: departmentId,
+            academic_year_id: academicYearId,
+            semester_id: semesterId,
             status,
             search,
             sort_by: sortBy,
@@ -668,7 +672,7 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
         document.body.removeChild(link);
     };
 
-    const activeFiltersCount = (branchId ? 1 : 0) + (shiftId ? 1 : 0) + (departmentId ? 1 : 0) + (status ? 1 : 0);
+    const activeFiltersCount = (branchId ? 1 : 0) + (shiftId ? 1 : 0) + (departmentId ? 1 : 0) + (status ? 1 : 0) + (academicYearId ? 1 : 0) + (semesterId ? 1 : 0);
 
     const renderSortHeader = (label, field) => {
         const isSorted = sortBy === field;
@@ -983,11 +987,32 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                         ]}
                                     />
                                 </div>
+                                {/* Academic Year Filter */}
+                                <div className="group/select flex flex-col">
+                                    <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">السنة الدراسية</label>
+                                    <SelectInput value={academicYearId} onChange={val => { setAcademicYearId(val); setSemesterId(''); applyFilter({ academic_year_id: val, semester_id: '' }); }}
+                                        options={[
+                                            { value: '', label: 'كل السنوات' },
+                                            ...(academicYears?.map(y => ({ value: y.id, label: y.name })) || [])
+                                        ]}
+                                    />
+                                </div>
+                                {/* Semester Filter */}
+                                <div className="group/select flex flex-col">
+                                    <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الفصل الدراسي</label>
+                                    <SelectInput value={semesterId} onChange={val => { setSemesterId(val); applyFilter({ semester_id: val }); }}
+                                        options={[
+                                            { value: '', label: 'كل الفصول' },
+                                            ...(academicYears?.find(y => y.id == academicYearId)?.semesters?.map(s => ({ value: s.id, label: s.name })) || [])
+                                        ]}
+                                        disabled={!academicYearId}
+                                    />
+                                </div>
                                 
-                                <div className="flex gap-2 justify-end items-end h-full mt-4 lg:mt-0">
+                                <div className="flex gap-2 justify-end items-end h-full mt-4 lg:mt-0 lg:col-span-2">
                                     <button onClick={() => {
-                                        setSearch(''); setBranchId(''); setShiftId(''); setDepartmentId(''); setStatus('');
-                                        applyFilter({ search: '', branch_id: '', shift_id: '', department_id: '', status: '' });
+                                        setSearch(''); setBranchId(''); setShiftId(''); setDepartmentId(''); setAcademicYearId(''); setSemesterId(''); setStatus('');
+                                        applyFilter({ search: '', branch_id: '', shift_id: '', department_id: '', academic_year_id: '', semester_id: '', status: '' });
                                     }}
                                     className="flex items-center justify-center px-4 py-3 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/80 rounded-2xl text-xs font-bold transition-all shadow-sm">
                                         إعادة ضبط

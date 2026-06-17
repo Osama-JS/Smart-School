@@ -84,7 +84,7 @@ class DepartmentController extends Controller
         ];
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         $branches = $isAdmin ? \App\Models\Branch::select('id', 'name')->get() : [];
 
         return Inertia::render('HR/Departments/Index', [
@@ -106,6 +106,16 @@ class DepartmentController extends Controller
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id']) && !empty($validated['parent_id'])) {
+            $parent = Department::find($validated['parent_id']);
+            $validated['branch_id'] = $parent ? $parent->branch_id : null;
+        }
+
         Department::create($validated);
 
         return redirect()->route('hr.departments')->with('success', 'تم إضافة القسم بنجاح');
@@ -119,6 +129,24 @@ class DepartmentController extends Controller
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $department->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
+        if (!$isAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            if (!empty($validated['parent_id'])) {
+                $parent = Department::find($validated['parent_id']);
+                $validated['branch_id'] = $parent ? $parent->branch_id : null;
+            } else {
+                $validated['branch_id'] = $department->branch_id ?? null;
+            }
+        }
+
         $department->update($validated);
 
         return redirect()->route('hr.departments')->with('success', 'تم تعديل القسم بنجاح');
@@ -126,6 +154,21 @@ class DepartmentController extends Controller
 
     public function destroy(Department $department)
     {
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isAdmin && $department->branch_id !== $user->branch_id) {
+            abort(403, 'غير مصرح لك');
+        }
+
+        if ($department->employees()->count() > 0) {
+            return redirect()->back()->with('error', 'لا يمكن حذف القسم لوجود موظفين مرتبطين به. يرجى نقلهم أولاً.');
+        }
+
+        if ($department->children()->count() > 0) {
+            return redirect()->back()->with('error', 'لا يمكن حذف القسم لوجود أقسام فرعية تابعة له.');
+        }
+
         $department->delete();
         return redirect()->route('hr.departments')->with('success', 'تم حذف القسم بنجاح');
     }

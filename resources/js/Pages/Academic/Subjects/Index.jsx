@@ -336,8 +336,10 @@ export default function SubjectsIndex({ subjects, sections, branches = [], isAdm
                         {viewMode === 'cards' ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {subjects.map(subject => (
-                                    <div key={subject.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:shadow-primary-500/5 hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden">
-                                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-50 to-transparent dark:from-primary-500/5 dark:to-transparent rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110" />
+                                    <div key={subject.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:shadow-primary-500/5 hover:-translate-y-1 transition-all duration-300 relative group">
+                                        <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-50 to-transparent dark:from-primary-500/5 dark:to-transparent rounded-bl-[100px] transition-transform group-hover:scale-110" />
+                                        </div>
                                         
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-4">

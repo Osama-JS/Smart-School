@@ -26,17 +26,14 @@ class AcademicYearController extends Controller
         }
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         
         if ($isAdmin) {
             if ($request->filled('branch_id') && $request->branch_id !== 'all') {
                 $query->where('branch_id', $request->branch_id);
             }
         } else {
-            $query->where(function($q) use ($user) {
-                $q->where('branch_id', $user->branch_id)
-                  ->orWhereNull('branch_id');
-            });
+            $query->where('branch_id', $user->branch_id);
         }
 
         $query->orderBy('start_date', 'desc');
@@ -45,10 +42,22 @@ class AcademicYearController extends Controller
         $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];
 
         // Stats
+        $statsQuery = AcademicYear::query();
+        if (!$isAdmin) {
+            $statsQuery->where('branch_id', $user->branch_id);
+        }
+
+        $semestersQuery = Semester::query();
+        if (!$isAdmin) {
+            $semestersQuery->whereHas('academicYear', function($q) use ($user) {
+                $q->where('branch_id', $user->branch_id);
+            });
+        }
+
         $stats = [
-            'total_years' => AcademicYear::count(),
-            'active_years' => AcademicYear::where('is_active', true)->count(),
-            'total_semesters' => Semester::count(),
+            'total_years' => $statsQuery->count(),
+            'active_years' => (clone $statsQuery)->where('is_active', true)->count(),
+            'total_semesters' => $semestersQuery->count(),
         ];
 
         return Inertia::render('Academic/Years/Index', [
@@ -77,9 +86,11 @@ class AcademicYearController extends Controller
         }
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
 
         if (!$isAdmin) {
+            $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
             $validated['branch_id'] = $user->branch_id;
         }
 
@@ -132,7 +143,7 @@ class AcademicYearController extends Controller
         }
 
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
 
         if (!$isAdmin && $academicYear->branch_id !== $user->branch_id) {
             abort(403, 'غير مصرح لك بتعديل بيانات هذا الفرع');
@@ -140,6 +151,8 @@ class AcademicYearController extends Controller
 
         if (!$isAdmin) {
             $validated['branch_id'] = $user->branch_id;
+        } elseif (empty($validated['branch_id'])) {
+            $validated['branch_id'] = $academicYear->branch_id ?? $user->branch_id;
         }
 
         $academicYear->update($validated);
@@ -150,10 +163,22 @@ class AcademicYearController extends Controller
     public function destroy(AcademicYear $academicYear)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
 
         if (!$isAdmin && $academicYear->branch_id !== $user->branch_id) {
             abort(403, 'غير مصرح لك');
+        }
+
+        if ($academicYear->is_active) {
+            return redirect()->back()->with('error', 'لا يمكن حذف السنة الدراسية لأنها السنة الفاعلة حالياً.');
+        }
+
+        if ($academicYear->semesters()->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف السنة الدراسية لوجود فصول دراسية تابعة لها.');
+        }
+
+        if ($academicYear->divisions()->exists() || $academicYear->enrollments()->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف السنة الدراسية لوجود شعب دراسية أو طلاب مسجلين فيها.');
         }
 
         $academicYear->delete();
@@ -163,7 +188,7 @@ class AcademicYearController extends Controller
     public function toggleActive(AcademicYear $academicYear)
     {
         $user = auth()->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
 
         if (!$isAdmin && $academicYear->branch_id !== $user->branch_id) {
             abort(403, 'غير مصرح لك');
@@ -226,6 +251,14 @@ class AcademicYearController extends Controller
 
     public function destroySemester(Semester $semester)
     {
+        if ($semester->is_active) {
+            return redirect()->back()->with('error', 'لا يمكن حذف الفصل الدراسي المفعّل حالياً.');
+        }
+
+        if ($semester->masterTimetables()->exists() || $semester->monthlyGrades()->exists() || $semester->lessonPreparations()->exists()) {
+            return redirect()->back()->with('error', 'لا يمكن حذف الفصل الدراسي لارتباطه بسجلات أكاديمية.');
+        }
+
         $semester->delete();
         return redirect()->back()->with('success', 'تم حذف الفصل الدراسي');
     }

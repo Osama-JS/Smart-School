@@ -807,10 +807,12 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                     <div className="space-y-6 animate-fade-in">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                             {empData.map((emp) => (
-                                <div key={emp.id} className="relative bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 group overflow-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px]">
-                                    {/* Accent top border */}
-                                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500/20 via-primary-500 to-primary-700/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-350" />
-                                    <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-primary-500/5 to-transparent rounded-br-[100px]" />
+                                <div key={emp.id} className="relative bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 group bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px]">
+                                    <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+                                        {/* Accent top border */}
+                                        <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500/20 via-primary-500 to-primary-700/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-350" />
+                                        <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-primary-500/5 to-transparent rounded-br-[100px]" />
+                                    </div>
                                     
                                     <div className="relative z-10 flex justify-between items-start mb-5">
                                         {/* Glowing Double Ring Avatar */}
