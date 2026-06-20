@@ -9,7 +9,12 @@ class DailyPeriod extends Model
 {
     use \App\Traits\LogsActivity;
 
-    protected $fillable = ['period_name', 'start_time', 'end_time'];
+    protected $fillable = ['period_name', 'start_time', 'end_time', 'branch_id'];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     // الحصص الموزعة في الجدول الأساسي المرتبطة بهذا التوقيت
     public function timetables(): HasMany {

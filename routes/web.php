@@ -24,6 +24,22 @@ Route::middleware('auth')->group(function () {
     // ── System Logs ──
     Route::get('/admin/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
 
+    // ── Notifications ──
+    Route::prefix('notifications')->group(function () {
+        Route::get('/my-notifications', [\App\Http\Controllers\NotificationController::class, 'myNotifications'])->name('notifications.my-notifications');
+        Route::get('/', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+        Route::post('/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+        Route::post('/fcm-token', [\App\Http\Controllers\NotificationController::class, 'saveFcmToken'])->name('notifications.fcm-token');
+    });
+
+    Route::prefix('admin/notifications')->group(function () {
+        Route::get('/send', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'create'])->name('admin.notifications.send');
+        Route::post('/send', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'store'])->name('admin.notifications.store');
+        Route::get('/users', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'getUsers'])->name('admin.notifications.users');
+        Route::get('/logs', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'logs'])->name('admin.notifications.logs');
+    });
+
     // ── Users ──
     Route::middleware('permission:إدارة المستخدمين')->group(function () {
         Route::post('/users/bulk', [UserController::class, 'bulk'])->name('users.bulk');
@@ -108,6 +124,13 @@ Route::middleware('auth')->group(function () {
         // Teacher's Timetable
         Route::get('/academic/my-timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'myTimetable'])->name('academic.my-timetable');
 
+        // Class Coverage (Absence & Substitution)
+        Route::get('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'index'])->name('academic.coverage.index');
+        Route::get('/academic/coverage/create', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'create'])->name('academic.coverage.create');
+        Route::get('/academic/coverage/teacher-periods', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'getTeacherPeriods'])->name('academic.coverage.teacher-periods');
+        Route::post('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'store'])->name('academic.coverage.store');
+        Route::delete('/academic/coverage/{coverage}', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'destroy'])->name('academic.coverage.destroy');
+
         // Parents
         Route::post('/academic/parents/quick-store', [\App\Http\Controllers\Academic\ParentController::class, 'quickStore'])->name('academic.parents.quick-store');
         Route::resource('/academic/parents', \App\Http\Controllers\Academic\ParentController::class)->names([
@@ -161,13 +184,33 @@ Route::middleware('auth')->group(function () {
         ]);
     });
 
-    // Requests and Approvals can be accessed by employees and managers. No strict permission wrapping here for 'index' or we could wrap it with auth. It's already wrapped with auth.
-    Route::resource('/hr/requests', \App\Http\Controllers\HR\RequestController::class)->names([
-        'index' => 'hr.requests'
-    ]);
-    Route::resource('/hr/approvals', \App\Http\Controllers\HR\ApprovalController::class)->names([
-        'index' => 'hr.approvals'
-    ]);
+    // ── Violations (المخالفات) ──
+    Route::middleware('permission:إدارة أنواع المخالفات')->group(function () {
+        Route::resource('/hr/violation-types', \App\Http\Controllers\HR\ViolationTypeController::class)->names([
+            'index'   => 'hr.violation-types',
+            'store'   => 'hr.violation-types.store',
+            'update'  => 'hr.violation-types.update',
+            'destroy' => 'hr.violation-types.destroy',
+        ])->except(['create', 'edit', 'show']);
+    });
+
+    Route::middleware('permission:إدارة المخالفات')->group(function () {
+        Route::resource('/hr/employee-violations', \App\Http\Controllers\HR\EmployeeViolationController::class)->names([
+            'index'   => 'hr.employee-violations',
+            'store'   => 'hr.employee-violations.store',
+            'update'  => 'hr.employee-violations.update',
+            'destroy' => 'hr.employee-violations.destroy',
+        ])->except(['create', 'edit', 'show']);
+        
+        Route::post('/hr/employee-violations/{violation}/notify', [\App\Http\Controllers\HR\EmployeeViolationController::class, 'notifyForSignature'])->name('hr.employee-violations.notify');
+    });
+
+    Route::middleware('permission:عرض مخالفاتي')->group(function () {
+        Route::get('/hr/my-violations', [\App\Http\Controllers\HR\MyViolationController::class, 'index'])->name('hr.my-violations');
+        Route::post('/hr/my-violations/{violation}/sign', [\App\Http\Controllers\HR\MyViolationController::class, 'sign'])->name('hr.my-violations.sign');
+    });
+
+
 
     // ── Shifts ──
     Route::middleware('permission:إدارة الشفتات')->group(function () {

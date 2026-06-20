@@ -1,27 +1,64 @@
-import React, { useState } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Sliders, Plus, Edit2, Trash2, X, Save } from 'lucide-react';
+import Swal from 'sweetalert2';
 
-export default function LeaveTypesIndex({ leaveTypes }) {
+import SelectInput from '@/Components/SelectInput';
+
+export default function LeaveTypesIndex({ leaveTypes, isSystemAdmin, branches = [], filters = {}, currentBranchId }) {
+    const { flash } = usePage().props;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingType, setEditingType] = useState(null);
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
+        branch_id: currentBranchId || '',
         name: '',
         default_days: 0,
     });
+
+    useEffect(() => {
+        const isDark = document.documentElement.classList.contains('dark');
+        const swalConfig = {
+            background: isDark ? '#1e293b' : '#ffffff',
+            color: isDark ? '#f8fafc' : '#0f172a',
+        };
+
+        if (flash?.error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'عذراً!',
+                text: flash.error,
+                confirmButtonText: 'حسناً',
+                confirmButtonColor: '#ef4444',
+                ...swalConfig
+            });
+        }
+        
+        if (flash?.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'نجاح!',
+                text: flash.success,
+                timer: 2000,
+                showConfirmButton: false,
+                ...swalConfig
+            });
+        }
+    }, [flash]);
 
     const openModal = (type = null) => {
         if (type) {
             setEditingType(type);
             setData({
+                branch_id: type.branch_id || '',
                 name: type.name,
                 default_days: type.default_days,
             });
         } else {
             setEditingType(null);
             reset();
+            if (currentBranchId) setData('branch_id', currentBranchId);
         }
         setIsModalOpen(true);
     };
@@ -46,9 +83,23 @@ export default function LeaveTypesIndex({ leaveTypes }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm('هل أنت متأكد من حذف هذا النوع من الإجازات؟ قد يتسبب ذلك بحذف بيانات متعلقة به.')) {
-            destroy(route('hr.leave-types.destroy', id));
-        }
+        const isDark = document.documentElement.classList.contains('dark');
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: 'هل أنت متأكد من حذف هذا النوع من الإجازات؟',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: isDark ? '#334155' : '#94a3b8',
+            confirmButtonText: 'نعم، احذف',
+            cancelButtonText: 'إلغاء',
+            background: isDark ? '#1e293b' : '#ffffff',
+            color: isDark ? '#f8fafc' : '#0f172a',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                destroy(route('hr.leave-types.destroy', id), { preserveScroll: true });
+            }
+        });
     };
 
     return (
@@ -75,6 +126,20 @@ export default function LeaveTypesIndex({ leaveTypes }) {
                             <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة أنواع الإجازات وأرصدتها الافتراضية</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
+                            {isSystemAdmin && (
+                                <div className="w-48">
+                                    <SelectInput
+                                        value={filters.branch_id || ''}
+                                        onChange={(val) => {
+                                            router.get(route('hr.leave-types.index'), { branch_id: val }, { preserveState: true, preserveScroll: true });
+                                        }}
+                                        options={[
+                                            { value: '', label: 'جميع الفروع' },
+                                            ...branches.map(b => ({ value: b.id, label: b.name }))
+                                        ]}
+                                    />
+                                </div>
+                            )}
                             <button
                                 onClick={() => openModal()}
                                 className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95"
@@ -93,6 +158,7 @@ export default function LeaveTypesIndex({ leaveTypes }) {
                                 <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 w-16">#</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">اسم الإجازة</th>
+                                    {isSystemAdmin && <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الفرع</th>}
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الرصيد الافتراضي (أيام)</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 w-24">الإجراءات</th>
                                 </tr>
@@ -103,6 +169,7 @@ export default function LeaveTypesIndex({ leaveTypes }) {
                                         <tr key={type.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300 font-mono">{index + 1}</td>
                                             <td className="py-4 px-6 font-bold text-dark-900 dark:text-white">{type.name}</td>
+                                            {isSystemAdmin && <td className="py-4 px-6 text-slate-600 dark:text-slate-300">{type.branch?.name || '-'}</td>}
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300">{type.default_days}</td>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-2">
@@ -124,7 +191,7 @@ export default function LeaveTypesIndex({ leaveTypes }) {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="4" className="py-12 text-center text-slate-500">
+                                        <td colSpan={isSystemAdmin ? "5" : "4"} className="py-12 text-center text-slate-500">
                                             لا توجد أنواع إجازات مضافة بعد.
                                         </td>
                                     </tr>
@@ -151,6 +218,21 @@ export default function LeaveTypesIndex({ leaveTypes }) {
                         </div>
                         
                         <form onSubmit={submit} className="p-6 space-y-6">
+                            {isSystemAdmin && (
+                                <div>
+                                    <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الفرع التابع له الإجازة</label>
+                                    <SelectInput
+                                        value={data.branch_id}
+                                        onChange={val => setData('branch_id', val)}
+                                        options={[
+                                            { value: '', label: 'بدون فرع مخصص (يطبق على الجميع إن لزم)' },
+                                            ...branches.map(b => ({ value: b.id, label: b.name }))
+                                        ]}
+                                    />
+                                    {errors.branch_id && <p className="text-xs text-accent-500 mt-1">{errors.branch_id}</p>}
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم الإجازة</label>
                                 <input

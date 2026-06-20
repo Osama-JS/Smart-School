@@ -27,6 +27,14 @@ class LeaveController extends Controller
             });
         }
 
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
+        }
+
         $leaves = $query->latest()->get();
 
         $leaveTypes = LeaveType::where('branch_id', $user->branch_id)->get();
@@ -53,7 +61,8 @@ class LeaveController extends Controller
             'employees' => $employees,
             'academicYears' => $academicYears,
             'leaveTypes' => $leaveTypes,
-            'isAdmin' => $isAdmin
+            'isAdmin' => $isAdmin,
+            'filters' => $request->only(['status', 'employee_id'])
         ]);
     }
 
@@ -87,11 +96,20 @@ class LeaveController extends Controller
 
         Leave::create($validated);
 
+        // إذا تمت الموافقة على الإجازة، تحديث سجلات الحضور
+        if ($validated['status'] === 'approved') {
+            $this->updateAttendanceForLeave($validated['employee_id'], $validated['start_date'], $validated['end_date']);
+        }
+
         return redirect()->back()->with('success', 'تمت إضافة إجازة الموظف بنجاح.');
     }
 
     public function update(Request $request, Leave $leave)
     {
+        if ($leave->status === 'approved') {
+            return back()->with('error', 'لا يمكن تعديل إجازة تم اعتمادها مسبقاً.');
+        }
+
         $validated = $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'academic_year_id' => 'required|exists:academic_years,id',
@@ -123,14 +141,45 @@ class LeaveController extends Controller
              return back()->withErrors(['leave_type_id' => 'لا يوجد رصيد متاح للموظف من هذا النوع في السنة المحددة.']);
         }
 
+        $oldStatus = $leave->status;
+        $oldStart = $leave->start_date;
+        $oldEnd = $leave->end_date;
+        $oldLeaveTypeId = $leave->leave_type_id;
+        $oldAcademicYearId = $leave->academic_year_id;
+
         $leave->update($validated);
+
+        // الرصيد (used_days) يتم حسابه تلقائياً عبر accessor في المودل فلا حاجة لتحديثه هنا
+
+        // تحديث سجلات الحضور إذا تمت الموافقة
+        if ($validated['status'] === 'approved') {
+            $this->updateAttendanceForLeave($validated['employee_id'], $validated['start_date'], $validated['end_date']);
+        }
 
         return redirect()->back()->with('success', 'تم تحديث إجازة الموظف بنجاح.');
     }
 
     public function destroy(Leave $leave)
     {
+        if ($leave->status === 'approved') {
+            return back()->with('error', 'لا يمكن حذف إجازة تم اعتمادها مسبقاً.');
+        }
+
         $leave->delete();
         return redirect()->back()->with('success', 'تم حذف إجازة الموظف بنجاح.');
     }
+
+    /**
+     * تحديث سجلات الحضور لفترة الإجازة المعتمدة
+     * يُحوّل سجلات "غائب" أو "weekend" الموجودة إلى "leave"
+     * والسجلات غير الموجودة يتركها للتوليد التلقائي عند تحميل الصفحة
+     */
+    private function updateAttendanceForLeave(int $employeeId, string $startDate, string $endDate): void
+    {
+        \App\Models\Attendance::where('employee_id', $employeeId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereIn('status', ['absent', 'weekend', 'excused'])
+            ->update(['status' => 'leave']);
+    }
 }
+

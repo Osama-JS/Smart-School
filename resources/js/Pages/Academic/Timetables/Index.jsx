@@ -1,16 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { CalendarDays, Filter, Plus, User, BookOpen, Trash2, Search, AlertCircle, X, Check } from 'lucide-react';
+import { CalendarDays, Filter, Plus, User, BookOpen, Trash2, Search, AlertCircle, X, Check, Calculator, FlaskConical, Globe, Laptop, Music, Palette, Microscope, Languages, Feather } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 import Modal from '@/Components/Modal';
 
+const SUBJECT_ICONS = {
+    'BookOpen': BookOpen,
+    'Calculator': Calculator,
+    'FlaskConical': FlaskConical,
+    'Globe': Globe,
+    'Laptop': Laptop,
+    'Music': Music,
+    'Palette': Palette,
+    'Microscope': Microscope,
+    'Languages': Languages,
+    'Feather': Feather,
+};
+
 export default function TimetableIndex({ academicYears, sections, periods, timetable, workingDays, daysTranslation, subjects, teachers, filters }) {
     
+    // Helpers for defaults
+    const getInitialYear = () => filters.academic_year_id || academicYears.find(y => y.is_active)?.id || academicYears[0]?.id || '';
+    const initialYearId = getInitialYear();
+    const initialSemesters = academicYears.find(y => y.id == initialYearId)?.semesters || [];
+    const getInitialSemester = () => filters.semester_id || initialSemesters.find(s => s.is_active)?.id || initialSemesters[0]?.id || '';
+
     // Cascading Filter States
-    const [selectedYear, setSelectedYear] = useState(filters.academic_year_id || (academicYears.length > 0 ? academicYears[0].id : ''));
-    const [availableSemesters, setAvailableSemesters] = useState([]);
-    const [selectedSemester, setSelectedSemester] = useState(filters.semester_id || '');
+    const [selectedYear, setSelectedYear] = useState(initialYearId);
+    const [availableSemesters, setAvailableSemesters] = useState(initialSemesters);
+    const [selectedSemester, setSelectedSemester] = useState(getInitialSemester());
     
     const [selectedSection, setSelectedSection] = useState(filters.section_id || '');
     const [availableGrades, setAvailableGrades] = useState([]);
@@ -202,7 +221,7 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                 </div>
 
                 {/* Timetable Grid */}
-                {selectedDivision && filters.division_id == selectedDivision ? (
+                {selectedDivision && filters.division_id == selectedDivision && filters.semester_id == selectedSemester ? (
                     <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-right border-collapse">
@@ -238,7 +257,10 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                                                                 </button>
                                                                 
                                                                 <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-bold text-sm mb-2">
-                                                                    <BookOpen size={14} />
+                                                                    {(() => {
+                                                                        const IconComponent = SUBJECT_ICONS[slot.subject?.icon] || BookOpen;
+                                                                        return <IconComponent size={14} />;
+                                                                    })()}
                                                                     <span className="line-clamp-1">{slot.subject.name}</span>
                                                                 </div>
                                                                 <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-xs mt-auto">
@@ -262,14 +284,35 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                         </div>
                     </div>
                 ) : (
-                    filters.division_id && (
-                        <div className="p-12 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
-                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-400 mb-4">
-                                <CalendarDays size={32} />
-                            </div>
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">اختر الشعبة واضغط عرض الجدول</h3>
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden p-8 md:p-16 text-center">
+                        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 mb-6">
+                            <CalendarDays size={48} />
                         </div>
-                    )
+                        <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white mb-6">كيفية عرض وإدارة الجدول الدراسي؟</h2>
+                        <div className="max-w-2xl mx-auto grid gap-4 text-right">
+                            <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                                <span className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-black text-lg">1</span>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-white mb-1">تحديد السنة والفصل الدراسي</h4>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">قم باختيار السنة الدراسية ثم الفصل (الترم) المراد بناء وتعديل الجدول الخاص به. (تلقائياً يكون الفصل النشط هو المحدد).</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                                <span className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-black text-lg">2</span>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-white mb-1">تحديد الفئة المستهدفة</h4>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">قم باختيار (القسم) ثم (الصف) ثم (الشعبة). بناء الجداول يتم على مستوى الشعبة الدراسية.</p>
+                                </div>
+                            </div>
+                            <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                                <span className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-black text-lg">3</span>
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-white mb-1">عرض الجدول وتعيين الحصص</h4>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">انقر على زر <strong className="text-indigo-600">عرض الجدول</strong> ليظهر لك الجدول. يمكنك بعدها النقر على أي خانة فارغة لتعيين المادة والمعلم للحصة.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
 

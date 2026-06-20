@@ -11,7 +11,8 @@ class DailyPeriodController extends Controller
 {
     public function index()
     {
-        $periods = DailyPeriod::orderBy('start_time')->get();
+        $branchId = auth()->user()->branch_id;
+        $periods = DailyPeriod::where('branch_id', $branchId)->orderBy('start_time')->get();
         return Inertia::render('Academic/Timetables/Periods', compact('periods'));
     }
 
@@ -22,6 +23,8 @@ class DailyPeriodController extends Controller
             'start_time'  => 'required|date_format:H:i',
             'end_time'    => 'required|date_format:H:i|after:start_time',
         ]);
+
+        $validated['branch_id'] = auth()->user()->branch_id;
 
         DailyPeriod::create($validated);
 

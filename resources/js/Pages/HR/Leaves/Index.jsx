@@ -5,7 +5,7 @@ import FlatpickrInput from '@/Components/FlatpickrInput';
 import { Calendar, Plus, Edit2, Trash2, X, Save, Clock, CheckCircle, XCircle } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 
-export default function LeavesIndex({ leaves, employees, academicYears = [], leaveTypes = [], isAdmin }) {
+export default function LeavesIndex({ leaves, employees, academicYears = [], leaveTypes = [], isAdmin, filters = {} }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingLeave, setEditingLeave] = useState(null);
 
@@ -65,6 +65,17 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
         }
     };
 
+    const handleFilterChange = (key, value) => {
+        router.get(route('hr.leaves.index'), { ...filters, [key]: value }, { preserveState: true, preserveScroll: true });
+    };
+
+    const stats = {
+        total: leaves.length,
+        approved: leaves.filter(l => l.status === 'approved').length,
+        pending: leaves.filter(l => l.status === 'pending').length,
+        rejected: leaves.filter(l => l.status === 'rejected').length,
+    };
+
 
     const leaveStatuses = [
         { value: 'pending', label: 'قيد الانتظار' },
@@ -104,6 +115,74 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                     </button>
                 </div>
 
+                {/* Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-[#121820]/60 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">إجمالي الطلبات</p>
+                            <h3 className="text-2xl font-black text-dark-900 dark:text-white mt-1">{stats.total}</h3>
+                        </div>
+                        <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-500">
+                            <Clock size={24} />
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-[#121820]/60 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">الموافق عليها</p>
+                            <h3 className="text-2xl font-black text-emerald-500 mt-1">{stats.approved}</h3>
+                        </div>
+                        <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
+                            <CheckCircle size={24} />
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-[#121820]/60 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">قيد الانتظار</p>
+                            <h3 className="text-2xl font-black text-amber-500 mt-1">{stats.pending}</h3>
+                        </div>
+                        <div className="w-12 h-12 bg-amber-50 dark:bg-amber-500/10 rounded-2xl flex items-center justify-center text-amber-500">
+                            <Clock size={24} />
+                        </div>
+                    </div>
+                    <div className="bg-white dark:bg-[#121820]/60 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">المرفوضة</p>
+                            <h3 className="text-2xl font-black text-rose-500 mt-1">{stats.rejected}</h3>
+                        </div>
+                        <div className="w-12 h-12 bg-rose-50 dark:bg-rose-500/10 rounded-2xl flex items-center justify-center text-rose-500">
+                            <XCircle size={24} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                        <SelectInput
+                            options={[
+                                { value: '', label: 'جميع الموظفين' },
+                                ...employees.map(e => ({ value: e.id, label: `${e.first_name} ${e.last_name}` }))
+                            ]}
+                            value={filters.employee_id || ''}
+                            onChange={(val) => handleFilterChange('employee_id', val)}
+                            placeholder="فلترة بالموظف..."
+                        />
+                    </div>
+                    <div className="flex-1">
+                        <SelectInput
+                            options={[
+                                { value: '', label: 'جميع الحالات' },
+                                { value: 'pending', label: 'قيد الانتظار' },
+                                { value: 'approved', label: 'موافق عليها' },
+                                { value: 'rejected', label: 'مرفوضة' }
+                            ]}
+                            value={filters.status || ''}
+                            onChange={(val) => handleFilterChange('status', val)}
+                            placeholder="فلترة بالحالة..."
+                        />
+                    </div>
+                </div>
+
                 {/* List */}
                 <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
@@ -135,7 +214,11 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                                                 {leave.leave_type?.name || '-'}
                                             </td>
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300 font-mono text-sm">
-                                                {leave.start_date} <br/> <span className="text-slate-400">إلى</span> {leave.end_date}
+                                                <div className="flex items-center gap-2">
+                                                    <span>{new Date(leave.start_date).toLocaleDateString('ar-SA')}</span>
+                                                    <span className="text-slate-400">-</span>
+                                                    <span>{new Date(leave.end_date).toLocaleDateString('ar-SA')}</span>
+                                                </div>
                                             </td>
                                             <td className="py-4 px-6 text-slate-500 text-sm max-w-xs truncate">
                                                 {leave.reason || '-'}
@@ -145,12 +228,18 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                                             </td>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={() => openModal(leave)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary-500 transition-colors">
-                                                        <Edit2 size={16} />
-                                                    </button>
-                                                    <button onClick={() => handleDelete(leave.id)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-500/10 transition-colors">
-                                                        <Trash2 size={16} />
-                                                    </button>
+                                                    {leave.status !== 'approved' ? (
+                                                        <>
+                                                            <button onClick={() => openModal(leave)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary-500 transition-colors">
+                                                                <Edit2 size={16} />
+                                                            </button>
+                                                            <button onClick={() => handleDelete(leave.id)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-500/10 transition-colors">
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1"><CheckCircle size={14} /> مقفلة</div>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

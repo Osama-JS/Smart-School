@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Head, router, usePage, Link } from '@inertiajs/react';
+import { Head, router, usePage, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
     CheckSquare, Clock, UserX, UserCheck, AlertTriangle,
     Calendar, Search, Filter, MapPin, Building2, Edit2,
-    X, Save, Users, TimerOff, ChevronDown, Download, Printer, ArrowUp, ArrowDown, ArrowUpDown
+    X, Save, Users, TimerOff, ChevronDown, ChevronLeft, ChevronRight, Download, Printer, ArrowUp, ArrowDown, ArrowUpDown, PartyPopper
 } from 'lucide-react';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 import SelectInput from '@/Components/SelectInput';
+import Swal from 'sweetalert2';
 
 // ── Status Badge ─────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -39,6 +40,27 @@ const StatusBadge = ({ status }) => {
             text: 'text-slate-650 dark:text-slate-350',      
             border: 'border-slate-200 dark:border-slate-800',
             dot: 'bg-slate-400 dark:bg-slate-500'   
+        },
+        weekend: {
+            label: 'غير مداوم',
+            bg: 'bg-blue-50 dark:bg-blue-950/20',
+            text: 'text-blue-600 dark:text-blue-400',
+            border: 'border-blue-100 dark:border-blue-900/20',
+            dot: 'bg-blue-400'
+        },
+        holiday: {
+            label: 'إجازة رسمية',
+            bg: 'bg-purple-50 dark:bg-purple-950/20',
+            text: 'text-purple-600 dark:text-purple-400',
+            border: 'border-purple-100 dark:border-purple-900/20',
+            dot: 'bg-purple-400'
+        },
+        leave: {
+            label: 'إجازة',
+            bg: 'bg-indigo-50 dark:bg-indigo-950/20',
+            text: 'text-indigo-600 dark:text-indigo-400',
+            border: 'border-indigo-100 dark:border-indigo-900/20',
+            dot: 'bg-indigo-400'
         },
     };
     const s = map[status] || map.absent;
@@ -81,81 +103,106 @@ const StatCard = ({ icon: Icon, label, value, color, bg, idx }) => {
 
 // ── Edit Modal ────────────────────────────────────────────────
 const EditModal = ({ record, onClose }) => {
+    const shiftStart = record.shift?.start_time ? record.shift.start_time.slice(0,5) : '';
+    const shiftEnd = record.shift?.end_time ? record.shift.end_time.slice(0,5) : '';
+
     const [form, setForm] = useState({
-        check_in:    record.check_in    ? record.check_in.slice(0,5)  : '',
-        check_out:   record.check_out   ? record.check_out.slice(0,5) : '',
-        status:      record.status,
-        late_minutes: record.late_minutes ?? 0,
+        check_in:    record.check_in    ? record.check_in.slice(0,5)  : shiftStart,
+        check_out:   record.check_out   ? record.check_out.slice(0,5) : shiftEnd,
     });
     const [saving, setSaving] = useState(false);
 
+    const computeLateMinutes = (checkIn, start) => {
+        if (!checkIn || !start) return 0;
+        const [cH, cM] = checkIn.split(':').map(Number);
+        const [sH, sM] = start.split(':').map(Number);
+        const late = (cH * 60 + cM) - (sH * 60 + sM);
+        return late > 0 ? late : 0;
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
+        
+        let calculatedStatus = 'absent';
+        let calculatedLateMinutes = 0;
+
+        if (form.check_in) {
+            const lateMins = computeLateMinutes(form.check_in, shiftStart);
+            if (lateMins > 0) {
+                calculatedStatus = 'late';
+                calculatedLateMinutes = lateMins;
+            } else {
+                calculatedStatus = 'present';
+            }
+        }
+
+        const payload = {
+            ...form,
+            status: calculatedStatus,
+            late_minutes: calculatedLateMinutes
+        };
+
         setSaving(true);
-        router.put(route('hr.attendance.update', record.id), form, {
+        router.put(route('hr.attendance.update', record.id), payload, {
             onSuccess: () => { setSaving(false); onClose(); },
             onError:   () =>   setSaving(false),
         });
     };
+
+    const formattedDate = new Date(record.date).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-white dark:bg-[#121820] rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden border border-slate-100 dark:border-slate-800 animate-scale-in">
                 <div className="flex items-center justify-between p-6 border-b border-slate-50 dark:border-slate-800/80">
-                    <h3 className="font-bold text-dark-900 dark:text-white text-lg">تعديل سجل الحضور</h3>
+                    <h3 className="font-bold text-dark-900 dark:text-white text-lg">تفاصيل الحضور والانصراف</h3>
                     <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-400 transition-colors">✕</button>
                 </div>
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-3.5 flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold text-sm">
-                            {record.employee?.name?.[0] ?? '؟'}
+                    <div className="bg-slate-50 dark:bg-slate-900/60 rounded-2xl p-4 flex items-center gap-4 border border-slate-100 dark:border-slate-800">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white font-black text-lg shadow-sm">
+                            {record.employee?.user?.name?.[0] ?? '؟'}
                         </div>
                         <div>
-                            <p className="font-bold text-dark-900 dark:text-white text-sm">{record.employee?.name}</p>
-                            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-mono">{record.date}</p>
+                            <p className="font-black text-dark-900 dark:text-white text-base">{record.employee?.user?.name}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formattedDate}</p>
+                            {record.shift && (
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-[11px] text-primary-700 dark:text-primary-300 font-bold bg-primary-100/50 dark:bg-primary-900/30 px-2 py-1 rounded-lg">
+                                        شفت: {record.shift.name}
+                                    </span>
+                                    <span className="text-[11px] text-slate-500 font-bold bg-white dark:bg-slate-800 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                                        {shiftStart} - {shiftEnd}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-4 pt-2">
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-450 mb-1.5">وقت الدخول</label>
+                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2">وقت تسجيل الدخول</label>
                             <FlatpickrInput type="time" value={form.check_in} onChange={time => setForm({...form, check_in: time})} />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-450 mb-1.5">وقت الخروج</label>
+                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2">وقت الانصراف</label>
                             <FlatpickrInput type="time" value={form.check_out} onChange={time => setForm({...form, check_out: time})} />
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-450 mb-1.5">الحالة</label>
-                        <SelectInput value={form.status} onChange={val => setForm({...form, status: val})}
-                            options={[
-                                { value: 'present', label: 'حاضر' },
-                                { value: 'late', label: 'متأخر' },
-                                { value: 'absent', label: 'غائب' },
-                                { value: 'excused', label: 'غياب بعذر' }
-                            ]}
-                        />
+                    <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-3 text-xs text-blue-600 dark:text-blue-400 font-semibold flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                        سيتم احتساب حالة الدوام (حاضر، متأخر) تلقائياً بناءً على وقت الدخول.
                     </div>
 
-                    {(form.status === 'late') && (
-                        <div>
-                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-450 mb-1.5">دقائق التأخير</label>
-                            <input type="number" min="0" value={form.late_minutes}
-                                onChange={e => setForm({...form, late_minutes: +e.target.value})}
-                                className="w-full border border-slate-200 dark:border-slate-850 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl px-4 py-2.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all" />
-                        </div>
-                    )}
-
-                    <div className="flex gap-3 pt-2">
+                    <div className="flex gap-3 pt-4">
                         <button type="submit" disabled={saving}
-                            className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl text-sm font-bold disabled:opacity-60 transition-all shadow-sm">
-                            <Save size={15} />
-                            <span>{saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}</span>
+                            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl text-sm font-bold disabled:opacity-60 transition-all shadow-md shadow-primary-500/20 hover:shadow-lg">
+                            <Save size={16} />
+                            <span>{saving ? 'جاري الحفظ...' : 'حفظ التوقيت'}</span>
                         </button>
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-sm font-bold transition-colors">
+                        <button type="button" onClick={onClose} className="px-5 py-3 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-sm font-bold transition-colors">
                             إلغاء
                         </button>
                     </div>
@@ -452,12 +499,107 @@ const BulkEditModal = ({ selectedCount, onClose, onSubmit }) => {
     );
 };
 
+// ── Register Leave Modal ──────────────────────────────────────
+const RegisterLeaveModal = ({ record, leaveTypes, leaveBalances, academicYears, onClose }) => {
+    const defaultAcademicYear = academicYears.find(ay => ay.is_active) || academicYears[0];
+    const { data, setData, post, processing, errors, reset } = useForm({
+        employee_id: record.employee_id,
+        academic_year_id: record.academic_year_id || (defaultAcademicYear ? defaultAcademicYear.id : ''),
+        semester_id: record.semester_id || '',
+        leave_type_id: '',
+        start_date: record.date,
+        end_date: record.date,
+        status: 'approved',
+        reason: '',
+    });
+
+    const submit = (e) => {
+        e.preventDefault();
+        post(route('hr.leaves.store'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                onClose();
+                reset();
+            }
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative bg-white dark:bg-[#121820] rounded-3xl shadow-2xl w-full max-w-lg z-10 overflow-hidden border border-slate-100 dark:border-slate-800 animate-scale-in flex flex-col max-h-[90vh]">
+                <div className="flex items-center justify-between p-6 border-b border-slate-50 dark:border-slate-800/80 shrink-0">
+                    <div>
+                        <h3 className="font-black text-dark-900 dark:text-white text-lg">تسجيل إجازة للموظف</h3>
+                        <p className="text-slate-500 text-sm mt-1 font-bold">الموظف: <span className="text-primary-600 dark:text-primary-400">{record.employee?.user?.name || 'غير معروف'}</span></p>
+                    </div>
+                    <button type="button" onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-400 transition-colors">✕</button>
+                </div>
+                <div className="overflow-y-auto p-6">
+                    <form id="register-leave-form" onSubmit={submit} className="space-y-4">
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-650 dark:text-slate-400 mb-1">نوع الإجازة <span className="text-accent-500">*</span></label>
+                            <SelectInput
+                                value={data.leave_type_id}
+                                onChange={val => setData('leave_type_id', val)}
+                                options={leaveTypes.map(lt => {
+                                    const balance = leaveBalances.find(lb => lb.employee_id === record.employee_id && lb.leave_type_id === lt.id);
+                                    const remaining = balance ? Math.max(0, balance.total_days - (balance.used_days || 0)) : 0;
+                                    return { value: lt.id, label: `${lt.name} (الرصيد المتبقي: ${remaining} يوم)` };
+                                })}
+                                placeholder="اختر نوع الإجازة"
+                            />
+                            {errors.leave_type_id && <p className="text-accent-500 text-xs mt-1">{errors.leave_type_id}</p>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-650 dark:text-slate-400 mb-1">من تاريخ <span className="text-accent-500">*</span></label>
+                                <FlatpickrInput type="date" value={data.start_date} onChange={date => setData('start_date', date)} />
+                                {errors.start_date && <p className="text-accent-500 text-xs mt-1">{errors.start_date}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-[11px] font-bold text-slate-650 dark:text-slate-400 mb-1">إلى تاريخ <span className="text-accent-500">*</span></label>
+                                <FlatpickrInput type="date" value={data.end_date} onChange={date => setData('end_date', date)} />
+                                {errors.end_date && <p className="text-accent-500 text-xs mt-1">{errors.end_date}</p>}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-[11px] font-bold text-slate-650 dark:text-slate-400 mb-1">السبب (اختياري)</label>
+                            <textarea
+                                value={data.reason}
+                                onChange={e => setData('reason', e.target.value)}
+                                rows={2}
+                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820]/60 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all dark:text-white"
+                                placeholder="اكتب سبب الإجازة هنا..."
+                            ></textarea>
+                            {errors.reason && <p className="text-accent-500 text-xs mt-1">{errors.reason}</p>}
+                        </div>
+                    </form>
+                </div>
+                <div className="p-6 border-t border-slate-50 dark:border-slate-800/80 shrink-0 bg-slate-50/50 dark:bg-slate-900/20">
+                    <div className="flex gap-3">
+                        <button type="submit" form="register-leave-form" disabled={processing}
+                            className="flex-1 flex items-center justify-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl text-sm font-bold disabled:opacity-60 transition-all shadow-sm">
+                            <Save size={16} />
+                            <span>{processing ? 'جاري الحفظ...' : 'حفظ الإجازة واعتمادها'}</span>
+                        </button>
+                        <button type="button" onClick={onClose} className="px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-650 dark:text-slate-300 rounded-xl text-sm font-bold transition-all">
+                            إلغاء
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ── Main Page ─────────────────────────────────────────────────
-export default function AttendanceIndex({ records, stats, weeklyTrend = [], branches, shifts, departments = [], academicYears = [], filters, today, startDate, endDate }) {
+export default function AttendanceIndex({ records, stats, weeklyTrend = [], branches, shifts, departments = [], academicYears = [], filters, today, startDate, endDate, isSystemAdmin, activeHolidays = [], leaveTypes = [], leaveBalances = [] }) {
     const { flash } = usePage().props;
     const [editRecord, setEditRecord] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
     const [showBulkModal, setShowBulkModal] = useState(false);
+    const [leaveRecord, setLeaveRecord] = useState(null);
 
     const handleBulkSubmit = (form, setSaving) => {
         router.post(route('hr.attendance.bulk-update'), {
@@ -474,6 +616,7 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
             }
         });
     };
+
     const [search, setSearch]         = useState(filters.search ?? '');
     const [customStartDate, setCustomStartDate] = useState(filters.start_date ?? startDate);
     const [customEndDate, setCustomEndDate] = useState(filters.end_date ?? endDate);
@@ -527,7 +670,7 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
             if (!e.target.closest('.status-switcher-btn') && !e.target.closest('.status-switcher-popover')) {
                 setActiveStatusSwitcherId(null);
             }
-            if (!e.target.closest('.date-picker-btn') && !e.target.closest('.date-picker-popover')) {
+            if (!e.target.closest('.date-picker-btn') && !e.target.closest('.date-picker-popover') && !e.target.closest('.flatpickr-calendar')) {
                 setShowDatePicker(false);
             }
         };
@@ -608,6 +751,36 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
         searchTimeout.current = setTimeout(() => {
             applyFilter({ search: val });
         }, 400);
+    };
+
+    const confirmAbsence = (rec) => {
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        Swal.fire({
+            title: 'تأكيد تسجيل الغياب',
+            html: `هل أنت متأكد من تسجيل الموظف <b class="text-primary-600 dark:text-primary-400">${rec.employee?.user?.name}</b> كغائب لهذا اليوم؟`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، سجل غياب',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: isDarkMode ? '#334155' : '#94a3b8',
+            background: isDarkMode ? '#1e293b' : '#fff',
+            color: isDarkMode ? '#f8fafc' : '#0f172a',
+            customClass: {
+                popup: 'rounded-3xl border border-slate-100 dark:border-slate-800',
+                confirmButton: 'rounded-xl font-bold px-6',
+                cancelButton: 'rounded-xl font-bold px-6'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.put(route('hr.attendance.update', rec.id), {
+                    status: 'absent',
+                    check_in: '',
+                    check_out: '',
+                    late_minutes: 0,
+                }, { preserveScroll: true });
+            }
+        });
     };
 
     const handleInlineStatusChange = (record, newStatus) => {
@@ -729,10 +902,10 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
 
             <div className="space-y-6">
                 {/* Page Header - Branded */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none no-print">
+                <div className="relative bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none no-print">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
-                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden rounded-3xl">
                         <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
                             <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
@@ -748,65 +921,96 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                             <p className="text-primary-700/80 dark:text-primary-300/80 text-sm mt-2 font-semibold">متابعة حضور الموظفين وتفاصيل الدوام المدرسي اليومي</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-3 self-end lg:self-auto">
-                            <div className="relative date-picker-popover">
-                                <button onClick={() => setShowDatePicker(!showDatePicker)}
-                                    className="flex items-center gap-2 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 hover:border-primary-400 rounded-2xl px-4 py-2.5 shadow-sm text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors date-picker-btn">
-                                    <Calendar size={16} className="text-slate-400 dark:text-slate-500" />
-                                    <span>
-                                        {customStartDate === customEndDate 
-                                            ? new Date(customStartDate).toLocaleDateString('ar-EG', {month: 'long', day: 'numeric'})
-                                            : `${new Date(customStartDate).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'})} - ${new Date(customEndDate).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'})}`
-                                        }
-                                    </span>
-                                    <ChevronDown size={14} className="text-slate-400" />
+                            <div className="flex items-center gap-1">
+                                <button 
+                                    onClick={() => {
+                                        const d = new Date(customStartDate);
+                                        d.setDate(d.getDate() - 1);
+                                        const dateStr = d.toISOString().split('T')[0];
+                                        applyDatePreset(dateStr, dateStr);
+                                    }}
+                                    className="p-2.5 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 hover:border-primary-400 rounded-2xl shadow-sm text-slate-500 hover:text-primary-600 transition-colors"
+                                    title="اليوم السابق"
+                                >
+                                    <ChevronRight size={18} />
                                 </button>
 
-                                {showDatePicker && (
-                                    <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-30 p-4 flex flex-col gap-4 animate-scale-in">
-                                        <span className="text-xs font-black text-slate-400 dark:text-slate-500">اختر النطاق الزمني:</span>
+                                <div className="relative date-picker-popover">
+                                    <button onClick={() => setShowDatePicker(!showDatePicker)}
+                                        className="flex items-center gap-2 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 hover:border-primary-400 rounded-2xl px-4 py-2.5 shadow-sm text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors date-picker-btn">
+                                        <Calendar size={16} className="text-slate-400 dark:text-slate-500" />
+                                        <span>
+                                            {customStartDate === customEndDate 
+                                                ? new Date(customStartDate).toLocaleDateString('ar-EG', {month: 'long', day: 'numeric'})
+                                                : `${new Date(customStartDate).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'})} - ${new Date(customEndDate).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'})}`
+                                            }
+                                        </span>
+                                        <ChevronDown size={14} className="text-slate-400" />
+                                    </button>
+
+                                    {showDatePicker && (
+                                    <div className="fixed z-[200] mt-2 w-72 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-4 flex flex-col gap-3 animate-scale-in date-picker-popover"
+                                        style={{
+                                            top: (() => { const btn = document.querySelector('.date-picker-btn'); if (!btn) return 80; const r = btn.getBoundingClientRect(); return r.bottom + 8; })(),
+                                            left: (() => { const btn = document.querySelector('.date-picker-btn'); if (!btn) return 'auto'; const r = btn.getBoundingClientRect(); return Math.max(8, r.left); })(),
+                                        }}
+                                    >
+                                        <span className="text-xs font-black text-slate-500 dark:text-slate-400">اختر اليوم:</span>
                                         
+                                        {/* Quick shortcuts */}
                                         <div className="grid grid-cols-2 gap-2">
                                             <button onClick={() => { const p = getPresetDates(); applyDatePreset(p.today.start, p.today.end); }}
-                                                className="px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 text-slate-700 dark:text-slate-200 hover:text-primary-600 rounded-xl text-xs font-bold transition-all text-center">
+                                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all text-center ${
+                                                    customStartDate === today
+                                                        ? 'bg-primary-500 text-white shadow-sm'
+                                                        : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 text-slate-700 dark:text-slate-200 hover:text-primary-600'
+                                                }`}>
                                                 اليوم
                                             </button>
                                             <button onClick={() => { const p = getPresetDates(); applyDatePreset(p.yesterday.start, p.yesterday.end); }}
-                                                className="px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 text-slate-700 dark:text-slate-200 hover:text-primary-600 rounded-xl text-xs font-bold transition-all text-center">
+                                                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all text-center ${
+                                                    customStartDate === (() => { const d = new Date(today); d.setDate(d.getDate()-1); return d.toISOString().split('T')[0]; })()
+                                                        ? 'bg-primary-500 text-white shadow-sm'
+                                                        : 'bg-slate-50 dark:bg-slate-900/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 text-slate-700 dark:text-slate-200 hover:text-primary-600'
+                                                }`}>
                                                 أمس
-                                            </button>
-                                            <button onClick={() => { const p = getPresetDates(); applyDatePreset(p.last7.start, p.last7.end); }}
-                                                className="px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 text-slate-700 dark:text-slate-200 hover:text-primary-600 rounded-xl text-xs font-bold transition-all text-center">
-                                                آخر 7 أيام
-                                            </button>
-                                            <button onClick={() => { const p = getPresetDates(); applyDatePreset(p.thisMonth.start, p.thisMonth.end); }}
-                                                className="px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 text-slate-700 dark:text-slate-200 hover:text-primary-600 rounded-xl text-xs font-bold transition-all text-center">
-                                                هذا الشهر
-                                            </button>
-                                            <button onClick={() => { const p = getPresetDates(); applyDatePreset(p.lastMonth.start, p.lastMonth.end); }}
-                                                className="px-3 py-2 bg-slate-50 dark:bg-slate-900/50 hover:bg-primary-50 dark:hover:bg-primary-950/20 text-slate-700 dark:text-slate-200 hover:text-primary-600 rounded-xl text-xs font-bold transition-all text-center col-span-2">
-                                                الشهر الماضي
                                             </button>
                                         </div>
 
+                                        {/* Single date input */}
                                         <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex flex-col gap-2">
-                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">نطاق مخصص:</span>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <label className="block text-[9px] font-bold text-slate-500 mb-1">من</label>
-                                                    <FlatpickrInput type="date" value={customStartDate} onChange={date => setCustomStartDate(date)} />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[9px] font-bold text-slate-500 mb-1">إلى</label>
-                                                    <FlatpickrInput type="date" value={customEndDate} onChange={date => setCustomEndDate(date)} />
-                                                </div>
-                                            </div>
-                                            <button onClick={() => { setShowDatePicker(false); applyFilter({ start_date: customStartDate, end_date: customEndDate }); }}
-                                                className="w-full mt-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl py-2 text-xs font-bold hover:shadow-md transition-all">
-                                                تطبيق
+                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">أو اختر تاريخاً محدداً:</span>
+                                            <FlatpickrInput
+                                                type="date"
+                                                value={customStartDate}
+                                                onChange={date => {
+                                                    if (date) {
+                                                        setCustomStartDate(date);
+                                                        setCustomEndDate(date);
+                                                    }
+                                                }}
+                                            />
+                                            <button onClick={() => { setShowDatePicker(false); applyFilter({ start_date: customStartDate, end_date: customStartDate }); }}
+                                                className="w-full mt-1 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl py-2 text-xs font-bold hover:shadow-md transition-all">
+                                                تطبيق وعرض السجلات
                                             </button>
                                         </div>
                                     </div>
-                                )}
+                                    )}
+                                </div>
+
+                                <button 
+                                    onClick={() => {
+                                        const d = new Date(customStartDate);
+                                        d.setDate(d.getDate() + 1);
+                                        const dateStr = d.toISOString().split('T')[0];
+                                        applyDatePreset(dateStr, dateStr);
+                                    }}
+                                    className="p-2.5 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 hover:border-primary-400 rounded-2xl shadow-sm text-slate-500 hover:text-primary-600 transition-colors"
+                                    title="اليوم التالي"
+                                >
+                                    <ChevronLeft size={18} />
+                                </button>
                             </div>
 
                             <button onClick={exportToCSV}
@@ -854,6 +1058,23 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                         </div>
                     </div>
                 </div>
+
+                {/* Active Holidays Banner */}
+                {activeHolidays && activeHolidays.length > 0 && (
+                    <div className="flex flex-col gap-2 mb-6 no-print">
+                        {activeHolidays.map((holiday, idx) => (
+                            <div key={idx} className="flex items-center gap-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-5 py-4 rounded-2xl text-sm shadow-md animate-slide-down">
+                                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-sm">
+                                    <PartyPopper size={20} className="text-white drop-shadow-md" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="font-black text-lg drop-shadow-sm">إجازة رسمية: {holiday.name}</span>
+                                    {holiday.notes && <span className="text-purple-100 text-xs mt-0.5 font-semibold">{holiday.notes}</span>}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Visual Analytics Widget */}
                 <AttendanceAnalyticsWidget stats={stats} weeklyTrend={weeklyTrend} />
@@ -968,6 +1189,7 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                     />
                                 </div>
                                 {/* Branch Filter */}
+                                {isSystemAdmin && (
                                 <div className="group/select flex flex-col">
                                     <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الفرع</label>
                                     <SelectInput value={branchId} onChange={val => { setBranchId(val); applyFilter({ branch_id: val }); }}
@@ -977,6 +1199,7 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                         ]}
                                     />
                                 </div>
+                                )}
                                 {/* Shift Filter */}
                                 <div className="group/select flex flex-col">
                                     <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الشفت</label>
@@ -1071,8 +1294,9 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                                 <td className="px-4 py-4 text-center w-12 no-print">
                                                     <input
                                                         type="checkbox"
-                                                        className="rounded text-primary-500 focus:ring-primary-500/10 cursor-pointer"
+                                                        className="rounded text-primary-500 focus:ring-primary-500/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                                         checked={selectedIds.includes(rec.id)}
+                                                        disabled={['weekend', 'holiday', 'leave'].includes(rec.status)}
                                                         onChange={(e) => {
                                                             if (e.target.checked) {
                                                                 setSelectedIds(prev => [...prev, rec.id]);
@@ -1091,11 +1315,15 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                                         }} className="text-slate-400 hover:text-slate-600 transition-colors no-print">
                                                             <ChevronDown size={14} className={`transform transition-transform ${expandedRows.includes(rec.id) ? 'rotate-180' : ''}`} />
                                                         </button>
-                                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 dark:from-slate-850 dark:to-slate-950 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-105">
-                                                            {rec.employee?.name?.[0] ?? '؟'}
+                                                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 dark:from-slate-850 dark:to-slate-950 flex items-center justify-center text-white text-sm font-bold shrink-0 shadow-sm transition-transform duration-300 group-hover:scale-105 overflow-hidden">
+                                                            {rec.employee?.user?.profile_photo_url ? (
+                                                                <img src={rec.employee.user.profile_photo_url.startsWith('http') ? rec.employee.user.profile_photo_url : asset_url + rec.employee.user.profile_photo_url} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span>{rec.employee?.user?.name?.[0] ?? '؟'}</span>
+                                                            )}
                                                         </div>
                                                         <div>
-                                                            <p className="font-bold text-dark-900 dark:text-white text-[14px] leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">{rec.employee?.name}</p>
+                                                            <p className="font-bold text-dark-900 dark:text-white text-[14px] leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">{rec.employee?.user?.name}</p>
                                                             <p className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">{rec.employee?.department?.name ?? '—'}</p>
                                                         </div>
                                                     </div>
@@ -1139,15 +1367,21 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                                 )}
                                                 {visibleColumns.status && (
                                                     <td className="px-6 py-4 whitespace-nowrap relative">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setActiveStatusSwitcherId(activeStatusSwitcherId === rec.id ? null : rec.id);
-                                                            }}
-                                                            className="status-switcher-btn focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded-xl transition-all cursor-pointer hover:opacity-80 active:scale-95 no-print"
-                                                        >
-                                                            <StatusBadge status={rec.status} />
-                                                        </button>
+                                                        {['weekend', 'holiday', 'leave'].includes(rec.status) ? (
+                                                            <div className="no-print opacity-80 cursor-not-allowed inline-block">
+                                                                <StatusBadge status={rec.status} />
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setActiveStatusSwitcherId(activeStatusSwitcherId === rec.id ? null : rec.id);
+                                                                }}
+                                                                className="status-switcher-btn focus:outline-none focus:ring-2 focus:ring-primary-500/20 rounded-xl transition-all cursor-pointer hover:opacity-80 active:scale-95 no-print"
+                                                            >
+                                                                <StatusBadge status={rec.status} />
+                                                            </button>
+                                                        )}
                                                         <span className="hidden print:block">
                                                             <StatusBadge status={rec.status} />
                                                         </span>
@@ -1201,12 +1435,54 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                                     </td>
                                                 )}
                                                 <td className="px-6 py-4 whitespace-nowrap text-center no-print">
-                                                    <button
-                                                        onClick={() => setEditRecord(rec)}
-                                                        className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-900 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-600 dark:hover:text-primary-400 text-slate-400 dark:text-slate-500 inline-flex items-center justify-center transition-all border border-transparent hover:border-slate-200/50 dark:hover:border-slate-800"
-                                                    >
-                                                        <Edit2 size={14} />
-                                                    </button>
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        {/* زر تسجيل الحضور السريع — يعمل مع كل الحالات */}
+                                                        {!['present', 'late'].includes(rec.status) && (
+                                                            <button
+                                                                title="تسجيل حاضر"
+                                                                onClick={() => {
+                                                                    router.put(route('hr.attendance.update', rec.id), {
+                                                                        status: 'present',
+                                                                        check_in: rec.check_in ? rec.check_in.slice(0,5) : (rec.shift?.start_time ? rec.shift.start_time.slice(0,5) : new Date().toTimeString().slice(0,5)),
+                                                                        check_out: rec.check_out ? rec.check_out.slice(0,5) : '',
+                                                                        late_minutes: 0,
+                                                                    }, { preserveScroll: true });
+                                                                }}
+                                                                className="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-950/30 hover:bg-primary-100 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 inline-flex items-center justify-center transition-all border border-primary-100 dark:border-primary-900/40 hover:shadow-sm"
+                                                            >
+                                                                <UserCheck size={14} />
+                                                            </button>
+                                                        )}
+                                                        {/* زر تسجيل غياب السريع */}
+                                                        {!['absent', 'weekend', 'holiday', 'leave'].includes(rec.status) && (
+                                                            <button
+                                                                title="تسجيل غائب"
+                                                                onClick={() => confirmAbsence(rec)}
+                                                                className="h-8 px-2.5 rounded-xl bg-accent-50 dark:bg-accent-950/30 hover:bg-accent-500 text-accent-600 dark:text-accent-400 hover:text-white inline-flex items-center justify-center gap-1.5 transition-all border border-accent-100 dark:border-accent-900/40 hover:border-accent-500 hover:shadow-md hover:shadow-accent-500/20 group"
+                                                            >
+                                                                <UserX size={14} className="group-hover:scale-110 transition-transform" />
+                                                                <span className="text-[10px] font-black">غياب</span>
+                                                            </button>
+                                                        )}
+                                                        {/* زر تسجيل إجازة */}
+                                                        {!['weekend', 'holiday', 'leave'].includes(rec.status) && (
+                                                            <button
+                                                                title="تسجيل إجازة للموظف"
+                                                                onClick={() => setLeaveRecord(rec)}
+                                                                className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 inline-flex items-center justify-center transition-all border border-indigo-100 dark:border-indigo-900/40 hover:shadow-sm"
+                                                            >
+                                                                <Calendar size={14} />
+                                                            </button>
+                                                        )}
+                                                        {/* زر التعديل التفصيلي */}
+                                                        <button
+                                                            title="تعديل تفصيلي"
+                                                            onClick={() => setEditRecord(rec)}
+                                                            className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-900 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-600 dark:hover:text-primary-400 text-slate-400 dark:text-slate-500 inline-flex items-center justify-center transition-all border border-transparent hover:border-slate-200/50 dark:hover:border-slate-800"
+                                                        >
+                                                            <Edit2 size={14} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             {/* Expanded 30-Day Attendance Grid Row */}
@@ -1221,7 +1497,10 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                                                         present: 'bg-primary-500 dark:bg-primary-600 ring-primary-500/30',
                                                                         late: 'bg-warning-500 dark:bg-warning-600 ring-warning-500/30',
                                                                         absent: 'bg-accent-500 dark:bg-accent-600 ring-accent-500/30',
-                                                                        excused: 'bg-slate-450 dark:bg-slate-500 ring-slate-500/30',
+                                                                        excused: 'bg-slate-400 dark:bg-slate-500 ring-slate-500/30',
+                                                                        weekend: 'bg-blue-300 dark:bg-blue-700 ring-blue-300/30',
+                                                                        holiday: 'bg-purple-400 dark:bg-purple-600 ring-purple-400/30',
+                                                                        leave: 'bg-indigo-400 dark:bg-indigo-600 ring-indigo-400/30',
                                                                         none: 'bg-slate-100 dark:bg-slate-800 ring-slate-200/20'
                                                                     };
                                                                     const statusLabels = {
@@ -1229,7 +1508,10 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                                                         late: 'متأخر',
                                                                         absent: 'غائب',
                                                                         excused: 'بعذر',
-                                                                        none: 'إجازة / لا يوجد سجل'
+                                                                        weekend: 'غير مداوم',
+                                                                        holiday: 'إجازة رسمية',
+                                                                        leave: 'إجازة خاصة',
+                                                                        none: 'لا يوجد سجل'
                                                                     };
                                                                     const formatHistoryDate = (dateStr) => {
                                                                         const parts = dateStr.split('-');
@@ -1330,6 +1612,16 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                     selectedCount={selectedIds.length}
                     onClose={() => setShowBulkModal(false)}
                     onSubmit={handleBulkSubmit}
+                />
+            )}
+            {/* Add Leave Modal */}
+            {leaveRecord && (
+                <RegisterLeaveModal 
+                    record={leaveRecord}
+                    leaveTypes={leaveTypes}
+                    leaveBalances={leaveBalances}
+                    academicYears={academicYears}
+                    onClose={() => setLeaveRecord(null)}
                 />
             )}
         </AdminLayout>

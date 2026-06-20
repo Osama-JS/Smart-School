@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import { 
-    Home, Users, BookOpen, Shield, Newspaper, Bell, Smartphone, 
-    AlertTriangle, Calendar, FileText, CheckSquare, Star, Eye, 
-    ClipboardList, Map, Book, Library, BarChart, UserPlus, Settings,
-    Menu, ChevronDown, LogOut, User, Search, X,
-    PanelLeftClose, PanelLeftOpen, ShieldCheck, Store, Clock,
-    LayoutDashboard, Briefcase, Sun, Moon, Layers, Activity, Sliders
+    LayoutDashboard, Users, Calendar, Settings, Search, Bell,
+    Menu, X, BookOpen, Clock, ShieldCheck, Map, Activity, 
+    Home, LogOut, ChevronDown, CheckSquare, Plus, CheckCircle, Store, Sun, Moon, PanelLeftClose, PanelLeftOpen, User,
+    FileText, Sliders, Layers, BarChart, UserPlus, FileSignature, ShieldAlert,
+    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle
 } from 'lucide-react';
+import NotificationDropdown from '@/Components/NotificationDropdown';
 import ToastNotification from '@/Components/ToastNotification';
 
 export default function AdminLayout({ children, activeMenu = 'المستخدمون' }) {
@@ -157,6 +157,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'الدرجات الوظيفية', icon: ShieldCheck, url: route('hr.job-grades'), permission: 'إدارة الدرجات الوظيفية' },
                 { name: 'الشفتات', icon: Clock, url: route('hr.shifts'), permission: 'إدارة الشفتات' },
                 { name: 'دليل الموظفين', icon: UserPlus, url: route('hr.employees'), permission: 'إدارة الموظفين' },
+                { name: 'أنواع المخالفات', icon: ShieldAlert, url: route('hr.violation-types'), permission: 'إدارة أنواع المخالفات' },
+                { name: 'مخالفات الموظفين', icon: AlertTriangle, url: route('hr.employee-violations'), permission: 'إدارة المخالفات' },
             ]
         },
         {
@@ -173,11 +175,10 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'سير العمل والطلبات',
             items: [
-                { name: 'تقديم طلب', icon: FileText, url: route('hr.requests') },
-                { name: 'صندوق الموافقات', icon: Bell, url: route('hr.approvals') },
                 { name: 'التقارير', icon: FileText, url: route('reports.index'), permission: 'إدارة التقارير' },
                 { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates'), permission: 'إدارة قوالب التقارير' },
                 { name: 'تقاريري', icon: FileText, url: route('hr.reports.my-reports.index'), permission: null },
+                { name: 'مخالفاتي', icon: AlertCircle, url: route('hr.my-violations'), permission: 'عرض مخالفاتي' },
                 { name: 'الإجتماعات', icon: Users, url: route('meetings.index'), permission: 'إدارة الاجتماعات' },
             ]
         },
@@ -190,6 +191,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'إعداد الحصص اليومية', icon: Clock, url: route('academic.periods'), permission: 'إدارة الجداول الدراسية' },
                 { name: 'جدول الحصص العام', icon: Calendar, url: route('academic.timetable'), permission: 'إدارة الجداول الدراسية' },
                 { name: 'جدولي الدراسي', icon: Calendar, url: route('academic.my-timetable') },
+                { name: 'التغطية والاحتياط', icon: ShieldCheck, url: route('academic.coverage.index'), permission: 'إدارة الجداول الدراسية' },
                 { name: 'جداول الاختبارات', icon: FileText, permission: 'إدارة الجداول الدراسية' },
                 { name: 'النتائج الشهرية', icon: BarChart, permission: 'إدارة الدرجات' },
                 { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
@@ -212,8 +214,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'الأخبار', icon: Newspaper },
                 { name: 'المكتبة', icon: Library },
-                { name: 'الإشعارات', icon: Bell },
-                { name: 'المخالفات والإبداع', icon: AlertTriangle },
+                { name: 'إرسال إشعارات', icon: Bell, url: route('admin.notifications.send'), permission: 'إدارة النظام' },
             ]
         },
         ...((isAdmin || isSystemAdmin) ? [{
@@ -245,7 +246,6 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         { name: 'الرئيسية', icon: Home, url: route('dashboard'), key: 'الرئيسية' },
         { name: 'الموظفين', icon: Users, url: route('hr.employees'), key: 'دليل الموظفين', permission: 'إدارة الموظفين' },
         { name: 'الحضور', icon: CheckSquare, url: route('hr.attendance'), key: 'سجل الحضور', permission: 'إدارة الحضور والانصراف' },
-        { name: 'الطلبات', icon: FileText, url: route('hr.requests'), key: 'تقديم طلب' },
         { name: 'المزيد', icon: Menu, action: 'sidebar', key: '__more' },
     ];
 
@@ -309,10 +309,10 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-slate-200 truncate">
-                            {auth?.user?.name || 'مدير النظام'}
+                            {auth?.user?.name || 'مستخدم'}
                         </p>
                         <p className="text-[10px] text-gray-500 truncate">
-                            {auth?.user?.username || 'admin'}
+                            {auth?.user?.role?.name || auth?.user?.username || 'admin'}
                         </p>
                     </div>
                 </div>
@@ -429,10 +429,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                             {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                         </button>
 
-                        <button className="erp-btn-ghost relative" aria-label="الإشعارات">
-                            <Bell size={20} />
-                            <span className="notification-dot"></span>
-                        </button>
+                        <NotificationDropdown />
 
                         <div className="relative">
                             <button 
@@ -442,9 +439,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                             >
                                 <div className="text-left hidden sm:block">
                                     <p className="text-sm font-bold text-slate-800 leading-tight">
-                                        {auth?.user?.name || 'مدير النظام'}
+                                        {auth?.user?.name || 'مستخدم'}
                                     </p>
-                                    <p className="text-[11px] text-slate-500">مدير النظام</p>
+                                    <p className="text-[11px] text-slate-500">{auth?.user?.role?.name || 'بدون دور'}</p>
                                 </div>
                                 <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[#6b9b37] to-[#437020] flex items-center justify-center ring-2 ring-white shadow-sm">
                                     <User size={16} className="text-white" />

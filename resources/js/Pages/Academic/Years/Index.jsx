@@ -9,6 +9,16 @@ import {
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
+const DAYS_OF_WEEK = [
+    { id: 'Saturday', name: 'السبت' },
+    { id: 'Sunday', name: 'الأحد' },
+    { id: 'Monday', name: 'الإثنين' },
+    { id: 'Tuesday', name: 'الثلاثاء' },
+    { id: 'Wednesday', name: 'الأربعاء' },
+    { id: 'Thursday', name: 'الخميس' },
+    { id: 'Friday', name: 'الجمعة' },
+];
+
 function Modal({ isOpen, onClose, title, children }) {
     if (!isOpen) return null;
     return (
@@ -46,7 +56,7 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
 
     // Form States - Year
     const [yearForm, setYearForm] = useState({
-        name: '', start_date: '', end_date: '', branch_id: '', notes: ''
+        name: '', start_date: '', end_date: '', branch_id: '', notes: '', working_days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday']
     });
 
     // Form States - Semester
@@ -61,7 +71,7 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
     // --- Year Actions ---
     const openNewYear = () => {
         setEditingYear(null);
-        setYearForm({ name: '', start_date: '', end_date: '', branch_id: '', notes: '' });
+        setYearForm({ name: '', start_date: '', end_date: '', branch_id: '', notes: '', working_days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'] });
         setIsYearModalOpen(true);
     };
 
@@ -69,7 +79,7 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
         setEditingYear(year);
         setYearForm({
             name: year.name, start_date: year.start_date, end_date: year.end_date, 
-            branch_id: year.branch_id || '', notes: year.notes || ''
+            branch_id: year.branch_id || '', notes: year.notes || '', working_days: year.working_days || ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday']
         });
         setIsYearModalOpen(true);
     };
@@ -387,6 +397,39 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
                             <FlatpickrInput type="date" value={yearForm.end_date} onChange={date => setYearForm({...yearForm, end_date: date})} required />
                             {errors.end_date && <p className="text-red-500 text-xs mt-1">{errors.end_date}</p>}
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-black text-slate-800 dark:text-slate-300 mb-2">أيام الدوام المدرسي <span className="text-rose-500">*</span></label>
+                        <div className="flex flex-wrap gap-2">
+                            {DAYS_OF_WEEK.map(day => {
+                                const isSelected = yearForm.working_days.includes(day.id);
+                                return (
+                                    <button
+                                        type="button"
+                                        key={day.id}
+                                        onClick={() => {
+                                            const newDays = isSelected 
+                                                ? yearForm.working_days.filter(d => d !== day.id)
+                                                : [...yearForm.working_days, day.id];
+                                            
+                                            // Sort based on DAYS_OF_WEEK order
+                                            const orderedDays = DAYS_OF_WEEK.map(d => d.id).filter(id => newDays.includes(id));
+                                            
+                                            setYearForm({ ...yearForm, working_days: orderedDays });
+                                        }}
+                                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                                            isSelected 
+                                                ? 'bg-primary-50 text-primary-700 border-2 border-primary-500 dark:bg-primary-500/20 dark:text-primary-300 dark:border-primary-500 shadow-sm scale-105'
+                                                : 'bg-slate-50 text-slate-500 border-2 border-slate-200 hover:bg-slate-100 hover:text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'
+                                        }`}
+                                    >
+                                        {day.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {errors.working_days && <p className="text-red-500 text-xs mt-1">{errors.working_days}</p>}
                     </div>
 
                     {isAdmin && (

@@ -12,22 +12,47 @@ class LeaveTypeController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        $types = LeaveType::where('branch_id', $user->branch_id)->latest()->get();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $branchId = $user->branch_id ?? session('branch_id');
+
+        if ($isSystemAdmin && $request->filled('branch_id')) {
+            $branchId = $request->branch_id;
+        }
+
+        $query = LeaveType::query()->with('branch');
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $types = $query->latest()->get();
         
         return Inertia::render('HR/Leaves/Types', [
-            'leaveTypes' => $types
+            'leaveTypes' => $types,
+            'isSystemAdmin' => $isSystemAdmin,
+            'branches' => $isSystemAdmin ? \App\Models\Branch::where('is_active', true)->select('id', 'name')->get() : [],
+            'filters' => $request->only(['branch_id']),
+            'currentBranchId' => $branchId
         ]);
     }
 
     public function store(Request $request)
     {
+        $user = $request->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+
         $request->validate([
             'name' => 'required|string|max:255',
             'default_days' => 'required|integer|min:0',
+            'branch_id' => $isSystemAdmin ? 'nullable|exists:branches,id' : 'nullable'
         ]);
 
+        $branchId = $user->branch_id ?? session('branch_id');
+        if ($isSystemAdmin && $request->filled('branch_id')) {
+            $branchId = $request->branch_id;
+        }
+
         LeaveType::create([
-            'branch_id' => $request->user()->branch_id,
+            'branch_id' => $branchId,
             'name' => $request->name,
             'default_days' => $request->default_days,
         ]);
@@ -37,7 +62,11 @@ class LeaveTypeController extends Controller
 
     public function update(Request $request, LeaveType $leave_type)
     {
-        if ($leave_type->branch_id !== $request->user()->branch_id) abort(403);
+        $user = $request->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $userBranchId = $user->branch_id ?? session('branch_id');
+
+        if (!$isSystemAdmin && $leave_type->branch_id !== $userBranchId) abort(403);
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -50,7 +79,19 @@ class LeaveTypeController extends Controller
 
     public function destroy(Request $request, LeaveType $leave_type)
     {
-        if ($leave_type->branch_id !== $request->user()->branch_id) abort(403);
+        $user = $request->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $userBranchId = $user->branch_id ?? session('branch_id');
+
+        if (!$isSystemAdmin && $leave_type->branch_id !== $userBranchId) abort(403);
+
+        $hasLeaves = \App\Models\Leave::where('leave_type_id', $leave_type->id)->exists();
+        $hasBalances = \App\Models\LeaveBalance::where('leave_type_id', $leave_type->id)->exists();
+
+        if ($hasLeaves || $hasBalances) {
+            return back()->with('error', 'لا يمكن حذف هذا النوع من الإجازات لارتباطه بسجلات إجازات أو أرصدة لموظفين.');
+        }
+
         $leave_type->delete();
         return back()->with('success', 'تم حذف نوع الإجازة بنجاح.');
     }

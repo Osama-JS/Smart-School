@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Clock, Plus, Edit, Trash2, Save, X } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Modal from '@/Components/Modal';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 
 export default function PeriodsIndex({ periods }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,14 +27,25 @@ export default function PeriodsIndex({ periods }) {
             });
         } else {
             setEditingPeriod(null);
-            reset();
+            setData({
+                period_name: '',
+                start_time: '',
+                end_time: '',
+            });
         }
         setIsModalOpen(true);
     };
 
     const closeModal = () => {
         setIsModalOpen(false);
-        setTimeout(() => reset(), 300);
+        setTimeout(() => {
+            setData({
+                period_name: '',
+                start_time: '',
+                end_time: '',
+            });
+            clearErrors();
+        }, 300);
     };
 
     const handleSubmit = (e) => {
@@ -180,7 +192,7 @@ export default function PeriodsIndex({ periods }) {
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/20 dark:text-primary-400 flex items-center justify-center">
                                 <Clock size={20} />
                             </div>
                             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -196,7 +208,7 @@ export default function PeriodsIndex({ periods }) {
                         <div>
                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مسمى الفترة <span className="text-rose-500">*</span></label>
                             <input type="text"
-                                className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.period_name ? 'border-rose-300' : 'border-slate-200 dark:border-slate-700'} focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-all`}
+                                className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.period_name ? 'border-rose-300' : 'border-slate-200 dark:border-slate-700'} focus:border-primary-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-all`}
                                 value={data.period_name} onChange={e => setData('period_name', e.target.value)} placeholder="مثال: الحصة الأولى، الفسحة..." />
                             {errors.period_name && <p className="text-xs text-rose-500 mt-1">{errors.period_name}</p>}
                         </div>
@@ -204,16 +216,22 @@ export default function PeriodsIndex({ periods }) {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت البدء <span className="text-rose-500">*</span></label>
-                                <input type="time"
-                                    className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.start_time ? 'border-rose-300' : 'border-slate-200 dark:border-slate-700'} focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-all`}
-                                    value={data.start_time} onChange={e => setData('start_time', e.target.value)} dir="ltr" />
+                                <FlatpickrInput 
+                                    type="time"
+                                    className={`${errors.start_time ? '!border-rose-300' : ''}`}
+                                    value={data.start_time} 
+                                    onChange={val => setData('start_time', val)} 
+                                />
                                 {errors.start_time && <p className="text-xs text-rose-500 mt-1">{errors.start_time}</p>}
                             </div>
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت الانتهاء <span className="text-rose-500">*</span></label>
-                                <input type="time"
-                                    className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.end_time ? 'border-rose-300' : 'border-slate-200 dark:border-slate-700'} focus:border-indigo-500 rounded-xl px-4 py-2.5 text-sm outline-none transition-all`}
-                                    value={data.end_time} onChange={e => setData('end_time', e.target.value)} dir="ltr" />
+                                <FlatpickrInput 
+                                    type="time"
+                                    className={`${errors.end_time ? '!border-rose-300' : ''}`}
+                                    value={data.end_time} 
+                                    onChange={val => setData('end_time', val)} 
+                                />
                                 {errors.end_time && <p className="text-xs text-rose-500 mt-1">{errors.end_time}</p>}
                             </div>
                         </div>
@@ -222,7 +240,7 @@ export default function PeriodsIndex({ periods }) {
                             <button type="button" onClick={closeModal} className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 rounded-xl transition-colors">
                                 إلغاء
                             </button>
-                            <button type="submit" disabled={processing} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/30 transition-all disabled:opacity-70">
+                            <button type="submit" disabled={processing} className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary-500/30 transition-all disabled:opacity-70">
                                 {processing ? 'جاري الحفظ...' : <><Save size={18} /> حفظ التوقيت</>}
                             </button>
                         </div>

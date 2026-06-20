@@ -15,23 +15,31 @@ class LeaveBalanceController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
-        
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $branchId = $user->branch_id ?? session('branch_id');
+
+        if ($isSystemAdmin && $request->filled('branch_id')) {
+            $branchId = $request->branch_id;
+        }
+
         $academicYearId = $request->get('academic_year_id');
-        $academicYears = AcademicYear::latest()->get();
+        $academicYears = AcademicYear::when($branchId, fn($q) => $q->where('branch_id', $branchId))->latest()->get();
         if (!$academicYearId && $academicYears->count() > 0) {
             $academicYearId = $academicYears->first()->id;
         }
 
-        $balances = LeaveBalance::with(['employee.user', 'leaveType'])
-            ->whereHas('employee.user', function($q) use ($user) {
-                $q->where('branch_id', $user->branch_id);
+        $balancesQuery = LeaveBalance::with(['employee.user', 'leaveType'])
+            ->when($branchId, function($q) use ($branchId) {
+                $q->whereHas('employee.user', function($sq) use ($branchId) {
+                    $sq->where('branch_id', $branchId);
+                });
             })
             ->when($academicYearId, function($q) use ($academicYearId) {
                 $q->where('academic_year_id', $academicYearId);
-            })
-            ->get();
+            });
 
-        // format to send to frontend
+        $balances = $balancesQuery->get();
+
         $formattedBalances = $balances->map(function ($b) {
             return [
                 'id' => $b->id,
@@ -46,9 +54,11 @@ class LeaveBalanceController extends Controller
             ];
         });
 
-        $leaveTypes = LeaveType::where('branch_id', $user->branch_id)->get();
-        $employees = Employee::with('user:id,name')->whereHas('user', function($q) use ($user) {
-            $q->where('branch_id', $user->branch_id);
+        $leaveTypes = LeaveType::when($branchId, fn($q) => $q->where('branch_id', $branchId))->get();
+        $employees = Employee::with('user:id,name')->when($branchId, function($q) use ($branchId) {
+            $q->whereHas('user', function($sq) use ($branchId) {
+                $sq->where('branch_id', $branchId);
+            });
         })->get()->map(function($e) {
             return ['id' => $e->id, 'name' => $e->user->name ?? ''];
         });
@@ -59,6 +69,10 @@ class LeaveBalanceController extends Controller
             'currentAcademicYearId' => $academicYearId,
             'leaveTypes' => $leaveTypes,
             'employees' => $employees,
+            'isSystemAdmin' => $isSystemAdmin,
+            'branches' => $isSystemAdmin ? \App\Models\Branch::where('is_active', true)->select('id', 'name')->get() : [],
+            'filters' => $request->only(['academic_year_id', 'branch_id']),
+            'currentBranchId' => $branchId
         ]);
     }
 
@@ -107,15 +121,23 @@ class LeaveBalanceController extends Controller
         ]);
 
         $user = $request->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $branchId = $user->branch_id ?? session('branch_id');
 
-        $leaveTypesQuery = LeaveType::where('branch_id', $user->branch_id);
+        if ($isSystemAdmin && $request->filled('branch_id')) {
+            $branchId = $request->branch_id;
+        }
+
+        $leaveTypesQuery = LeaveType::when($branchId, fn($q) => $q->where('branch_id', $branchId));
         if ($request->filled('leave_type_ids')) {
             $leaveTypesQuery->whereIn('id', $request->leave_type_ids);
         }
         $leaveTypes = $leaveTypesQuery->get();
 
-        $employeesQuery = Employee::whereHas('user', function($q) use ($user) {
-            $q->where('branch_id', $user->branch_id);
+        $employeesQuery = Employee::when($branchId, function($q) use ($branchId) {
+            $q->whereHas('user', function($sq) use ($branchId) {
+                $sq->where('branch_id', $branchId);
+            });
         });
         if ($request->filled('employee_ids')) {
             $employeesQuery->whereIn('id', $request->employee_ids);

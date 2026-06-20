@@ -103,19 +103,23 @@ class AttendanceApiController extends Controller
         $activeSemester = $activeYear ? $activeYear->activeSemester : null;
 
         // تسجيل الحضور
-        $attendance = Attendance::create([
-            'employee_id'  => $employee->id,
-            'branch_id'    => $validAssignment->branch_id,
-            'shift_id'     => $validAssignment->shift_id,
-            'academic_year_id' => $activeYear ? $activeYear->id : null,
-            'semester_id'  => $activeSemester ? $activeSemester->id : null,
-            'date'         => $today,
-            'check_in'     => $time,
-            'check_in_lat' => $validated['latitude'],
-            'check_in_lng' => $validated['longitude'],
-            'status'       => $status,
-            'late_minutes' => $lateMinutes,
-        ]);
+        $attendance = Attendance::updateOrCreate(
+            [
+                'employee_id' => $employee->id,
+                'date'        => $today,
+            ],
+            [
+                'branch_id'    => $validAssignment->branch_id,
+                'shift_id'     => $validAssignment->shift_id,
+                'academic_year_id' => $activeYear ? $activeYear->id : null,
+                'semester_id'  => $activeSemester ? $activeSemester->id : null,
+                'check_in'     => $time,
+                'check_in_lat' => $validated['latitude'],
+                'check_in_lng' => $validated['longitude'],
+                'status'       => $status,
+                'late_minutes' => $lateMinutes,
+            ]
+        );
 
         return response()->json([
             'success'     => true,
@@ -224,11 +228,14 @@ class AttendanceApiController extends Controller
             ->keyBy('date');
 
         // 2. Get Leaves
-        $leaves = \App\Models\Leave::where('employee_id', $employeeId)
+        $leaves = \App\Models\Leave::with('leaveType')
+            ->where('employee_id', $employeeId)
             ->where('status', 'approved')
             ->where(function($q) use ($monthNum, $yearNum) {
-                $q->whereMonth('start_date', $monthNum)->whereYear('start_date', $yearNum)
-                  ->orWhereMonth('end_date', $monthNum)->whereYear('end_date', $yearNum);
+                $monthStart = Carbon::createFromDate($yearNum, $monthNum, 1)->startOfMonth();
+                $monthEnd = Carbon::createFromDate($yearNum, $monthNum, 1)->endOfMonth();
+                $q->where('start_date', '<=', $monthEnd)
+                  ->where('end_date', '>=', $monthStart);
             })
             ->get();
 
@@ -277,7 +284,7 @@ class AttendanceApiController extends Controller
             foreach ($leaves as $l) {
                 if ($currentDate->between($l->start_date, $l->end_date)) {
                     $isLeave = true;
-                    $leaveType = $l->type;
+                    $leaveType = $l->leaveType ? $l->leaveType->name : 'إجازة';
                     break;
                 }
             }

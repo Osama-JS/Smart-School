@@ -59,6 +59,7 @@ class HandleInertiaRequests extends Middleware
                 'warning' => fn () => $request->session()->get('warning'),
                 'info' => fn () => $request->session()->get('info'),
             ],
+            'asset_url' => rtrim(asset(''), '/'),
         ];
     }
 }

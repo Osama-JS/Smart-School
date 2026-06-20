@@ -4,12 +4,12 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Activity, Plus, Edit2, Zap, Save, X, Users, CheckCircle, Clock } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 
-export default function LeaveBalancesIndex({ balances, academicYears, currentAcademicYearId, leaveTypes, employees }) {
+export default function LeaveBalancesIndex({ balances, academicYears, currentAcademicYearId, leaveTypes, employees, isSystemAdmin, branches = [], filters = {}, currentBranchId }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBalance, setEditingBalance] = useState(null);
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
 
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         id: '',
         employee_id: '',
         academic_year_id: currentAcademicYearId || '',
@@ -17,7 +17,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
         total_days: 0,
     });
 
-    const { data: genData, setData: setGenData, post: genPost, processing: genProcessing, reset: genReset } = useForm({
+    const { data: genData, setData: setGenData, post: genPost, processing: genProcessing, reset: genReset, clearErrors: genClearErrors } = useForm({
         academic_year_id: currentAcademicYearId || '',
         employee_ids: [],
         leave_type_ids: [],
@@ -31,7 +31,11 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
     };
 
     const handleYearChange = (val) => {
-        router.get(route('hr.leave-balances'), { academic_year_id: val }, { preserveState: true });
+        router.get(route('hr.leave-balances'), { academic_year_id: val, branch_id: filters?.branch_id }, { preserveState: true });
+    };
+
+    const handleBranchChange = (val) => {
+        router.get(route('hr.leave-balances'), { branch_id: val, academic_year_id: currentAcademicYearId }, { preserveState: true });
     };
 
     const handleGenerate = () => {
@@ -44,6 +48,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
             employee_ids: [],
             leave_type_ids: [],
         });
+        genClearErrors();
         setIsGenerateModalOpen(true);
     };
 
@@ -53,6 +58,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
             onSuccess: () => {
                 setIsGenerateModalOpen(false);
                 genReset();
+                genClearErrors();
             }
         });
     };
@@ -72,6 +78,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
             reset();
             setData('academic_year_id', currentAcademicYearId || '');
         }
+        clearErrors();
         setIsModalOpen(true);
     };
 
@@ -79,6 +86,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
         setIsModalOpen(false);
         setEditingBalance(null);
         reset();
+        clearErrors();
     };
 
     const submit = (e) => {
@@ -112,6 +120,18 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                             <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">تتبع مستحقات الإجازات والرصيد المتبقي</p>
                         </div>
                         <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                            {isSystemAdmin && (
+                                <div className="w-full sm:w-48 shrink-0">
+                                    <SelectInput
+                                        value={filters.branch_id || ''}
+                                        onChange={handleBranchChange}
+                                        options={[
+                                            { value: '', label: 'جميع الفروع' },
+                                            ...branches.map(b => ({ value: b.id, label: b.name }))
+                                        ]}
+                                    />
+                                </div>
+                            )}
                             <div className="w-full sm:w-64 shrink-0">
                                 <SelectInput
                                     value={currentAcademicYearId}
@@ -335,14 +355,14 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
             {/* Generate Modal */}
             {isGenerateModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsGenerateModalOpen(false)}></div>
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => { setIsGenerateModalOpen(false); genClearErrors(); }}></div>
                     <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
                             <h3 className="text-xl font-bold text-dark-900 dark:text-white flex items-center gap-2">
                                 <Zap className="text-emerald-500" />
                                 توليد أرصدة الإجازات
                             </h3>
-                            <button onClick={() => setIsGenerateModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 p-2 rounded-full">
+                            <button onClick={() => { setIsGenerateModalOpen(false); genClearErrors(); }} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 p-2 rounded-full">
                                 <X size={20} />
                             </button>
                         </div>
@@ -360,7 +380,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                                     onChange={(val) => setGenData('employee_ids', val)}
                                     options={employees.map(emp => ({
                                         value: emp.id,
-                                        label: `${emp.first_name} ${emp.last_name}`
+                                        label: emp.name
                                     }))}
                                     placeholder="اختر الموظفين (يترك فارغاً للكل)"
                                 />
@@ -398,7 +418,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setIsGenerateModalOpen(false)}
+                                    onClick={() => { setIsGenerateModalOpen(false); genClearErrors(); }}
                                     className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
                                 >
                                     إلغاء

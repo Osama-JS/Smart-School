@@ -12,13 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendances', function (Blueprint $table) {
-            $table->foreignId('academic_year_id')->nullable()->constrained('academic_years')->nullOnDelete();
-            $table->foreignId('semester_id')->nullable()->constrained('semesters')->nullOnDelete();
+            if (!Schema::hasColumn('attendances', 'academic_year_id')) {
+                $table->foreignId('academic_year_id')->nullable()->constrained('academic_years')->nullOnDelete();
+            }
+            if (!Schema::hasColumn('attendances', 'semester_id')) {
+                $table->foreignId('semester_id')->nullable()->constrained('semesters')->nullOnDelete();
+            }
         });
 
         Schema::table('leaves', function (Blueprint $table) {
-            $table->foreignId('academic_year_id')->nullable()->constrained('academic_years')->nullOnDelete();
-            $table->foreignId('semester_id')->nullable()->constrained('semesters')->nullOnDelete();
+            if (!Schema::hasColumn('leaves', 'academic_year_id')) {
+                $table->foreignId('academic_year_id')->nullable()->constrained('academic_years')->nullOnDelete();
+            }
+            if (!Schema::hasColumn('leaves', 'semester_id')) {
+                $table->foreignId('semester_id')->nullable()->constrained('semesters')->nullOnDelete();
+            }
         });
     }
 

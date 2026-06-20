@@ -28,6 +28,7 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
         job_title: '',
         address: '',
         attachments: [],
+        attachment_names: [],
         
         // Shift Data
         employee_shifts: [{ shift_id: '', working_days: [0, 1, 2, 3, 4] }],
@@ -318,7 +319,7 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                                     <div>
                                         <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الشفت (فترة العمل) {index + 1}</label>
                                         <SelectInput
-                                            options={shifts.map(s => ({ value: s.id, label: `${s.name} (${s.start_time} - ${s.end_time})` }))}
+                                            options={shifts.filter(s => !data.employee_shifts.some((es, idx) => idx !== index && es.shift_id === s.id)).map(s => ({ value: s.id, label: `${s.name} (${s.start_time} - ${s.end_time})` }))}
                                             value={shifts.map(s => ({ value: s.id, label: `${s.name} (${s.start_time} - ${s.end_time})` })).find(o => o.value === shiftEntry.shift_id) || null}
                                             onChange={(selected) => {
                                                 const newShifts = [...data.employee_shifts];
@@ -403,9 +404,53 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                             <div className="border border-dashed border-slate-300 dark:border-slate-600 rounded-2xl p-6 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                 <Paperclip size={32} className="mx-auto text-slate-400 mb-3" />
                                 <p className="text-sm text-slate-500 mb-4">أرفق أي مستندات تخص الموظف (يمكن اختيار ملفات متعددة)</p>
-                                <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={e => setData('attachments', Array.from(e.target.files))}
+                                <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={e => {
+                                    if (e.target.files.length > 0) {
+                                        const files = Array.from(e.target.files);
+                                        setData(prev => ({
+                                            ...prev,
+                                            attachments: [...prev.attachments, ...files],
+                                            attachment_names: [...prev.attachment_names, ...files.map(f => f.name.replace(/\.[^/.]+$/, ""))]
+                                        }));
+                                        e.target.value = null;
+                                    }
+                                }}
                                     className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
                             </div>
+
+                            {/* New Files Preview List */}
+                            {data.attachments && data.attachments.length > 0 && (
+                                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                                    <h4 className="text-sm font-bold text-dark-900 dark:text-white mb-3">الملفات المحددة للرفع:</h4>
+                                    <div className="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                                        {data.attachments.map((file, i) => (
+                                            <div key={i} className="flex flex-col gap-2 bg-primary-50 dark:bg-primary-500/10 border border-primary-100 dark:border-primary-500/20 rounded-xl p-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <Paperclip size={18} className="text-primary-500 flex-shrink-0" />
+                                                        <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate" dir="ltr">{file.name}</span>
+                                                        <span className="text-xs text-slate-400 flex-shrink-0 font-mono">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                                    </div>
+                                                    <button type="button" onClick={() => {
+                                                        const newFiles = [...data.attachments];
+                                                        const newNames = [...data.attachment_names];
+                                                        newFiles.splice(i, 1);
+                                                        newNames.splice(i, 1);
+                                                        setData(prev => ({ ...prev, attachments: newFiles, attachment_names: newNames }));
+                                                    }} className="text-slate-400 hover:text-accent-500 hover:bg-white dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors flex-shrink-0">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                                <input type="text" value={data.attachment_names[i] || ''} onChange={e => {
+                                                    const newNames = [...data.attachment_names];
+                                                    newNames[i] = e.target.value;
+                                                    setData('attachment_names', newNames);
+                                                }} placeholder="اسم المرفق (مثال: شهادة البكالوريوس)" className="w-full bg-white dark:bg-slate-900 border border-primary-100 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm outline-none transition-all focus:border-primary-400" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -18,9 +18,17 @@ class TimetableController extends Controller
 {
     public function index(Request $request)
     {
+        $branchId = auth()->user()->branch_id;
+
         $academicYears = AcademicYear::with('semesters')->latest()->get();
-        $sections = Section::with('grades.divisions')->get();
-        $periods = DailyPeriod::orderBy('start_time')->get();
+        
+        $sections = Section::with(['grades.divisions' => function($q) use ($branchId) {
+            $q->where('branch_id', $branchId);
+        }])
+        ->where('branch_id', $branchId)
+        ->get();
+
+        $periods = DailyPeriod::where('branch_id', $branchId)->orderBy('start_time')->get();
 
         $selectedDivisionId = $request->division_id;
         $selectedSemesterId = $request->semester_id;
@@ -51,10 +59,11 @@ class TimetableController extends Controller
         ];
 
         // For the subject selection modal
-        $subjects = Subject::all();
-        $teachers = User::whereHas('role', function($q){
-            $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']);
-        })->get(['id', 'name']);
+        $subjects = Subject::where('branch_id', $branchId)->get();
+        $teachers = User::where('branch_id', $branchId)
+            ->whereHas('role', function($q){
+                $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']);
+            })->get(['id', 'name']);
 
         return Inertia::render('Academic/Timetables/Index', [
             'academicYears' => $academicYears,
@@ -79,6 +88,18 @@ class TimetableController extends Controller
             'subject_id'  => 'required|exists:subjects,id',
             'teacher_id'  => 'required|exists:users,id',
         ]);
+
+        $branchId = auth()->user()->branch_id;
+
+        // Security check: ensure division, period, subject, and teacher belong to the current branch
+        $division = Division::where('id', $validated['division_id'])->where('branch_id', $branchId)->first();
+        $period = DailyPeriod::where('id', $validated['period_id'])->where('branch_id', $branchId)->first();
+        $subject = Subject::where('id', $validated['subject_id'])->where('branch_id', $branchId)->first();
+        $teacher = User::where('id', $validated['teacher_id'])->where('branch_id', $branchId)->first();
+
+        if (!$division || !$period || !$subject || !$teacher) {
+            return redirect()->back()->with('error', 'بيانات غير صالحة أو لا تنتمي لفرعك.');
+        }
 
         // --- CONFLICT PREVENTION (منع التعارض) ---
         // 1. Check if teacher is already assigned to another division at the same time
@@ -129,8 +150,10 @@ class TimetableController extends Controller
     // Teacher's personal timetable
     public function myTimetable(Request $request)
     {
+        $branchId = auth()->user()->branch_id;
+        $userId   = auth()->id();
         $academicYears = AcademicYear::with('semesters')->latest()->get();
-        $periods = DailyPeriod::orderBy('start_time')->get();
+        $periods = DailyPeriod::where('branch_id', $branchId)->orderBy('start_time')->get();
 
         $selectedSemesterId = $request->semester_id;
         if (!$selectedSemesterId && $academicYears->count() > 0) {
@@ -139,19 +162,34 @@ class TimetableController extends Controller
             $selectedSemesterId = $activeSemester ? $activeSemester->id : null;
         }
 
-        $timetable = [];
+        $timetable   = [];
+        $coverages   = []; // slots where this teacher is the SUBSTITUTE
         $workingDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
 
         if ($selectedSemesterId) {
+            // Own regular schedule
             $timetable = MasterTimetable::with(['subject', 'division.grade.section'])
                 ->where('semester_id', $selectedSemesterId)
-                ->where('teacher_id', auth()->id())
+                ->where('teacher_id', $userId)
                 ->get();
-                
+
             $semester = Semester::with('academicYear')->find($selectedSemesterId);
             if ($semester && $semester->academicYear->working_days) {
                 $workingDays = $semester->academicYear->working_days;
             }
+
+            // Coverage slots (this teacher is the substitute) — for today's date context
+            // We pass coverages indexed by [date][period_id] for easy lookup in the view
+            $coverages = \App\Models\ClassCoverage::with([
+                'absentTeacher:id,name',
+                'period:id,period_name,start_time,end_time',
+                'division.grade.section',
+                'subject:id,name',
+            ])
+                ->where('substitute_teacher_id', $userId)
+                ->where('branch_id', $branchId)
+                ->whereDate('coverage_date', now()->toDateString())
+                ->get();
         }
 
         $daysTranslation = [
@@ -165,11 +203,12 @@ class TimetableController extends Controller
         ];
 
         return Inertia::render('Academic/Timetables/MyTimetable', [
-            'academicYears' => $academicYears,
-            'periods' => $periods,
-            'timetable' => $timetable,
-            'workingDays' => $workingDays,
-            'daysTranslation' => $daysTranslation,
+            'academicYears'      => $academicYears,
+            'periods'            => $periods,
+            'timetable'          => $timetable,
+            'coverages'          => $coverages,        // today's coverage assignments
+            'workingDays'        => $workingDays,
+            'daysTranslation'    => $daysTranslation,
             'selectedSemesterId' => $selectedSemesterId,
         ]);
     }

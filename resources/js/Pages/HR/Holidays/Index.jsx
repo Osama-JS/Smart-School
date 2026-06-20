@@ -2,19 +2,27 @@ import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
-import { Calendar, Plus, Edit2, Trash2, X, Save, FileText, CheckCircle2 } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, X, Save, FileText, CheckCircle2, Search } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 
-export default function HolidaysIndex({ holidays, branches, academicYears, isAdmin }) {
+export default function HolidaysIndex({ holidays, branches, academicYears, isAdmin, filters }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingHoliday, setEditingHoliday] = useState(null);
+    const [searchTerm, setSearchTerm] = useState(filters?.search || '');
+    const [selectedYear, setSelectedYear] = useState(filters?.academic_year_id || '');
+
+    const applyFilter = (key, value) => {
+        router.get(route('hr.holidays'), { ...filters, [key]: value }, { preserveState: true, replace: true });
+    };
+
+    const activeYear = academicYears?.find(ay => ay.is_active === 1 || ay.is_active === true) || academicYears?.[0];
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         name: '',
         start_date: '',
         end_date: '',
         branch_id: '',
-        academic_year_id: '',
+        academic_year_id: activeYear ? activeYear.id : '',
         semester_id: '',
         notes: '',
     });
@@ -24,8 +32,8 @@ export default function HolidaysIndex({ holidays, branches, academicYears, isAdm
             setEditingHoliday(holiday);
             setData({
                 name: holiday.name,
-                start_date: holiday.start_date,
-                end_date: holiday.end_date,
+                start_date: holiday.start_date ? holiday.start_date.split('T')[0] : '',
+                end_date: holiday.end_date ? holiday.end_date.split('T')[0] : '',
                 branch_id: holiday.branch_id || '',
                 academic_year_id: holiday.academic_year_id || '',
                 semester_id: holiday.semester_id || '',
@@ -34,6 +42,7 @@ export default function HolidaysIndex({ holidays, branches, academicYears, isAdm
         } else {
             setEditingHoliday(null);
             reset();
+            setData('academic_year_id', activeYear ? activeYear.id : '');
         }
         setIsModalOpen(true);
     };
@@ -98,6 +107,41 @@ export default function HolidaysIndex({ holidays, branches, academicYears, isAdm
                     </div>
                 </div>
 
+                {/* Filters */}
+                <div className="flex flex-col md:flex-row gap-4 no-print">
+                    <div className="relative flex-1">
+                        <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                            <Search className="h-5 w-5 text-slate-400" />
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="ابحث عن إجازة..."
+                            className="block w-full pr-11 pl-4 py-3 bg-white dark:bg-[#121820]/60 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm focus:ring-primary-500 focus:border-primary-500 transition-shadow dark:text-white"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && applyFilter('search', searchTerm)}
+                            onBlur={() => applyFilter('search', searchTerm)}
+                        />
+                    </div>
+                    <div className="w-full md:w-64">
+                        <SelectInput
+                            options={[
+                                { value: '', label: 'جميع السنوات الدراسية' },
+                                ...(academicYears?.map(ay => ({ value: ay.id, label: ay.name })) || [])
+                            ]}
+                            value={[
+                                { value: '', label: 'جميع السنوات الدراسية' },
+                                ...(academicYears?.map(ay => ({ value: ay.id, label: ay.name })) || [])
+                            ].find(o => o.value == selectedYear) || null}
+                            onChange={(selected) => {
+                                setSelectedYear(selected || '');
+                                applyFilter('academic_year_id', selected || '');
+                            }}
+                            placeholder="اختر السنة الدراسية"
+                        />
+                    </div>
+                </div>
+
                 {/* List */}
                 <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
@@ -127,10 +171,10 @@ export default function HolidaysIndex({ holidays, branches, academicYears, isAdm
                                                 {holiday.name}
                                             </td>
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
-                                                {holiday.start_date}
+                                                {holiday.start_date ? holiday.start_date.split('T')[0] : ''}
                                             </td>
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
-                                                {holiday.end_date}
+                                                {holiday.end_date ? holiday.end_date.split('T')[0] : ''}
                                             </td>
                                             {isAdmin && (
                                                 <td className="py-4 px-6 text-slate-600 dark:text-slate-300">

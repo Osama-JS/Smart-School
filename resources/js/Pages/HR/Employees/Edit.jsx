@@ -1,20 +1,31 @@
 import React, { useState } from 'react';
-import { Head, router, Link, useForm } from '@inertiajs/react';
+import { Head, router, Link, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import Swal from 'sweetalert2';
 import { ArrowRight, Save, User, Lock, Store, Eye, EyeOff, UserCheck, Phone, Mail, MapPin, Briefcase, Award, CreditCard, Image as ImageIcon, Paperclip, FileText, Trash2, Clock, CalendarDays, Shield } from 'lucide-react';
 
 export default function EmployeesEdit({ employee, departments, jobGrades, roles, branches = [], isAdmin = false, managerCandidates = [], shifts = [] }) {
+    const { asset_url } = usePage().props;
     const initialEmployeeShifts = employee.shifts && employee.shifts.length > 0
-        ? employee.shifts.map(s => ({
-            shift_id: s.id,
-            working_days: s.pivot && s.pivot.working_days ? JSON.parse(s.pivot.working_days) : [0, 1, 2, 3, 4]
-        }))
+        ? employee.shifts.map(s => {
+            let parsedDays = [0, 1, 2, 3, 4];
+            if (s.pivot && s.pivot.working_days) {
+                try {
+                    parsedDays = typeof s.pivot.working_days === 'string' ? JSON.parse(s.pivot.working_days) : s.pivot.working_days;
+                } catch(e) {}
+            }
+            return {
+                shift_id: s.id,
+                working_days: Array.isArray(parsedDays) ? parsedDays.map(Number) : [0, 1, 2, 3, 4]
+            };
+        })
         : [{ shift_id: '', working_days: [0, 1, 2, 3, 4] }];
 
     const [activeTab, setActiveTab] = useState('personal'); // 'personal' or 'account'
     const [showPassword, setShowPassword] = useState(false);
+    const [selectedAttachment, setSelectedAttachment] = useState(null);
 
     const { data, setData, post, processing, errors } = useForm({
         _method: 'PUT',
@@ -39,7 +50,11 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
         specialization: employee.specialization || '',
         job_title: employee.job_title || '',
         address: employee.address || '',
+        kept_attachments: (employee.attachments || []).map((att, i) => {
+            return typeof att === 'string' ? { path: att, name: `مرفق ${i+1}` } : att;
+        }),
         attachments: [],
+        attachment_names: [],
 
         // Shift Data
         employee_shifts: initialEmployeeShifts,
@@ -256,7 +271,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                                 <div>
                                                     <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الشفت (فترة العمل) {index + 1}</label>
                                                     <SelectInput
-                                                        options={shifts.map(s => ({ value: s.id, label: `${s.name} (${s.start_time} - ${s.end_time})` }))}
+                                                        options={shifts.filter(s => !data.employee_shifts.some((es, idx) => idx !== index && es.shift_id === s.id)).map(s => ({ value: s.id, label: `${s.name} (${s.start_time} - ${s.end_time})` }))}
                                                         value={shifts.map(s => ({ value: s.id, label: `${s.name} (${s.start_time} - ${s.end_time})` })).find(o => o.value === shiftEntry.shift_id) || null}
                                                         onChange={(selected) => {
                                                             const newShifts = [...data.employee_shifts];
@@ -284,8 +299,8 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                                                         onClick={() => {
                                                                             const newShifts = [...data.employee_shifts];
                                                                             const newDays = isSelected 
-                                                                                ? shiftEntry.working_days.filter(d => d !== day.id)
-                                                                                : [...shiftEntry.working_days, day.id].sort();
+                                                                                ? shiftEntry.working_days.filter(d => Number(d) !== day.id)
+                                                                                : [...shiftEntry.working_days, day.id].map(Number).sort();
                                                                             newShifts[index].working_days = newDays;
                                                                             setData('employee_shifts', newShifts);
                                                                         }}
@@ -334,32 +349,110 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                             </div>
                                             <p className="relative z-10 text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">اسحب وأفلت الملفات هنا</p>
                                             <p className="relative z-10 text-xs text-slate-500 mb-5">أو انقر لاختيار الملفات (PDF, DOC, JPG...)</p>
-                                            <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={e => setData('attachments', Array.from(e.target.files))}
+                                            <input type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onChange={e => {
+                                                if (e.target.files.length > 0) {
+                                                    const files = Array.from(e.target.files);
+                                                    setData(prev => ({
+                                                        ...prev,
+                                                        attachments: [...prev.attachments, ...files],
+                                                        attachment_names: [...prev.attachment_names, ...files.map(f => f.name.replace(/\.[^/.]+$/, ""))]
+                                                    }));
+                                                    e.target.value = null;
+                                                }
+                                            }}
                                                 className="relative z-10 text-sm text-slate-500 file:cursor-pointer file:mr-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-colors file:transition-colors" />
                                         </div>
+                                        
+                                        {/* New Files Preview List */}
+                                        {data.attachments && data.attachments.length > 0 && (
+                                            <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                                                <h4 className="text-sm font-bold text-dark-900 dark:text-white mb-3">الملفات الجديدة المحددة للرفع:</h4>
+                                                <div className="flex flex-col gap-2 max-h-[140px] overflow-y-auto pr-2 custom-scrollbar">
+                                                    {data.attachments.map((file, i) => (
+                                                        <div key={i} className="flex flex-col gap-2 bg-primary-50 dark:bg-primary-500/10 border border-primary-100 dark:border-primary-500/20 rounded-xl p-3">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-3 overflow-hidden">
+                                                                    <FileText size={18} className="text-primary-500 flex-shrink-0" />
+                                                                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate" dir="ltr">{file.name}</span>
+                                                                    <span className="text-xs text-slate-400 flex-shrink-0 font-mono">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                                                                </div>
+                                                                <button type="button" onClick={() => {
+                                                                    const newFiles = [...data.attachments];
+                                                                    const newNames = [...data.attachment_names];
+                                                                    newFiles.splice(i, 1);
+                                                                    newNames.splice(i, 1);
+                                                                    setData(prev => ({ ...prev, attachments: newFiles, attachment_names: newNames }));
+                                                                }} className="text-slate-400 hover:text-accent-500 hover:bg-white dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors flex-shrink-0">
+                                                                    <Trash2 size={16} />
+                                                                </button>
+                                                            </div>
+                                                            <input type="text" value={data.attachment_names[i] || ''} onChange={e => {
+                                                                const newNames = [...data.attachment_names];
+                                                                newNames[i] = e.target.value;
+                                                                setData('attachment_names', newNames);
+                                                            }} placeholder="اسم المرفق (مثال: شهادة البكالوريوس)" className="w-full bg-white dark:bg-slate-900 border border-primary-100 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm outline-none transition-all focus:border-primary-400" />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Existing Attachments */}
                                     <div className="animate-in slide-in-from-left-4 fade-in duration-500 delay-150 fill-mode-both">
-                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">المرفقات الحالية ({employee.attachments?.length || 0})</label>
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">المرفقات الحالية ({data.kept_attachments?.length || 0})</label>
                                         <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 h-full min-h-[160px] relative">
-                                            {employee.attachments && employee.attachments.length > 0 ? (
+                                            {data.kept_attachments && data.kept_attachments.length > 0 ? (
                                                 <div className="flex flex-col gap-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
-                                                    {employee.attachments.map((att, i) => {
-                                                        const isImage = att.match(/\.(jpeg|jpg|gif|png)$/) != null;
+                                                    {data.kept_attachments.map((att, i) => {
+                                                        const isImage = att.path.match(/\.(jpeg|jpg|gif|png)$/) != null;
                                                         return (
-                                                            <div key={i} className="flex items-center justify-between bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 shadow-sm hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 group animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${i * 100}ms` }}>
-                                                                <div className="flex items-center gap-3 overflow-hidden">
-                                                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${isImage ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-500'}`}>
-                                                                        {isImage ? <ImageIcon size={20} className="group-hover:animate-pulse" /> : <FileText size={20} className="group-hover:animate-pulse" />}
+                                                            <div key={i} className="flex flex-col gap-3 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl px-4 py-3 shadow-sm hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md transition-all duration-300 group animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${i * 100}ms` }}>
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${isImage ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-500'}`}>
+                                                                            {isImage ? <ImageIcon size={20} className="group-hover:animate-pulse" /> : <FileText size={20} className="group-hover:animate-pulse" />}
+                                                                        </div>
+                                                                        <div className="min-w-0 flex-1">
+                                                                            <button type="button" onClick={() => setSelectedAttachment(att.path)} className="text-sm font-bold text-slate-700 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 truncate block transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-primary-500 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-right text-right">
+                                                                                {att.name || `مرفق ${i+1}`}
+                                                                            </button>
+                                                                            <span className="text-xs text-slate-400 font-mono inline-block transform group-hover:translate-x-1 transition-transform" dir="ltr">{att.path.split('/').pop()}</span>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="min-w-0">
-                                                                        <a href={`/storage/${att}`} target="_blank" rel="noreferrer" className="text-sm font-bold text-slate-700 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 truncate block transition-colors relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-primary-500 after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-right">
-                                                                            مرفق {i+1}
-                                                                        </a>
-                                                                        <span className="text-xs text-slate-400 font-mono inline-block transform group-hover:translate-x-1 transition-transform">{att.split('/').pop()}</span>
-                                                                    </div>
+                                                                    <button type="button" onClick={() => {
+                                                                        Swal.fire({
+                                                                            title: 'هل أنت متأكد؟',
+                                                                            text: 'هل أنت متأكد من رغبتك في حذف هذا المرفق نهائياً؟ سيتم الحذف بعد حفظ التعديلات.',
+                                                                            icon: 'warning',
+                                                                            showCancelButton: true,
+                                                                            confirmButtonColor: '#ef4444',
+                                                                            cancelButtonColor: '#3b82f6',
+                                                                            confirmButtonText: 'نعم، احذفه',
+                                                                            cancelButtonText: 'إلغاء',
+                                                                            background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#fff',
+                                                                            color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#0f172a',
+                                                                            customClass: {
+                                                                                popup: 'rounded-3xl border border-slate-200 dark:border-slate-700',
+                                                                                confirmButton: 'rounded-xl px-6 py-2.5 font-bold',
+                                                                                cancelButton: 'rounded-xl px-6 py-2.5 font-bold'
+                                                                            }
+                                                                        }).then((result) => {
+                                                                            if (result.isConfirmed) {
+                                                                                const newKept = [...data.kept_attachments];
+                                                                                newKept.splice(i, 1);
+                                                                                setData('kept_attachments', newKept);
+                                                                            }
+                                                                        });
+                                                                    }} className="p-2 text-slate-400 hover:text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-500/10 rounded-lg transition-colors flex-shrink-0" title="حذف المرفق">
+                                                                        <Trash2 size={18} />
+                                                                    </button>
                                                                 </div>
+                                                                <input type="text" value={att.name || ''} onChange={e => {
+                                                                    const newKept = [...data.kept_attachments];
+                                                                    newKept[i].name = e.target.value;
+                                                                    setData('kept_attachments', newKept);
+                                                                }} placeholder="تعديل اسم المرفق (مثال: شهادة البكالوريوس)" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm outline-none transition-all focus:border-primary-400" />
                                                             </div>
                                                         );
                                                     })}
@@ -385,7 +478,7 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                                 <div className="w-full md:w-1/3 flex flex-col items-center justify-start border-b md:border-b-0 md:border-l border-slate-100 dark:border-slate-800 pb-8 md:pb-0 md:pl-8">
                                     <div className="relative mb-4">
                                         {employee.user?.avatar ? (
-                                            <img src={`/storage/${employee.user.avatar}`} alt="Avatar" className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-md" />
+                                            <img src={`${asset_url}/storage/${employee.user.avatar}`} alt="Avatar" className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-slate-800 shadow-md" />
                                         ) : (
                                             <div className="w-32 h-32 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-white dark:border-slate-900 shadow-md flex items-center justify-center">
                                                 <User size={40} className="text-slate-400" />
@@ -480,6 +573,49 @@ export default function EmployeesEdit({ employee, departments, jobGrades, roles,
                 </div>
 
             </form>
+
+            {/* Attachment Preview Modal */}
+            {selectedAttachment && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                        
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                            <h3 className="text-lg font-bold text-dark-900 dark:text-white flex items-center gap-2" dir="ltr">
+                                {selectedAttachment.split('/').pop()}
+                            </h3>
+                            <div className="flex items-center gap-2">
+                                <a href={`${asset_url}/storage/${selectedAttachment}`} download target="_blank" rel="noreferrer" className="flex items-center justify-center p-2 text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-xl transition-colors" title="تحميل الملف">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </a>
+                                <button onClick={() => setSelectedAttachment(null)} className="flex items-center justify-center p-2 text-slate-500 hover:text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-500/10 rounded-xl transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="flex-1 overflow-auto p-4 sm:p-6 bg-slate-100/50 dark:bg-[#0a0f16] flex items-center justify-center min-h-[50vh]">
+                            {selectedAttachment.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                                <img src={`${asset_url}/storage/${selectedAttachment}`} alt="Preview" className="max-w-full max-h-full object-contain rounded-xl shadow-sm" />
+                            ) : selectedAttachment.match(/\.(pdf)$/i) ? (
+                                <iframe src={`${asset_url}/storage/${selectedAttachment}`} className="w-full h-[70vh] rounded-xl shadow-sm border-0" title="PDF Preview"></iframe>
+                            ) : (
+                                <div className="text-center p-8">
+                                    <div className="w-20 h-20 bg-primary-50 dark:bg-primary-500/10 text-primary-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <FileText size={40} />
+                                    </div>
+                                    <h4 className="text-lg font-bold text-dark-900 dark:text-white mb-2">لا يمكن معاينة هذا النوع من الملفات</h4>
+                                    <p className="text-slate-500 dark:text-slate-400 mb-6">يرجى تحميل الملف لفتحه باستخدام البرامج المناسبة في جهازك.</p>
+                                    <a href={`${asset_url}/storage/${selectedAttachment}`} download target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-xl transition-colors shadow-sm shadow-primary-500/20">
+                                        تحميل الملف الآن
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }

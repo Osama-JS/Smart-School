@@ -197,8 +197,10 @@ class EmployeeController extends Controller
             'address'       => ['nullable', 'string'],
             'address'       => ['nullable', 'string'],
             'attachments.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
+            'attachment_names' => ['nullable', 'array'],
+            'attachment_names.*' => ['nullable', 'string'],
             'employee_shifts' => ['nullable', 'array'],
-            'employee_shifts.*.shift_id' => ['required', 'exists:shifts,id'],
+            'employee_shifts.*.shift_id' => ['nullable', 'exists:shifts,id'],
             'employee_shifts.*.working_days' => ['nullable', 'array'],
         ]);
 
@@ -222,8 +224,11 @@ class EmployeeController extends Controller
 
         $attachmentsPaths = [];
         if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                $attachmentsPaths[] = $file->store('employee_attachments', 'public');
+            $names = $request->input('attachment_names', []);
+            foreach ($request->file('attachments') as $index => $file) {
+                $name = $names[$index] ?? pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $path = $file->store('employee_attachments', 'public');
+                $attachmentsPaths[] = ['name' => $name, 'path' => $path];
             }
         }
 
@@ -328,9 +333,12 @@ class EmployeeController extends Controller
             'specialization'=> ['nullable', 'string', 'max:255'],
             'job_title'     => ['nullable', 'string', 'max:255'],
             'address'       => ['nullable', 'string'],
+            'kept_attachments' => ['nullable', 'array'],
             'attachments.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
+            'attachment_names' => ['nullable', 'array'],
+            'attachment_names.*' => ['nullable', 'string'],
             'employee_shifts' => ['nullable', 'array'],
-            'employee_shifts.*.shift_id' => ['required', 'exists:shifts,id'],
+            'employee_shifts.*.shift_id' => ['nullable', 'exists:shifts,id'],
             'employee_shifts.*.working_days' => ['nullable', 'array'],
         ]);
 
@@ -360,10 +368,36 @@ class EmployeeController extends Controller
 
         $employee->user->update($userData);
 
-        $attachmentsPaths = $employee->attachments ?? [];
+        $validatedKept = $validated['kept_attachments'] ?? [];
+        $attachmentsPaths = [];
+        $keptPaths = [];
+        foreach ($validatedKept as $kept) {
+            if (is_array($kept) && isset($kept['path'])) {
+                $attachmentsPaths[] = $kept;
+                $keptPaths[] = $kept['path'];
+            } elseif (is_string($kept)) {
+                $attachmentsPaths[] = ['name' => 'مرفق', 'path' => $kept];
+                $keptPaths[] = $kept;
+            }
+        }
+
+        $oldAttachments = $employee->attachments ?? [];
+        $oldPaths = array_map(function($att) {
+            return is_array($att) ? ($att['path'] ?? null) : (is_string($att) ? $att : null);
+        }, $oldAttachments);
+        $oldPaths = array_filter($oldPaths);
+
+        $deletedPaths = array_diff($oldPaths, $keptPaths);
+        foreach ($deletedPaths as $deletedPath) {
+            Storage::disk('public')->delete($deletedPath);
+        }
+
         if ($request->hasFile('attachments')) {
-            foreach ($request->file('attachments') as $file) {
-                $attachmentsPaths[] = $file->store('employee_attachments', 'public');
+            $names = $request->input('attachment_names', []);
+            foreach ($request->file('attachments') as $index => $file) {
+                $name = $names[$index] ?? pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $path = $file->store('employee_attachments', 'public');
+                $attachmentsPaths[] = ['name' => $name, 'path' => $path];
             }
         }
 

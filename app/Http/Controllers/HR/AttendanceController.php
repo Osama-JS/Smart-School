@@ -20,12 +20,13 @@ class AttendanceController extends Controller
     public function report(Request $request)
     {
         $user = $request->user();
-        $isAdmin = $user && $user->role && $user->role->name === 'مدير الفرع';
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $userBranchId = $isSystemAdmin ? null : $user->branch_id;
         
         $employeesQuery = Employee::query();
-        if (!$isAdmin) {
-            $employeesQuery->whereHas('user', function($q) use ($user) {
-                $q->where('branch_id', $user->branch_id);
+        if ($userBranchId) {
+            $employeesQuery->whereHas('user', function($q) use ($userBranchId) {
+                $q->where('branch_id', $userBranchId);
             });
         }
         $employees = $employeesQuery->with('user:id,name')->get()->map(function($emp) {
@@ -38,12 +39,14 @@ class AttendanceController extends Controller
             ];
         });
         
-        $academicYears = AcademicYear::with('semesters')->get();
+        $academicYears = AcademicYear::with('semesters')
+            ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
+            ->get();
 
         return Inertia::render('HR/Attendance/Report', [
             'employees' => $employees,
             'academicYears' => $academicYears,
-            'isAdmin' => $isAdmin
+            'isAdmin' => $isSystemAdmin // Pass isSystemAdmin to UI if they want to hide branch filters
         ]);
     }
     /**
@@ -51,20 +54,39 @@ class AttendanceController extends Controller
      */
     public function index(Request $request)
     {
+        $user = $request->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $userBranchId = $isSystemAdmin ? null : $user->branch_id;
+
         $startDate    = $request->get('start_date', $request->get('date', Carbon::today()->toDateString()));
         $endDate      = $request->get('end_date', $request->get('date', Carbon::today()->toDateString()));
         $branchId     = $request->get('branch_id');
+        if ($userBranchId) $branchId = $userBranchId; // Force branch_id for non-system admins
         $shiftId      = $request->get('shift_id');
         $departmentId = $request->get('department_id');
+        
         $academicYearId = $request->get('academic_year_id');
+        if (is_null($academicYearId)) {
+            $activeYear = \App\Models\AcademicYear::where('is_active', true)
+                            ->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))
+                            ->first();
+            if ($activeYear) {
+                $academicYearId = $activeYear->id;
+                $request->merge(['academic_year_id' => $academicYearId]);
+            }
+        }
+        
         $semesterId   = $request->get('semester_id');
         $status       = $request->get('status');
         $search       = $request->get('search');
         $sortBy       = $request->get('sort_by', 'created_at');
         $sortDir      = $request->get('sort_dir', 'desc');
 
+        // Auto-generate missing attendance records
+        $this->autoGenerateMissingAttendance($startDate, $endDate, $branchId);
+
         // جلب سجلات الحضور لنطاق التواريخ المحدد
-        $query = Attendance::with(['employee.department', 'branch', 'shift'])
+        $query = Attendance::with(['employee.user', 'employee.department', 'branch', 'shift'])
             ->whereBetween('date', [$startDate, $endDate]);
 
         if ($branchId) $query->where('branch_id', $branchId);
@@ -77,19 +99,21 @@ class AttendanceController extends Controller
         }
 
         if ($search) {
-            $query->whereHas('employee', fn($q) =>
+            $query->whereHas('employee.user', fn($q) =>
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('employee_number', 'like', "%{$search}%")
+            )->orWhereHas('employee', fn($q) =>
+                $q->where('national_id', 'like', "%{$search}%")
             );
         }
 
         // الترتيب والفرز
         if ($sortBy === 'name') {
             $query->join('employees', 'attendances.employee_id', '=', 'employees.id')
-                  ->orderBy('employees.name', $sortDir)
+                  ->join('users', 'employees.user_id', '=', 'users.id')
+                  ->orderBy('users.name', $sortDir)
                   ->select('attendances.*');
         } else {
-            $query->orderBy($sortBy, $sortDir);
+            $query->orderBy('attendances.' . $sortBy, $sortDir);
         }
 
         $records = $query->paginate(20)->withQueryString();
@@ -181,18 +205,35 @@ class AttendanceController extends Controller
             }
         }
 
+        $activeHolidays = \App\Models\Holiday::where('start_date', '<=', $endDate)
+            ->where('end_date', '>=', $startDate)
+            ->when($branchId, function($q) use ($branchId) {
+                $q->where(function($sq) use ($branchId) {
+                    $sq->whereNull('branch_id')->orWhere('branch_id', $branchId);
+                });
+            })
+            ->get();
+
+        $leaveBalances = \App\Models\LeaveBalance::whereIn('employee_id', $employeeIds)
+            ->where('academic_year_id', $academicYearId)
+            ->get();
+
         return Inertia::render('HR/Attendance/Index', [
             'records'      => $records,
             'stats'        => $stats,
             'weeklyTrend'  => $weeklyTrend,
-            'branches'     => Branch::where('is_active', true)->select('id', 'name')->get(),
-            'shifts'       => Shift::where('is_active', true)->select('id', 'name', 'start_time', 'end_time')->get(),
-            'departments'  => \App\Models\Department::select('id', 'name')->get(),
-            'academicYears'=> AcademicYear::with('semesters')->get(),
+            'branches'     => Branch::where('is_active', true)->when($userBranchId, fn($q) => $q->where('id', $userBranchId))->select('id', 'name')->get(),
+            'shifts'       => Shift::where('is_active', true)->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->select('id', 'name', 'start_time', 'end_time')->get(),
+            'departments'  => \App\Models\Department::when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->select('id', 'name')->get(),
+            'academicYears'=> AcademicYear::with('semesters')->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->get(),
             'filters'      => $request->only(['date', 'start_date', 'end_date', 'branch_id', 'shift_id', 'department_id', 'academic_year_id', 'semester_id', 'status', 'search', 'sort_by', 'sort_dir']),
             'today'        => Carbon::today()->toDateString(),
             'startDate'    => $startDate,
             'endDate'      => $endDate,
+            'isSystemAdmin'=> $isSystemAdmin,
+            'activeHolidays'=> $activeHolidays,
+            'leaveTypes'   => \App\Models\LeaveType::when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->get(),
+            'leaveBalances'=> $leaveBalances,
         ]);
     }
 
@@ -204,7 +245,7 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'check_in'    => 'nullable|date_format:H:i',
             'check_out'   => 'nullable|date_format:H:i',
-            'status'      => 'required|in:present,absent,late,excused',
+            'status'      => 'required|in:present,absent,late,excused,weekend,holiday,leave',
             'late_minutes'=> 'nullable|integer|min:0',
         ]);
 
@@ -221,7 +262,7 @@ class AttendanceController extends Controller
         $validated = $request->validate([
             'ids'          => 'required|array',
             'ids.*'        => 'required|exists:attendances,id',
-            'status'       => 'required|in:present,absent,late,excused',
+            'status'       => 'required|in:present,absent,late,excused,weekend,holiday,leave',
             'check_in'     => 'nullable|date_format:H:i',
             'check_out'    => 'nullable|date_format:H:i',
             'late_minutes' => 'nullable|integer|min:0',
@@ -284,5 +325,139 @@ class AttendanceController extends Controller
         );
 
         return back()->with('success', 'تم حفظ سجل الحضور بنجاح');
+    }
+
+    /**
+     * Auto-generate missing attendance records based on shifts, holidays, and leaves.
+     */
+    private function autoGenerateMissingAttendance($startDate, $endDate, $branchId = null)
+    {
+        $start = \Carbon\Carbon::parse($startDate);
+        $end = \Carbon\Carbon::parse($endDate);
+        if ($start->diffInDays($end) > 31) {
+            $end = $start->copy()->addDays(31);
+        }
+
+        $employees = \App\Models\Employee::with(['shifts', 'user'])->whereHas('user', function($q) use ($branchId) {
+            $q->where('is_active', true);
+            if ($branchId) {
+                $q->where('branch_id', $branchId);
+            }
+        })->get();
+
+        if ($employees->isEmpty()) return;
+
+        $holidays = \App\Models\Holiday::where(function($q) use ($start, $end) {
+                $q->whereBetween('start_date', [$start, $end])
+                  ->orWhereBetween('end_date', [$start, $end])
+                  ->orWhere(function($sq) use ($start, $end) {
+                      $sq->where('start_date', '<=', $start)
+                         ->where('end_date', '>=', $end);
+                  });
+            })
+            ->when($branchId, fn($q) => $q->where(fn($sq) => $sq->where('branch_id', $branchId)->orWhereNull('branch_id')))
+            ->get();
+
+        $leaves = \App\Models\Leave::where('status', 'approved')
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->where(function($q) use ($start, $end) {
+                $q->whereBetween('start_date', [$start, $end])
+                  ->orWhereBetween('end_date', [$start, $end])
+                  ->orWhere(function($sq) use ($start, $end) {
+                      $sq->where('start_date', '<=', $start)
+                         ->where('end_date', '>=', $end);
+                  });
+            })->get();
+
+        $existingRecords = Attendance::whereIn('employee_id', $employees->pluck('id'))
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->select('employee_id', 'date')
+            ->get()
+            ->groupBy('employee_id')
+            ->map(fn($group) => $group->pluck('date')->toArray());
+
+        $academicYears = \App\Models\AcademicYear::where('start_date', '<=', $end)
+            ->where('end_date', '>=', $start)
+            ->get();
+
+        $semesters = \App\Models\Semester::where('start_date', '<=', $end)
+            ->where('end_date', '>=', $start)
+            ->get();
+
+        $bulkInsert = [];
+        $now = \Carbon\Carbon::now();
+        $todayStr = $now->toDateString();
+
+        foreach ($employees as $emp) {
+            $empExisting = $existingRecords->get($emp->id, []);
+            $shift = $emp->shifts->first();
+            $empBranchId = $shift ? $shift->pivot->branch_id : $emp->user->branch_id;
+            
+            $workingDays = [0,1,2,3,4]; // Default Sunday-Thursday
+            if ($shift && $shift->pivot->working_days) {
+                $wd = $shift->pivot->working_days;
+                $workingDays = is_string($wd) ? json_decode($wd, true) : $wd;
+            }
+
+            for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+                $dateStr = $date->toDateString();
+
+                if ($date->gt($now->startOfDay()) && $dateStr !== $todayStr) {
+                    continue; 
+                }
+
+                if (in_array($dateStr, $empExisting)) continue;
+
+                $dayOfWeek = $date->dayOfWeek;
+                $isWeekend = !in_array($dayOfWeek, $workingDays);
+
+                $isHoliday = $holidays->contains(function($h) use ($date) {
+                    return $date->betweenIncluded(\Carbon\Carbon::parse($h->start_date), \Carbon\Carbon::parse($h->end_date));
+                });
+
+                $isLeave = $leaves->where('employee_id', $emp->id)->contains(function($l) use ($date) {
+                    return $date->betweenIncluded(\Carbon\Carbon::parse($l->start_date), \Carbon\Carbon::parse($l->end_date));
+                });
+
+                if ($isHoliday) {
+                    $status = 'holiday';
+                } elseif ($isLeave) {
+                    $status = 'leave';
+                } elseif ($isWeekend) {
+                    $status = 'weekend';
+                } else {
+                    $status = 'absent';
+                }
+
+                $academicYear = $academicYears->first(fn($y) => 
+                    $date->betweenIncluded(\Carbon\Carbon::parse($y->start_date), \Carbon\Carbon::parse($y->end_date)) 
+                    && ($y->branch_id == $empBranchId || is_null($y->branch_id))
+                );
+                
+                $semester = $semesters->first(fn($s) => 
+                    $date->betweenIncluded(\Carbon\Carbon::parse($s->start_date), \Carbon\Carbon::parse($s->end_date))
+                    && $s->academic_year_id == ($academicYear ? $academicYear->id : null)
+                );
+
+                $bulkInsert[] = [
+                    'employee_id' => $emp->id,
+                    'branch_id' => $empBranchId,
+                    'shift_id' => $shift ? $shift->id : null,
+                    'date' => $dateStr,
+                    'status' => $status,
+                    'late_minutes' => 0,
+                    'academic_year_id' => $academicYear ? $academicYear->id : null,
+                    'semester_id' => $semester ? $semester->id : null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        if (!empty($bulkInsert)) {
+            foreach (array_chunk($bulkInsert, 500) as $chunk) {
+                Attendance::insertOrIgnore($chunk);
+            }
+        }
     }
 }
