@@ -69,7 +69,7 @@ function Modal({ isOpen, onClose, title, children }) {
 }
 
 // ─── Action Menu ──────────────────────────────────────────────────────────────
-function ActionMenu({ dept, onEdit, onDelete }) {
+function ActionMenu({ dept, onEdit, onDelete, canEdit = true, canDelete = true }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -89,18 +89,22 @@ function ActionMenu({ dept, onEdit, onDelete }) {
             </button>
             {open && (
                 <div className="absolute left-0 top-full mt-1.5 w-40 bg-white dark:bg-[#121820] rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 border border-slate-100 dark:border-slate-800 z-20 overflow-hidden animate-scale-in">
-                    <button
-                        onClick={() => { onEdit(dept); setOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-700 dark:hover:text-primary-400 hover:pr-5 transition-all duration-200"
-                    >
-                        <Edit2 size={14} className="text-primary-500" /> تعديل القسم
-                    </button>
-                    <button
-                        onClick={() => { onDelete(dept); setOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-950/20 hover:pr-5 transition-all duration-200"
-                    >
-                        <Trash2 size={14} className="text-accent-500" /> حذف القسم
-                    </button>
+                    {canEdit && (
+                        <button
+                            onClick={() => { onEdit(dept); setOpen(false); }}
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-700 dark:hover:text-primary-400 hover:pr-5 transition-all duration-200"
+                        >
+                            <Edit2 size={14} className="text-primary-500" /> تعديل القسم
+                        </button>
+                    )}
+                    {canDelete && (
+                        <button
+                            onClick={() => { onDelete(dept); setOpen(false); }}
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-950/20 hover:pr-5 transition-all duration-200"
+                        >
+                            <Trash2 size={14} className="text-accent-500" /> حذف القسم
+                        </button>
+                    )}
                 </div>
             )}
         </div>
@@ -138,7 +142,8 @@ function Pagination({ data }) {
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function DepartmentsIndex({ departments, tree, parentOptions, stats, filters, branches = [], isAdmin = false }) {
-    const { flash } = usePage().props;
+    const { flash, auth, isSystemAdmin } = usePage().props;
+    const hasPermission = (perm) => isSystemAdmin || (auth?.permissions || []).includes(perm);
 
     const [view, setView]           = useState('grid'); // 'grid' | 'tree'
     const [searchValue, setSearch]  = useState(filters?.search ?? '');
@@ -340,13 +345,15 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
                             </button>
                         </div>
 
-                        <button
-                            onClick={openAdd}
-                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95"
-                        >
-                            <Plus size={18} /> 
-                            <span>إضافة قسم جديد</span>
-                        </button>
+                        {hasPermission('إضافة قسم') && (
+                            <button
+                                onClick={openAdd}
+                                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95"
+                            >
+                                <Plus size={18} /> 
+                                <span>إضافة قسم جديد</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -628,7 +635,15 @@ export default function DepartmentsIndex({ departments, tree, parentOptions, sta
                                             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-900/20 text-primary-600 dark:text-primary-400 shadow-inner border border-primary-100/30 dark:border-primary-900/20 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 flex items-center justify-center">
                                                 <Building size={22} strokeWidth={2.5} />
                                             </div>
-                                            <ActionMenu dept={dept} onEdit={openEdit} onDelete={setDeleteDept} />
+                                            {(hasPermission('تعديل قسم') || hasPermission('حذف قسم')) && (
+                                                <ActionMenu 
+                                                    dept={dept} 
+                                                    onEdit={openEdit} 
+                                                    onDelete={setDeleteDept} 
+                                                    canEdit={hasPermission('تعديل قسم')} 
+                                                    canDelete={hasPermission('حذف قسم')} 
+                                                />
+                                            )}
                                         </div>
                                         
                                         <div className="relative z-10 mb-6 transition-transform duration-300 group-hover:translate-x-1">

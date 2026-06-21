@@ -7,8 +7,17 @@ use App\Models\ViolationType;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class ViolationTypeController extends Controller
+class ViolationTypeController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض أنواع المخالفات', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة نوع مخالفة', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل نوع مخالفة', only: ['edit', 'update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف نوع مخالفة', only: ['destroy']),
+        ];
+    }
     public function index()
     {
         $types = ViolationType::query()

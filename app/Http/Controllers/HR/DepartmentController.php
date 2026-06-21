@@ -7,8 +7,17 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class DepartmentController extends Controller
+class DepartmentController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الأقسام', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة قسم', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل قسم', only: ['edit', 'update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف قسم', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $query = Department::with('parent')->withCount('employees');

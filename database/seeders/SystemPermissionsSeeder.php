@@ -71,5 +71,8 @@ class SystemPermissionsSeeder extends Seeder
         }
 
         $this->command->info('✅ SystemPermissionsSeeder completed successfully. Total permissions: ' . count($permissions));
+        
+        $this->command->info('⚙️ Now generating granular permissions...');
+        $this->call(GranularPermissionsSeeder::class);
     }
 }

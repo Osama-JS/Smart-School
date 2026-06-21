@@ -7,8 +7,17 @@ use App\Models\JobGrade;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class JobGradeController extends Controller
+class JobGradeController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الدرجات الوظيفية', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة درجة وظيفية', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل درجة وظيفية', only: ['edit', 'update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف درجة وظيفية', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $query = JobGrade::with(['parent'])->withCount('employees');

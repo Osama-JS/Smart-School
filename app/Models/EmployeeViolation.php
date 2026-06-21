@@ -28,6 +28,27 @@ class EmployeeViolation extends Model
         'violation_date' => 'date',
     ];
 
+    protected $appends = [
+        'employee_signature_url',
+        'admin_signature_url',
+        'attachment_url'
+    ];
+
+    public function getEmployeeSignatureUrlAttribute()
+    {
+        return $this->employee_signature ? asset('storage/' . $this->employee_signature) : null;
+    }
+
+    public function getAdminSignatureUrlAttribute()
+    {
+        return $this->admin_signature ? asset('storage/' . $this->admin_signature) : null;
+    }
+
+    public function getAttachmentUrlAttribute()
+    {
+        return $this->attachment_path ? asset('storage/' . $this->attachment_path) : null;
+    }
+
     public function branch()
     {
         return $this->belongsTo(Branch::class);

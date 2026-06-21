@@ -12,8 +12,17 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
-class AcademicStructureController extends Controller
+class AcademicStructureController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض المراحل والصفوف', only: ['index']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة مرحلة أو صف', only: ['storeSection', 'storeGrade', 'storeDivision', 'copyDivisions']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل مرحلة أو صف', only: ['updateSection', 'updateGrade', 'updateDivision']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف مرحلة أو صف', only: ['destroySection', 'destroyGrade', 'destroyDivision']),
+        ];
+    }
     public function index(Request $request)
     {
         $user = auth()->user();

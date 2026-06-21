@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Search, Filter, ShieldAlert, FileText, Send, CheckCircle, Trash2, Edit2, X, Save, RotateCcw, AlertTriangle, CalendarDays, Clock } from 'lucide-react';
+import { Plus, Search, Filter, ShieldAlert, FileText, Send, CheckCircle, Trash2, Edit2, X, Save, RotateCcw, AlertTriangle, CalendarDays, Clock, Eye } from 'lucide-react';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
+import Modal from '@/Components/Modal';
 import SelectInput from '@/Components/SelectInput';
 import Textarea from '@/Components/Textarea';
 import SignaturePad from '@/Components/SignaturePad';
@@ -15,6 +16,7 @@ export default function Index({ auth, violations, types, employees, filters, sta
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [selectedViolation, setSelectedViolation] = useState(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -88,6 +90,11 @@ export default function Index({ auth, violations, types, employees, filters, sta
         setSelectedViolation(violation);
         notifyForm.reset();
         setIsNotifyModalOpen(true);
+    };
+
+    const openPreviewModal = (violation) => {
+        setSelectedViolation(violation);
+        setIsPreviewModalOpen(true);
     };
 
     const sendNotify = (e) => {
@@ -285,7 +292,9 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                             {v.user?.name}
                                         </td>
                                         <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
-                                            <div>{v.violation_date}</div>
+                                            <div className="font-bold text-slate-900 dark:text-white">
+                                                {new Date(v.violation_date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                            </div>
                                             <div className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold">{v.violation_type?.name}</div>
                                         </td>
                                         <td className="py-4 px-6">
@@ -317,9 +326,18 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                         </td>
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => confirmDelete(v)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-500/10 transition-colors">
-                                                    <Trash2 size={16} />
+                                                <button onClick={() => openPreviewModal(v)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors" title="معاينة التفاصيل">
+                                                    <Eye size={16} />
                                                 </button>
+                                                {(!v.admin_signature || !v.employee_signature) ? (
+                                                    <button onClick={() => confirmDelete(v)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-accent-500 hover:bg-accent-50 dark:hover:bg-accent-500/10 transition-colors" title="حذف المخالفة">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                ) : (
+                                                    <button disabled className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800/50 text-slate-300 dark:text-slate-600 cursor-not-allowed" title="لا يمكن حذف مخالفة معتمدة من الطرفين">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -341,7 +359,6 @@ export default function Index({ auth, violations, types, employees, filters, sta
                 </div>
             </div>
 
-            {/* Create Modal */}
             {/* Create Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -563,19 +580,17 @@ export default function Index({ auth, violations, types, employees, filters, sta
                             <Trash2 size={32} />
                         </div>
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">تأكيد الحذف</h2>
-                        <p className="text-slate-500 dark:text-slate-400 mb-6">
-                            هل أنت متأكد من رغبتك في حذف هذه المخالفة؟ لا يمكن التراجع عن هذا الإجراء.
-                        </p>
+                        <p className="text-slate-600 dark:text-slate-400 mb-8">هل أنت متأكد من رغبتك في حذف هذه المخالفة؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                        
                         <div className="flex gap-3">
                             <button
                                 onClick={deleteViolation}
-                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all"
+                                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold transition-colors"
                             >
-                                حذف نهائياً
+                                نعم، احذف المخالفة
                             </button>
                             <button
                                 onClick={() => setIsDeleteModalOpen(false)}
-                                className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
                             >
                                 تراجع
                             </button>
@@ -584,6 +599,98 @@ export default function Index({ auth, violations, types, employees, filters, sta
                 </div>
             )}
 
+            {/* Preview Modal */}
+            <Modal show={isPreviewModalOpen} onClose={() => setIsPreviewModalOpen(false)} maxWidth="2xl">
+                {selectedViolation && (
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <FileText size={20} className="text-primary-500" />
+                                تفاصيل المخالفة
+                            </h2>
+                            <button onClick={() => setIsPreviewModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors p-1">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">تاريخ المخالفة</span>
+                                    <span className="text-slate-800 dark:text-slate-200 font-semibold">{selectedViolation.violation_date}</span>
+                                </div>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">نوع المخالفة</span>
+                                    <span className="text-red-600 dark:text-red-400 font-bold">{selectedViolation.violation_type?.name}</span>
+                                </div>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 md:col-span-2">
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">الموظف المخالف</span>
+                                    <span className="text-slate-800 dark:text-slate-200 font-semibold">{selectedViolation.user?.name}</span>
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">التفاصيل الكاملة</span>
+                                <div className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 leading-relaxed min-h-[100px]">
+                                    {selectedViolation.details}
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">الإجراء المتخذ</span>
+                                <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 text-orange-800 dark:text-orange-300 font-medium">
+                                    {selectedViolation.action_taken}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">توقيع الإدارة</span>
+                                    {selectedViolation.admin_signature_url ? (
+                                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-800 flex justify-center h-32 items-center">
+                                            <img src={selectedViolation.admin_signature_url} alt="توقيع الإدارة" className="max-h-full max-w-full object-contain" />
+                                        </div>
+                                    ) : (
+                                        <div className="border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-4 bg-slate-50 dark:bg-slate-800/50 flex justify-center h-32 items-center text-slate-400 dark:text-slate-500 text-sm">
+                                            لا يوجد توقيع
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">توقيع الموظف</span>
+                                    {selectedViolation.employee_signature_url ? (
+                                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-800 flex justify-center h-32 items-center relative">
+                                            <div className="absolute top-2 right-2 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                <CheckCircle size={10} /> معتمد
+                                            </div>
+                                            <img src={selectedViolation.employee_signature_url} alt="توقيع الموظف" className="max-h-full max-w-full object-contain" />
+                                        </div>
+                                    ) : (
+                                        <div className="border border-red-200 dark:border-red-900/50 border-dashed rounded-xl p-4 bg-red-50/50 dark:bg-red-900/10 flex flex-col justify-center h-32 items-center text-red-400 dark:text-red-500 text-sm gap-2">
+                                            <AlertCircle size={20} />
+                                            <span>بانتظار التوقيع</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {selectedViolation.attachment_url && (
+                                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                    <a 
+                                        href={selectedViolation.attachment_url} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="flex items-center justify-center gap-2 w-full py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 dark:text-blue-400 rounded-xl transition-colors font-bold text-sm border border-blue-100 dark:border-blue-900/50"
+                                    >
+                                        <FileText size={18} />
+                                        عرض المرفقات
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </AdminLayout>
     );
 }

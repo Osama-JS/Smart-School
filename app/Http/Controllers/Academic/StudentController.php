@@ -17,8 +17,17 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
-class StudentController extends Controller
+class StudentController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الطلاب', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة طالب', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل طالب', only: ['edit', 'update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف طالب', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $query = Student::with(['user', 'currentEnrollment.division.grade.section', 'currentEnrollment.academicYear']);

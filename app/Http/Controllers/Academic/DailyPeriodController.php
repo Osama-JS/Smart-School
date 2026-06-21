@@ -7,8 +7,17 @@ use App\Models\DailyPeriod;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class DailyPeriodController extends Controller
+class DailyPeriodController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الجداول الدراسية', only: ['index']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة جدول دراسي', only: ['store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل جدول دراسي', only: ['update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف جدول دراسي', only: ['destroy']),
+        ];
+    }
     public function index()
     {
         $branchId = auth()->user()->branch_id;

@@ -9,8 +9,16 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 
-class ReportController extends Controller
+class ReportController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض التقارير', only: ['index', 'showTemplate', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة تقرير', only: ['store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل تقرير', only: ['review']),
+        ];
+    }
     public function index(Request $request)
     {
         $user = $request->user();

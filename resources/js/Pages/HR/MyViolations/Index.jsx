@@ -1,26 +1,59 @@
 import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { AlertCircle, CheckCircle, PenTool, FileText, ShieldAlert } from 'lucide-react';
+import { AlertCircle, CheckCircle, PenTool, FileText, ShieldAlert, Filter, RefreshCw, Eye, X } from 'lucide-react';
 import Modal from '@/Components/Modal';
 import SignaturePad from '@/Components/SignaturePad';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import InputError from '@/Components/InputError';
 import Pagination from '@/Components/Pagination';
+import SelectInput from '@/Components/SelectInput';
+import InputLabel from '@/Components/InputLabel';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 
-export default function MyViolations({ auth, violations }) {
+export default function MyViolations({ auth, violations, types, filters }) {
     const [isSignModalOpen, setIsSignModalOpen] = useState(false);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [selectedViolation, setSelectedViolation] = useState(null);
+
+    const [filterData, setFilterData] = useState({
+        violation_type_id: filters?.violation_type_id || '',
+        start_date: filters?.start_date || '',
+        end_date: filters?.end_date || '',
+        status: filters?.status || ''
+    });
 
     const { data, setData, post, processing, errors, reset } = useForm({
         employee_signature: null,
     });
 
+    const applyFilters = () => {
+        router.get(route('hr.my-violations'), filterData, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const resetFilters = () => {
+        setFilterData({
+            violation_type_id: '',
+            start_date: '',
+            end_date: '',
+            status: ''
+        });
+        router.get(route('hr.my-violations'));
+    };
+
     const openSignModal = (violation) => {
         setSelectedViolation(violation);
         reset();
         setIsSignModalOpen(true);
+    };
+
+    const openPreviewModal = (violation) => {
+        setSelectedViolation(violation);
+        setIsPreviewModalOpen(true);
     };
 
     const submitSignature = (e) => {
@@ -60,76 +93,165 @@ export default function MyViolations({ auth, violations }) {
                     </div>
                 </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {violations.data.map(v => (
-                            <div key={v.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col transition-all hover:shadow-md">
-                                <div className={`h-2 w-full ${v.employee_signature ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                <div className="p-5 flex-1 flex flex-col">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">{v.violation_date}</span>
-                                        </div>
-                                        {v.employee_signature ? (
-                                            <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 text-sm font-medium">
-                                                <CheckCircle size={16} />
-                                                موقّع
-                                            </span>
-                                        ) : (
-                                            <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 text-sm font-medium animate-pulse">
-                                                <AlertCircle size={16} />
-                                                بانتظار توقيعك
-                                            </span>
-                                        )}
-                                    </div>
-                                    
-                                    <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{v.violation_type?.name}</h4>
-                                    
-                                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-4 flex-1">
-                                        <span className="font-semibold block mb-1">التفاصيل:</span>
-                                        <p className="line-clamp-3">{v.details}</p>
-                                    </div>
-
-                                    <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-xl mb-4 border border-orange-100 dark:border-orange-900/30">
-                                        <span className="text-xs font-semibold text-orange-800 dark:text-orange-400 block mb-1">الإجراء المتخذ:</span>
-                                        <p className="text-sm text-orange-900 dark:text-orange-300">{v.action_taken}</p>
-                                    </div>
-
-                                    <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
-                                        {v.attachment_path ? (
-                                            <a href={`/storage/${v.attachment_path}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                <FileText size={16} />
-                                                عرض المرفقات
-                                            </a>
-                                        ) : <span></span>}
-
-                                        {!v.employee_signature && (
-                                            <PrimaryButton onClick={() => openSignModal(v)} className="!bg-red-600 hover:!bg-red-700 !px-3 !py-1.5 text-xs">
-                                                <PenTool size={14} className="me-1.5" />
-                                                التوقيع الآن
-                                            </PrimaryButton>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-
-                        {violations.data.length === 0 && (
-                            <div className="col-span-full bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center">
-                                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 mb-4">
-                                    <CheckCircle size={32} />
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">سجلك نظيف!</h3>
-                                <p className="text-gray-500 dark:text-gray-400">لا توجد أي مخالفات مسجلة بحقك.</p>
-                            </div>
-                        )}
+                {/* Filters Section */}
+                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6">
+                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800/80">
+                        <Filter size={18} className="text-primary-500" />
+                        <h3 className="font-bold text-slate-800 dark:text-white">تصفية النتائج</h3>
                     </div>
-                    
-                    {violations.data.length > 0 && (
-                        <div className="mt-8">
-                            <Pagination links={violations.links} />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div className="group flex flex-col">
+                            <InputLabel value="نوع المخالفة" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <SelectInput 
+                                className="w-full" 
+                                value={filterData.violation_type_id} 
+                                onChange={val => setFilterData({...filterData, violation_type_id: val})}
+                                options={[
+                                    { value: '', label: 'جميع الأنواع' },
+                                    ...(types || []).map(t => ({ value: t.id, label: t.name }))
+                                ]}
+                            />
                         </div>
-                    )}
+
+                        <div className="group flex flex-col">
+                            <InputLabel value="حالة التوقيع" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <SelectInput 
+                                className="w-full" 
+                                value={filterData.status} 
+                                onChange={val => setFilterData({...filterData, status: val})}
+                                options={[
+                                    { value: '', label: 'الكل' },
+                                    { value: 'unsigned', label: 'بانتظار التوقيع' },
+                                    { value: 'signed', label: 'موقّعة' }
+                                ]}
+                            />
+                        </div>
+
+                        <div className="group flex flex-col">
+                            <InputLabel value="من تاريخ" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <FlatpickrInput 
+                                type="date"
+                                className="w-full bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 transition-all hover:bg-slate-100 dark:hover:bg-slate-800/80 !pl-10"
+                                value={filterData.start_date}
+                                onChange={val => setFilterData({...filterData, start_date: val})}
+                                placeholder="اختر البداية..."
+                            />
+                        </div>
+
+                        <div className="group flex flex-col">
+                            <InputLabel value="إلى تاريخ" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <FlatpickrInput 
+                                type="date"
+                                className="w-full bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 transition-all hover:bg-slate-100 dark:hover:bg-slate-800/80 !pl-10"
+                                value={filterData.end_date}
+                                onChange={val => setFilterData({...filterData, end_date: val})}
+                                placeholder="اختر النهاية..."
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/80">
+                        <button 
+                            onClick={applyFilters} 
+                            className="bg-primary-500 hover:bg-primary-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm shadow-primary-500/20"
+                        >
+                            <Filter size={16} />
+                            تطبيق الفرز
+                        </button>
+                        <button 
+                            onClick={resetFilters} 
+                            className="bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2"
+                        >
+                            <RefreshCw size={16} />
+                            إعادة ضبط
+                        </button>
+                    </div>
                 </div>
+
+                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-right min-w-full">
+                            <thead>
+                                <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">التاريخ والنوع</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">التفاصيل</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الإجراء المتخذ</th>
+                                    <th className="py-4 px-6 text-center text-sm font-bold text-slate-500 dark:text-slate-400">حالة التوقيع</th>
+                                    <th className="py-4 px-6 text-center text-sm font-bold text-slate-500 dark:text-slate-400 w-24">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {violations.data.length > 0 ? violations.data.map((v) => (
+                                    <tr key={v.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                        <td className="py-4 px-6">
+                                            <div className="text-sm font-bold text-slate-900 dark:text-white">{v.violation_date}</div>
+                                            <div className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold">{v.violation_type?.name}</div>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <div className="text-sm text-slate-600 dark:text-slate-400 max-w-xs truncate" title={v.details}>
+                                                {v.details}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <div className="text-sm text-slate-600 dark:text-slate-400">{v.action_taken}</div>
+                                        </td>
+                                        <td className="py-4 px-6 text-center">
+                                            {v.employee_signature ? (
+                                                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50">
+                                                    <CheckCircle size={14} />
+                                                    موقّع
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50 animate-pulse">
+                                                    <AlertCircle size={14} />
+                                                    بانتظار التوقيع
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="py-4 px-6 text-center">
+                                            <div className="flex justify-center items-center gap-2">
+                                                <button
+                                                    onClick={() => openPreviewModal(v)}
+                                                    className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 flex items-center justify-center transition-colors"
+                                                    title="معاينة التفاصيل"
+                                                >
+                                                    <Eye size={16} />
+                                                </button>
+                                                {!v.employee_signature && (
+                                                    <button
+                                                        onClick={() => openSignModal(v)}
+                                                        className="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 flex items-center justify-center transition-colors"
+                                                        title="التوقيع الآن"
+                                                    >
+                                                        <PenTool size={16} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan="5" className="py-12 text-center">
+                                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 mb-4">
+                                                <CheckCircle size={32} />
+                                            </div>
+                                            <p className="text-slate-500 dark:text-slate-400 font-bold">سجلك نظيف! لا توجد أي مخالفات مسجلة بحقك.</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                {violations.data.length > 0 && (
+                    <div className="mt-8">
+                        <Pagination links={violations.links} />
+                    </div>
+                )}
+            </div>
+
             {/* Sign Modal */}
             <Modal show={isSignModalOpen} onClose={() => setIsSignModalOpen(false)} maxWidth="md">
                 <div className="p-6">
@@ -159,6 +281,95 @@ export default function MyViolations({ auth, violations }) {
                         </div>
                     </form>
                 </div>
+            </Modal>
+            
+            {/* Preview Modal */}
+            <Modal show={isPreviewModalOpen} onClose={() => setIsPreviewModalOpen(false)} maxWidth="2xl">
+                {selectedViolation && (
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
+                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <FileText size={20} className="text-primary-500" />
+                                تفاصيل المخالفة
+                            </h2>
+                            <button onClick={() => setIsPreviewModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors p-1">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">تاريخ المخالفة</span>
+                                    <span className="text-slate-800 dark:text-slate-200 font-semibold">{selectedViolation.violation_date}</span>
+                                </div>
+                                <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">نوع المخالفة</span>
+                                    <span className="text-red-600 dark:text-red-400 font-bold">{selectedViolation.violation_type?.name}</span>
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">التفاصيل الكاملة</span>
+                                <div className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 leading-relaxed min-h-[100px]">
+                                    {selectedViolation.details}
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">الإجراء المتخذ</span>
+                                <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 text-orange-800 dark:text-orange-300 font-medium">
+                                    {selectedViolation.action_taken}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">توقيع الإدارة</span>
+                                    {selectedViolation.admin_signature_url ? (
+                                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-800 flex justify-center h-32 items-center">
+                                            <img src={selectedViolation.admin_signature_url} alt="توقيع الإدارة" className="max-h-full max-w-full object-contain" />
+                                        </div>
+                                    ) : (
+                                        <div className="border border-slate-200 dark:border-slate-700 border-dashed rounded-xl p-4 bg-slate-50 dark:bg-slate-800/50 flex justify-center h-32 items-center text-slate-400 dark:text-slate-500 text-sm">
+                                            لا يوجد توقيع
+                                        </div>
+                                    )}
+                                </div>
+                                <div>
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">توقيع الموظف</span>
+                                    {selectedViolation.employee_signature_url ? (
+                                        <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-800 flex justify-center h-32 items-center relative">
+                                            <div className="absolute top-2 right-2 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                <CheckCircle size={10} /> معتمد
+                                            </div>
+                                            <img src={selectedViolation.employee_signature_url} alt="توقيع الموظف" className="max-h-full max-w-full object-contain" />
+                                        </div>
+                                    ) : (
+                                        <div className="border border-red-200 dark:border-red-900/50 border-dashed rounded-xl p-4 bg-red-50/50 dark:bg-red-900/10 flex flex-col justify-center h-32 items-center text-red-400 dark:text-red-500 text-sm gap-2">
+                                            <AlertCircle size={20} />
+                                            <span>بانتظار التوقيع</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {selectedViolation.attachment_url && (
+                                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                    <a 
+                                        href={selectedViolation.attachment_url} 
+                                        target="_blank" 
+                                        rel="noreferrer"
+                                        className="flex items-center justify-center gap-2 w-full py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 dark:text-blue-400 rounded-xl transition-colors font-bold text-sm border border-blue-100 dark:border-blue-900/50"
+                                    >
+                                        <FileText size={18} />
+                                        عرض المرفقات
+                                    </a>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </Modal>
         </AdminLayout>
     );

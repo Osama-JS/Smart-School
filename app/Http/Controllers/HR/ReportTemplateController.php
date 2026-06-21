@@ -8,8 +8,17 @@ use App\Models\JobGrade;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class ReportTemplateController extends Controller
+class ReportTemplateController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض قوالب التقارير', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة قالب تقرير', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل قالب تقرير', only: ['edit', 'update', 'updateFields']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف قالب تقرير', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $user = auth()->user();

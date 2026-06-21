@@ -10,8 +10,17 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
-class AcademicYearController extends Controller
+class AcademicYearController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض السنوات الدراسية', only: ['index']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة سنة دراسية', only: ['store', 'storeSemester']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل سنة دراسية', only: ['update', 'updateSemester', 'toggleActive', 'toggleSemesterActive']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف سنة دراسية', only: ['destroy', 'destroySemester']),
+        ];
+    }
     public function index(Request $request)
     {
         $query = AcademicYear::with('semesters')->withCount('semesters');

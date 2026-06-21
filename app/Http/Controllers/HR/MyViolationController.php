@@ -12,15 +12,53 @@ use Illuminate\Support\Str;
 
 class MyViolationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $violations = EmployeeViolation::with('violationType')
+        $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+
+        $query = EmployeeViolation::with('violationType')
             ->where('user_id', Auth::id())
-            ->latest('violation_date')
-            ->paginate(15);
+            ->where('academic_year_id', $activeYearId);
+
+        if ($request->filled('violation_type_id')) {
+            $query->where('violation_type_id', $request->violation_type_id);
+        }
+        if ($request->filled('start_date')) {
+            $query->whereDate('violation_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('violation_date', '<=', $request->end_date);
+        }
+        if ($request->filled('status')) {
+            if ($request->status === 'signed') {
+                $query->whereNotNull('employee_signature');
+            } elseif ($request->status === 'unsigned') {
+                $query->whereNull('employee_signature');
+            }
+        }
+
+        $violations = $query->latest('violation_date')->paginate(15)->through(function ($violation) {
+            return [
+                'id' => $violation->id,
+                'violation_date' => $violation->violation_date->format('Y-m-d'),
+                'violation_type' => $violation->violationType,
+                'details' => $violation->details,
+                'action_taken' => $violation->action_taken,
+                'employee_signature' => $violation->employee_signature,
+                'admin_signature' => $violation->admin_signature,
+                'employee_signature_url' => $violation->employee_signature_url,
+                'admin_signature_url' => $violation->admin_signature_url,
+                'attachment_url' => $violation->attachment_url,
+                'attachment_path' => $violation->attachment_path,
+            ];
+        });
+
+        $types = \App\Models\ViolationType::where('is_active', true)->get(['id', 'name']);
 
         return Inertia::render('HR/MyViolations/Index', [
-            'violations' => $violations
+            'violations' => $violations,
+            'types' => $types,
+            'filters' => $request->only(['violation_type_id', 'start_date', 'end_date', 'status']),
         ]);
     }
 

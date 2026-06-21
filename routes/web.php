@@ -86,7 +86,9 @@ Route::middleware('auth')->group(function () {
         Route::put('/academic/semesters/{semester}', [\App\Http\Controllers\Academic\AcademicYearController::class, 'updateSemester'])->name('academic.semesters.update');
         Route::delete('/academic/semesters/{semester}', [\App\Http\Controllers\Academic\AcademicYearController::class, 'destroySemester'])->name('academic.semesters.destroy');
         Route::post('/academic/semesters/{semester}/toggle', [\App\Http\Controllers\Academic\AcademicYearController::class, 'toggleSemesterActive'])->name('academic.semesters.toggle');
+    });
         
+    Route::middleware('permission:إدارة المراحل والصفوف')->group(function () {
         // Structure (Sections, Grades, Divisions)
         Route::get('/academic/structure', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'index'])->name('academic.structure');
         
@@ -102,13 +104,17 @@ Route::middleware('auth')->group(function () {
         Route::put('/academic/divisions/{division}', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'updateDivision'])->name('academic.divisions.update');
         Route::delete('/academic/divisions/{division}', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'destroyDivision'])->name('academic.divisions.destroy');
         Route::post('/academic/divisions/copy', [\App\Http\Controllers\Academic\AcademicStructureController::class, 'copyDivisions'])->name('academic.divisions.copy');
+    });
 
+    Route::middleware('permission:إدارة المواد الدراسية')->group(function () {
         // Subjects
         Route::get('/academic/subjects', [\App\Http\Controllers\Academic\SubjectController::class, 'index'])->name('academic.subjects.index');
         Route::post('/academic/subjects', [\App\Http\Controllers\Academic\SubjectController::class, 'store'])->name('academic.subjects.store');
         Route::put('/academic/subjects/{subject}', [\App\Http\Controllers\Academic\SubjectController::class, 'update'])->name('academic.subjects.update');
         Route::delete('/academic/subjects/{subject}', [\App\Http\Controllers\Academic\SubjectController::class, 'destroy'])->name('academic.subjects.destroy');
+    });
 
+    Route::middleware('permission:إدارة الجداول الدراسية')->group(function () {
         // Timetables & Periods
         Route::resource('/academic/periods', \App\Http\Controllers\Academic\DailyPeriodController::class)->names([
             'index'   => 'academic.periods',
@@ -121,16 +127,18 @@ Route::middleware('auth')->group(function () {
         Route::post('/academic/timetable/assign', [\App\Http\Controllers\Academic\TimetableController::class, 'assign'])->name('academic.timetable.assign');
         Route::post('/academic/timetable/unassign', [\App\Http\Controllers\Academic\TimetableController::class, 'unassign'])->name('academic.timetable.unassign');
         
-        // Teacher's Timetable
-        Route::get('/academic/my-timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'myTimetable'])->name('academic.my-timetable');
-
         // Class Coverage (Absence & Substitution)
         Route::get('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'index'])->name('academic.coverage.index');
         Route::get('/academic/coverage/create', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'create'])->name('academic.coverage.create');
         Route::get('/academic/coverage/teacher-periods', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'getTeacherPeriods'])->name('academic.coverage.teacher-periods');
         Route::post('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'store'])->name('academic.coverage.store');
         Route::delete('/academic/coverage/{coverage}', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'destroy'])->name('academic.coverage.destroy');
+    });
 
+    // Teacher's Timetable (No specific permission needed, checking logic in controller or open to all teachers)
+    Route::get('/academic/my-timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'myTimetable'])->name('academic.my-timetable');
+
+    Route::middleware('permission:إدارة الطلاب')->group(function () {
         // Parents
         Route::post('/academic/parents/quick-store', [\App\Http\Controllers\Academic\ParentController::class, 'quickStore'])->name('academic.parents.quick-store');
         Route::resource('/academic/parents', \App\Http\Controllers\Academic\ParentController::class)->names([
@@ -289,11 +297,13 @@ Route::middleware('auth')->group(function () {
             'index'   => 'meetings.index',
             'store'   => 'meetings.store',
             'show'    => 'meetings.show',
+            'update'  => 'meetings.update',
             'destroy' => 'meetings.destroy',
-        ])->except(['create', 'edit', 'update']);
+        ]);
         
         Route::post('/meetings/{meeting}/attendance', [\App\Http\Controllers\HR\MeetingController::class, 'updateAttendance'])->name('meetings.attendance');
         Route::post('/meetings/{meeting}/complete', [\App\Http\Controllers\HR\MeetingController::class, 'completeMeeting'])->name('meetings.complete');
+        Route::post('/meetings/{meeting}/remind', [\App\Http\Controllers\HR\MeetingController::class, 'remindParticipants'])->name('meetings.remind');
     });
 });
 

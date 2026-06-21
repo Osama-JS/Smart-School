@@ -12,8 +12,17 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class LeaveController extends Controller
+class LeaveController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الإجازات والعطلات', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة إجازة أو عطلة', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل إجازة أو عطلة', only: ['edit', 'update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف إجازة أو عطلة', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $user = $request->user();

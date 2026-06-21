@@ -9,8 +9,17 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 
-class SubjectController extends Controller
+class SubjectController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض المواد الدراسية', only: ['index']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة مادة دراسية', only: ['store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل مادة دراسية', only: ['update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف مادة دراسية', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $user = auth()->user();

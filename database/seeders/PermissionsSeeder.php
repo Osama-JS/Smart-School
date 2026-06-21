@@ -58,5 +58,8 @@ class PermissionsSeeder extends Seeder
         }
 
         $this->command->info('✅ Permissions seeded: ' . Permission::count() . ' permissions.');
+        
+        $this->command->info('⚙️ Now generating granular permissions...');
+        $this->call(GranularPermissionsSeeder::class);
     }
 }

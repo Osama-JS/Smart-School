@@ -9,8 +9,17 @@ use Inertia\Inertia;
 
 use Illuminate\Support\Facades\DB;
 
-class ShiftController extends Controller
+class ShiftController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الشفتات', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة شفت', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل شفت', only: ['edit', 'update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف شفت', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $user = auth()->user();

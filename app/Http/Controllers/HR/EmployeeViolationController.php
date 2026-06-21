@@ -12,11 +12,23 @@ use Illuminate\Support\Facades\Storage;
 use App\Services\NotificationService;
 use Illuminate\Support\Str;
 
-class EmployeeViolationController extends Controller
+class EmployeeViolationController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض المخالفات', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة مخالفة', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل مخالفة', only: ['edit', 'update']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف مخالفة', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
+        $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+        
         $query = EmployeeViolation::with(['user', 'violationType'])
+            ->where('academic_year_id', $activeYearId)
             ->latest('violation_date');
 
         if ($request->filled('user_id')) {
@@ -38,9 +50,9 @@ class EmployeeViolationController extends Controller
         })->select('id', 'name')->get();
 
         $stats = [
-            'total' => EmployeeViolation::count(),
-            'this_month' => EmployeeViolation::whereMonth('violation_date', date('m'))->whereYear('violation_date', date('Y'))->count(),
-            'unsigned' => EmployeeViolation::whereNull('employee_signature')->count(),
+            'total' => EmployeeViolation::where('academic_year_id', $activeYearId)->count(),
+            'this_month' => EmployeeViolation::where('academic_year_id', $activeYearId)->whereMonth('violation_date', date('m'))->whereYear('violation_date', date('Y'))->count(),
+            'unsigned' => EmployeeViolation::where('academic_year_id', $activeYearId)->whereNull('employee_signature')->count(),
         ];
 
         return Inertia::render('HR/Violations/Index', [
@@ -117,6 +129,10 @@ class EmployeeViolationController extends Controller
 
     public function destroy(EmployeeViolation $employeeViolation)
     {
+        if ($employeeViolation->admin_signature && $employeeViolation->employee_signature) {
+            return back()->with('error', 'لا يمكن حذف المخالفة بعد اعتمادها وتوقيعها من قِبل الإدارة والموظف.');
+        }
+
         if ($employeeViolation->attachment_path) {
             Storage::disk('public')->delete($employeeViolation->attachment_path);
         }

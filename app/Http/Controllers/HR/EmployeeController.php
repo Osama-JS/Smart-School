@@ -15,8 +15,17 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
-class EmployeeController extends Controller
+class EmployeeController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الموظفين', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة موظف', only: ['create', 'store']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل موظف', only: ['edit', 'update', 'quickUpdate']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف موظف', only: ['destroy']),
+        ];
+    }
     public function index(Request $request)
     {
         $query = Employee::query()

@@ -12,8 +12,16 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
 
-class AttendanceController extends Controller
+class AttendanceController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الحضور والانصراف', only: ['index', 'report']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إضافة حضور وانصراف', only: ['store', 'bulkUpdate']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل حضور وانصراف', only: ['update']),
+        ];
+    }
     /**
      * صفحة التقرير المتقدم للحضور والانصراف (شهري للموظف)
      */

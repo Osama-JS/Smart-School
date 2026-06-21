@@ -14,8 +14,15 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class TimetableController extends Controller
+class TimetableController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+        public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الجداول الدراسية', only: ['index']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:إسناد المعلمين', only: ['assign', 'unassign']),
+        ];
+    }
     public function index(Request $request)
     {
         $branchId = auth()->user()->branch_id;
