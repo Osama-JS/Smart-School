@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Search, Filter, ShieldAlert, FileText, Send, CheckCircle, Trash2, Edit2, X, Save, RotateCcw, AlertTriangle, CalendarDays, Clock, Eye } from 'lucide-react';
@@ -18,6 +18,8 @@ export default function Index({ auth, violations, types, employees, filters, sta
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
     const [selectedViolation, setSelectedViolation] = useState(null);
+    const [repetitionLevel, setRepetitionLevel] = useState(null);
+    const [isCheckingRepetition, setIsCheckingRepetition] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         user_id: '',
@@ -25,6 +27,7 @@ export default function Index({ auth, violations, types, employees, filters, sta
         violation_date: new Date().toISOString().split('T')[0],
         details: '',
         action_taken: '',
+        status: 'قيد المتابعة',
         attachment: null,
         admin_signature: null,
     });
@@ -39,6 +42,24 @@ export default function Index({ auth, violations, types, employees, filters, sta
         start_date: filters.start_date || '',
         end_date: filters.end_date || '',
     });
+
+    useEffect(() => {
+        if (data.user_id && data.violation_type_id) {
+            setIsCheckingRepetition(true);
+            fetch(route('hr.employee-violations.check-repetition') + `?user_id=${data.user_id}&violation_type_id=${data.violation_type_id}`, {
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(result => {
+                setRepetitionLevel(result.repetition_level);
+                setData('action_taken', result.action_taken || '');
+                setIsCheckingRepetition(false);
+            })
+            .catch(() => setIsCheckingRepetition(false));
+        } else {
+            setRepetitionLevel(null);
+        }
+    }, [data.user_id, data.violation_type_id]);
 
     const applyFilters = () => {
         router.get(route('hr.employee-violations.index'), filterData, {
@@ -62,17 +83,13 @@ export default function Index({ auth, violations, types, employees, filters, sta
 
     const openModal = () => {
         reset();
+        setRepetitionLevel(null);
         setIsModalOpen(true);
     };
 
     const handleTypeChange = (e) => {
         const typeId = e.target.value;
         setData('violation_type_id', typeId);
-        
-        const selectedType = types.find(t => t.id == typeId);
-        if (selectedType && !data.action_taken) {
-            setData('action_taken', selectedType.default_action);
-        }
     };
 
     const submit = (e) => {
@@ -112,6 +129,15 @@ export default function Index({ auth, violations, types, employees, filters, sta
     const deleteViolation = () => {
         router.delete(route('hr.employee-violations.destroy', selectedViolation.id), {
             onSuccess: () => setIsDeleteModalOpen(false)
+        });
+    };
+
+    const toggleStatus = (violation) => {
+        const newStatus = violation.status === 'قيد المتابعة' ? 'تم تنفيذ الإجراء' : 'قيد المتابعة';
+        router.put(route('hr.employee-violations.update-status', violation.id), {
+            status: newStatus
+        }, {
+            preserveScroll: true
         });
     };
 
@@ -280,6 +306,7 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الموظف</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">التاريخ والنوع</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الإجراء المتخذ</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">حالة الإجراء</th>
                                     <th className="py-4 px-6 text-center text-sm font-bold text-slate-500 dark:text-slate-400">توقيع الموظف</th>
                                     <th className="py-4 px-6 text-center text-sm font-bold text-slate-500 dark:text-slate-400">مرفقات</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 w-24">إجراءات</th>
@@ -295,10 +322,27 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                             <div className="font-bold text-slate-900 dark:text-white">
                                                 {new Date(v.violation_date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
                                             </div>
-                                            <div className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold">{v.violation_type?.name}</div>
+                                            <div className="text-xs mt-1 font-semibold flex items-center gap-2">
+                                                <span className="text-red-600 dark:text-red-400">{v.violation_type?.name}</span>
+                                                {v.repetition_level && (
+                                                    <span className={`px-2 py-0.5 rounded-md text-[10px] ${v.repetition_level === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : v.repetition_level === 2 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                        {v.repetition_level === 1 ? 'المرة الأولى' : v.repetition_level === 2 ? 'المرة الثانية' : 'المرة الثالثة فأكثر'}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="py-4 px-6">
                                             <div className="text-sm text-slate-600 dark:text-slate-400">{v.action_taken}</div>
+                                        </td>
+                                        <td className="py-4 px-6">
+                                            <button 
+                                                onClick={() => toggleStatus(v)}
+                                                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all hover:shadow-sm ${v.status === 'تم تنفيذ الإجراء' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50' : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700'}`}
+                                                title="انقر لتغيير الحالة"
+                                            >
+                                                {v.status === 'تم تنفيذ الإجراء' ? <CheckCircle size={14} /> : <Clock size={14} />}
+                                                {v.status || 'قيد المتابعة'}
+                                            </button>
                                         </td>
                                         <td className="py-4 px-6 text-center">
                                             {v.employee_signature ? (
@@ -343,7 +387,7 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan="6" className="py-12 text-center text-slate-500">
+                                        <td colSpan="7" className="py-12 text-center text-slate-500">
                                             لا توجد مخالفات مسجلة.
                                         </td>
                                     </tr>
@@ -406,17 +450,7 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                     <SelectInput
                                         className="w-full"
                                         value={data.violation_type_id}
-                                        onChange={(val) => {
-                                            setData('violation_type_id', val);
-                                            const selectedType = types.find(t => t.id === parseInt(val));
-                                            if (selectedType && !data.action_taken) {
-                                                setData(prev => ({
-                                                    ...prev,
-                                                    violation_type_id: val,
-                                                    action_taken: selectedType.default_action || ''
-                                                }));
-                                            }
-                                        }}
+                                        onChange={(val) => setData('violation_type_id', val)}
                                         options={types.map(t => ({ value: t.id, label: t.name }))}
                                         placeholder="-- اختر النوع --"
                                         required
@@ -425,16 +459,40 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">الإجراء المتخذ <span className="text-accent-500">*</span></label>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-sm font-bold text-slate-900 dark:text-white">الإجراء المتخذ <span className="text-accent-500">*</span></label>
+                                        {isCheckingRepetition ? (
+                                            <span className="text-xs text-primary-500 animate-pulse">جاري فحص التكرار...</span>
+                                        ) : repetitionLevel && (
+                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${repetitionLevel === 1 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : repetitionLevel === 2 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                {repetitionLevel === 1 ? 'المخالفة الأولى' : repetitionLevel === 2 ? 'المخالفة الثانية' : 'المخالفة الثالثة فأكثر'}
+                                            </span>
+                                        )}
+                                    </div>
                                     <input
                                         type="text"
-                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
+                                        className={`w-full bg-slate-50 dark:bg-slate-800 border ${isCheckingRepetition ? 'border-primary-400 opacity-70' : 'border-slate-200 dark:border-slate-700'} rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400`}
                                         value={data.action_taken}
                                         onChange={(e) => setData('action_taken', e.target.value)}
                                         required
                                     />
                                     {errors.action_taken && <p className="text-xs text-accent-500 mt-1">{errors.action_taken}</p>}
                                 </div>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">حالة الإجراء <span className="text-accent-500">*</span></label>
+                                <SelectInput
+                                    className="w-full"
+                                    value={data.status}
+                                    onChange={(val) => setData('status', val)}
+                                    options={[
+                                        { value: 'قيد المتابعة', label: 'قيد المتابعة' },
+                                        { value: 'تم تنفيذ الإجراء', label: 'تم تنفيذ الإجراء' }
+                                    ]}
+                                    required
+                                />
+                                {errors.status && <p className="text-xs text-accent-500 mt-1">{errors.status}</p>}
                             </div>
 
                             <div>
@@ -636,10 +694,19 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                 </div>
                             </div>
 
-                            <div className="mb-6">
-                                <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">الإجراء المتخذ</span>
-                                <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 text-orange-800 dark:text-orange-300 font-medium">
-                                    {selectedViolation.action_taken}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">الإجراء المتخذ</span>
+                                    <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 text-orange-800 dark:text-orange-300 font-medium">
+                                        {selectedViolation.action_taken}
+                                    </div>
+                                </div>
+                                <div>
+                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">حالة الإجراء</span>
+                                    <div className={`p-4 rounded-xl border font-bold flex items-center gap-2 ${selectedViolation.status === 'تم تنفيذ الإجراء' ? 'bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-400' : 'bg-slate-50/50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}>
+                                        {selectedViolation.status === 'تم تنفيذ الإجراء' ? <CheckCircle size={18} /> : <Clock size={18} />}
+                                        {selectedViolation.status || 'قيد المتابعة'}
+                                    </div>
                                 </div>
                             </div>
 

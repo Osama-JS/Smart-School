@@ -8,7 +8,9 @@ import InputError from '@/Components/InputError';
 import Checkbox from '@/Components/Checkbox';
 import Textarea from '@/Components/Textarea';
 
-export default function Types({ auth, types, stats }) {
+import SelectInput from '@/Components/SelectInput';
+
+export default function Types({ auth, types, stats, jobGrades }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [editingType, setEditingType] = useState(null);
@@ -16,7 +18,11 @@ export default function Types({ auth, types, stats }) {
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         name: '',
         description: '',
-        default_action: '',
+        first_time_action: '',
+        second_time_action: '',
+        third_time_action: '',
+        follow_up_role_id: '',
+        execution_role_id: '',
         is_active: true,
     });
 
@@ -26,7 +32,11 @@ export default function Types({ auth, types, stats }) {
             setData({
                 name: type.name,
                 description: type.description || '',
-                default_action: type.default_action,
+                first_time_action: type.first_time_action || '',
+                second_time_action: type.second_time_action || '',
+                third_time_action: type.third_time_action || '',
+                follow_up_role_id: type.follow_up_role_id || '',
+                execution_role_id: type.execution_role_id || '',
                 is_active: type.is_active,
             });
         } else {
@@ -146,7 +156,9 @@ export default function Types({ auth, types, stats }) {
                                 <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">النوع</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الوصف</th>
-                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الإجراء الافتراضي</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الإجراءات المتخذة (١، ٢، ٣)</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">مسؤول المتابعة</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">مسؤول التنفيذ</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الحالة</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 w-24">إجراءات</th>
                                 </tr>
@@ -161,9 +173,27 @@ export default function Types({ auth, types, stats }) {
                                             {type.description || '-'}
                                         </td>
                                         <td className="py-4 px-6">
-                                            <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800/50">
-                                                {type.default_action}
-                                            </span>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="px-2 py-0.5 inline-flex text-[10px] leading-5 font-semibold rounded-md bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/50">
+                                                    1: {type.first_time_action}
+                                                </span>
+                                                {type.second_time_action && (
+                                                    <span className="px-2 py-0.5 inline-flex text-[10px] leading-5 font-semibold rounded-md bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
+                                                        2: {type.second_time_action}
+                                                    </span>
+                                                )}
+                                                {type.third_time_action && (
+                                                    <span className="px-2 py-0.5 inline-flex text-[10px] leading-5 font-semibold rounded-md bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border border-red-200 dark:border-red-800/50">
+                                                        3: {type.third_time_action}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300 text-sm">
+                                            {type.follow_up_role?.name || '-'}
+                                        </td>
+                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300 text-sm">
+                                            {type.execution_role?.name || '-'}
                                         </td>
                                         <td className="py-4 px-6">
                                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${type.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`}>
@@ -233,17 +263,70 @@ export default function Types({ auth, types, stats }) {
                                 {errors.description && <p className="text-xs text-accent-500 mt-1">{errors.description}</p>}
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">الإجراء الافتراضي</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
-                                    value={data.default_action}
-                                    onChange={(e) => setData('default_action', e.target.value)}
-                                    required
-                                    placeholder="مثال: إنذار شفوي، خصم يوم..."
-                                />
-                                {errors.default_action && <p className="text-xs text-accent-500 mt-1">{errors.default_action}</p>}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">إجراء المرة الأولى <span className="text-accent-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
+                                        value={data.first_time_action}
+                                        onChange={(e) => setData('first_time_action', e.target.value)}
+                                        required
+                                        placeholder="مثال: لفت نظر، إنذار شفوي..."
+                                    />
+                                    {errors.first_time_action && <p className="text-xs text-accent-500 mt-1">{errors.first_time_action}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">إجراء المرة الثانية</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
+                                        value={data.second_time_action}
+                                        onChange={(e) => setData('second_time_action', e.target.value)}
+                                        placeholder="مثال: إنذار كتابي..."
+                                    />
+                                    {errors.second_time_action && <p className="text-xs text-accent-500 mt-1">{errors.second_time_action}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">إجراء المرة الثالثة فأكثر</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
+                                        value={data.third_time_action}
+                                        onChange={(e) => setData('third_time_action', e.target.value)}
+                                        placeholder="مثال: خصم يوم..."
+                                    />
+                                    {errors.third_time_action && <p className="text-xs text-accent-500 mt-1">{errors.third_time_action}</p>}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">مسؤول المتابعة</label>
+                                    <SelectInput
+                                        className="w-full"
+                                        value={data.follow_up_role_id}
+                                        onChange={(val) => setData('follow_up_role_id', val)}
+                                        options={[
+                                            { value: '', label: '-- بدون --' },
+                                            ...(jobGrades || []).map(role => ({ value: role.id, label: role.name }))
+                                        ]}
+                                    />
+                                    {errors.follow_up_role_id && <p className="text-xs text-accent-500 mt-1">{errors.follow_up_role_id}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">مسؤول التنفيذ</label>
+                                    <SelectInput
+                                        className="w-full"
+                                        value={data.execution_role_id}
+                                        onChange={(val) => setData('execution_role_id', val)}
+                                        options={[
+                                            { value: '', label: '-- بدون --' },
+                                            ...(jobGrades || []).map(role => ({ value: role.id, label: role.name }))
+                                        ]}
+                                    />
+                                    {errors.execution_role_id && <p className="text-xs text-accent-500 mt-1">{errors.execution_role_id}</p>}
+                                </div>
                             </div>
 
                             <div className="block mt-6 mb-2">

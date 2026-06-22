@@ -15,7 +15,11 @@ class ViolationType extends Model
         'branch_id',
         'name',
         'description',
-        'default_action',
+        'first_time_action',
+        'second_time_action',
+        'third_time_action',
+        'follow_up_role_id',
+        'execution_role_id',
         'is_active',
     ];
 
@@ -31,5 +35,15 @@ class ViolationType extends Model
     public function violations()
     {
         return $this->hasMany(EmployeeViolation::class);
+    }
+
+    public function followUpRole()
+    {
+        return $this->belongsTo(JobGrade::class, 'follow_up_role_id');
+    }
+
+    public function executionRole()
+    {
+        return $this->belongsTo(JobGrade::class, 'execution_role_id');
     }
 }

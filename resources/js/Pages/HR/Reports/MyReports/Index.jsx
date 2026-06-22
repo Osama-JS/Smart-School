@@ -257,7 +257,7 @@ export default function MyReportsIndex({ auth, templates, myReports, stats }) {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-left">
-                                                    <button className="text-primary-500 hover:text-primary-600 font-bold text-xs">عرض</button>
+                                                    <Link href={route('hr.reports.my-reports.show', report.id)} className="text-primary-500 hover:text-primary-600 font-bold text-xs">عرض</Link>
                                                 </td>
                                             </tr>
                                         ))

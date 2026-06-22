@@ -81,7 +81,7 @@ class ReportTemplateController extends Controller implements \Illuminate\Routing
             'job_grade_id' => 'required|exists:job_grades,id',
             'fields' => 'nullable|array',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text',
+            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text,tasks_matrix,activities_matrix',
             'fields.*.options' => 'nullable|array',
             'fields.*.is_required' => 'boolean',
         ]);
@@ -123,7 +123,7 @@ class ReportTemplateController extends Controller implements \Illuminate\Routing
             'fields' => 'nullable|array',
             'fields.*.id' => 'nullable|exists:report_template_fields,id',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text',
+            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text,tasks_matrix,activities_matrix',
             'fields.*.options' => 'nullable|array',
             'fields.*.is_required' => 'boolean',
         ]);
@@ -166,7 +166,7 @@ class ReportTemplateController extends Controller implements \Illuminate\Routing
             'fields' => 'nullable|array',
             'fields.*.id' => 'nullable|exists:report_template_fields,id',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text',
+            'fields.*.type' => 'required|in:text,number,select,checkbox,image,textarea,date,time,file,rating,matrix_text,tasks_matrix,activities_matrix',
             'fields.*.options' => 'nullable|array',
             'fields.*.is_required' => 'boolean',
         ]);

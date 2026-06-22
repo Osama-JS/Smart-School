@@ -72,12 +72,26 @@ class EmployeeViolationController extends Controller implements \Illuminate\Rout
             'violation_date' => 'required|date',
             'details' => 'required|string',
             'action_taken' => 'required|string',
+            'status' => 'nullable|string|in:قيد المتابعة,تم تنفيذ الإجراء',
             'attachment' => 'nullable|file|max:5120',
             'admin_signature' => 'nullable|string', // Base64 image
         ]);
 
+        if (empty($validated['status'])) {
+            $validated['status'] = 'قيد المتابعة';
+        }
+
         $violation = new EmployeeViolation($validated);
-        $violation->academic_year_id = \App\Models\AcademicYear::where('is_active', true)->value('id');
+        $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+        $violation->academic_year_id = $activeYearId;
+
+        // Calculate repetition level
+        $previousCount = EmployeeViolation::where('user_id', $validated['user_id'])
+            ->where('violation_type_id', $validated['violation_type_id'])
+            ->where('academic_year_id', $activeYearId)
+            ->count();
+        
+        $violation->repetition_level = $previousCount + 1;
 
         if ($request->hasFile('attachment')) {
             $path = $request->file('attachment')->store('violations/attachments', 'public');
@@ -101,11 +115,12 @@ class EmployeeViolationController extends Controller implements \Illuminate\Rout
             'violation_date' => 'required|date',
             'details' => 'required|string',
             'action_taken' => 'required|string',
+            'status' => 'nullable|string|in:قيد المتابعة,تم تنفيذ الإجراء',
             'attachment' => 'nullable|file|max:5120',
             'admin_signature' => 'nullable|string', 
         ]);
 
-        $employeeViolation->fill($request->only(['user_id', 'violation_type_id', 'violation_date', 'details', 'action_taken']));
+        $employeeViolation->fill($request->only(['user_id', 'violation_type_id', 'violation_date', 'details', 'action_taken', 'status']));
 
         if ($request->hasFile('attachment')) {
             if ($employeeViolation->attachment_path) {
@@ -145,6 +160,48 @@ class EmployeeViolationController extends Controller implements \Illuminate\Rout
         $employeeViolation->delete();
 
         return back()->with('success', 'تم حذف المخالفة بنجاح.');
+    }
+
+    public function checkRepetition(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'violation_type_id' => 'required|exists:violation_types,id',
+        ]);
+
+        $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+        
+        $previousCount = EmployeeViolation::where('user_id', $request->user_id)
+            ->where('violation_type_id', $request->violation_type_id)
+            ->where('academic_year_id', $activeYearId)
+            ->count();
+            
+        $repetitionLevel = $previousCount + 1;
+        $type = ViolationType::find($request->violation_type_id);
+        
+        $action = $type->first_time_action;
+        if ($repetitionLevel == 2 && $type->second_time_action) {
+            $action = $type->second_time_action;
+        } elseif ($repetitionLevel >= 3 && $type->third_time_action) {
+            $action = $type->third_time_action;
+        }
+
+        return response()->json([
+            'repetition_level' => $repetitionLevel,
+            'action_taken' => $action
+        ]);
+    }
+
+    public function updateStatus(Request $request, EmployeeViolation $violation)
+    {
+        $request->validate([
+            'status' => 'required|string|in:قيد المتابعة,تم تنفيذ الإجراء',
+        ]);
+
+        $violation->status = $request->status;
+        $violation->save();
+
+        return back()->with('success', 'تم تحديث حالة المخالفة بنجاح.');
     }
 
     public function notifyForSignature(Request $request, EmployeeViolation $violation, NotificationService $notificationService)

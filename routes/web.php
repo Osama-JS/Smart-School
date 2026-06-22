@@ -135,8 +135,23 @@ Route::middleware('auth')->group(function () {
         Route::delete('/academic/coverage/{coverage}', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'destroy'])->name('academic.coverage.destroy');
     });
 
-    // Teacher's Timetable (No specific permission needed, checking logic in controller or open to all teachers)
+    Route::middleware('permission:إدارة الزيارات الصفية')->group(function () {
+        Route::resource('/academic/classroom-visits', \App\Http\Controllers\Academic\ClassroomVisitController::class)->names([
+            'index'   => 'academic.classroom-visits',
+            'store'   => 'academic.classroom-visits.store',
+            'update'  => 'academic.classroom-visits.update',
+            'destroy' => 'academic.classroom-visits.destroy',
+        ])->except(['create', 'edit', 'show']);
+        
+        Route::post('/academic/classroom-visits/{classroomVisit}/approve', [\App\Http\Controllers\Academic\ClassroomVisitController::class, 'approve'])->name('academic.classroom-visits.approve');
+    });
+
+    // Teacher's Timetable and Classroom Visits (No specific permission needed, checking logic in controller or open to all teachers)
     Route::get('/academic/my-timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'myTimetable'])->name('academic.my-timetable');
+    
+    // Teacher's Classroom Visits
+    Route::get('/teacher/my-classroom-visits', [\App\Http\Controllers\Teacher\ClassroomVisitController::class, 'index'])->name('teacher.my-classroom-visits');
+    Route::post('/teacher/my-classroom-visits/{classroomVisit}/sign', [\App\Http\Controllers\Teacher\ClassroomVisitController::class, 'sign'])->name('teacher.my-classroom-visits.sign');
 
     Route::middleware('permission:إدارة الطلاب')->group(function () {
         // Parents
@@ -210,6 +225,8 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'hr.employee-violations.destroy',
         ])->except(['create', 'edit', 'show']);
         
+        Route::get('/hr/employee-violations/check-repetition', [\App\Http\Controllers\HR\EmployeeViolationController::class, 'checkRepetition'])->name('hr.employee-violations.check-repetition');
+        Route::put('/hr/employee-violations/{violation}/status', [\App\Http\Controllers\HR\EmployeeViolationController::class, 'updateStatus'])->name('hr.employee-violations.update-status');
         Route::post('/hr/employee-violations/{violation}/notify', [\App\Http\Controllers\HR\EmployeeViolationController::class, 'notifyForSignature'])->name('hr.employee-violations.notify');
     });
 

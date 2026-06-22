@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { FileText, ArrowRight, Save, Calendar as CalendarIcon } from 'lucide-react';
+import { FileText, ArrowRight, Save, Calendar as CalendarIcon, Plus, Trash2 } from 'lucide-react';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 import SelectInput from '@/Components/SelectInput';
 import ReactQuill from 'react-quill';
@@ -27,6 +27,14 @@ export default function MyReportsCreate({ auth, template }) {
             opts.forEach(opt => {
                 initialData[field.name][opt] = '';
             });
+        } else if (field.type === 'tasks_matrix') {
+            initialData[field.name] = {};
+            const opts = parseMatrixOptions(field.options);
+            opts.forEach(opt => {
+                initialData[field.name][opt] = { status: '', reason: '' };
+            });
+        } else if (field.type === 'activities_matrix') {
+            initialData[field.name] = [{ time: '', date: '', type: '', notes: '' }];
         } else if (field.type === 'checkbox') {
             initialData[field.name] = false;
         } else {
@@ -253,6 +261,191 @@ export default function MyReportsCreate({ auth, template }) {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                );
+            case 'tasks_matrix':
+                const parsedTasks = parseMatrixOptions(field.options);
+                return (
+                    <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
+                        <table className="w-full text-right text-sm">
+                            <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                <tr>
+                                    <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-1/3">الأعمال</th>
+                                    <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-center w-24">نفذ</th>
+                                    <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-center w-24">لم ينفذ</th>
+                                    <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">سبب عدم التنفيذ</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                {parsedTasks.map((taskLabel, idx) => {
+                                    const taskData = (val && val[taskLabel]) || { status: '', reason: '' };
+                                    return (
+                                        <tr key={idx}>
+                                            <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
+                                                {taskLabel}
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <input 
+                                                    type="radio"
+                                                    name={`field_${field.id}_${idx}_status`}
+                                                    checked={taskData.status === 'executed'}
+                                                    onChange={() => {
+                                                        const newMatrixData = { ...val };
+                                                        newMatrixData[taskLabel] = { ...taskData, status: 'executed', reason: '' };
+                                                        handleFieldChange(field.name, newMatrixData);
+                                                    }}
+                                                    className="w-5 h-5 border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <input 
+                                                    type="radio"
+                                                    name={`field_${field.id}_${idx}_status`}
+                                                    checked={taskData.status === 'not_executed'}
+                                                    onChange={() => {
+                                                        const newMatrixData = { ...val };
+                                                        newMatrixData[taskLabel] = { ...taskData, status: 'not_executed' };
+                                                        handleFieldChange(field.name, newMatrixData);
+                                                    }}
+                                                    className="w-5 h-5 border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input 
+                                                    type="text"
+                                                    value={taskData.reason || ''}
+                                                    onChange={(e) => {
+                                                        const newMatrixData = { ...val };
+                                                        newMatrixData[taskLabel] = { ...taskData, reason: e.target.value };
+                                                        handleFieldChange(field.name, newMatrixData);
+                                                    }}
+                                                    className={`w-full bg-transparent border-0 border-b ${taskData.status === 'executed' ? 'border-transparent opacity-50' : 'border-slate-200 dark:border-slate-700 focus:border-primary-500'} focus:ring-0 px-0 py-2 text-sm dark:text-white transition-all`}
+                                                    placeholder={taskData.status === 'executed' ? "تم التنفيذ" : "اكتب السبب هنا..."}
+                                                    disabled={taskData.status === 'executed'}
+                                                />
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                {parsedTasks.length === 0 && (
+                                    <tr>
+                                        <td colSpan="4" className="px-4 py-4 text-center text-slate-400">لم يتم تحديد أعمال من قبل الإدارة</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            case 'activities_matrix':
+                const activities = Array.isArray(val) ? val : [];
+                return (
+                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                    <tr>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-40">اليوم (الوقت)</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-48">التأريخ</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-1/3">نوع النشاط</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">الملاحظات</th>
+                                        <th className="px-4 py-3 w-16 text-center">إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {activities.map((activity, idx) => (
+                                        <tr key={idx} className="group/row">
+                                            <td className="p-3 align-top">
+                                                <FlatpickrInput 
+                                                    type="time"
+                                                    value={activity.time || ''}
+                                                    onChange={(timeStr) => {
+                                                        const newActivities = [...activities];
+                                                        newActivities[idx].time = timeStr;
+                                                        handleFieldChange(field.name, newActivities);
+                                                    }}
+                                                    className="w-full !py-2.5 !px-3 !pl-8 text-sm bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg dark:text-white"
+                                                    placeholder="الوقت..."
+                                                    required={field.is_required}
+                                                />
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                <FlatpickrInput 
+                                                    type="date"
+                                                    value={activity.date || ''}
+                                                    onChange={(dateStr) => {
+                                                        const newActivities = [...activities];
+                                                        newActivities[idx].date = dateStr;
+                                                        handleFieldChange(field.name, newActivities);
+                                                    }}
+                                                    className="w-full !py-2.5 !px-3 !pl-8 text-sm bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg dark:text-white"
+                                                    placeholder="التأريخ..."
+                                                    required={field.is_required}
+                                                />
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                <textarea 
+                                                    value={activity.type || ''}
+                                                    onChange={(e) => {
+                                                        const newActivities = [...activities];
+                                                        newActivities[idx].type = e.target.value;
+                                                        handleFieldChange(field.name, newActivities);
+                                                    }}
+                                                    rows="2"
+                                                    className="w-full bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg px-3 py-2.5 text-sm dark:text-white resize-none"
+                                                    placeholder="اكتب نوع النشاط..."
+                                                    required={field.is_required}
+                                                ></textarea>
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                <textarea 
+                                                    value={activity.notes || ''}
+                                                    onChange={(e) => {
+                                                        const newActivities = [...activities];
+                                                        newActivities[idx].notes = e.target.value;
+                                                        handleFieldChange(field.name, newActivities);
+                                                    }}
+                                                    rows="2"
+                                                    className="w-full bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg px-3 py-2.5 text-sm dark:text-white resize-none"
+                                                    placeholder="اكتب ملاحظاتك..."
+                                                    required={field.is_required}
+                                                ></textarea>
+                                            </td>
+                                            <td className="p-3 align-middle text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const newActivities = activities.filter((_, i) => i !== idx);
+                                                        handleFieldChange(field.name, newActivities);
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors opacity-100 md:opacity-0 md:group-hover/row:opacity-100"
+                                                    title="حذف هذا النشاط"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {activities.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="p-6 text-center text-slate-400 text-sm font-semibold">
+                                                لا توجد أنشطة مضافة
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-800/30 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    handleFieldChange(field.name, [...activities, { time: '', date: '', type: '', notes: '' }]);
+                                }}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:text-primary-600 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm transition-all"
+                            >
+                                <Plus size={16} /> إضافة نشاط آخر
+                            </button>
+                        </div>
                     </div>
                 );
             case 'file':

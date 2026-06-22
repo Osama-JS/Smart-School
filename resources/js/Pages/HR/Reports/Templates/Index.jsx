@@ -7,7 +7,7 @@ import {
     Plus, Edit, Trash2, X, PlusCircle, AlignLeft, List, Hash, 
     CheckSquare, Image as ImageIcon, Search, FileText, Settings, 
     ShieldCheck, Calendar, Sparkles, ChevronDown, FileSpreadsheet, 
-    AlertCircle, Type, Clock, Paperclip, Star, Table2 
+    AlertCircle, Type, Clock, Paperclip, Star, Table2, ListTodo, CalendarRange 
 } from 'lucide-react';
 
 export default function TemplatesIndex({ auth, templates, jobGrades, stats, filters }) {
@@ -79,6 +79,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
             case 'file': return <Paperclip size={16} />;
             case 'rating': return <Star size={16} />;
             case 'matrix_text': return <Table2 size={16} />;
+            case 'tasks_matrix': return <ListTodo size={16} />;
+            case 'activities_matrix': return <CalendarRange size={16} />;
             default: return <AlignLeft size={16} />;
         }
     };
@@ -232,7 +234,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     { value: 'time', label: 'وقت (Time)' },
                                                     { value: 'file', label: 'ملف مرفق (File)' },
                                                     { value: 'rating', label: 'تقييم (Rating)' },
-                                                    { value: 'matrix_text', label: 'جدول ملاحظات (Matrix Text)' }
+                                                    { value: 'matrix_text', label: 'جدول ملاحظات (Matrix Text)' },
+                                                    { value: 'tasks_matrix', label: 'جدول الأعمال (Tasks Matrix)' },
+                                                    { value: 'activities_matrix', label: 'جدول الأنشطة (Activities Matrix)' }
                                                 ]}
                                                 isClearable={false}
                                             />
@@ -251,21 +255,23 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             </div>
                             
                             {/* Options for Select or Matrix Type */}
-                            {(field.type === 'select' || field.type === 'matrix_text') && (
+                            {(field.type === 'select' || field.type === 'matrix_text' || field.type === 'tasks_matrix') && (
                                 <div className="mt-1 bg-slate-50/50 dark:bg-slate-900/10 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 animate-slide-down">
                                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                                        {field.type === 'matrix_text' ? 'البنود / الأسئلة (افصل بينها بفاصلة ,)' : 'الخيارات (افصل بينها بفاصلة ,)'}
+                                        {field.type === 'matrix_text' ? 'البنود / الأسئلة (افصل بينها بفاصلة ,)' : field.type === 'tasks_matrix' ? 'الأعمال المطلوبة (افصل بينها بفاصلة ,)' : 'الخيارات (افصل بينها بفاصلة ,)'}
                                     </label>
                                     <input 
                                         type="text" 
                                         value={field.options ? field.options.join(', ') : ''}
                                         onChange={(e) => updateField(index, 'options', e.target.value.split(',').map(s => s.trim()).filter(s => s))}
                                         className="w-full bg-white dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none dark:text-white font-semibold"
-                                        placeholder={field.type === 'matrix_text' ? "مثال: الطابور والإذاعة المدرسية, المدير التنفيذي, الإعلام" : "مثال: ممتاز, جيد جدا, جيد"}
+                                        placeholder={field.type === 'matrix_text' ? "مثال: الطابور والإذاعة المدرسية, المدير التنفيذي, الإعلام" : field.type === 'tasks_matrix' ? "مثال: تجهيز المختبر, مراقبة الساحة, تصحيح الأوراق" : "مثال: ممتاز, جيد جدا, جيد"}
                                     />
                                     <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 block font-semibold">
                                         {field.type === 'matrix_text' 
                                             ? 'ملاحظة: سيتم رسم جدول يحتوي على هذه البنود ويقوم الموظف بكتابة ملاحظته أمام كل بند.' 
+                                            : field.type === 'tasks_matrix' 
+                                            ? 'ملاحظة: سيتم رسم جدول للأعمال المطلوبة، ويقوم الموظف بتحديد حالة كل عمل (نفذ / لم ينفذ) مع ذكر السبب.'
                                             : 'ملاحظة: سيتم عرض هذه الكلمات كخيارات قائمة منسدلة للموظف عند تعبئة التقرير.'}
                                     </span>
                                 </div>

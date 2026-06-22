@@ -203,7 +203,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             items: [
                 { name: 'الحضور', icon: CheckSquare },
                 { name: 'التقييم', icon: Star },
-                { name: 'الزيارات الصفية', icon: Eye, permission: 'إدارة الزيارات الصفية' },
+                { name: 'الزيارات الصفية', icon: Eye, url: route('academic.classroom-visits'), permission: 'إدارة الزيارات الصفية' },
+                { name: 'زياراتي الصفية', icon: Eye, url: route('teacher.my-classroom-visits'), permission: 'عرض زياراتي الصفية' },
                 { name: 'دفاتر المتابعة', icon: ClipboardList },
                 { name: 'الخطط الدراسية', icon: Map, permission: 'إدارة خطط الدراسة' },
                 { name: 'دفاتر تحضير المعلمين', icon: Book, permission: 'إدارة دفاتر التحضير' },

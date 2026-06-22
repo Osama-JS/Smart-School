@@ -123,6 +123,10 @@ class ReportController extends Controller implements \Illuminate\Routing\Control
 
     public function review(Request $request, Report $report)
     {
+        if ($request->user()->id === $report->submitter_id) {
+            abort(403, 'لا يمكنك اعتماد تقريرك الخاص، يجب أن يتم اعتماده من قبل مديرك المباشر.');
+        }
+
         $validated = $request->validate([
             'status' => 'required|in:reviewed,returned',
             'manager_notes' => 'nullable|string'

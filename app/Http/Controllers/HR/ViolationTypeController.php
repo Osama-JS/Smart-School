@@ -4,6 +4,7 @@ namespace App\Http\Controllers\HR;
 
 use App\Http\Controllers\Controller;
 use App\Models\ViolationType;
+use App\Models\JobGrade;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -21,6 +22,7 @@ class ViolationTypeController extends Controller implements \Illuminate\Routing\
     public function index()
     {
         $types = ViolationType::query()
+            ->with(['followUpRole', 'executionRole'])
             ->orderBy('name')
             ->get();
 
@@ -30,9 +32,12 @@ class ViolationTypeController extends Controller implements \Illuminate\Routing\
             'inactive' => ViolationType::where('is_active', false)->count(),
         ];
 
+        $jobGrades = JobGrade::orderBy('name')->get(['id', 'name']);
+
         return Inertia::render('HR/Violations/Types', [
             'types' => $types,
-            'stats' => $stats
+            'stats' => $stats,
+            'jobGrades' => $jobGrades
         ]);
     }
 
@@ -41,7 +46,11 @@ class ViolationTypeController extends Controller implements \Illuminate\Routing\
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'default_action' => 'required|string|max:255',
+            'first_time_action' => 'required|string|max:255',
+            'second_time_action' => 'nullable|string|max:255',
+            'third_time_action' => 'nullable|string|max:255',
+            'follow_up_role_id' => 'nullable|exists:job_grades,id',
+            'execution_role_id' => 'nullable|exists:job_grades,id',
             'is_active' => 'boolean'
         ]);
 
@@ -55,7 +64,11 @@ class ViolationTypeController extends Controller implements \Illuminate\Routing\
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'default_action' => 'required|string|max:255',
+            'first_time_action' => 'required|string|max:255',
+            'second_time_action' => 'nullable|string|max:255',
+            'third_time_action' => 'nullable|string|max:255',
+            'follow_up_role_id' => 'nullable|exists:job_grades,id',
+            'execution_role_id' => 'nullable|exists:job_grades,id',
             'is_active' => 'boolean'
         ]);
 

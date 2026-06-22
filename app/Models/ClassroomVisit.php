@@ -10,13 +10,22 @@ class ClassroomVisit extends Model
     use \App\Traits\LogsActivity;
 
     protected $fillable = [
-        'supervisor_id', 'teacher_id', 'academic_year_id', 'semester_id',
-        'visit_date', 'score', 'notes'
+        'branch_id', 'academic_year_id', 'semester_id',
+        'supervisor_id', 'teacher_id', 'grade_id', 'division_id',
+        'visit_date', 'visit_type', 'discussed_points', 'notes', 'score',
+        'supervisor_signature', 'teacher_signature', 'is_approved'
     ];
 
     protected $casts = [
         'visit_date' => 'date',
+        'is_approved' => 'boolean',
     ];
+
+    /** الفرع */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     /** المشرف الذي قام بالزيارة */
     public function supervisor(): BelongsTo
@@ -28,6 +37,18 @@ class ClassroomVisit extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    /** الصف */
+    public function grade(): BelongsTo
+    {
+        return $this->belongsTo(Grade::class);
+    }
+
+    /** الشعبة */
+    public function division(): BelongsTo
+    {
+        return $this->belongsTo(Division::class);
     }
 
     /** السنة الدراسية */

@@ -57,7 +57,79 @@ export default function ReviewReport({ auth, report }) {
                         </div>
                     );
                 }
-                return <span>{String(value)}</span>;
+                return <span>-</span>;
+            case 'tasks_matrix':
+                if (typeof value === 'object' && value !== null) {
+                    return (
+                        <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl mt-2">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                    <tr>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-1/3">الأعمال</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-center w-32">الحالة</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">السبب (إن لم ينفذ)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {Object.entries(value).map(([key, val], i) => {
+                                        const isExecuted = val.status === 'executed';
+                                        const isNotExecuted = val.status === 'not_executed';
+                                        return (
+                                            <tr key={i}>
+                                                <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">{key}</td>
+                                                <td className="px-4 py-3 text-center">
+                                                    {isExecuted ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-500/20">
+                                                            نفذ
+                                                        </span>
+                                                    ) : isNotExecuted ? (
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-200 dark:border-rose-500/20">
+                                                            لم ينفذ
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-slate-400">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+                                                    {isNotExecuted && val.reason ? val.reason : <span className="text-slate-400">-</span>}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
+                return <span>-</span>;
+            case 'activities_matrix':
+                if (Array.isArray(value) && value.length > 0) {
+                    return (
+                        <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl mt-2">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                    <tr>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-32">اليوم (الوقت)</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-40">التأريخ</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-1/3">نوع النشاط</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">الملاحظات</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {value.map((activity, idx) => (
+                                        <tr key={idx}>
+                                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{activity.time || '-'}</td>
+                                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400">{activity.date || '-'}</td>
+                                            <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">{activity.type || '-'}</td>
+                                            <td className="px-4 py-3 text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{activity.notes || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
+                return <span className="text-slate-400">لا توجد أنشطة</span>;
             case 'textarea':
                 return <div className="prose dark:prose-invert max-w-none text-sm" dangerouslySetInnerHTML={{ __html: value }} />;
             case 'rating':
@@ -147,7 +219,7 @@ export default function ReviewReport({ auth, report }) {
                     </div>
 
                     {/* Manager Review Action */}
-                    {report.reviewer_id === null || report.status === 'pending' ? (
+                    {(report.reviewer_id === null || report.status === 'pending') && auth.user.id !== report.submitter_id ? (
                         <div className="bg-white dark:bg-[#121820] rounded-2xl border border-primary-100 dark:border-primary-900 shadow-sm overflow-hidden relative">
                             <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-primary-500 to-indigo-500"></div>
                             <div className="p-6 border-b border-slate-100 dark:border-slate-800">
@@ -216,8 +288,10 @@ export default function ReviewReport({ auth, report }) {
                                     <span className="text-sm text-slate-600 dark:text-slate-400">الحالة:</span>
                                     {report.status === 'reviewed' ? (
                                         <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">تم الاعتماد</span>
-                                    ) : (
+                                    ) : report.status === 'returned' ? (
                                         <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold">مُعاد</span>
+                                    ) : (
+                                        <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">قيد المراجعة</span>
                                     )}
                                 </div>
                                 
