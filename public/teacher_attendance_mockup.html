@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تحضير المعلمين الذكي - شامل ومتقدم</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        :root {
+            --primary: #4F46E5; --primary-light: #EEF2FF;
+            --success: #10B981; --success-light: #D1FAE5;
+            --danger:  #EF4444; --danger-light: #FEE2E2;
+            --warning: #F59E0B; --warning-light: #FEF3C7;
+            --info:    #3B82F6; --info-light: #DBEAFE;
+            --bg-color: #F9FAFB; --surface: #FFFFFF;
+            --text-main: #111827; --text-muted: #6B7280; --border: #E5E7EB;
+            --radius-md: 12px; --radius-lg: 16px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 2rem; padding-bottom: 6rem; }
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        /* Header */
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;}
+        .page-title { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; }
+        .page-subtitle { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; display:flex; align-items:center; gap: 0.3rem;}
+        .controls-area { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;}
+        
+        .date-control { display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.5rem; box-shadow: var(--shadow-sm); }
+        .date-btn { background: none; border: none; cursor: pointer; padding: 0.5rem; border-radius: 8px; transition: background 0.2s; display:flex; align-items:center; justify-content:center;}
+        .date-btn:hover { background: var(--bg-color); }
+        .date-display { padding: 0 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+
+        .btn-sync { background-color: var(--primary); color: white; border: none; border-radius: var(--radius-md); padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-sm); transition: transform 0.2s, background 0.2s; }
+        .btn-sync:hover { background-color: #4338CA; transform: translateY(-1px); }
+
+        /* Stats Grid (Clickable Filters) */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--surface); border-radius: var(--radius-lg); padding: 1.5rem; border: 2px solid transparent; display: flex; flex-direction: column; gap: 0.5rem; box-shadow: var(--shadow-sm); cursor: pointer; transition: all 0.2s; position: relative;}
+        .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        .stat-card.active-filter { border-color: var(--primary); transform: translateY(-3px); box-shadow: var(--shadow-md); background: var(--primary-light); }
+        .stat-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-muted); font-size: 0.95rem; font-weight: 600;}
+        .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;}
+        .stat-value { font-size: 2rem; font-weight: 800; }
+        
+        .card-total .stat-icon { background: var(--primary-light); color: var(--primary); }
+        .card-present .stat-icon { background: var(--success-light); color: var(--success); }
+        .card-absent .stat-icon { background: var(--danger-light); color: var(--danger); }
+        .card-late .stat-icon { background: var(--warning-light); color: var(--warning); }
+        .card-leave .stat-icon { background: var(--info-light); color: var(--info); }
+
+        /* Data Grid Area */
+        .grid-container { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); overflow: hidden; }
+        .grid-toolbar { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        
+        .search-box { position: relative; width: 300px; }
+        .search-box input { width: 100%; padding: 0.6rem 2.5rem 0.6rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-md); outline: none; font-family: inherit; transition: border-color 0.2s;}
+        .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        .search-icon { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
+        .btn-outline { background: white; border: 1px solid var(--border); padding: 0.6rem 1rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s; }
+        .btn-outline:hover { background: var(--bg-color); }
+        .btn-primary-light { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary); }
+        .btn-primary-light:hover { background: var(--primary); color: white; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th { background: #F9FAFB; color: var(--text-muted); font-weight: 600; font-size: 0.9rem; padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); white-space: nowrap;}
+        td { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; transition: background 0.3s;}
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #F8FAFC; }
+        .hidden-row { display: none !important; }
+
+        /* User Info Cell */
+        .user-cell { display: flex; align-items: center; gap: 1rem; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: var(--border); }
+        .user-info { display: flex; flex-direction: column; }
+        .user-name { font-weight: 700; color: var(--text-main); }
+        .user-id { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* Segmented Control (Toggle) */
+        .status-toggle { display: inline-flex; background: var(--bg-color); border: 1px solid var(--border); border-radius: 8px; padding: 0.25rem; overflow: hidden; transition: opacity 0.3s; }
+        .status-toggle.locked { opacity: 0.6; pointer-events: none; }
+        .status-toggle label { padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s; color: var(--text-muted); text-align: center; user-select: none; }
+        .status-toggle input { display: none; }
+        .status-toggle input[value="present"]:checked + label { background: var(--success); color: white; box-shadow: var(--shadow-sm); }
+        .status-toggle input[value="late"]:checked + label { background: var(--warning); color: white; box-shadow: var(--shadow-sm); }
+        .status-toggle input[value="absent"]:checked + label { background: var(--danger); color: white; box-shadow: var(--shadow-sm); }
+        .status-toggle input[value="leave"]:checked + label { background: var(--info); color: white; box-shadow: var(--shadow-sm); }
+
+        /* Time Inputs & Badges */
+        .time-input { border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem 0.5rem; font-family: inherit; outline: none; width: 100px; text-align: center; font-weight: 600; transition: all 0.3s; }
+        .time-input:focus { border-color: var(--primary); }
+        .time-input:disabled { background: var(--bg-color); color: var(--border); cursor: not-allowed; }
+        .time-late { color: var(--danger); border-color: var(--danger-light); background: var(--danger-light); }
+        .dept-badge { background: #F1F5F9; color: #475569; padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+        .conflict-badge { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: #9A3412; background: #FFEDD5; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: bold; margin-top: 4px; }
+
+        /* Actions */
+        .action-cell { display: flex; align-items: center; justify-content: center; gap: 0.5rem; min-width: 80px; }
+        .action-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0.4rem; border-radius: 6px; transition: background 0.2s; font-size: 1.25rem; }
+        .action-btn:hover { background: var(--bg-color); color: var(--primary); }
+
+        /* Custom Checkbox */
+        .custom-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary); }
+
+        /* Conflict Row Styling */
+        .row-conflict { background: repeating-linear-gradient(45deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.05) 10px, rgba(255, 255, 255, 0) 10px, rgba(255, 255, 255, 0) 20px) !important; border-right: 4px solid var(--warning); }
+
+        /* Floating Action Bar */
+        .floating-action-bar {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(150px);
+            background: #1F2937; color: white; padding: 1rem 1.5rem; border-radius: 50px;
+            display: flex; align-items: center; gap: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 1000;
+        }
+        .floating-action-bar.show { transform: translateX(-50%) translateY(0); }
+        .fab-text { font-weight: 700; display: flex; align-items: center; gap: 0.5rem; border-left: 1px solid rgba(255,255,255,0.2); padding-left: 1.5rem; }
+        .fab-btn { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; font-family: inherit; font-weight: 600; padding: 0.5rem 1rem; border-radius: 20px; transition: background 0.2s;}
+        .fab-btn:hover { background: rgba(255,255,255,0.1); }
+        .fab-btn.danger:hover { background: var(--danger); }
+        
+        /* SweetAlert Timeline (Audit) */
+        .timeline { text-align: right; padding: 0; list-style: none; margin-top: 1rem;}
+        .timeline li { position: relative; padding-right: 1.5rem; margin-bottom: 1.5rem; text-align: right; font-size: 0.95rem;}
+        .timeline li::before { content: ''; position: absolute; right: 0; top: 6px; width: 12px; height: 12px; background: var(--primary); border-radius: 50%; z-index: 2;}
+        .timeline li::after { content: ''; position: absolute; right: 5px; top: 15px; width: 2px; height: 110%; background: var(--border); z-index: 1;}
+        .timeline li:last-child::after { display: none; }
+        .timeline-time { font-size: 0.8rem; color: var(--text-muted); font-weight: bold; display: block; margin-bottom: 2px;}
+
+        /* Animations */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .saving-loader { animation: spin 1s linear infinite; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 1. Header -->
+        <div class="header-area">
+            <div>
+                <h1 class="page-title"><i class="ph-fill ph-users-three text-primary" style="color: var(--primary)"></i> إدارة تحضير المعلمين</h1>
+                <div class="page-subtitle">
+                    <i class="ph ph-clock"></i> توقيت الإدارة الآن: <span id="current-time-display">--:--</span>
+                    <span style="margin: 0 10px; color: var(--border);">|</span>
+                    <i class="ph ph-bell"></i> بداية الدوام: 07:30 صباحاً
+                </div>
+            </div>
+            
+            <div class="controls-area">
+                <div class="date-control">
+                    <button class="date-btn"><i class="ph ph-caret-right"></i></button>
+                    <div class="date-display"><i class="ph ph-calendar-blank"></i> اليوم (18 يونيو 2026)</div>
+                    <button class="date-btn"><i class="ph ph-caret-left"></i></button>
+                </div>
+                <button class="btn-sync" id="btn-sync"><i class="ph ph-arrows-clockwise" id="sync-icon"></i> مزامنة البصمة</button>
+            </div>
+        </div>
+
+        <!-- 2. Clickable KPI Stats -->
+        <div class="stats-grid" id="stats-filters">
+            <div class="stat-card card-total" data-filter="all">
+                <div class="stat-header"><span>إجمالي المعلمين</span><div class="stat-icon"><i class="ph-fill ph-users"></i></div></div>
+                <div class="stat-value">6</div>
+            </div>
+            <div class="stat-card card-present" data-filter="present">
+                <div class="stat-header"><span>حاضرون</span><div class="stat-icon"><i class="ph-fill ph-check-circle"></i></div></div>
+                <div class="stat-value">2</div>
+            </div>
+            <div class="stat-card card-absent" data-filter="absent" title="انقر لفلترة الغائبين">
+                <div class="stat-header"><span>غائبون</span><div class="stat-icon"><i class="ph-fill ph-x-circle"></i></div></div>
+                <div class="stat-value" style="color: var(--danger);">1</div>
+            </div>
+            <div class="stat-card card-late" data-filter="late">
+                <div class="stat-header"><span>متأخرون</span><div class="stat-icon"><i class="ph-fill ph-clock-countdown"></i></div></div>
+                <div class="stat-value">1</div>
+            </div>
+            <div class="stat-card card-leave" data-filter="leave">
+                <div class="stat-header"><span>في إجازة / استئذان</span><div class="stat-icon"><i class="ph-fill ph-suitcase"></i></div></div>
+                <div class="stat-value">1</div>
+            </div>
+            <!-- Added Undecided stat to demonstrate completion status filter -->
+            <div class="stat-card card-undecided" data-filter="undecided" style="border-style: dashed; border-color: var(--border);">
+                <div class="stat-header"><span>لم يتم تحضيره</span><div class="stat-icon" style="background:var(--bg-color);"><i class="ph-fill ph-question"></i></div></div>
+                <div class="stat-value">1</div>
+            </div>
+        </div>
+
+        <!-- 3. Attendance Data Grid -->
+        <div class="grid-container">
+            <div class="grid-toolbar">
+                <div class="search-box">
+                    <i class="ph ph-magnifying-glass search-icon"></i>
+                    <input type="text" id="global-search" placeholder="ابحث بالاسم، الرقم، أو التخصص...">
+                </div>
+                <div style="display:flex; gap: 0.5rem;">
+                    <button class="btn-outline" id="btn-adv-filters">
+                        <i class="ph ph-funnel"></i> فلاتر متقدمة
+                    </button>
+                    <button class="btn-outline btn-primary-light" id="btn-mark-all">
+                        <i class="ph-fill ph-magic-wand"></i> تحضير الكل كحاضر
+                    </button>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table id="attendance-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;"><input type="checkbox" class="custom-checkbox" id="select-all"></th>
+                            <th>المعلم</th>
+                            <th>القسم / التخصص</th>
+                            <th style="text-align: center;">حالة الحضور اليوم</th>
+                            <th style="text-align: center;">وقت الحضور</th>
+                            <th style="text-align: center;">وقت الانصراف</th>
+                            <th style="text-align: center;">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Row 1: Undecided -->
+                        <tr data-status="undecided">
+                            <td style="text-align: center;"><input type="checkbox" class="custom-checkbox row-cb"></td>
+                            <td>
+                                <div class="user-cell">
+                                    <img src="https://i.pravatar.cc/150?u=1" class="avatar">
+                                    <div class="user-info">
+                                        <span class="user-name">أحمد محمد عبدالله</span>
+                                        <span class="user-id">#EMP-1001</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="dept-badge">الرياضيات</span></td>
+                            <td style="text-align: center;">
+                                <div class="status-toggle">
+                                    <input type="radio" id="s1-present" name="status-1" value="present">
+                                    <label for="s1-present">حاضر</label>
+                                    <input type="radio" id="s1-late" name="status-1" value="late">
+                                    <label for="s1-late">متأخر</label>
+                                    <input type="radio" id="s1-absent" name="status-1" value="absent">
+                                    <label for="s1-absent">غائب</label>
+                                </div>
+                            </td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-in" value=""></td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-out" value=""></td>
+                            <td style="text-align: center;">
+                                <div class="action-cell">
+                                    <button class="action-btn btn-audit" title="سجل التعديلات"><i class="ph ph-clock-counter-clockwise"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Row 2: Late -->
+                        <tr data-status="late">
+                            <td style="text-align: center;"><input type="checkbox" class="custom-checkbox row-cb"></td>
+                            <td>
+                                <div class="user-cell">
+                                    <img src="https://i.pravatar.cc/150?u=2" class="avatar">
+                                    <div class="user-info">
+                                        <span class="user-name">خالد عبدالرحمن</span>
+                                        <span class="user-id">#EMP-1002</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="dept-badge">العلوم</span></td>
+                            <td style="text-align: center;">
+                                <div class="status-toggle">
+                                    <input type="radio" id="s2-present" name="status-2" value="present">
+                                    <label for="s2-present">حاضر</label>
+                                    <input type="radio" id="s2-late" name="status-2" value="late" checked>
+                                    <label for="s2-late">متأخر</label>
+                                    <input type="radio" id="s2-absent" name="status-2" value="absent">
+                                    <label for="s2-absent">غائب</label>
+                                </div>
+                            </td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-in time-late" value="08:15" title="تجاوز وقت الدوام 07:30"></td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-out" value=""></td>
+                            <td style="text-align: center;">
+                                <div class="action-cell">
+                                    <button class="action-btn btn-audit" title="سجل التعديلات"><i class="ph ph-clock-counter-clockwise"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Row 3: Absent -->
+                        <tr data-status="absent" style="background-color: var(--danger-light);">
+                            <td style="text-align: center;"><input type="checkbox" class="custom-checkbox row-cb"></td>
+                            <td>
+                                <div class="user-cell">
+                                    <img src="https://i.pravatar.cc/150?u=3" class="avatar">
+                                    <div class="user-info">
+                                        <span class="user-name">فاطمة علي</span>
+                                        <span class="user-id">#EMP-1003</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="dept-badge">اللغة العربية</span></td>
+                            <td style="text-align: center;">
+                                <div class="status-toggle">
+                                    <input type="radio" id="s3-present" name="status-3" value="present">
+                                    <label for="s3-present">حاضر</label>
+                                    <input type="radio" id="s3-late" name="status-3" value="late">
+                                    <label for="s3-late">متأخر</label>
+                                    <input type="radio" id="s3-absent" name="status-3" value="absent" checked>
+                                    <label for="s3-absent">غائب</label>
+                                </div>
+                            </td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-in" disabled></td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-out" disabled></td>
+                            <td style="text-align: center;">
+                                <div class="action-cell">
+                                    <button class="action-btn btn-audit" title="سجل التعديلات"><i class="ph ph-clock-counter-clockwise"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <!-- Row 4: On Leave (Locked) -->
+                        <tr data-status="leave">
+                            <td style="text-align: center;"><input type="checkbox" class="custom-checkbox row-cb" disabled></td>
+                            <td>
+                                <div class="user-cell">
+                                    <img src="https://i.pravatar.cc/150?u=4" class="avatar">
+                                    <div class="user-info">
+                                        <span class="user-name">سارة إبراهيم</span>
+                                        <span class="user-id">#EMP-1004</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="dept-badge">التربية الإسلامية</span></td>
+                            <td style="text-align: center;">
+                                <div class="status-toggle locked">
+                                    <input type="radio" id="s4-leave" name="status-4" value="leave" checked>
+                                    <label for="s4-leave" style="background: var(--info); color: white;">إجازة</label>
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--info); margin-top: 4px; font-weight: 600;">
+                                    <i class="ph-fill ph-info"></i> إجازة مرضية معتمدة
+                                </div>
+                            </td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-in" disabled></td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-out" disabled></td>
+                            <td style="text-align: center;">
+                                <div class="action-cell">
+                                    <button class="action-btn btn-audit" title="سجل التعديلات"><i class="ph ph-clock-counter-clockwise"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Row 5: Conflict Warning (PRO Feature) -->
+                        <tr data-status="present" class="row-conflict">
+                            <td style="text-align: center;"><input type="checkbox" class="custom-checkbox row-cb"></td>
+                            <td>
+                                <div class="user-cell">
+                                    <img src="https://i.pravatar.cc/150?u=5" class="avatar">
+                                    <div class="user-info">
+                                        <span class="user-name">يوسف عبدالله</span>
+                                        <span class="user-id">#EMP-1005</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="dept-badge">الرياضيات</span></td>
+                            <td style="text-align: center;">
+                                <div class="status-toggle">
+                                    <input type="radio" id="s5-present" name="status-5" value="present" checked>
+                                    <label for="s5-present">حاضر</label>
+                                    <input type="radio" id="s5-late" name="status-5" value="late">
+                                    <label for="s5-late">متأخر</label>
+                                    <input type="radio" id="s5-absent" name="status-5" value="absent">
+                                    <label for="s5-absent">غائب</label>
+                                </div>
+                                <div class="conflict-badge" title="تم التحضير اليدوي ولكن بصمة الدخول غير موجودة بالنظام الآلي">
+                                    <i class="ph-fill ph-warning"></i> تعارض بين الإدخال اليدوي والبصمة
+                                </div>
+                            </td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-in" value="07:10"></td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-out" value=""></td>
+                            <td style="text-align: center;">
+                                <div class="action-cell">
+                                    <button class="action-btn btn-audit" title="سجل التعديلات"><i class="ph ph-clock-counter-clockwise"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Row 6: Present Normal -->
+                        <tr data-status="present">
+                            <td style="text-align: center;"><input type="checkbox" class="custom-checkbox row-cb"></td>
+                            <td>
+                                <div class="user-cell">
+                                    <img src="https://i.pravatar.cc/150?u=6" class="avatar">
+                                    <div class="user-info">
+                                        <span class="user-name">نورة سعد</span>
+                                        <span class="user-id">#EMP-1006</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="dept-badge">اللغة الإنجليزية</span></td>
+                            <td style="text-align: center;">
+                                <div class="status-toggle">
+                                    <input type="radio" id="s6-present" name="status-6" value="present" checked>
+                                    <label for="s6-present">حاضر</label>
+                                    <input type="radio" id="s6-late" name="status-6" value="late">
+                                    <label for="s6-late">متأخر</label>
+                                    <input type="radio" id="s6-absent" name="status-6" value="absent">
+                                    <label for="s6-absent">غائب</label>
+                                </div>
+                            </td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-in" value="07:05"></td>
+                            <td style="text-align: center;"><input type="time" class="time-input time-out" value=""></td>
+                            <td style="text-align: center;">
+                                <div class="action-cell">
+                                    <button class="action-btn btn-audit" title="سجل التعديلات"><i class="ph ph-clock-counter-clockwise"></i></button>
+                                </div>
+                            </td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Floating Action Bar (Quick Actions) -->
+    <div class="floating-action-bar" id="fab">
+        <div class="fab-text">
+            <span id="fab-count" style="background:var(--primary); color:white; width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; margin-left:8px;">0</span>
+            معلم محدد
+        </div>
+        <button class="fab-btn"><i class="ph ph-whatsapp-logo"></i> إرسال رسالة تذكير</button>
+        <button class="fab-btn"><i class="ph ph-file-minus"></i> تسجيل خصم غياب</button>
+        <button class="fab-btn"><i class="ph ph-suitcase"></i> تحويل كإجازة عارضة</button>
+        <button class="fab-btn danger" style="margin-right:auto; border-right:1px solid rgba(255,255,255,0.2); border-radius:0; padding-right:1.5rem;" id="fab-close"><i class="ph ph-x"></i> إغلاق</button>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const shiftStartTime = "07:30";
+
+            // Live Clock
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('current-time-display').innerText = now.toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'});
+            }, 1000);
+
+            /* =========================================================
+               1. Dynamic Search (شريط البحث الديناميكي)
+            ========================================================= */
+            document.getElementById('global-search').addEventListener('input', function(e) {
+                const term = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll('#table-body tr');
+                
+                rows.forEach(row => {
+                    const name = row.querySelector('.user-name').innerText.toLowerCase();
+                    const id = row.querySelector('.user-id').innerText.toLowerCase();
+                    const dept = row.querySelector('.dept-badge').innerText.toLowerCase();
+                    
+                    if(name.includes(term) || id.includes(term) || dept.includes(term)) {
+                        row.classList.remove('hidden-row');
+                    } else {
+                        row.classList.add('hidden-row');
+                    }
+                });
+            });
+
+            /* =========================================================
+               2. Clickable KPI Stats (الفلترة بالضغط على الملخصات)
+            ========================================================= */
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    // Toggle active class
+                    const filterType = this.getAttribute('data-filter');
+                    
+                    if(this.classList.contains('active-filter')) {
+                        // Un-filter (show all)
+                        this.classList.remove('active-filter');
+                        filterRows('all');
+                    } else {
+                        // Apply filter
+                        statCards.forEach(c => c.classList.remove('active-filter'));
+                        this.classList.add('active-filter');
+                        filterRows(filterType);
+                    }
+                });
+            });
+
+            function filterRows(statusType) {
+                const rows = document.querySelectorAll('#table-body tr');
+                rows.forEach(row => {
+                    if (statusType === 'all') {
+                        row.classList.remove('hidden-row');
+                    } else {
+                        if (row.getAttribute('data-status') === statusType) {
+                            row.classList.remove('hidden-row');
+                        } else {
+                            row.classList.add('hidden-row');
+                        }
+                    }
+                });
+            }
+
+            /* =========================================================
+               3. Floating Action Bar (نافذة الإجراءات السريعة)
+            ========================================================= */
+            const checkboxes = document.querySelectorAll('.row-cb');
+            const selectAll = document.getElementById('select-all');
+            const fab = document.getElementById('fab');
+            const fabCount = document.getElementById('fab-count');
+
+            function updateFab() {
+                const checked = document.querySelectorAll('.row-cb:checked:not(:disabled)').length;
+                if(checked > 0) {
+                    fabCount.innerText = checked;
+                    fab.classList.add('show');
+                } else {
+                    fab.classList.remove('show');
+                    selectAll.checked = false;
+                }
+            }
+
+            checkboxes.forEach(cb => {
+                cb.addEventListener('change', updateFab);
+            });
+
+            selectAll.addEventListener('change', function() {
+                const isChecked = this.checked;
+                checkboxes.forEach(cb => {
+                    if(!cb.disabled) cb.checked = isChecked;
+                });
+                updateFab();
+            });
+
+            document.getElementById('fab-close').addEventListener('click', () => {
+                checkboxes.forEach(cb => cb.checked = false);
+                selectAll.checked = false;
+                updateFab();
+            });
+
+            /* =========================================================
+               4. Audit Trail (سجل التعديلات)
+            ========================================================= */
+            document.querySelectorAll('.btn-audit').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const row = this.closest('tr');
+                    const name = row.querySelector('.user-name').innerText;
+                    
+                    Swal.fire({
+                        title: `سجل تعديلات: ${name}`,
+                        html: `
+                            <ul class="timeline">
+                                <li>
+                                    <span class="timeline-time">اليوم - 09:00 صباحاً</span>
+                                    <strong>الإدارة (محمد صالح)</strong> قام بتعديل الحالة من (حاضر) إلى (متأخر) يدوياً.
+                                </li>
+                                <li>
+                                    <span class="timeline-time">اليوم - 08:15 صباحاً</span>
+                                    <strong>النظام الآلي</strong> سحب توقيت البصمة وسجل الحضور.
+                                </li>
+                                <li>
+                                    <span class="timeline-time">أمس - 14:00 مساءً</span>
+                                    <strong>النظام الآلي</strong> سحب توقيت بصمة الانصراف.
+                                </li>
+                            </ul>
+                        `,
+                        confirmButtonText: 'إغلاق',
+                        confirmButtonColor: '#4F46E5',
+                        width: '500px'
+                    });
+                });
+            });
+
+            /* =========================================================
+               5. Advanced Filters Modal Mockup (فلاتر متقدمة)
+            ========================================================= */
+            document.getElementById('btn-adv-filters').addEventListener('click', () => {
+                Swal.fire({
+                    title: 'الفلاتر المتقدمة',
+                    html: `
+                        <div style="text-align: right; display:flex; flex-direction:column; gap:1rem;">
+                            <div>
+                                <label style="font-weight:bold; color:var(--text-main); font-size:0.9rem;">القسم / التخصص</label>
+                                <select style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px; margin-top:5px; font-family:inherit;">
+                                    <option>الكل</option>
+                                    <option>الرياضيات</option>
+                                    <option>اللغة الإنجليزية</option>
+                                    <option>العلوم</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-weight:bold; color:var(--text-main); font-size:0.9rem;">حالة الاكتمال</label>
+                                <select style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px; margin-top:5px; font-family:inherit;">
+                                    <option>الكل</option>
+                                    <option>تم التحضير</option>
+                                    <option>لم يتم التحضير (Undecided)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-weight:bold; color:var(--text-main); font-size:0.9rem;">نوع الدوام</label>
+                                <select style="width:100%; padding:0.6rem; border:1px solid var(--border); border-radius:8px; margin-top:5px; font-family:inherit;">
+                                    <option>دوام كلي</option>
+                                    <option>دوام جزئي</option>
+                                    <option>منتدب</option>
+                                </select>
+                            </div>
+                        </div>
+                    `,
+                    confirmButtonText: 'تطبيق الفلاتر',
+                    showCancelButton: true,
+                    cancelButtonText: 'إلغاء',
+                    confirmButtonColor: '#4F46E5',
+                });
+            });
+
+            /* =========================================================
+               Auto-Save & Base UX Logic (From Previous Steps)
+            ========================================================= */
+            function updateRowAppearance(row, status) {
+                const timeIn = row.querySelector('.time-in');
+                const timeOut = row.querySelector('.time-out');
+                row.setAttribute('data-status', status); // Update for filtering
+                
+                // Clear conflict warnings if status changes
+                row.classList.remove('row-conflict');
+                const conflictBadge = row.querySelector('.conflict-badge');
+                if(conflictBadge) conflictBadge.style.display = 'none';
+
+                if (status === 'absent') {
+                    row.style.backgroundColor = 'var(--danger-light)';
+                    timeIn.disabled = true; timeOut.disabled = true;
+                    timeIn.value = ''; timeOut.value = '';
+                    timeIn.classList.remove('time-late');
+                } else if (status === 'present' || status === 'late') {
+                    row.style.backgroundColor = '';
+                    timeIn.disabled = false; timeOut.disabled = false;
+                    if (!timeIn.value && status === 'present') {
+                        const now = new Date();
+                        timeIn.value = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+                    }
+                    if (timeIn.value && timeIn.value > shiftStartTime) {
+                        timeIn.classList.add('time-late');
+                        if(status === 'present') {
+                            const lateRadio = row.querySelector('input[value="late"]');
+                            if(lateRadio) lateRadio.checked = true;
+                            row.setAttribute('data-status', 'late');
+                        }
+                    } else {
+                        timeIn.classList.remove('time-late');
+                    }
+                }
+            }
+
+            function simulateAutoSave(row) {
+                const actionCell = row.querySelector('.action-cell');
+                const originalHtml = actionCell.innerHTML;
+                actionCell.innerHTML = '<div class="fade-in" style="display:flex; align-items:center; gap:5px; color:var(--primary); font-size:0.85rem; font-weight:600;"><i class="ph ph-spinner-gap saving-loader" style="font-size:1.2rem;"></i> حفظ...</div>';
+                setTimeout(() => {
+                    actionCell.innerHTML = '<div class="fade-in" style="display:flex; align-items:center; gap:5px; color:var(--success); font-size:0.85rem; font-weight:600;"><i class="ph-fill ph-check-circle" style="font-size:1.2rem;"></i> تم</div>';
+                    setTimeout(() => { actionCell.innerHTML = originalHtml; }, 1500);
+                }, 800);
+            }
+
+            document.querySelectorAll('.status-toggle:not(.locked) input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const row = this.closest('tr');
+                    updateRowAppearance(row, this.value);
+                    simulateAutoSave(row);
+                });
+            });
+
+            // Mark All As Present
+            document.getElementById('btn-mark-all').addEventListener('click', () => {
+                Swal.fire({
+                    title: 'تأكيد التحضير السريع',
+                    text: "سيتم تسجيل حالة (حاضر) تلقائياً لكل المعلمين الذين لم تسجل حالتهم بعد.",
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4F46E5',
+                    cancelButtonColor: '#6B7280',
+                    confirmButtonText: 'نعم، قم بتحضيرهم',
+                    cancelButtonText: 'إلغاء'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        let updatedCount = 0;
+                        document.querySelectorAll('tbody tr').forEach(row => {
+                            if (row.getAttribute('data-status') === 'undecided') {
+                                const presentRadio = row.querySelector('input[value="present"]');
+                                if (presentRadio) {
+                                    presentRadio.checked = true;
+                                    updateRowAppearance(row, 'present');
+                                    simulateAutoSave(row);
+                                    updatedCount++;
+                                }
+                            }
+                        });
+                        Swal.fire('تم بنجاح!', `تم تحضير وتسجيل بيانات ${updatedCount} معلمين.`, 'success');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
