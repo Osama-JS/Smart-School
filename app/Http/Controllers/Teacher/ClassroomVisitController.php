@@ -9,8 +9,15 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
-class ClassroomVisitController extends Controller
+class ClassroomVisitController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض زياراتي الصفية', only: ['index', 'sign']),
+        ];
+    }
+
     public function index(Request $request)
     {
         // عرض زيارات المعلم فقط
