@@ -16,10 +16,24 @@ class ClassroomVisit extends Model
         'supervisor_signature', 'teacher_signature', 'is_approved'
     ];
 
+    protected $appends = [
+        'supervisor_signature_url', 'teacher_signature_url'
+    ];
+
     protected $casts = [
         'visit_date' => 'date',
         'is_approved' => 'boolean',
     ];
+
+    public function getSupervisorSignatureUrlAttribute()
+    {
+        return $this->supervisor_signature ? asset('storage/' . $this->supervisor_signature) : null;
+    }
+
+    public function getTeacherSignatureUrlAttribute()
+    {
+        return $this->teacher_signature ? asset('storage/' . $this->teacher_signature) : null;
+    }
 
     /** الفرع */
     public function branch(): BelongsTo

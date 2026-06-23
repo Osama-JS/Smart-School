@@ -144,6 +144,14 @@ Route::middleware('auth')->group(function () {
         ])->except(['create', 'edit', 'show']);
         
         Route::post('/academic/classroom-visits/{classroomVisit}/approve', [\App\Http\Controllers\Academic\ClassroomVisitController::class, 'approve'])->name('academic.classroom-visits.approve');
+        Route::post('/academic/classroom-visits/{classroomVisit}/teacher-sign', [\App\Http\Controllers\Academic\ClassroomVisitController::class, 'teacherSign'])->name('academic.classroom-visits.teacher-sign');
+    });
+
+    Route::middleware('permission:عرض دفاتر التحضير')->group(function () {
+        Route::resource('/academic/lesson-preparations', \App\Http\Controllers\Academic\LessonPreparationController::class)->names([
+            'index'   => 'academic.lesson-preparations',
+            'destroy' => 'academic.lesson-preparations.destroy',
+        ])->only(['index', 'destroy']);
     });
 
     // Teacher's Timetable and Classroom Visits (No specific permission needed, checking logic in controller or open to all teachers)
@@ -152,6 +160,14 @@ Route::middleware('auth')->group(function () {
     // Teacher's Classroom Visits
     Route::get('/teacher/my-classroom-visits', [\App\Http\Controllers\Teacher\ClassroomVisitController::class, 'index'])->name('teacher.my-classroom-visits');
     Route::post('/teacher/my-classroom-visits/{classroomVisit}/sign', [\App\Http\Controllers\Teacher\ClassroomVisitController::class, 'sign'])->name('teacher.my-classroom-visits.sign');
+
+    // Teacher's Lesson Preparations
+    Route::resource('/teacher/lesson-preparations', \App\Http\Controllers\Teacher\LessonPreparationController::class)->names([
+        'index'   => 'teacher.lesson-preparations.index',
+        'store'   => 'teacher.lesson-preparations.store',
+        'update'  => 'teacher.lesson-preparations.update',
+        'destroy' => 'teacher.lesson-preparations.destroy',
+    ])->except(['create', 'show', 'edit']);
 
     Route::middleware('permission:إدارة الطلاب')->group(function () {
         // Parents

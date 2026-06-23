@@ -205,9 +205,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'التقييم', icon: Star },
                 { name: 'الزيارات الصفية', icon: Eye, url: route('academic.classroom-visits'), permission: 'إدارة الزيارات الصفية' },
                 { name: 'زياراتي الصفية', icon: Eye, url: route('teacher.my-classroom-visits'), permission: 'عرض زياراتي الصفية' },
-                { name: 'دفاتر المتابعة', icon: ClipboardList },
+                { name: 'دفاتري للتحضير', icon: BookOpen, url: route('teacher.lesson-preparations.index') },
                 { name: 'الخطط الدراسية', icon: Map, permission: 'إدارة خطط الدراسة' },
-                { name: 'دفاتر تحضير المعلمين', icon: Book, permission: 'إدارة دفاتر التحضير' },
+                { name: 'دفاتر تحضير المعلمين', icon: Book, url: route('academic.lesson-preparations'), permission: 'عرض دفاتر التحضير' },
             ]
         },
         {
