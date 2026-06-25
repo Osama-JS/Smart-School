@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
-import { Calendar, Plus, Edit2, Trash2, X, Save, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, X, Save, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 
 export default function LeavesIndex({ leaves, employees, academicYears = [], leaveTypes = [], isAdmin, filters = {} }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingLeave, setEditingLeave] = useState(null);
+    const [viewingLeave, setViewingLeave] = useState(null);
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         employee_id: '',
@@ -208,7 +209,7 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                                     leaves.map((leave) => (
                                         <tr key={leave.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
                                             <td className="py-4 px-6 font-bold text-dark-900 dark:text-white">
-                                                {leave.employee?.first_name} {leave.employee?.last_name}
+                                                {leave.employee?.user?.name || '-'}
                                             </td>
                                             <td className="py-4 px-6 text-slate-600 dark:text-slate-300">
                                                 {leave.leave_type?.name || '-'}
@@ -228,6 +229,9 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                                             </td>
                                             <td className="py-4 px-6">
                                                 <div className="flex items-center gap-2">
+                                                    <button onClick={() => setViewingLeave(leave)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-500 transition-colors">
+                                                        <Eye size={16} />
+                                                    </button>
                                                     {leave.status !== 'approved' ? (
                                                         <>
                                                             <button onClick={() => openModal(leave)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary-500 transition-colors">
@@ -382,6 +386,105 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* View Details Modal */}
+                {viewingLeave && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setViewingLeave(null)}></div>
+                        <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+                                <h3 className="text-xl font-bold text-dark-900 dark:text-white flex items-center gap-2">
+                                    <Eye className="text-primary-500" />
+                                    تفاصيل الإجازة
+                                </h3>
+                                <button onClick={() => setViewingLeave(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 p-2 rounded-full">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">الموظف</p>
+                                        <p className="font-bold text-slate-800 dark:text-white">{viewingLeave.employee?.user?.name || '-'}</p>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">المسمى / الدرجة الوظيفية</p>
+                                        <p className="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                            {viewingLeave.employee?.job_title || '-'}
+                                            {viewingLeave.employee?.job_grade && (
+                                                <span className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded-full">{viewingLeave.employee.job_grade.name}</span>
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">نوع الإجازة</p>
+                                        <p className="font-bold text-slate-800 dark:text-white">{viewingLeave.leave_type?.name || '-'}</p>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">تاريخ البداية</p>
+                                        <p className="font-bold text-slate-800 dark:text-white">{new Date(viewingLeave.start_date).toLocaleDateString('ar-SA')}</p>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">تاريخ النهاية</p>
+                                        <p className="font-bold text-slate-800 dark:text-white">{new Date(viewingLeave.end_date).toLocaleDateString('ar-SA')}</p>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">الحالة</p>
+                                        <p className="font-bold text-slate-800 dark:text-white"><StatusBadge status={viewingLeave.status} /></p>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">عدد الأيام المطلوبة</p>
+                                        <p className="font-bold text-slate-800 dark:text-white">
+                                            {Math.ceil((new Date(viewingLeave.end_date) - new Date(viewingLeave.start_date)) / (1000 * 60 * 60 * 24)) + 1} أيام
+                                        </p>
+                                    </div>
+                                </div>
+                                {viewingLeave.reason && (
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">السبب / الملاحظات</p>
+                                        <p className="text-sm text-slate-700 dark:text-slate-300">{viewingLeave.reason}</p>
+                                    </div>
+                                )}
+                                
+                                {viewingLeave.related_request ? (
+                                    <div className="mt-4 p-4 border border-primary-200 dark:border-primary-500/20 bg-primary-50 dark:bg-primary-500/10 rounded-2xl space-y-4">
+                                        <h4 className="font-bold text-primary-700 dark:text-primary-300 text-sm mb-2 border-b border-primary-200 dark:border-primary-500/20 pb-2">تمت إضافتها من خلال طلب موظف</h4>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">تم الاعتماد بواسطة (المدير)</p>
+                                                <p className="font-bold text-slate-800 dark:text-white">{viewingLeave.related_request.manager?.name || '-'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">تاريخ الاعتماد</p>
+                                                <p className="font-bold text-slate-800 dark:text-white">
+                                                    {viewingLeave.related_request.reviewed_at ? new Date(viewingLeave.related_request.reviewed_at).toLocaleDateString('ar-SA') : '-'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            {viewingLeave.related_request.employee_signature_url && (
+                                                <div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">توقيع الموظف</p>
+                                                    <img src={viewingLeave.related_request.employee_signature_url} className="h-16 bg-white border border-slate-200 dark:border-slate-700 rounded-xl p-1" alt="توقيع الموظف" />
+                                                </div>
+                                            )}
+                                            {viewingLeave.related_request.manager_signature_url && (
+                                                <div>
+                                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">توقيع المدير</p>
+                                                    <img src={viewingLeave.related_request.manager_signature_url} className="h-16 bg-white border border-slate-200 dark:border-slate-700 rounded-xl p-1" alt="توقيع المدير" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mt-4 p-4 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-2xl text-center">
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">هذه الإجازة تمت إضافتها بشكل مباشر من قبل الإدارة (لا يوجد طلب مرتبط).</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

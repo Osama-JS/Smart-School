@@ -8,6 +8,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBalance, setEditingBalance] = useState(null);
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    const [deletingBalanceId, setDeletingBalanceId] = useState(null);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         id: '',
@@ -22,6 +23,8 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
         employee_ids: [],
         leave_type_ids: [],
     });
+
+    const { delete: destroy } = useForm();
 
     const stats = {
         totalEmployees: new Set(balances?.map(b => b.employee_id)).size || 0,
@@ -94,6 +97,14 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
         post(route('hr.leave-balances.store'), {
             onSuccess: () => closeModal(),
         });
+    };
+
+    const confirmDelete = () => {
+        if (deletingBalanceId) {
+            destroy(route('hr.leave-balances.destroy', deletingBalanceId), {
+                onSuccess: () => setDeletingBalanceId(null)
+            });
+        }
     };
 
     return (
@@ -208,7 +219,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 text-center">الرصيد الكلي</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 text-center">المستخدم</th>
                                     <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 text-center">المتبقي</th>
-                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 text-left w-24">تعديل</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 text-left w-32">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -246,12 +257,20 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                                                 </div>
                                             </td>
                                             <td className="py-4 px-6 text-left">
-                                                <button
-                                                    onClick={() => openModal(balance)}
-                                                    className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary-500 transition-colors"
-                                                >
-                                                    <Edit2 size={16} />
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => openModal(balance)}
+                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary-500 transition-colors"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setDeletingBalanceId(balance.id)}
+                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -425,6 +444,36 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingBalanceId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDeletingBalanceId(null)}></div>
+                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <X size={32} />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">تأكيد الحذف</h2>
+                        <p className="text-slate-500 dark:text-slate-400 mb-6">
+                            هل أنت متأكد من حذف رصيد الإجازة هذا؟ لا يمكن الحذف إذا تم استخدام جزء منه بالفعل.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all"
+                            >
+                                نعم، احذف الرصيد
+                            </button>
+                            <button
+                                onClick={() => setDeletingBalanceId(null)}
+                                className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
+                            >
+                                تراجع
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

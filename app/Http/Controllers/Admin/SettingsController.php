@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Models\Setting;
 
 class SettingsController extends Controller
 {
@@ -14,13 +15,14 @@ class SettingsController extends Controller
     public function index()
     {
         $settings = [
-            'school_name'     => config('app.name', 'مدارس القيم'),
-            'academic_year'   => '2025/2026',
-            'timezone'        => config('app.timezone', 'Asia/Riyadh'),
-            'locale'          => 'ar',
-            'allow_self_reg'  => false,
-            'session_timeout' => 120,
-            'max_login_attempts' => 5,
+            'school_name'        => Setting::get('school_name', config('app.name', 'مدارس القيم')),
+            'academic_year'      => Setting::get('academic_year', '2025/2026'),
+            'timezone'           => Setting::get('timezone', config('app.timezone', 'Asia/Riyadh')),
+            'locale'             => Setting::get('locale', 'ar'),
+            'allow_self_reg'     => Setting::get('allow_self_reg', false),
+            'session_timeout'    => Setting::get('session_timeout', 120),
+            'max_login_attempts' => Setting::get('max_login_attempts', 5),
+            'logo'               => Setting::get('logo', null),
         ];
 
         return Inertia::render('Admin/Settings/Index', [
@@ -43,10 +45,19 @@ class SettingsController extends Controller
 
         if ($request->hasFile('logo')) {
             $logoFile = $request->file('logo');
+            // Check if directory exists
+            if (!file_exists(public_path('images'))) {
+                mkdir(public_path('images'), 0755, true);
+            }
             $logoFile->move(public_path('images'), 'logo.png');
+            Setting::set('logo', 'images/logo.png', 'string');
         }
 
-        // في نظام حقيقي يُحفظ في جدول settings أو ملف .env
+        Setting::set('school_name', $request->school_name, 'string');
+        Setting::set('academic_year', $request->academic_year, 'string');
+        Setting::set('session_timeout', $request->session_timeout, 'integer');
+        Setting::set('max_login_attempts', $request->max_login_attempts, 'integer');
+
         return redirect()->route('admin.settings')->with('success', 'تم حفظ الإعدادات بنجاح');
     }
 }

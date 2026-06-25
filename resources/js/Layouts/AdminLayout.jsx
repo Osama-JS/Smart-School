@@ -175,6 +175,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'سير العمل والطلبات',
             items: [
+                { name: 'طلبات الموظفين', icon: Layers, url: route('hr.requests.index'), permission: 'إدارة طلبات الموظفين' },
+                { name: 'طلباتي', icon: FileText, url: route('hr.my-requests.index'), permission: null },
                 { name: 'التقارير', icon: FileText, url: route('reports.index'), permission: 'إدارة التقارير' },
                 { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates'), permission: 'إدارة قوالب التقارير' },
                 { name: 'تقاريري', icon: FileText, url: route('hr.reports.my-reports.index'), permission: null },

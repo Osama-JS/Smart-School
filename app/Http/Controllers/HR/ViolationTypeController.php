@@ -79,6 +79,13 @@ class ViolationTypeController extends Controller implements \Illuminate\Routing\
 
     public function destroy(ViolationType $violationType)
     {
+        // Check if violation type is used in employee violations
+        $hasViolations = \App\Models\EmployeeViolation::where('violation_type_id', $violationType->id)->exists();
+
+        if ($hasViolations) {
+            return back()->with('error', 'لا يمكن حذف هذا النوع لارتباطه بمخالفات مسجلة لموظفين.');
+        }
+
         $violationType->delete();
         return back()->with('success', 'تم حذف نوع المخالفة بنجاح.');
     }

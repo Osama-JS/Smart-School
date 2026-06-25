@@ -287,6 +287,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/hr/leave-balances', [\App\Http\Controllers\HR\LeaveBalanceController::class, 'index'])->name('hr.leave-balances');
         Route::post('/hr/leave-balances', [\App\Http\Controllers\HR\LeaveBalanceController::class, 'store'])->name('hr.leave-balances.store');
         Route::post('/hr/leave-balances/generate', [\App\Http\Controllers\HR\LeaveBalanceController::class, 'generate'])->name('hr.leave-balances.generate');
+        Route::delete('/hr/leave-balances/{leaveBalance}', [\App\Http\Controllers\HR\LeaveBalanceController::class, 'destroy'])->name('hr.leave-balances.destroy');
     });
 
     // ── Attendance ──
@@ -338,6 +339,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/meetings/{meeting}/complete', [\App\Http\Controllers\HR\MeetingController::class, 'completeMeeting'])->name('meetings.complete');
         Route::post('/meetings/{meeting}/remind', [\App\Http\Controllers\HR\MeetingController::class, 'remindParticipants'])->name('meetings.remind');
     });
+
+    // ── Employee Requests ──
+    Route::middleware('permission:إدارة طلبات الموظفين')->group(function () {
+        Route::get('/hr/requests', [\App\Http\Controllers\HR\EmployeeRequestController::class, 'index'])->name('hr.requests.index');
+        Route::post('/hr/requests/{employeeRequest}/review', [\App\Http\Controllers\HR\EmployeeRequestController::class, 'review'])->name('hr.requests.review');
+    });
+
+    // Employee side - accessible to all authenticated users with an employee record
+    Route::get('/hr/my-requests', [\App\Http\Controllers\HR\EmployeeRequestController::class, 'myRequests'])->name('hr.my-requests.index');
+    Route::post('/hr/my-requests', [\App\Http\Controllers\HR\EmployeeRequestController::class, 'store'])->name('hr.my-requests.store');
 });
 
 require __DIR__.'/auth.php';
+
