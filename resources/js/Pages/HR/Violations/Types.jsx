@@ -376,7 +376,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                         </div>
                         <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">تأكيد الحذف</h2>
                         <p className="text-slate-500 dark:text-slate-400 mb-6">
-                            هل أنت متأكد من رغبتك في حذف هذا النوع؟ سيؤدي ذلك إلى حذف جميع المخالفات المرتبطة به.
+                            هل أنت متأكد من رغبتك في حذف هذا النوع؟ لا يمكن التراجع عن هذا الإجراء ولا يمكن الحذف إذا كانت هناك مخالفات مرتبطة به.
                         </p>
                         <div className="flex gap-3">
                             <button

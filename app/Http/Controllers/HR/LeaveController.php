@@ -28,7 +28,7 @@ class LeaveController extends Controller implements \Illuminate\Routing\Controll
         $user = $request->user();
         $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير النظام', 'Admin']);
         
-        $query = Leave::with(['employee', 'leaveType']);
+        $query = Leave::with(['employee.user', 'employee.jobGrade', 'leaveType']);
 
         if (!$isAdmin) {
             $query->whereHas('employee.user', function($q) use ($user) {
@@ -44,7 +44,25 @@ class LeaveController extends Controller implements \Illuminate\Routing\Controll
             $query->where('employee_id', $request->employee_id);
         }
 
-        $leaves = $query->latest()->get();
+        $leaves = $query->latest()->get()->map(function ($leave) {
+            // Find related employee request if it was created via smart approval
+            // Using a flexible date match to avoid format mismatch
+            $relatedRequest = \App\Models\EmployeeRequest::where('type', 'leave')
+                ->where('employee_id', $leave->employee_id)
+                ->where('status', 'approved')
+                ->with('manager')
+                ->latest()
+                ->get()
+                ->first(function($req) use ($leave) {
+                    if (empty($req->details['start_date'])) return false;
+                    $reqStart = \Carbon\Carbon::parse($req->details['start_date'])->startOfDay();
+                    $leaveStart = \Carbon\Carbon::parse($leave->start_date)->startOfDay();
+                    return $reqStart->equalTo($leaveStart);
+                });
+                
+            $leave->related_request = $relatedRequest;
+            return $leave;
+        });
 
         $leaveTypes = LeaveType::where('branch_id', $user->branch_id)->get();
         

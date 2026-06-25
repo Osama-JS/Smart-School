@@ -3,7 +3,7 @@ import { Head, router, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
-import { ArrowRight, Save, User, Lock, Store, Eye, EyeOff, UserCheck, Phone, Mail, MapPin, Briefcase, Award, CreditCard, Image as ImageIcon, Paperclip, Clock, CalendarDays } from 'lucide-react';
+import { ArrowRight, Save, User, Lock, Store, Eye, EyeOff, UserCheck, Phone, Mail, MapPin, Briefcase, Award, CreditCard, Image as ImageIcon, Paperclip, Clock, CalendarDays, Trash2 } from 'lucide-react';
 
 export default function EmployeesCreate({ departments, jobGrades, roles, branches = [], isAdmin = false, managerCandidates = [], shifts = [] }) {
     const { data, setData, post, processing, errors } = useForm({

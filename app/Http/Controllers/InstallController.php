@@ -32,8 +32,9 @@ class InstallController extends Controller
         try {
             switch ($step) {
                 case 'migrate':
-                    Artisan::call('migrate', ['--force' => true]);
-                    return response()->json(['success' => true, 'message' => 'تم تهيئة الجداول (Migrations) بنجاح.']);
+                    // تم إيقاف بناء الجداول تلقائياً بناءً على طلبك، سيتم بناؤها يدوياً
+                    // Artisan::call('migrate', ['--force' => true]);
+                    return response()->json(['success' => true, 'message' => 'تم تخطي تهيئة الجداول بناءً على إعدادات النظام.']);
                     
                 case 'branch_and_roles':
                     DB::beginTransaction();

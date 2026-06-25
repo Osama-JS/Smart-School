@@ -168,4 +168,14 @@ class LeaveBalanceController extends Controller
 
         return back()->with('success', "تم توليد {$count} رصيد جديد للموظفين بنجاح.");
     }
+
+    public function destroy(LeaveBalance $leaveBalance)
+    {
+        if ($leaveBalance->used_days > 0) {
+            return back()->with('error', 'لا يمكن حذف الرصيد لأنه تم استخدام جزء منه في إجازات الموظف.');
+        }
+
+        $leaveBalance->delete();
+        return back()->with('success', 'تم حذف رصيد الإجازة بنجاح.');
+    }
 }

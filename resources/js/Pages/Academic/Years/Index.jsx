@@ -53,6 +53,8 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
     const [editingYear, setEditingYear] = useState(null);
     const [editingSemester, setEditingSemester] = useState(null);
     const [selectedYearId, setSelectedYearId] = useState(null); // For adding semester
+    const [deletingYearId, setDeletingYearId] = useState(null);
+    const [deletingSemesterId, setDeletingSemesterId] = useState(null);
 
     // Form States - Year
     const [yearForm, setYearForm] = useState({
@@ -98,29 +100,15 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
     };
 
     const deleteYear = (id) => {
-        const isDark = document.documentElement.classList.contains('dark');
-        Swal.fire({
-            title: 'هل أنت متأكد؟',
-            text: 'هل أنت متأكد من حذف هذه السنة الدراسية بشكل نهائي؟',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: isDark ? '#334155' : '#e2e8f0',
-            confirmButtonText: 'نعم، احذفها',
-            cancelButtonText: 'إلغاء',
-            reverseButtons: true,
-            background: isDark ? '#0f172a' : '#ffffff',
-            color: isDark ? '#f8fafc' : '#1e293b',
-            customClass: {
-                confirmButton: 'rounded-xl px-5 py-2.5 font-bold text-white',
-                cancelButton: `rounded-xl px-5 py-2.5 font-bold ${isDark ? 'text-white' : 'text-slate-700'}`,
-                popup: 'rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl',
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('academic.years.destroy', id));
-            }
-        });
+        setDeletingYearId(id);
+    };
+
+    const confirmDeleteYear = () => {
+        if (deletingYearId) {
+            router.delete(route('academic.years.destroy', deletingYearId), {
+                onSuccess: () => setDeletingYearId(null)
+            });
+        }
     };
 
     const toggleYearActive = (id) => {
@@ -181,29 +169,15 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
     };
 
     const deleteSemester = (id) => {
-        const isDark = document.documentElement.classList.contains('dark');
-        Swal.fire({
-            title: 'هل أنت متأكد؟',
-            text: 'هل أنت متأكد من حذف هذا الفصل الدراسي؟',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: isDark ? '#334155' : '#e2e8f0',
-            confirmButtonText: 'نعم، احذفه',
-            cancelButtonText: 'إلغاء',
-            reverseButtons: true,
-            background: isDark ? '#0f172a' : '#ffffff',
-            color: isDark ? '#f8fafc' : '#1e293b',
-            customClass: {
-                confirmButton: 'rounded-xl px-5 py-2.5 font-bold text-white',
-                cancelButton: `rounded-xl px-5 py-2.5 font-bold ${isDark ? 'text-white' : 'text-slate-700'}`,
-                popup: 'rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl',
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                router.delete(route('academic.semesters.destroy', id));
-            }
-        });
+        setDeletingSemesterId(id);
+    };
+
+    const confirmDeleteSemester = () => {
+        if (deletingSemesterId) {
+            router.delete(route('academic.semesters.destroy', deletingSemesterId), {
+                onSuccess: () => setDeletingSemesterId(null)
+            });
+        }
     };
 
     const toggleSemesterActive = (id) => {
@@ -494,6 +468,66 @@ export default function AcademicYearsIndex({ academicYears, branches, isAdmin, s
                     </div>
                 </form>
             </Modal>
+
+            {/* Delete Year Confirmation Modal */}
+            {deletingYearId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDeletingYearId(null)}></div>
+                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Trash2 size={32} />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">تأكيد الحذف</h2>
+                        <p className="text-slate-500 dark:text-slate-400 mb-6">
+                            هل أنت متأكد من حذف هذه السنة الدراسية بشكل نهائي؟ لا يمكن التراجع عن هذا الإجراء ولا يمكن الحذف إذا كانت السنة مرتبطة ببيانات أخرى مثل الفصول والجداول.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={confirmDeleteYear}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all"
+                            >
+                                حذف نهائياً
+                            </button>
+                            <button
+                                onClick={() => setDeletingYearId(null)}
+                                className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
+                            >
+                                تراجع
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Semester Confirmation Modal */}
+            {deletingSemesterId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDeletingSemesterId(null)}></div>
+                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
+                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Trash2 size={32} />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">تأكيد الحذف</h2>
+                        <p className="text-slate-500 dark:text-slate-400 mb-6">
+                            هل أنت متأكد من حذف هذا الفصل الدراسي؟ لا يمكن الحذف إذا كان مرتبطاً بحصص أو جداول.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={confirmDeleteSemester}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-bold transition-all"
+                            >
+                                حذف نهائياً
+                            </button>
+                            <button
+                                onClick={() => setDeletingSemesterId(null)}
+                                className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
+                            >
+                                تراجع
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }

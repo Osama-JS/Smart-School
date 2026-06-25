@@ -10,6 +10,7 @@ export default function LeaveTypesIndex({ leaveTypes, isSystemAdmin, branches = 
     const { flash } = usePage().props;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingType, setEditingType] = useState(null);
+    const [deletingId, setDeletingId] = useState(null);
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         branch_id: currentBranchId || '',
@@ -31,17 +32,6 @@ export default function LeaveTypesIndex({ leaveTypes, isSystemAdmin, branches = 
                 text: flash.error,
                 confirmButtonText: 'حسناً',
                 confirmButtonColor: '#ef4444',
-                ...swalConfig
-            });
-        }
-        
-        if (flash?.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'نجاح!',
-                text: flash.success,
-                timer: 2000,
-                showConfirmButton: false,
                 ...swalConfig
             });
         }
@@ -83,23 +73,16 @@ export default function LeaveTypesIndex({ leaveTypes, isSystemAdmin, branches = 
     };
 
     const handleDelete = (id) => {
-        const isDark = document.documentElement.classList.contains('dark');
-        Swal.fire({
-            title: 'هل أنت متأكد؟',
-            text: 'هل أنت متأكد من حذف هذا النوع من الإجازات؟',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: isDark ? '#334155' : '#94a3b8',
-            confirmButtonText: 'نعم، احذف',
-            cancelButtonText: 'إلغاء',
-            background: isDark ? '#1e293b' : '#ffffff',
-            color: isDark ? '#f8fafc' : '#0f172a',
-        }).then((result) => {
-            if (result.isConfirmed) {
-                destroy(route('hr.leave-types.destroy', id), { preserveScroll: true });
-            }
-        });
+        setDeletingId(id);
+    };
+
+    const confirmDelete = () => {
+        if (deletingId) {
+            destroy(route('hr.leave-types.destroy', deletingId), { 
+                preserveScroll: true,
+                onSuccess: () => setDeletingId(null)
+            });
+        }
     };
 
     return (
@@ -277,6 +260,37 @@ export default function LeaveTypesIndex({ leaveTypes, isSystemAdmin, branches = 
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deletingId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDeletingId(null)}></div>
+                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="p-8 text-center">
+                            <div className="w-16 h-16 bg-accent-50 dark:bg-accent-500/10 text-accent-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Trash2 size={32} />
+                            </div>
+                            <h3 className="text-xl font-bold text-dark-900 dark:text-white mb-2">تأكيد الحذف</h3>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8">هل أنت متأكد من أنك تريد حذف نوع الإجازة هذا؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={confirmDelete}
+                                    disabled={processing}
+                                    className="flex-1 bg-accent-500 hover:bg-accent-600 text-white py-3 rounded-xl font-bold transition-all disabled:opacity-50"
+                                >
+                                    {processing ? 'جاري الحذف...' : 'نعم، احذف'}
+                                </button>
+                                <button
+                                    onClick={() => setDeletingId(null)}
+                                    className="flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
+                                >
+                                    إلغاء
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

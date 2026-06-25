@@ -74,5 +74,8 @@ class SystemPermissionsSeeder extends Seeder
         
         $this->command->info('⚙️ Now generating granular permissions...');
         $this->call(GranularPermissionsSeeder::class);
+        
+        $this->command->info('⚙️ Now adding new features permissions...');
+        $this->call(NewFeaturesPermissionsSeeder::class);
     }
 }
