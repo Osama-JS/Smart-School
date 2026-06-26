@@ -40,13 +40,25 @@ class HolidayController extends Controller implements \Illuminate\Routing\Contro
             });
         }
 
-        $filters = $request->only(['search', 'academic_year_id']);
+        $filters = $request->only(['search', 'academic_year_id', 'branch_id', 'semester_id', 'date_from', 'date_to']);
 
         if (!empty($filters['search'])) {
             $query->where('name', 'like', '%' . $filters['search'] . '%');
         }
         if (!empty($filters['academic_year_id'])) {
             $query->where('academic_year_id', $filters['academic_year_id']);
+        }
+        if (!empty($filters['branch_id']) && $isAdmin) {
+            $query->where('branch_id', $filters['branch_id']);
+        }
+        if (!empty($filters['semester_id'])) {
+            $query->where('semester_id', $filters['semester_id']);
+        }
+        if (!empty($filters['date_from'])) {
+            $query->where('start_date', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->where('end_date', '<=', $filters['date_to']);
         }
 
         $holidays = $query->latest()->get();
@@ -143,4 +155,27 @@ class HolidayController extends Controller implements \Illuminate\Routing\Contro
         $holiday->delete();
         return redirect()->back()->with('success', 'تم حذف الإجازة الرسمية بنجاح.');
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:holidays,id',
+        ]);
+
+        $holidays = Holiday::whereIn('id', $validated['ids'])->get();
+
+        foreach ($holidays as $holiday) {
+            // Restore holiday dates to absent before deleting
+            Attendance::whereBetween('date', [$holiday->start_date, $holiday->end_date])
+                ->when($holiday->branch_id, fn($q) => $q->where('branch_id', $holiday->branch_id))
+                ->where('status', 'holiday')
+                ->update(['status' => 'absent']);
+                
+            $holiday->delete();
+        }
+
+        return redirect()->back()->with('success', 'تم حذف الإجازات المحددة بنجاح.');
+    }
 }
+

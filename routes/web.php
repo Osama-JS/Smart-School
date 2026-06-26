@@ -263,6 +263,7 @@ Route::middleware('auth')->group(function () {
 
     // ── Holidays & Leaves ──
     Route::middleware('permission:إدارة الموظفين')->group(function () {
+        Route::post('/hr/holidays/bulk-delete', [\App\Http\Controllers\HR\HolidayController::class, 'bulkDestroy'])->name('hr.holidays.bulk-destroy');
         Route::resource('/hr/holidays', \App\Http\Controllers\HR\HolidayController::class)->names([
             'index'   => 'hr.holidays',
             'store'   => 'hr.holidays.store',
