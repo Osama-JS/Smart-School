@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { CalendarDays, Filter, Plus, User, BookOpen, Trash2, Search, AlertCircle, X, Check, Calculator, FlaskConical, Globe, Laptop, Music, Palette, Microscope, Languages, Feather } from 'lucide-react';
+import { CalendarDays, Filter, Plus, User, BookOpen, Trash2, Search, AlertCircle, X, Check, Calculator, FlaskConical, Globe, Laptop, Music, Palette, Microscope, Languages, Feather, Clock } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 import Modal from '@/Components/Modal';
 
@@ -17,6 +17,20 @@ const SUBJECT_ICONS = {
     'Languages': Languages,
     'Feather': Feather,
 };
+
+const SUBJECT_COLORS = {
+    'BookOpen': 'from-blue-500/10 via-blue-50/50 to-transparent dark:from-blue-500/20 dark:via-blue-900/10 border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300',
+    'Calculator': 'from-indigo-500/10 via-indigo-50/50 to-transparent dark:from-indigo-500/20 dark:via-indigo-900/10 border-indigo-200 dark:border-indigo-800/50 text-indigo-700 dark:text-indigo-300',
+    'FlaskConical': 'from-emerald-500/10 via-emerald-50/50 to-transparent dark:from-emerald-500/20 dark:via-emerald-900/10 border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-300',
+    'Globe': 'from-teal-500/10 via-teal-50/50 to-transparent dark:from-teal-500/20 dark:via-teal-900/10 border-teal-200 dark:border-teal-800/50 text-teal-700 dark:text-teal-300',
+    'Laptop': 'from-purple-500/10 via-purple-50/50 to-transparent dark:from-purple-500/20 dark:via-purple-900/10 border-purple-200 dark:border-purple-800/50 text-purple-700 dark:text-purple-300',
+    'Music': 'from-pink-500/10 via-pink-50/50 to-transparent dark:from-pink-500/20 dark:via-pink-900/10 border-pink-200 dark:border-pink-800/50 text-pink-700 dark:text-pink-300',
+    'Palette': 'from-rose-500/10 via-rose-50/50 to-transparent dark:from-rose-500/20 dark:via-rose-900/10 border-rose-200 dark:border-rose-800/50 text-rose-700 dark:text-rose-300',
+    'Microscope': 'from-cyan-500/10 via-cyan-50/50 to-transparent dark:from-cyan-500/20 dark:via-cyan-900/10 border-cyan-200 dark:border-cyan-800/50 text-cyan-700 dark:text-cyan-300',
+    'Languages': 'from-amber-500/10 via-amber-50/50 to-transparent dark:from-amber-500/20 dark:via-amber-900/10 border-amber-200 dark:border-amber-800/50 text-amber-700 dark:text-amber-300',
+    'Feather': 'from-orange-500/10 via-orange-50/50 to-transparent dark:from-orange-500/20 dark:via-orange-900/10 border-orange-200 dark:border-orange-800/50 text-orange-700 dark:text-orange-300',
+};
+const DEFAULT_COLOR = 'from-slate-500/10 via-slate-50/50 to-transparent dark:from-slate-500/20 dark:via-slate-900/10 border-slate-200 dark:border-slate-800/50 text-slate-700 dark:text-slate-300';
 
 export default function TimetableIndex({ academicYears, sections, periods, timetable, workingDays, daysTranslation, subjects, teachers, filters }) {
     
@@ -157,84 +171,109 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                 </div>
 
                 {/* Filters */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <div className="flex items-center gap-2 mb-4 text-slate-800 dark:text-white font-bold">
-                        <Filter size={18} className="text-indigo-500" />
-                        <h3>حدد مسار الجدول للبدء</h3>
-                    </div>
+                <div className="relative group z-20">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 via-purple-500 to-primary-500 rounded-[2.5rem] blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative bg-white/70 dark:bg-[#121820]/80 backdrop-blur-2xl border border-white/50 dark:border-white/5 rounded-[2rem] p-6 shadow-xl shadow-slate-200/50 dark:shadow-black/20">
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shadow-inner relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 to-transparent"></div>
+                                    <Filter size={22} strokeWidth={2} />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-lg text-slate-900 dark:text-white">محددات الجدول</h3>
+                                    <p className="text-xs font-bold text-slate-500">اختر الفصل والشعبة لعرض الشبكة</p>
+                                </div>
+                            </div>
+                            
+                            <button 
+                                onClick={applyFilters}
+                                disabled={!selectedSemester || !selectedDivision}
+                                className="hidden md:flex items-center gap-2 bg-gradient-to-l from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white px-8 py-3.5 rounded-2xl text-sm font-black shadow-lg shadow-primary-500/30 transition-all duration-300 hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                            >
+                                <Search size={18} strokeWidth={2.5} /> استعراض الجدول
+                            </button>
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">السنة الدراسية</label>
-                            <SelectInput
-                                options={academicYears.map(y => ({ value: y.id, label: y.name }))}
-                                value={selectedYear}
-                                onChange={val => { setSelectedYear(val); setSelectedSemester(''); }}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
+                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">السنة الدراسية</label>
+                                <SelectInput
+                                    options={academicYears.map(y => ({ value: y.id, label: y.name }))}
+                                    value={selectedYear}
+                                    onChange={val => { setSelectedYear(val); setSelectedSemester(''); }}
+                                />
+                            </div>
+                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
+                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">الفصل الدراسي</label>
+                                <SelectInput
+                                    options={availableSemesters.map(s => ({ value: s.id, label: s.name }))}
+                                    value={selectedSemester}
+                                    onChange={setSelectedSemester}
+                                    disabled={!selectedYear}
+                                />
+                            </div>
+                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
+                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">القسم</label>
+                                <SelectInput
+                                    options={sections.map(s => ({ value: s.id, label: s.name }))}
+                                    value={selectedSection}
+                                    onChange={val => { setSelectedSection(val); setSelectedGrade(''); setSelectedDivision(''); }}
+                                />
+                            </div>
+                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
+                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">الصف</label>
+                                <SelectInput
+                                    options={availableGrades.map(g => ({ value: g.id, label: g.name }))}
+                                    value={selectedGrade}
+                                    onChange={val => { setSelectedGrade(val); setSelectedDivision(''); }}
+                                    disabled={!selectedSection}
+                                />
+                            </div>
+                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
+                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">الشعبة</label>
+                                <SelectInput
+                                    options={availableDivisions.map(d => ({ value: d.id, label: d.name }))}
+                                    value={selectedDivision}
+                                    onChange={setSelectedDivision}
+                                    disabled={!selectedGrade}
+                                />
+                            </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">الفصل (الترم)</label>
-                            <SelectInput
-                                options={availableSemesters.map(s => ({ value: s.id, label: s.name }))}
-                                value={selectedSemester}
-                                onChange={setSelectedSemester}
-                                disabled={!selectedYear}
-                            />
+                        
+                        <div className="mt-4 md:hidden">
+                            <button 
+                                onClick={applyFilters}
+                                disabled={!selectedSemester || !selectedDivision}
+                                className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-primary-600 to-primary-500 text-white px-8 py-3.5 rounded-2xl text-sm font-black shadow-lg shadow-primary-500/30 transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <Search size={18} strokeWidth={2.5} /> استعراض الجدول
+                            </button>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">القسم</label>
-                            <SelectInput
-                                options={sections.map(s => ({ value: s.id, label: s.name }))}
-                                value={selectedSection}
-                                onChange={val => { setSelectedSection(val); setSelectedGrade(''); setSelectedDivision(''); }}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">الصف</label>
-                            <SelectInput
-                                options={availableGrades.map(g => ({ value: g.id, label: g.name }))}
-                                value={selectedGrade}
-                                onChange={val => { setSelectedGrade(val); setSelectedDivision(''); }}
-                                disabled={!selectedSection}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">الشعبة</label>
-                            <SelectInput
-                                options={availableDivisions.map(d => ({ value: d.id, label: d.name }))}
-                                value={selectedDivision}
-                                onChange={setSelectedDivision}
-                                disabled={!selectedGrade}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="mt-4 flex justify-end">
-                        <button 
-                            onClick={applyFilters}
-                            disabled={!selectedSemester || !selectedDivision}
-                            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Search size={18} /> عرض الجدول
-                        </button>
                     </div>
                 </div>
 
                 {/* Timetable Grid */}
                 {selectedDivision && filters.division_id == selectedDivision && filters.semester_id == selectedSemester ? (
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-right border-collapse">
-                                <thead>
+                    <div className="bg-white/70 dark:bg-[#121820]/80 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 dark:border-white/5 shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden flex flex-col max-h-[75vh] animate-fade-in relative z-10">
+                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-500/10 rounded-full blur-[100px] pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
+                        
+                        <div className="overflow-auto custom-scrollbar flex-1 relative p-2 md:p-4">
+                            <table className="w-full text-right border-separate border-spacing-1.5 min-w-max">
+                                <thead className="sticky top-0 z-30">
                                     <tr>
-                                        <th className="bg-slate-50 dark:bg-slate-900 border-b border-l border-slate-200 dark:border-slate-700 p-4 min-w-[120px] text-slate-600 dark:text-slate-300 font-bold text-center">
+                                        <th className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl min-w-[140px] text-slate-700 dark:text-slate-300 font-black text-center shadow-sm sticky right-0 z-40 border border-slate-200/50 dark:border-slate-800/50">
                                             اليوم / الحصة
                                         </th>
                                         {periods.map((period, idx) => (
-                                            <th key={period.id} className="bg-slate-50 dark:bg-slate-900 border-b border-l last:border-l-0 border-slate-200 dark:border-slate-700 p-4 min-w-[180px] text-center">
-                                                <div className="font-bold text-slate-800 dark:text-white mb-1">{period.period_name}</div>
-                                                <div className="text-xs text-slate-500 font-mono" dir="ltr">
-                                                    {period.start_time.substring(0,5)} - {period.end_time.substring(0,5)}
+                                            <th key={period.id} className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl min-w-[220px] text-center shadow-sm border border-slate-200/50 dark:border-slate-800/50 group relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500/50">
+                                                <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-200/20 dark:to-slate-800/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <div className="absolute -inset-x-4 bottom-0 h-1 bg-primary-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-right duration-500"></div>
+                                                <div className="font-black text-slate-900 dark:text-white mb-2 text-[15px] group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors relative z-10">{period.period_name}</div>
+                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white dark:bg-slate-950 text-xs text-slate-600 dark:text-slate-400 font-bold shadow-sm relative z-10" dir="ltr">
+                                                    <Clock size={12} className="text-primary-500" />
+                                                    {period.start_time ? period.start_time.substring(0,5) : ''} - {period.end_time ? period.end_time.substring(0,5) : ''}
                                                 </div>
                                             </th>
                                         ))}
@@ -242,36 +281,72 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                                 </thead>
                                 <tbody>
                                     {workingDays.map(day => (
-                                        <tr key={day}>
-                                            <td className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-l border-slate-200 dark:border-slate-700 p-4 font-black text-slate-800 dark:text-white text-center">
+                                        <tr key={day} className="group/row">
+                                            <td className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl font-black text-slate-800 dark:text-white text-center text-lg sticky right-0 z-20 shadow-sm border border-slate-200/50 dark:border-slate-800/50 group-hover/row:bg-primary-50/80 dark:group-hover/row:bg-primary-900/20 transition-colors">
                                                 {daysTranslation[day] || day}
                                             </td>
                                             {periods.map(period => {
                                                 const slot = getSlotData(day, period.id);
+                                                const periodName = period.period_name || '';
+                                                const isBreak = periodName.includes('فسحة') || periodName.includes('استراحة') || periodName.includes('صلاة');
+                                                
+                                                if (isBreak) {
+                                                    return (
+                                                        <td key={`${day}-${period.id}`} className="p-1 min-h-[140px] relative transition-colors">
+                                                            <div className="w-full h-full min-h-[140px] rounded-2xl flex flex-col items-center justify-center opacity-70 group-hover/row:opacity-100 transition-opacity bg-[repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(245,158,11,0.05)_10px,rgba(245,158,11,0.05)_20px)] border border-amber-200/30 dark:border-amber-500/20">
+                                                                <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-500 flex items-center justify-center mb-3 shadow-inner">
+                                                                    <Clock size={24} className="animate-[pulse_3s_ease-in-out_infinite]" strokeWidth={2} />
+                                                                </div>
+                                                                <span className="font-black text-amber-600 dark:text-amber-500 text-sm tracking-wide bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded-lg">{period.period_name}</span>
+                                                            </div>
+                                                        </td>
+                                                    );
+                                                }
+
                                                 return (
-                                                    <td key={`${day}-${period.id}`} className="border-b border-l last:border-l-0 border-slate-200 dark:border-slate-700 p-2 align-top h-28 relative group">
+                                                    <td key={`${day}-${period.id}`} className="p-1 min-h-[140px] relative group/cell">
                                                         {slot ? (
-                                                            <div className="h-full bg-indigo-50 dark:bg-indigo-500/10 rounded-xl border border-indigo-100 dark:border-indigo-500/20 p-3 flex flex-col justify-between">
-                                                                <button onClick={() => handleUnassign(day, period.id)} className="absolute top-3 left-3 w-6 h-6 rounded-md bg-rose-100 text-rose-600 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-200">
-                                                                    <Trash2 size={12} />
+                                                            <div className={`h-full min-h-[140px] bg-gradient-to-br rounded-2xl border p-4 shadow-sm group-hover/cell:shadow-xl group-hover/cell:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col justify-between group/slot ${SUBJECT_COLORS[slot.subject?.icon] || DEFAULT_COLOR}`}>
+                                                                <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 dark:bg-white/5 rounded-bl-full pointer-events-none opacity-0 group-hover/slot:opacity-100 transition-opacity duration-500" />
+                                                                
+                                                                <button onClick={() => handleUnassign(day, period.id)} className="absolute top-3 left-3 w-8 h-8 rounded-xl bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400 flex items-center justify-center opacity-0 group-hover/slot:opacity-100 transition-all hover:bg-red-500 hover:text-white hover:scale-110 hover:-rotate-6 z-20 shadow-sm" title="إزالة الحصة">
+                                                                    <Trash2 size={16} />
                                                                 </button>
                                                                 
-                                                                <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 font-bold text-sm mb-2">
-                                                                    {(() => {
-                                                                        const IconComponent = SUBJECT_ICONS[slot.subject?.icon] || BookOpen;
-                                                                        return <IconComponent size={14} />;
-                                                                    })()}
-                                                                    <span className="line-clamp-1">{slot.subject.name}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-xs mt-auto">
-                                                                    <User size={12} className="text-slate-400" />
-                                                                    <span className="line-clamp-1">{slot.teacher.name}</span>
+                                                                <div className="flex items-start gap-3 relative z-10">
+                                                                    <div className="w-12 h-12 rounded-2xl bg-white/50 dark:bg-black/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-inner group-hover/slot:scale-110 group-hover/slot:rotate-6 transition-transform duration-500">
+                                                                        {(() => {
+                                                                            const IconComponent = SUBJECT_ICONS[slot.subject?.icon] || BookOpen;
+                                                                            return <IconComponent size={24} strokeWidth={1.5} className="text-current opacity-80" />;
+                                                                        })()}
+                                                                    </div>
+                                                                    <div className="pt-1 flex-1 min-w-0">
+                                                                        <div className="font-black text-base mb-1.5 leading-tight line-clamp-2 drop-shadow-sm" title={slot.subject?.name}>{slot.subject?.name || 'بدون مادة'}</div>
+                                                                        
+                                                                        <div className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/40 dark:bg-black/20 px-2 py-1.5 rounded-lg shadow-sm w-max max-w-full group/teacher relative cursor-default">
+                                                                            <User size={12} className="shrink-0 opacity-70" />
+                                                                            <span className="truncate" title={slot.teacher?.name}>{slot.teacher?.name || 'بدون معلم'}</span>
+                                                                            
+                                                                            {/* Teacher Tooltip */}
+                                                                            {slot.teacher?.name && (
+                                                                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-xl opacity-0 group-hover/teacher:opacity-100 pointer-events-none transition-all scale-90 group-hover/teacher:scale-100 whitespace-nowrap z-50 shadow-xl border border-slate-700">
+                                                                                    المعلم: {slot.teacher.name}
+                                                                                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45 border-r border-b border-slate-700"></div>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <button onClick={() => openSlotModal(day, period)} className="w-full h-full rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/5 text-slate-400 hover:text-indigo-500 transition-all flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 focus:opacity-100">
-                                                                <Plus size={20} />
-                                                                <span className="text-xs font-bold">تعيين مادة</span>
+                                                            <button 
+                                                                onClick={() => openSlotModal(day, period)}
+                                                                className="w-full h-full min-h-[140px] rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800/50 hover:border-primary-400 dark:hover:border-primary-500/50 bg-slate-50/50 dark:bg-slate-900/30 hover:bg-primary-50/80 dark:hover:bg-primary-900/20 transition-all flex flex-col items-center justify-center gap-3 group/btn relative focus:outline-none focus:ring-4 focus:ring-primary-500/20"
+                                                            >
+                                                                <div className="w-12 h-12 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-slate-400 group-hover/btn:text-primary-600 dark:group-hover/btn:text-primary-400 group-hover/btn:bg-white dark:group-hover/btn:bg-slate-800 transition-all transform group-hover/btn:scale-110 group-hover/btn:shadow-md">
+                                                                    <Plus size={24} />
+                                                                </div>
+                                                                <span className="text-sm font-black text-slate-400 group-hover/btn:text-primary-600 dark:group-hover/btn:text-primary-400 transition-colors tracking-wide">تعيين حصة</span>
                                                             </button>
                                                         )}
                                                     </td>
@@ -284,31 +359,33 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden p-8 md:p-16 text-center">
-                        <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 mb-6">
-                            <CalendarDays size={48} />
-                        </div>
-                        <h2 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white mb-6">كيفية عرض وإدارة الجدول الدراسي؟</h2>
-                        <div className="max-w-2xl mx-auto grid gap-4 text-right">
-                            <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                                <span className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-black text-lg">1</span>
-                                <div>
-                                    <h4 className="font-bold text-slate-800 dark:text-white mb-1">تحديد السنة والفصل الدراسي</h4>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">قم باختيار السنة الدراسية ثم الفصل (الترم) المراد بناء وتعديل الجدول الخاص به. (تلقائياً يكون الفصل النشط هو المحدد).</p>
-                                </div>
+                    <div className="bg-white/50 dark:bg-dark-900/40 backdrop-blur-xl rounded-[2rem] border border-dark-100 dark:border-dark-800 shadow-sm overflow-hidden p-8 md:p-16 text-center relative">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl pointer-events-none" />
+                        <div className="relative z-10">
+                            <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 text-primary-600 mb-8 shadow-inner transform rotate-3">
+                                <CalendarDays size={48} strokeWidth={1.5} />
                             </div>
-                            <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                                <span className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-black text-lg">2</span>
-                                <div>
-                                    <h4 className="font-bold text-slate-800 dark:text-white mb-1">تحديد الفئة المستهدفة</h4>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">قم باختيار (القسم) ثم (الصف) ثم (الشعبة). بناء الجداول يتم على مستوى الشعبة الدراسية.</p>
+                            <h2 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white mb-4">بناء وإدارة الجدول الدراسي</h2>
+                            <p className="text-dark-500 dark:text-dark-400 mb-10 max-w-lg mx-auto leading-relaxed">اختر محددات الجدول من الأعلى لتتمكن من استعراض وبناء الجدول الدراسي بكل سهولة واحترافية.</p>
+                            
+                            <div className="max-w-3xl mx-auto grid md:grid-cols-3 gap-6 text-right">
+                                <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-100 dark:border-dark-700 shadow-sm relative overflow-hidden group hover:border-primary-500/30 transition-colors">
+                                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-primary-500/10 rounded-full group-hover:scale-150 transition-transform duration-500" />
+                                    <span className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-primary-100 text-primary-600 font-black text-xl mb-4">1</span>
+                                    <h4 className="font-black text-dark-900 dark:text-white mb-2 relative">تحديد الفصل</h4>
+                                    <p className="text-sm text-dark-500 dark:text-dark-400 leading-relaxed relative">اختر السنة والفصل الدراسي المستهدف.</p>
                                 </div>
-                            </div>
-                            <div className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
-                                <span className="flex items-center justify-center shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 font-black text-lg">3</span>
-                                <div>
-                                    <h4 className="font-bold text-slate-800 dark:text-white mb-1">عرض الجدول وتعيين الحصص</h4>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">انقر على زر <strong className="text-indigo-600">عرض الجدول</strong> ليظهر لك الجدول. يمكنك بعدها النقر على أي خانة فارغة لتعيين المادة والمعلم للحصة.</p>
+                                <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-100 dark:border-dark-700 shadow-sm relative overflow-hidden group hover:border-primary-500/30 transition-colors">
+                                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-primary-500/10 rounded-full group-hover:scale-150 transition-transform duration-500" />
+                                    <span className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-primary-100 text-primary-600 font-black text-xl mb-4">2</span>
+                                    <h4 className="font-black text-dark-900 dark:text-white mb-2 relative">تحديد الشعبة</h4>
+                                    <p className="text-sm text-dark-500 dark:text-dark-400 leading-relaxed relative">حدد القسم، الصف، والشعبة المراد عرض جدولها.</p>
+                                </div>
+                                <div className="p-6 rounded-2xl bg-white dark:bg-dark-800 border border-dark-100 dark:border-dark-700 shadow-sm relative overflow-hidden group hover:border-primary-500/30 transition-colors">
+                                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-primary-500/10 rounded-full group-hover:scale-150 transition-transform duration-500" />
+                                    <span className="relative flex items-center justify-center w-10 h-10 rounded-xl bg-primary-100 text-primary-600 font-black text-xl mb-4">3</span>
+                                    <h4 className="font-black text-dark-900 dark:text-white mb-2 relative">إدارة الحصص</h4>
+                                    <p className="text-sm text-dark-500 dark:text-dark-400 leading-relaxed relative">انقر على الخانات لتعيين المواد والمعلمين للحصص.</p>
                                 </div>
                             </div>
                         </div>
@@ -318,60 +395,64 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
 
             {/* Assignment Modal */}
             <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} maxWidth="md">
-                <div className="p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 flex items-center justify-center">
-                                <Plus size={20} />
+                <div className="relative bg-white dark:bg-dark-900 rounded-[2rem] shadow-2xl w-full overflow-hidden border border-dark-100 dark:border-dark-800 transform transition-all">
+                    <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-600" />
+                    <div className="p-6 md:p-8">
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-dark-100 dark:border-dark-800">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400 flex items-center justify-center shadow-inner">
+                                    <Plus size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-dark-900 dark:text-white">تعيين حصة</h2>
+                                    {targetSlot && <p className="text-sm font-bold text-primary-600 dark:text-primary-400 mt-1">{daysTranslation[targetSlot.day]} - {targetSlot.period.period_name}</p>}
+                                </div>
                             </div>
+                            <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-dark-50 dark:bg-dark-800 text-dark-400 hover:text-dark-600 dark:hover:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleAssign} className="space-y-6">
                             <div>
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">تعيين حصة</h2>
-                                {targetSlot && <p className="text-xs text-slate-500 mt-1">{daysTranslation[targetSlot.day]} - {targetSlot.period.period_name}</p>}
+                                <label className="block text-sm font-black text-dark-800 dark:text-dark-200 mb-2">المادة <span className="text-red-500">*</span></label>
+                                <SelectInput
+                                    options={subjects.map(s => ({ value: s.id, label: s.name }))}
+                                    value={data.subject_id}
+                                    onChange={val => setData('subject_id', val)}
+                                    placeholder="اختر المادة"
+                                    isSearchable={true}
+                                />
+                                {errors.subject_id && <p className="text-xs font-bold text-red-500 mt-1.5">{errors.subject_id}</p>}
                             </div>
-                        </div>
-                        <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-                            <X size={20} />
-                        </button>
+
+                            <div>
+                                <label className="block text-sm font-black text-dark-800 dark:text-dark-200 mb-2">المعلم <span className="text-red-500">*</span></label>
+                                <SelectInput
+                                    options={teachers.map(t => ({ value: t.id, label: t.name }))}
+                                    value={data.teacher_id}
+                                    onChange={val => setData('teacher_id', val)}
+                                    placeholder="اختر المعلم"
+                                    isSearchable={true}
+                                />
+                                {errors.teacher_id && <p className="text-xs font-bold text-red-500 mt-1.5">{errors.teacher_id}</p>}
+                                
+                                <div className="mt-4 flex gap-3 items-start text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 p-4 rounded-xl border border-amber-200 dark:border-amber-500/20">
+                                    <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                                    <p className="text-sm font-bold leading-relaxed">النظام سيمنع الحفظ تلقائياً في حال وجود تعارض لمعلم المادة في نفس الوقت مع شعبة أخرى.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-dark-100 dark:border-dark-800">
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3.5 text-sm font-bold text-dark-600 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800 rounded-xl transition-colors">
+                                    إلغاء
+                                </button>
+                                <button type="submit" disabled={processing} className="flex items-center gap-2 bg-gradient-to-l from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white px-8 py-3.5 rounded-xl text-sm font-black shadow-lg shadow-primary-500/30 transition-all active:scale-95 disabled:opacity-70">
+                                    {processing ? 'جاري الحفظ...' : <><Check size={18} /> حفظ وتعيين</>}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-
-                    <form onSubmit={handleAssign} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">المادة <span className="text-rose-500">*</span></label>
-                            <SelectInput
-                                options={subjects.map(s => ({ value: s.id, label: s.name }))}
-                                value={data.subject_id}
-                                onChange={val => setData('subject_id', val)}
-                                placeholder="اختر المادة"
-                                isSearchable={true}
-                            />
-                            {errors.subject_id && <p className="text-xs text-rose-500 mt-1">{errors.subject_id}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">المعلم <span className="text-rose-500">*</span></label>
-                            <SelectInput
-                                options={teachers.map(t => ({ value: t.id, label: t.name }))}
-                                value={data.teacher_id}
-                                onChange={val => setData('teacher_id', val)}
-                                placeholder="اختر المعلم"
-                                isSearchable={true}
-                            />
-                            {errors.teacher_id && <p className="text-xs text-rose-500 mt-1">{errors.teacher_id}</p>}
-                            <div className="mt-2 flex gap-2 items-start text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 p-3 rounded-xl border border-amber-100 dark:border-amber-500/20">
-                                <AlertCircle size={14} className="shrink-0 mt-0.5" />
-                                <p className="text-xs">النظام سيمنع الحفظ تلقائياً في حال وجود تعارض لمعلم المادة في نفس الوقت مع شعبة أخرى.</p>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-slate-100 dark:border-slate-800">
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 rounded-xl transition-colors">
-                                إلغاء
-                            </button>
-                            <button type="submit" disabled={processing} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/30 transition-all disabled:opacity-70">
-                                {processing ? 'جاري الحفظ...' : <><Check size={18} /> حفظ وتعيين</>}
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </Modal>
         </AdminLayout>

@@ -3,7 +3,7 @@ import { Head, useForm, router, Link } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import Select from "react-select";
 import SelectInput from "@/Components/SelectInput";
-import { Plus, Trash2, X, Users, Calendar, Clock, MapPin, Eye, FileText, CheckCircle, Search, Filter, PlusCircle, ArrowUpRight, ArrowUpLeft, Bell, Mail, Smartphone, Edit, AlertCircle, LayoutGrid, List } from "lucide-react";
+import { Plus, Trash2, X, Users, Calendar as CalendarIcon, Clock, MapPin, Eye, FileText, CheckCircle, Search, Filter, PlusCircle, ArrowUpRight, ArrowUpLeft, Bell, Mail, Smartphone, Edit, AlertCircle, LayoutGrid, List, CalendarDays, ChevronRight, ChevronLeft } from "lucide-react";
 import FlatpickrInput from "@/Components/FlatpickrInput";
 
 export default function MeetingsIndex({ auth, meetings, users, stats, filters }) {
@@ -12,6 +12,7 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
 
     const [selectedMeeting, setSelectedMeeting] = useState(null);
     const [viewMode, setViewMode] = useState('grid');
+    const [currentDate, setCurrentDate] = useState(new Date());
 
     // Create Modal State & Form
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -54,6 +55,11 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
     const userOptions = users.map(u => ({ value: u.id, label: `${u.name} ${u.employee?.job_grade?.name ? '- ' + u.employee.job_grade.name : ''}` }));
 
     const filteredMeetings = meetings.data;
+
+    // --- QUICK STATS ---
+    const upcomingMeetingsCount = meetings.data.filter(m => m.status === 'scheduled').length;
+    const completedMeetingsCount = meetings.data.filter(m => m.status === 'completed').length;
+    const cancelledMeetingsCount = meetings.data.filter(m => m.status === 'cancelled').length;
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -221,6 +227,35 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
         indicatorSeparator: () => "hidden",
     };
 
+    // --- CALENDAR HELPERS ---
+    const getDaysInMonth = (date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    const getFirstDayOfMonth = (date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+    
+    const daysInMonth = getDaysInMonth(currentDate);
+    const firstDayOfMonth = getFirstDayOfMonth(currentDate);
+    
+    // Create an array for calendar padding (empty days at start)
+    const paddingDays = Array.from({ length: firstDayOfMonth }, (_, i) => i);
+    // Create an array for the actual days
+    const monthDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+    const prevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    const nextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    const currentMonthLabel = currentDate.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+
+    // Group meetings by day for the current month
+    const meetingsByDay = {};
+    if (viewMode === 'calendar') {
+        filteredMeetings.forEach(meeting => {
+            const mDate = new Date(meeting.date);
+            if (mDate.getMonth() === currentDate.getMonth() && mDate.getFullYear() === currentDate.getFullYear()) {
+                const day = mDate.getDate();
+                if (!meetingsByDay[day]) meetingsByDay[day] = [];
+                meetingsByDay[day].push(meeting);
+            }
+        });
+    }
+
     return (
         <AdminLayout user={auth.user}>
             <Head title="الإجتماعات" />
@@ -243,8 +278,49 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col md:flex-row gap-4">
-                        <form onSubmit={handleSearch} className="flex-1 flex gap-4">
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex items-center justify-between group">
+                            <div>
+                                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">الاجتماعات القادمة</p>
+                                <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-amber-500 transition-colors">
+                                    {upcomingMeetingsCount}
+                                </h3>
+                            </div>
+                            <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center relative">
+                                {upcomingMeetingsCount > 0 && (
+                                    <div className="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-white dark:border-slate-900" />
+                                )}
+                                <Clock size={24} />
+                            </div>
+                        </div>
+                        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex items-center justify-between group">
+                            <div>
+                                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">اجتماعات مكتملة</p>
+                                <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-emerald-500 transition-colors">
+                                    {completedMeetingsCount}
+                                </h3>
+                            </div>
+                            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center">
+                                <CheckCircle size={24} />
+                            </div>
+                        </div>
+                        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex items-center justify-between group">
+                            <div>
+                                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">اجتماعات ملغاة</p>
+                                <h3 className="text-2xl font-black text-slate-800 dark:text-white group-hover:text-red-500 transition-colors">
+                                    {cancelledMeetingsCount}
+                                </h3>
+                            </div>
+                            <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-500 flex items-center justify-center">
+                                <X size={24} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Smart Sticky Toolbar */}
+                    <div className="sticky top-[80px] z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl p-3 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row items-center gap-4 mb-6">
+                        <form onSubmit={handleSearch} className="flex-1 flex gap-2 w-full">
                             <div className="flex-1 relative">
                                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
                                     <Search size={18} />
@@ -254,67 +330,66 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder="ابحث عن اجتماع..."
-                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl pr-10 pl-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pr-10 pl-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
                                 />
                             </div>
-                            <div className="w-48">
-                                <SelectInput
-                                    value={statusFilter}
-                                    onChange={val => setStatusFilter(val)}
-                                    options={[
-                                        { value: '', label: 'جميع الحالات' },
-                                        { value: 'scheduled', label: 'مجدول' },
-                                        { value: 'completed', label: 'مكتمل' },
-                                        { value: 'cancelled', label: 'ملغي' }
-                                    ]}
-                                />
-                            </div>
-                            <button type="submit" className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 px-6 py-2.5 rounded-xl font-bold transition-colors">
-                                بحث
+                            <button type="submit" className="bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 px-4 py-2 rounded-xl font-bold transition-colors">
+                                <Filter size={18} />
                             </button>
                         </form>
-                    </div>
-
-                    {/* Controls */}
-                    <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
-                        <div className="flex gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                            <button
-                                onClick={() => setViewMode('grid')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'grid' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
-                            >
-                                <LayoutGrid size={16} /> شبكة
-                            </button>
-                            <button
-                                onClick={() => setViewMode('table')}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${viewMode === 'table' ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
-                            >
-                                <List size={16} /> جدول
-                            </button>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
+                        
+                        <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+                        
+                        <div className="flex gap-2 w-full md:w-auto overflow-x-auto custom-scrollbar pb-1 md:pb-0">
                             <button 
                                 onClick={() => router.get(route('meetings.index'))}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${!filters.status ? 'bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 shadow-md' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'}`}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${!filters.status ? 'bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
                             >
                                 الكل
                             </button>
                             <button 
                                 onClick={() => router.get(route('meetings.index', { status: 'scheduled' }))}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filters.status === 'scheduled' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'}`}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${filters.status === 'scheduled' ? 'bg-amber-500 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
                             >
                                 مجدولة
                             </button>
                             <button 
                                 onClick={() => router.get(route('meetings.index', { status: 'completed' }))}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filters.status === 'completed' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'}`}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${filters.status === 'completed' ? 'bg-emerald-500 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
                             >
                                 مكتملة
                             </button>
                             <button 
                                 onClick={() => router.get(route('meetings.index', { status: 'cancelled' }))}
-                                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${filters.status === 'cancelled' ? 'bg-red-500 text-white shadow-md shadow-red-500/20' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'}`}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${filters.status === 'cancelled' ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'}`}
                             >
                                 ملغاة
+                            </button>
+                        </div>
+
+                        <div className="w-px h-8 bg-slate-200 dark:bg-slate-700 hidden md:block"></div>
+
+                        <div className="flex gap-1 bg-slate-50 dark:bg-slate-800/50 p-1 rounded-xl w-full md:w-auto shrink-0 justify-center">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-primary-600 dark:bg-slate-700 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                                title="عرض شبكة"
+                            >
+                                <LayoutGrid size={16} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('table')}
+                                className={`p-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-primary-600 dark:bg-slate-700 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                                title="عرض جدول"
+                            >
+                                <List size={16} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('calendar')}
+                                className={`p-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-primary-600 dark:bg-slate-700 dark:text-primary-400' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}
+                                title="عرض تقويم"
+                            >
+                                <CalendarDays size={16} />
                             </button>
                         </div>
                     </div>
@@ -322,7 +397,7 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                     {filteredMeetings.length === 0 ? (
                         <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center shadow-sm">
                             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white dark:border-slate-900 shadow-sm">
-                                <Calendar size={32} className="text-slate-400" />
+                                <CalendarIcon size={32} className="text-slate-400" />
                             </div>
                             <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">لا توجد اجتماعات</h3>
                             <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
@@ -333,7 +408,14 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredMeetings.map(meeting => {
                                 const isSupervisor = meeting.supervisor_id === auth.user.id;
-                                const isPast = new Date(`${meeting.date}T${meeting.time}`) < new Date();
+                                const mDate = new Date(`${meeting.date}T${meeting.time}`);
+                                const now = new Date();
+                                const isPast = mDate < now;
+                                
+                                // Smart Card Logic
+                                const isToday = mDate.toDateString() === now.toDateString();
+                                const diffHours = (mDate - now) / (1000 * 60 * 60);
+                                const isUpcoming24h = diffHours > 0 && diffHours <= 24;
                                 
                                 return (
                                     <div key={meeting.id} className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden hover:shadow-xl hover:shadow-slate-200/40 dark:hover:shadow-none hover:border-primary-200 dark:hover:border-primary-800/50 transition-all duration-300 flex flex-col h-full relative">
@@ -346,10 +428,17 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                                         {meeting.type === 'online' ? <Users size={24} strokeWidth={1.5} /> : <MapPin size={24} strokeWidth={1.5} />}
                                                     </div>
                                                     <div>
-                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${getStatusBadgeColor(meeting.status)}`}>
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
-                                                            {getStatusLabel(meeting.status)}
-                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold border ${getStatusBadgeColor(meeting.status)}`}>
+                                                                <div className={`w-1.5 h-1.5 rounded-full bg-current ${meeting.status === 'scheduled' ? 'animate-pulse' : ''}`} />
+                                                                {getStatusLabel(meeting.status)}
+                                                            </span>
+                                                            {isToday && meeting.status === 'scheduled' && (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> يحدث اليوم
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1.5">
                                                             {meeting.type === 'online' ? 'اجتماع عن بعد' : 'اجتماع حضوري'}
                                                         </p>
@@ -364,10 +453,15 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                                 {meeting.title}
                                             </h3>
 
-                                            <div className="space-y-3 mb-6 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+                                            <div className="space-y-3 mb-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 relative overflow-hidden">
+                                                {isUpcoming24h && meeting.status === 'scheduled' && (
+                                                    <div className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-sm z-10 flex items-center gap-1">
+                                                        <Clock size={10} /> يبدأ خلال {Math.floor(diffHours)} ساعة
+                                                    </div>
+                                                )}
                                                 <div className="flex items-center gap-3 text-sm">
                                                     <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-primary-500 dark:text-primary-400 shrink-0 border border-slate-100 dark:border-slate-700">
-                                                        <Calendar size={14} />
+                                                        <CalendarIcon size={14} />
                                                     </div>
                                                     <span className="font-bold text-slate-700 dark:text-slate-300">{formatDateAr(meeting.date)}</span>
                                                 </div>
@@ -378,6 +472,24 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                                     <span className="font-bold text-slate-700 dark:text-slate-300">الساعة {formatTimeAr(meeting.time)}</span>
                                                 </div>
                                             </div>
+                                            
+                                            {/* Agenda Sneak Peek */}
+                                            {meeting.agendas && meeting.agendas.length > 0 && (
+                                                <div className="mb-6">
+                                                    <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">محاور الاجتماع الرئيسية</span>
+                                                    <ul className="space-y-1.5">
+                                                        {meeting.agendas.slice(0, 2).map((agenda, idx) => (
+                                                            <li key={idx} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-400">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 mt-1.5 shrink-0" />
+                                                                <span className="line-clamp-1">{agenda.title || agenda}</span>
+                                                            </li>
+                                                        ))}
+                                                        {meeting.agendas.length > 2 && (
+                                                            <li className="text-[10px] text-primary-500 font-bold mr-3.5">+ {meeting.agendas.length - 2} محاور أخرى</li>
+                                                        )}
+                                                    </ul>
+                                                </div>
+                                            )}
 
                                             <div className="mt-auto">
                                                 <div className="flex items-center justify-between text-sm mb-3">
@@ -434,7 +546,7 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                 );
                             })}
                         </div>
-                    ) : (
+                    ) : viewMode === 'table' ? (
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
                             <div className="overflow-x-auto custom-scrollbar">
                                 <table className="w-full text-sm text-right">
@@ -461,7 +573,7 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-2">
-                                                            <Calendar size={14} className="text-slate-400" /> 
+                                                            <CalendarIcon size={14} className="text-slate-400" /> 
                                                             <span className="text-slate-700 dark:text-slate-300">{formatDateAr(meeting.date)}</span>
                                                         </div>
                                                         <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
@@ -524,6 +636,62 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                         })}
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm p-6">
+                            {/* Calendar Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-bold text-slate-800 dark:text-white capitalize">{currentMonthLabel}</h2>
+                                <div className="flex gap-2">
+                                    <button onClick={prevMonth} className="p-2 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors">
+                                        <ChevronRight size={20} />
+                                    </button>
+                                    <button onClick={() => setCurrentDate(new Date())} className="px-4 py-2 rounded-xl bg-slate-50 text-slate-600 font-bold text-sm hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
+                                        اليوم
+                                    </button>
+                                    <button onClick={nextMonth} className="p-2 rounded-xl bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200 transition-colors">
+                                        <ChevronLeft size={20} />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Calendar Grid */}
+                            <div className="grid grid-cols-7 gap-px bg-slate-200 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+                                {/* Week Days Header */}
+                                {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map(day => (
+                                    <div key={day} className="bg-slate-50 dark:bg-slate-900 py-3 px-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400">
+                                        {day}
+                                    </div>
+                                ))}
+
+                                {/* Padding Days */}
+                                {paddingDays.map(day => (
+                                    <div key={`pad-${day}`} className="bg-white dark:bg-[#121820] min-h-[120px] p-2 opacity-50"></div>
+                                ))}
+
+                                {/* Actual Days */}
+                                {monthDays.map(day => {
+                                    const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                                    const isToday = dateObj.toDateString() === new Date().toDateString();
+                                    const dayMeetings = meetingsByDay[day] || [];
+                                    
+                                    return (
+                                        <div key={day} className={`bg-white dark:bg-[#121820] min-h-[120px] p-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 relative ${isToday ? 'ring-2 ring-inset ring-primary-500' : ''}`}>
+                                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold mb-2 ${isToday ? 'bg-primary-500 text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                {day}
+                                            </span>
+                                            
+                                            <div className="space-y-1.5 custom-scrollbar max-h-[80px] overflow-y-auto">
+                                                {dayMeetings.map((meeting, idx) => (
+                                                    <Link key={idx} href={route('meetings.show', meeting.id)} className={`block p-1.5 rounded-lg text-[10px] font-bold border truncate transition-colors ${meeting.status === 'scheduled' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50' : meeting.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50'}`} title={meeting.title}>
+                                                        {formatTimeAr(meeting.time)} - {meeting.title}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}

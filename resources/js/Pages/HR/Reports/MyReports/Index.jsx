@@ -1,7 +1,7 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { FileText, Plus, Calendar, Clock, CheckCircle, Clock3, RotateCcw } from 'lucide-react';
+import { FileText, Plus, Calendar, Clock, CheckCircle, Clock3, RotateCcw, Eye, ChevronLeft } from 'lucide-react';
 
 export default function MyReportsIndex({ auth, templates, myReports, stats }) {
     
@@ -131,35 +131,41 @@ export default function MyReportsIndex({ auth, templates, myReports, stats }) {
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">نماذج التقارير</h2>
+                <div className="space-y-5">
+                    <div className="flex items-center gap-2">
+                        <FileText size={20} className="text-primary-500" />
+                        <h2 className="text-lg font-black text-slate-800 dark:text-white">نماذج التقارير المتاحة</h2>
+                    </div>
                     {templates.length === 0 ? (
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
-                            <FileText className="mx-auto text-slate-300 dark:text-slate-600 mb-3" size={48} />
-                            <h3 className="text-slate-700 dark:text-slate-300 font-bold text-lg mb-1">لا توجد قوالب متاحة</h3>
-                            <p className="text-slate-500 dark:text-slate-400 text-sm">لم يتم تعيين أي قوالب تقارير لدرجتك الوظيفية حالياً.</p>
+                        <div className="bg-white/50 dark:bg-[#121820]/60 backdrop-blur-sm border border-slate-200/50 dark:border-slate-800/50 rounded-[2rem] p-10 text-center shadow-inner">
+                            <FileText className="mx-auto text-slate-300 dark:text-slate-700 mb-4" size={56} strokeWidth={1.5} />
+                            <h3 className="text-slate-800 dark:text-slate-200 font-black text-lg mb-2">لا توجد قوالب متاحة</h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold">لم يتم تعيين أي قوالب تقارير لدرجتك الوظيفية حالياً. يرجى مراجعة إدارة النظام.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                             {templates.map(template => (
-                                <div key={template.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 hover:shadow-lg transition-all flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center shrink-0">
-                                                <FileText size={20} />
+                                <div key={template.id} className="group bg-white/70 dark:bg-[#121820]/60 backdrop-blur-md border border-slate-100 dark:border-slate-800/80 rounded-[1.5rem] p-5 hover:shadow-2xl hover:shadow-primary-500/10 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative overflow-hidden">
+                                    {/* Ambient glow */}
+                                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary-500/10 rounded-full blur-2xl group-hover:bg-primary-500/20 transition-all duration-500 pointer-events-none" />
+                                    
+                                    <div className="relative z-10">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300">
+                                                <FileText size={24} strokeWidth={1.5} />
                                             </div>
-                                            <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold">
+                                            <span className="px-3 py-1 bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 rounded-xl text-[11px] font-black shadow-sm">
                                                 {getPeriodTypeText(template.period_type)}
                                             </span>
                                         </div>
-                                        <h3 className="font-bold text-slate-800 dark:text-white text-base mb-1">{template.name}</h3>
-                                        <p className="text-slate-500 dark:text-slate-400 text-xs line-clamp-2">{template.description || 'لا يوجد وصف'}</p>
+                                        <h3 className="font-black text-slate-800 dark:text-white text-base mb-1.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{template.name}</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold leading-relaxed line-clamp-2">{template.description || 'لا يوجد وصف متاح لهذا القالب.'}</p>
                                     </div>
                                     <Link 
                                         href={route('hr.reports.my-reports.create', template.id)} 
-                                        className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/40 text-primary-600 dark:text-primary-400 font-bold text-sm rounded-xl transition-colors"
+                                        className="relative z-10 mt-6 flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-black text-sm rounded-xl transition-all shadow-lg shadow-primary-500/20 hover:shadow-primary-500/40 active:scale-95 group/btn"
                                     >
-                                        <Plus size={16} />
+                                        <Plus size={16} strokeWidth={2.5} />
                                         كتابة تقرير
                                     </Link>
                                 </div>
@@ -206,65 +212,73 @@ export default function MyReportsIndex({ auth, templates, myReports, stats }) {
                     </div>
                 )}
 
-                <div className="mt-8 space-y-4">
-                    <h2 className="text-lg font-bold text-slate-800 dark:text-white">التقارير السابقة</h2>
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-right text-sm">
-                                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
-                                    <tr>
-                                        <th className="px-6 py-4 font-bold text-slate-600 dark:text-slate-300">القالب</th>
-                                        <th className="px-6 py-4 font-bold text-slate-600 dark:text-slate-300">الفترة الزمنية</th>
-                                        <th className="px-6 py-4 font-bold text-slate-600 dark:text-slate-300">تاريخ الرفع</th>
-                                        <th className="px-6 py-4 font-bold text-slate-600 dark:text-slate-300">الحالة</th>
-                                        <th className="px-6 py-4 font-bold text-slate-600 dark:text-slate-300 text-left">إجراء</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                                    {myReports.data.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="5" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400">
-                                                لم تقم برفع أي تقارير بعد
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        myReports.data.map(report => (
-                                            <tr key={report.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                                                <td className="px-6 py-4 font-semibold text-slate-800 dark:text-slate-200">
-                                                    {report.template?.name || 'قالب محذوف'}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {report.period_label ? (
-                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold">
-                                                            <Calendar size={14} />
-                                                            {report.period_label}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-slate-400 text-xs">لا يوجد</span>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs font-medium">
+                <div className="mt-8 space-y-5">
+                    <div className="flex items-center gap-2">
+                        <Clock size={20} className="text-primary-500" />
+                        <h2 className="text-lg font-black text-slate-800 dark:text-white">التقارير السابقة</h2>
+                    </div>
+                    
+                    <div className="space-y-4">
+                        {myReports.data.length === 0 ? (
+                            <div className="bg-white/50 dark:bg-[#121820]/60 backdrop-blur-sm border border-slate-200/50 dark:border-slate-800/50 rounded-[2rem] p-10 text-center shadow-inner">
+                                <FileText className="mx-auto text-slate-300 dark:text-slate-700 mb-4" size={48} strokeWidth={1.5} />
+                                <h3 className="text-slate-800 dark:text-slate-200 font-black text-lg mb-2">لم تقم برفع أي تقارير بعد</h3>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold">استخدم القوالب المتاحة أعلاه لإنشاء تقريرك الأول.</p>
+                            </div>
+                        ) : (
+                            myReports.data.map(report => (
+                                <div key={report.id} className="group bg-white dark:bg-[#121820]/80 backdrop-blur-md border border-slate-200/60 dark:border-slate-800/60 rounded-[1.5rem] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 hover:border-primary-200 dark:hover:border-primary-800/50 transition-all duration-300">
+                                    <div className="flex items-center gap-4">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300 ${
+                                            report.status === 'pending' ? 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                            report.status === 'reviewed' ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
+                                            'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                        }`}>
+                                            <FileText size={24} strokeWidth={1.5} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-slate-800 dark:text-white text-base mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                                {report.template?.name || 'قالب محذوف'}
+                                            </h3>
+                                            <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Calendar size={14} className="text-primary-500" />
+                                                    {report.period_label || 'لا يوجد'}
+                                                </div>
+                                                <div className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Clock size={14} className="text-primary-500" />
                                                     {new Date(report.created_at).toLocaleDateString('ar-SA')}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
-                                                        report.status === 'pending' ? 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                                                        report.status === 'reviewed' ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' :
-                                                        'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                                                    }`}>
-                                                        {getStatusIcon(report.status)}
-                                                        {getStatusText(report.status)}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-left">
-                                                    <Link href={route('hr.reports.my-reports.show', report.id)} className="text-primary-500 hover:text-primary-600 font-bold text-xs">عرض</Link>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-none border-slate-100 dark:border-slate-800">
+                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm ${
+                                            report.status === 'pending' ? 'bg-yellow-50/80 text-yellow-700 border border-yellow-200/60 dark:bg-yellow-900/20 dark:border-yellow-800/40 dark:text-yellow-400' :
+                                            report.status === 'reviewed' ? 'bg-green-50/80 text-green-700 border border-green-200/60 dark:bg-green-900/20 dark:border-green-800/40 dark:text-green-400' :
+                                            'bg-red-50/80 text-red-700 border border-red-200/60 dark:bg-red-900/20 dark:border-red-800/40 dark:text-red-400'
+                                        }`}>
+                                            <span className={`w-2 h-2 rounded-full ${
+                                                report.status === 'pending' ? 'bg-yellow-500 animate-pulse' :
+                                                report.status === 'reviewed' ? 'bg-green-500' :
+                                                'bg-red-500'
+                                            }`}></span>
+                                            {getStatusText(report.status)}
+                                        </div>
+
+                                        <Link 
+                                            href={route('hr.reports.my-reports.show', report.id)} 
+                                            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-50 hover:bg-primary-50 text-slate-600 hover:text-primary-600 dark:bg-slate-800/50 dark:hover:bg-primary-900/30 dark:text-slate-300 dark:hover:text-primary-400 border border-slate-200 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800/50 rounded-xl font-bold text-xs transition-all shadow-sm active:scale-95 group/btn"
+                                        >
+                                            عرض
+                                            <ChevronLeft size={14} className="group-hover/btn:-translate-x-0.5 transition-transform" />
+                                        </Link>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>

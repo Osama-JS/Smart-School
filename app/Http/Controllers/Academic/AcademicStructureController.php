@@ -155,22 +155,31 @@ class AcademicStructureController extends Controller implements \Illuminate\Rout
     {
         $validated = $request->validate([
             'section_id' => 'required|exists:sections,id',
-            'name' => 'required|string|max:255',
+            'names' => 'required|array|min:1',
+            'names.*' => 'required|string|max:255',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $user = auth()->user();
         $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         
+        $branch_id = $validated['branch_id'] ?? null;
         if (!$isAdmin) {
-            $validated['branch_id'] = $user->branch_id;
-        } elseif (empty($validated['branch_id'])) {
+            $branch_id = $user->branch_id;
+        } elseif (empty($branch_id)) {
             $section = Section::find($validated['section_id']);
-            $validated['branch_id'] = $section ? $section->branch_id : null;
+            $branch_id = $section ? $section->branch_id : null;
         }
 
-        Grade::create($validated);
-        return redirect()->back()->with('success', 'تم إضافة الصف بنجاح');
+        foreach ($validated['names'] as $name) {
+            Grade::create([
+                'name' => $name,
+                'section_id' => $validated['section_id'],
+                'branch_id' => $branch_id
+            ]);
+        }
+        
+        return redirect()->back()->with('success', 'تم إضافة الصفوف بنجاح');
     }
 
     public function updateGrade(Request $request, Grade $grade)

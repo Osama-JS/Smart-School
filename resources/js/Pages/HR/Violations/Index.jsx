@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Search, Filter, ShieldAlert, FileText, Send, CheckCircle, Trash2, Edit2, X, Save, RotateCcw, AlertTriangle, CalendarDays, Clock, Eye } from 'lucide-react';
+import { Plus, Search, Filter, ShieldAlert, FileText, Send, CheckCircle, Trash2, Edit2, X, Save, RotateCcw, AlertTriangle, CalendarDays, Clock, Eye, AlertCircle } from 'lucide-react';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
@@ -62,7 +62,7 @@ export default function Index({ auth, violations, types, employees, filters, sta
     }, [data.user_id, data.violation_type_id]);
 
     const applyFilters = () => {
-        router.get(route('hr.employee-violations.index'), filterData, {
+        router.get(route('hr.employee-violations'), filterData, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -75,7 +75,7 @@ export default function Index({ auth, violations, types, employees, filters, sta
             start_date: '',
             end_date: ''
         });
-        router.get(route('hr.employee-violations.index'), {}, {
+        router.get(route('hr.employee-violations'), {}, {
             preserveState: true,
             preserveScroll: true,
         });
@@ -405,20 +405,37 @@ export default function Index({ auth, violations, types, employees, filters, sta
 
             {/* Create Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                <ShieldAlert className="text-primary-500" />
-                                تسجيل مخالفة جديدة
-                            </h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-100 dark:bg-slate-800 p-2 rounded-full">
-                                <X size={20} />
-                            </button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={() => setIsModalOpen(false)}></div>
+                    <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+                        
+                        <div className="relative p-6 sm:p-8 pb-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-primary-600"></div>
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
+                                        <ShieldAlert size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-black text-dark-900 dark:text-white tracking-tight">
+                                            تسجيل مخالفة جديدة
+                                        </h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold mt-1">
+                                            أدخل تفاصيل المخالفة للموظف ليتم تسجيلها في النظام
+                                        </p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setIsModalOpen(false)} 
+                                    className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-colors shrink-0"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
                         </div>
 
-                        <form onSubmit={submit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+                        <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar flex-1">
+                            <form onSubmit={submit} className="space-y-6" id="violationForm">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">الموظف <span className="text-accent-500">*</span></label>
@@ -537,118 +554,128 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                                <button
-                                    type="submit"
-                                    disabled={processing}
-                                    className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                                >
-                                    <Save size={20} />
-                                    حفظ واعتماد المخالفة
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
-                                >
-                                    إلغاء
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
+                        
+                        {/* Modal Footer */}
+                        <div className="p-6 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row gap-3">
+                            <button
+                                type="submit"
+                                form="violationForm"
+                                disabled={processing}
+                                className="flex-1 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-primary-500/20 hover:shadow-lg hover:shadow-primary-500/30 active:scale-[0.98]"
+                            >
+                                <Save size={20} />
+                                حفظ واعتماد المخالفة
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsModalOpen(false)}
+                                className="sm:w-1/3 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3.5 rounded-xl font-bold transition-all active:scale-[0.98]"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Notify Modal */}
             {isNotifyModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsNotifyModalOpen(false)}></div>
-                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 p-6">
-                        <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-full flex items-center justify-center mb-4">
-                            <Send size={24} />
-                        </div>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">إرسال طلب توقيع</h2>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-                            سيتم إرسال إشعار للموظف <span className="font-bold text-slate-900 dark:text-white">{selectedViolation?.user?.name}</span> يطلب منه الدخول إلى حسابه والتوقيع على المخالفة.
-                        </p>
-
-                        <form onSubmit={sendNotify} className="space-y-4">
-                            <div>
-                                <span className="text-sm font-bold text-slate-700 dark:text-slate-300">قنوات الإرسال:</span>
-                                <div className="mt-3 space-y-3">
-                                    <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-5 h-5 rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500"
-                                            checked={notifyForm.data.channels.includes('database')}
-                                            onChange={(e) => {
-                                                const channels = [...notifyForm.data.channels];
-                                                if (e.target.checked) channels.push('database');
-                                                else channels.splice(channels.indexOf('database'), 1);
-                                                notifyForm.setData('channels', channels);
-                                            }}
-                                        />
-                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">إشعار داخل النظام (In-App)</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                        <input 
-                                            type="checkbox" 
-                                            className="w-5 h-5 rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500"
-                                            checked={notifyForm.data.channels.includes('mail')}
-                                            onChange={(e) => {
-                                                const channels = [...notifyForm.data.channels];
-                                                if (e.target.checked) channels.push('mail');
-                                                else channels.splice(channels.indexOf('mail'), 1);
-                                                notifyForm.setData('channels', channels);
-                                            }}
-                                        />
-                                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">بريد إلكتروني (Email)</span>
-                                    </label>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={() => setIsNotifyModalOpen(false)}></div>
+                    <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800 flex flex-col">
+                        <div className="p-8 text-center flex-1">
+                            <div className="w-16 h-16 bg-amber-50 dark:bg-amber-500/10 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Send size={32} />
+                            </div>
+                            <h3 className="text-2xl font-bold text-dark-900 dark:text-white mb-3">إرسال طلب توقيع</h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed mb-6">
+                                سيتم إرسال إشعار للموظف <span className="font-bold text-slate-900 dark:text-white">{selectedViolation?.user?.name}</span> يطلب منه الدخول إلى حسابه والتوقيع على المخالفة.
+                            </p>
+                            <form onSubmit={sendNotify} className="space-y-4 text-right" id="notifyForm">
+                                <div>
+                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">قنوات الإرسال:</span>
+                                    <div className="mt-3 space-y-3">
+                                        <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                            <input 
+                                                type="checkbox" 
+                                                className="w-5 h-5 rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500"
+                                                checked={notifyForm.data.channels.includes('database')}
+                                                onChange={(e) => {
+                                                    const channels = [...notifyForm.data.channels];
+                                                    if (e.target.checked) channels.push('database');
+                                                    else channels.splice(channels.indexOf('database'), 1);
+                                                    notifyForm.setData('channels', channels);
+                                                }}
+                                            />
+                                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">إشعار داخل النظام (In-App)</span>
+                                        </label>
+                                        <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                            <input 
+                                                type="checkbox" 
+                                                className="w-5 h-5 rounded border-slate-300 text-primary-600 shadow-sm focus:ring-primary-500"
+                                                checked={notifyForm.data.channels.includes('mail')}
+                                                onChange={(e) => {
+                                                    const channels = [...notifyForm.data.channels];
+                                                    if (e.target.checked) channels.push('mail');
+                                                    else channels.splice(channels.indexOf('mail'), 1);
+                                                    notifyForm.setData('channels', channels);
+                                                }}
+                                            />
+                                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">بريد إلكتروني (Email)</span>
+                                        </label>
+                                    </div>
+                                    {notifyForm.errors.channels && <p className="text-xs text-accent-500 mt-2">{notifyForm.errors.channels}</p>}
                                 </div>
-                                {notifyForm.errors.channels && <p className="text-xs text-accent-500 mt-2">{notifyForm.errors.channels}</p>}
-                            </div>
-
-                            <div className="flex gap-3 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                                <button
-                                    type="submit"
-                                    disabled={notifyForm.processing}
-                                    className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-3 rounded-xl font-bold transition-all disabled:opacity-50"
-                                >
-                                    إرسال الطلب
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsNotifyModalOpen(false)}
-                                    className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
-                                >
-                                    إلغاء
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
+                        <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
+                            <button
+                                type="submit"
+                                form="notifyForm"
+                                disabled={notifyForm.processing}
+                                className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 rounded-xl font-bold transition-all disabled:opacity-50 shadow-md shadow-amber-500/20 hover:shadow-lg hover:shadow-amber-500/30 active:scale-[0.98] flex items-center justify-center gap-2"
+                            >
+                                إرسال الطلب
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsNotifyModalOpen(false)}
+                                className="sm:w-1/3 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3.5 rounded-xl font-bold transition-all active:scale-[0.98]"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
             {/* Delete Modal */}
             {isDeleteModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsDeleteModalOpen(false)}></div>
-                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl p-6 text-center">
-                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Trash2 size={32} />
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={() => setIsDeleteModalOpen(false)}></div>
+                    <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800 flex flex-col">
+                        <div className="p-8 text-center flex-1">
+                            <div className="w-20 h-20 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Trash2 size={40} />
+                            </div>
+                            <h3 className="text-2xl font-bold text-dark-900 dark:text-white mb-3">تأكيد الحذف</h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed">
+                                هل أنت متأكد من رغبتك في حذف هذه المخالفة؟
+                                <br/>لا يمكن التراجع عن هذا الإجراء.
+                            </p>
                         </div>
-                        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">تأكيد الحذف</h2>
-                        <p className="text-slate-600 dark:text-slate-400 mb-8">هل أنت متأكد من رغبتك في حذف هذه المخالفة؟ لا يمكن التراجع عن هذا الإجراء.</p>
-                        
-                        <div className="flex gap-3">
+                        <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">
                             <button
                                 onClick={deleteViolation}
-                                className="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-bold transition-colors"
+                                className="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-3.5 rounded-xl font-bold transition-all shadow-md shadow-rose-500/20 hover:shadow-lg hover:shadow-rose-500/30 active:scale-[0.98] flex items-center justify-center gap-2"
                             >
                                 نعم، احذف المخالفة
                             </button>
                             <button
                                 onClick={() => setIsDeleteModalOpen(false)}
+                                className="sm:w-1/3 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3.5 rounded-xl font-bold transition-all active:scale-[0.98]"
                             >
                                 تراجع
                             </button>
@@ -658,20 +685,36 @@ export default function Index({ auth, violations, types, employees, filters, sta
             )}
 
             {/* Preview Modal */}
-            <Modal show={isPreviewModalOpen} onClose={() => setIsPreviewModalOpen(false)} maxWidth="2xl">
-                {selectedViolation && (
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
-                            <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                                <FileText size={20} className="text-primary-500" />
-                                تفاصيل المخالفة
-                            </h2>
-                            <button onClick={() => setIsPreviewModalOpen(false)} className="text-slate-400 hover:text-red-500 transition-colors p-1">
-                                <X size={20} />
-                            </button>
+            {isPreviewModalOpen && selectedViolation && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={() => setIsPreviewModalOpen(false)}></div>
+                    <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+                        <div className="relative p-6 sm:p-8 pb-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-primary-600"></div>
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
+                                        <FileText size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-black text-dark-900 dark:text-white tracking-tight">
+                                            تفاصيل المخالفة
+                                        </h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold mt-1">
+                                            عرض السجل الكامل للمخالفة والإجراء المتخذ
+                                        </p>
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={() => setIsPreviewModalOpen(false)} 
+                                    className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-red-500 flex items-center justify-center transition-colors shrink-0"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
                         </div>
                         
-                        <div className="p-6">
+                        <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar flex-1">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
                                     <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">تاريخ المخالفة</span>
@@ -756,8 +799,8 @@ export default function Index({ auth, violations, types, employees, filters, sta
                             )}
                         </div>
                     </div>
-                )}
-            </Modal>
+                </div>
+            )}
         </AdminLayout>
     );
 }

@@ -11,7 +11,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
-import { BookOpen, Plus, Edit, Trash, Calendar, Filter, RotateCcw, LayoutGrid, List } from 'lucide-react';
+import { BookOpen, Plus, Edit, Trash, Calendar, Filter, RotateCcw, LayoutGrid, List, X, Save, FileText, CheckCircle, Clock } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 export default function Index({ auth, preparations, grades, subjects, schedules = [], filters }) {
@@ -363,164 +363,209 @@ export default function Index({ auth, preparations, grades, subjects, schedules 
                 </div>
 
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={closeModal}></div>
-                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
-                        {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
-                            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                                {editingId ? 'تعديل سجل الحصة' : 'إضافة سجل حصة جديد'}
-                            </h2>
-                            <button onClick={closeModal} className="text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 p-2 rounded-full transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={closeModal}></div>
+                    <div className="relative bg-white/95 dark:bg-[#121820]/95 backdrop-blur-xl rounded-[2rem] w-full max-w-3xl overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 animate-in zoom-in-95 duration-300 flex flex-col max-h-[95vh]">
+                        
+                        {/* Decorative background glow */}
+                        <div className="absolute top-0 right-0 w-full h-40 bg-gradient-to-b from-primary-500/10 to-transparent pointer-events-none" />
+                        <div className="absolute top-10 right-10 w-32 h-32 bg-primary-500/20 rounded-full blur-[50px] pointer-events-none" />
+
+                        {/* Modal Header */}
+                        <div className="relative flex items-center justify-between p-6 border-b border-slate-100/50 dark:border-slate-800/50 shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center shadow-lg shadow-primary-500/20">
+                                    {editingId ? <Edit size={22} strokeWidth={2} /> : <Plus size={22} strokeWidth={2} />}
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                                        {editingId ? 'تعديل سجل الحصة' : 'إضافة سجل حصة جديد'}
+                                    </h3>
+                                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">الرجاء إدخال تفاصيل الدرس بدقة لضمان المتابعة الصحيحة</p>
+                                </div>
+                            </div>
+                            <button onClick={closeModal} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all">
+                                <X size={20} />
                             </button>
                         </div>
-                        <form onSubmit={submit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
-                        <div>
-                            <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">تاريخ التنفيذ <span className="text-accent-500">*</span></label>
-                            <FlatpickrInput
-                                id="preparation_date"
-                                value={data.preparation_date}
-                                onChange={(dateStr) => setData('preparation_date', dateStr)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
-                                placeholder="اختر التاريخ..."
-                            />
-                            {errors.preparation_date && <p className="text-xs text-accent-500 mt-1">{errors.preparation_date}</p>}
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">الحصة (الدرس) {!editingId && <span className="text-accent-500">*</span>}</label>
-                            <SelectInput
-                                id="period_id"
-                                options={availableSessions.map(s => ({
-                                    value: s.period_id,
-                                    label: `${s.period?.period_name || 'حصة'} - ${s.subject?.name} (${s.division?.grade?.name} - ${s.division?.name})`
-                                }))}
-                                value={data.period_id}
-                                onChange={handleSessionChange}
-                                placeholder="اختر الحصة..."
-                                isDisabled={!data.preparation_date || availableSessions.length === 0}
-                            />
-                            {data.preparation_date && availableSessions.length === 0 && (
-                                <p className="text-xs text-amber-600 mt-1">لا يوجد حصص مسندة لك في هذا اليوم</p>
-                            )}
-                            {errors.period_id && <p className="text-xs text-accent-500 mt-1">{errors.period_id}</p>}
-                        </div>
-
-                        <div className="col-span-full bg-slate-50 p-4 rounded-2xl border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <InputLabel value="المادة" className="text-slate-500 mb-1" />
-                                <div className="font-semibold text-slate-800 bg-white px-3 py-2 rounded-lg border border-slate-200">
-                                    {data.subject_id ? subjects.find(s => s.id === data.subject_id)?.name : '-'}
+                        
+                        <form onSubmit={submit} className="p-6 md:p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1 relative z-10">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Date Selection */}
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <span className="w-1.5 h-4 bg-primary-500 rounded-full"></span>
+                                        تاريخ التنفيذ <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative">
+                                        <FlatpickrInput
+                                            id="preparation_date"
+                                            value={data.preparation_date}
+                                            onChange={(dateStr) => setData('preparation_date', dateStr)}
+                                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm font-bold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-sm"
+                                            placeholder="اختر التاريخ..."
+                                        />
+                                        <Calendar className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                    </div>
+                                    {errors.preparation_date && <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1"><X size={14} />{errors.preparation_date}</p>}
                                 </div>
-                                <InputError message={errors.subject_id} className="mt-1" />
-                            </div>
-                            <div>
-                                <InputLabel value="الصف" className="text-slate-500 mb-1" />
-                                <div className="font-semibold text-slate-800 bg-white px-3 py-2 rounded-lg border border-slate-200">
-                                    {data.grade_id ? grades.find(g => g.id === data.grade_id)?.name : '-'}
+
+                                {/* Period/Session Selection */}
+                                <div className="space-y-3">
+                                    <label className="block text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <span className="w-1.5 h-4 bg-primary-500 rounded-full"></span>
+                                        الحصة (الدرس) {!editingId && <span className="text-red-500">*</span>}
+                                    </label>
+                                    <SelectInput
+                                        id="period_id"
+                                        options={availableSessions.map(s => ({
+                                            value: s.period_id,
+                                            label: `${s.period?.period_name || 'حصة'} - ${s.subject?.name} (${s.division?.grade?.name} - ${s.division?.name})`
+                                        }))}
+                                        value={data.period_id}
+                                        onChange={handleSessionChange}
+                                        placeholder="اختر الحصة..."
+                                        isDisabled={!data.preparation_date || availableSessions.length === 0}
+                                        className="shadow-sm"
+                                    />
+                                    {data.preparation_date && availableSessions.length === 0 && (
+                                        <p className="text-xs font-bold text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                            لا يوجد حصص مسندة لك في هذا اليوم
+                                        </p>
+                                    )}
+                                    {errors.period_id && <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1"><X size={14} />{errors.period_id}</p>}
                                 </div>
-                                <InputError message={errors.grade_id} className="mt-1" />
-                            </div>
-                            <div>
-                                <InputLabel value="الشعبة" className="text-slate-500 mb-1" />
-                                <div className="font-semibold text-slate-800 bg-white px-3 py-2 rounded-lg border border-slate-200">
-                                    {data.division_id ? (grades.find(g => g.id === data.grade_id)?.divisions?.find(d => d.id === data.division_id)?.name || '-') : '-'}
+
+                                {/* Subject Details Card */}
+                                <div className="col-span-full bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm p-5 rounded-[1.5rem] border border-slate-100 dark:border-slate-800/50 shadow-inner grid grid-cols-1 sm:grid-cols-3 gap-5">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">المادة</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
+                                            {data.subject_id ? subjects.find(s => s.id === data.subject_id)?.name : '-'}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">الصف</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
+                                            {data.grade_id ? grades.find(g => g.id === data.grade_id)?.name : '-'}
+                                        </p>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-3 rounded-xl border border-slate-200/50 dark:border-slate-700/50">
+                                        <p className="text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">الشعبة</p>
+                                        <p className="text-sm font-bold text-slate-800 dark:text-white truncate">
+                                            {data.division_id ? (grades.find(g => g.id === data.grade_id)?.divisions?.find(d => d.id === data.division_id)?.name || '-') : '-'}
+                                        </p>
+                                    </div>
                                 </div>
-                                <InputError message={errors.division_id} className="mt-1" />
+
+                                {/* Lesson Title */}
+                                <div className="col-span-full space-y-3">
+                                    <label className="block text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <span className="w-1.5 h-4 bg-primary-500 rounded-full"></span>
+                                        عنوان الحصة / الدرس <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        id="lesson_title"
+                                        value={data.lesson_title}
+                                        onChange={(e) => setData('lesson_title', e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-sm"
+                                        placeholder="مثال: مراجعة الفصل الأول..."
+                                        required
+                                    />
+                                    {errors.lesson_title && <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1"><X size={14} />{errors.lesson_title}</p>}
+                                </div>
+
+                                {/* Topics Covered */}
+                                <div className="col-span-full space-y-3">
+                                    <label className="block text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <FileText size={16} className="text-primary-500" />
+                                        ما تم دراسته <span className="text-xs font-semibold text-slate-400">(اختياري)</span>
+                                    </label>
+                                    <textarea
+                                        id="topics_covered"
+                                        className="w-full bg-slate-50 dark:bg-[#0f141a] border border-slate-200 dark:border-slate-800 rounded-[1.25rem] px-5 py-4 text-sm font-medium outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner resize-none"
+                                        rows="3"
+                                        placeholder="اكتب هنا ملخصاً لما تم شرحه في الحصة..."
+                                        value={data.topics_covered}
+                                        onChange={(e) => setData('topics_covered', e.target.value)}
+                                    ></textarea>
+                                    {errors.topics_covered && <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1"><X size={14} />{errors.topics_covered}</p>}
+                                </div>
+
+                                {/* Homework */}
+                                <div className="col-span-full space-y-3">
+                                    <label className="block text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <BookOpen size={16} className="text-emerald-500" />
+                                        الواجب المنزلي المطلوب <span className="text-xs font-semibold text-slate-400">(اختياري)</span>
+                                    </label>
+                                    <textarea
+                                        id="homework"
+                                        className="w-full bg-slate-50 dark:bg-[#0f141a] border border-slate-200 dark:border-slate-800 rounded-[1.25rem] px-5 py-4 text-sm font-medium outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner resize-none"
+                                        rows="2"
+                                        placeholder="تفاصيل الواجب المنزلي (إن وجد)..."
+                                        value={data.homework}
+                                        onChange={(e) => setData('homework', e.target.value)}
+                                    ></textarea>
+                                    {errors.homework && <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1"><X size={14} />{errors.homework}</p>}
+                                </div>
+
+                                {/* Notes */}
+                                <div className="col-span-full space-y-3">
+                                    <label className="block text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <span className="w-1.5 h-4 bg-slate-400 rounded-full"></span>
+                                        الملاحظات <span className="text-xs font-semibold text-slate-400">(اختياري)</span>
+                                    </label>
+                                    <textarea
+                                        id="notes"
+                                        className="w-full bg-slate-50 dark:bg-[#0f141a] border border-slate-200 dark:border-slate-800 rounded-[1.25rem] px-5 py-4 text-sm font-medium outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner resize-none"
+                                        rows="2"
+                                        placeholder="أي ملاحظات إضافية حول الحصة..."
+                                        value={data.notes}
+                                        onChange={(e) => setData('notes', e.target.value)}
+                                    ></textarea>
+                                    {errors.notes && <p className="text-xs font-bold text-red-500 mt-1 flex items-center gap-1"><X size={14} />{errors.notes}</p>}
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="col-span-full mt-2">
-                            <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">عنوان الحصة / الدرس <span className="text-accent-500">*</span></label>
-                            <input
-                                id="lesson_title"
-                                value={data.lesson_title}
-                                onChange={(e) => setData('lesson_title', e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
-                                placeholder="مثال: مراجعة الفصل الأول..."
-                                required
-                            />
-                            {errors.lesson_title && <p className="text-xs text-accent-500 mt-1">{errors.lesson_title}</p>}
-                        </div>
-
-                        <div className="col-span-full">
-                            <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">ما تم دراسته</label>
-                            <textarea
-                                id="topics_covered"
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
-                                rows="3"
-                                placeholder="اكتب هنا ملخصاً لما تم شرحه في الحصة..."
-                                value={data.topics_covered}
-                                onChange={(e) => setData('topics_covered', e.target.value)}
-                            ></textarea>
-                            {errors.topics_covered && <p className="text-xs text-accent-500 mt-1">{errors.topics_covered}</p>}
-                        </div>
-
-                        <div className="col-span-full">
-                            <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">الواجب المنزلي المطلوب</label>
-                            <textarea
-                                id="homework"
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
-                                rows="2"
-                                placeholder="تفاصيل الواجب المنزلي (إن وجد)..."
-                                value={data.homework}
-                                onChange={(e) => setData('homework', e.target.value)}
-                            ></textarea>
-                            {errors.homework && <p className="text-xs text-accent-500 mt-1">{errors.homework}</p>}
-                        </div>
-
-                        <div className="col-span-full">
-                            <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">الملاحظات (اختياري)</label>
-                            <textarea
-                                id="notes"
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
-                                rows="2"
-                                placeholder="أي ملاحظات إضافية حول الحصة..."
-                                value={data.notes}
-                                onChange={(e) => setData('notes', e.target.value)}
-                            ></textarea>
-                            {errors.notes && <p className="text-xs text-accent-500 mt-1">{errors.notes}</p>}
-                        </div>
+                            {/* Submit Buttons */}
+                            <div className="flex flex-col sm:flex-row gap-4 pt-4 mt-8 border-t border-slate-100 dark:border-slate-800/50">
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setData('status', 'draft');
+                                        setTimeout(() => submit(e), 0);
+                                    }}
+                                    disabled={processing}
+                                    className="flex-1 bg-amber-500/10 hover:bg-amber-500 text-amber-600 hover:text-white dark:bg-amber-500/20 dark:hover:bg-amber-500 dark:text-amber-400 dark:hover:text-white border border-amber-200 dark:border-amber-500/30 px-6 py-4 rounded-[1.25rem] font-black flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50"
+                                >
+                                    <Clock size={20} />
+                                    حفظ كمسودة
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        setData('status', 'published');
+                                        setTimeout(() => submit(e), 0);
+                                    }}
+                                    disabled={processing}
+                                    className="flex-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white px-8 py-4 rounded-[1.25rem] font-black flex items-center justify-center gap-2 transition-all duration-300 disabled:opacity-50 shadow-lg shadow-primary-500/30 hover:-translate-y-0.5 active:scale-95"
+                                >
+                                    <CheckCircle size={20} />
+                                    نشر الحصة
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="w-full sm:w-auto px-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-4 rounded-[1.25rem] font-bold transition-all"
+                                >
+                                    إلغاء
+                                </button>
+                            </div>
+                        </form>
                     </div>
-
-                    <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-100 dark:border-slate-800 mt-6">
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                setData('status', 'draft');
-                                setTimeout(() => submit(e), 0);
-                            }}
-                            disabled={processing}
-                            className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                        >
-                            حفظ كمسودة
-                        </button>
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                setData('status', 'published');
-                                setTimeout(() => submit(e), 0);
-                            }}
-                            disabled={processing}
-                            className="flex-1 bg-primary-500 hover:bg-primary-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                        >
-                            نشر الحصة
-                        </button>
-                        <button
-                            type="button"
-                            onClick={closeModal}
-                            className="w-full sm:w-auto px-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold transition-all"
-                        >
-                            إلغاء
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        )}
+                </div>
+            )}
         </AdminLayout>
     );
 }

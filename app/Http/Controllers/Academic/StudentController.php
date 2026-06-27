@@ -30,7 +30,8 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
     }
     public function index(Request $request)
     {
-        $query = Student::with(['user', 'currentEnrollment.division.grade.section', 'currentEnrollment.academicYear']);
+        $query = Student::with(['user', 'currentEnrollment.division.grade.section', 'currentEnrollment.academicYear'])
+                        ->whereHas('user');
 
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
@@ -56,7 +57,12 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
         $students = $query->paginate(15)->withQueryString();
         
         $academicYears = AcademicYear::latest()->get();
-        $sections = Section::all();
+        
+        $branchId = (auth()->user()->role && auth()->user()->role->name === 'مدير النظام' && request()->hasSession() && session()->has('active_branch_id')) 
+            ? session('active_branch_id') 
+            : auth()->user()->branch_id;
+            
+        $sections = Section::forBranch($branchId)->get();
 
         return Inertia::render('Academic/Students/Index', compact('students', 'academicYears', 'sections'));
     }
@@ -65,7 +71,12 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
     {
         $parents = User::whereHas('role', fn($q) => $q->where('name', 'ولي أمر'))->select('id', 'name', 'national_id')->get();
         $academicYears = AcademicYear::latest()->get();
-        $sections = Section::with('grades.divisions')->get();
+        
+        $branchId = (auth()->user()->role && auth()->user()->role->name === 'مدير النظام' && request()->hasSession() && session()->has('active_branch_id')) 
+            ? session('active_branch_id') 
+            : auth()->user()->branch_id;
+            
+        $sections = Section::forBranch($branchId)->with('grades.divisions')->get();
 
         return Inertia::render('Academic/Students/Create', compact('parents', 'academicYears', 'sections'));
     }
@@ -150,7 +161,12 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
         
         $parents = User::whereHas('role', fn($q) => $q->where('name', 'ولي أمر'))->select('id', 'name', 'national_id')->get();
         $academicYears = AcademicYear::latest()->get();
-        $sections = Section::with('grades.divisions')->get();
+        
+        $branchId = (auth()->user()->role && auth()->user()->role->name === 'مدير النظام' && request()->hasSession() && session()->has('active_branch_id')) 
+            ? session('active_branch_id') 
+            : auth()->user()->branch_id;
+            
+        $sections = Section::forBranch($branchId)->with('grades.divisions')->get();
 
         return Inertia::render('Academic/Students/Edit', compact('student', 'parents', 'academicYears', 'sections'));
     }

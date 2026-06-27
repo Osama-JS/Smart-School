@@ -3,13 +3,15 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { 
     Activity, Search, Filter, Eye, Clock, User, 
-    Database, MapPin, Plus, Edit2, Trash2, ShieldAlert
+    Database, MapPin, Plus, Edit2, Trash2, ShieldAlert,
+    ArrowLeft, History, Fingerprint, Copy, CheckCircle2,
+    BarChart3
 } from 'lucide-react';
 function Pagination({ data }) {
     if (!data || data.last_page <= 1) return null;
     return (
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800/85 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/10 flex-wrap gap-3 no-print">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">
+        <div className="px-6 py-4 border-t border-dark-100 dark:border-dark-800/85 flex items-center justify-between bg-dark-50/50 dark:bg-dark-900/10 flex-wrap gap-3 no-print">
+            <p className="text-xs text-dark-500 dark:text-dark-400 font-bold">
                 عرض {data.from ?? 0} إلى {data.to ?? 0} من أصل {data.total}
             </p>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -20,8 +22,8 @@ function Pagination({ data }) {
                             link.active
                                 ? 'bg-primary-500 text-white border-primary-500 dark:bg-primary-600 dark:border-primary-600 shadow-sm'
                                 : link.url
-                                    ? 'bg-white dark:bg-[#121820] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50'
-                                    : 'bg-white dark:bg-[#121820]/40 text-slate-300 dark:text-slate-650 border-slate-100 dark:border-slate-800/50 cursor-not-allowed'
+                                    ? 'bg-white dark:bg-dark-900 text-dark-600 dark:text-dark-300 border-dark-200 dark:border-dark-700 hover:bg-dark-50 dark:hover:bg-dark-800'
+                                    : 'bg-white dark:bg-dark-900/40 text-dark-300 dark:text-dark-600 border-dark-100 dark:border-dark-800/50 cursor-not-allowed'
                         }`}
                         dangerouslySetInnerHTML={{ __html: link.label }}
                     />
@@ -50,10 +52,10 @@ export default function ActivityLogsIndex({ logs, filters, tables, branches = []
     };
 
     const getActionBadge = (actionStr) => {
-        if (actionStr === 'إنشاء') return <span className="px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 text-xs font-bold border border-emerald-200 flex items-center gap-1"><Plus size={12}/> إنشاء</span>;
-        if (actionStr === 'تحديث') return <span className="px-2 py-1 rounded-md bg-blue-50 text-blue-600 text-xs font-bold border border-blue-200 flex items-center gap-1"><Edit2 size={12}/> تحديث</span>;
-        if (actionStr === 'حذف') return <span className="px-2 py-1 rounded-md bg-rose-50 text-rose-600 text-xs font-bold border border-rose-200 flex items-center gap-1"><Trash2 size={12}/> حذف</span>;
-        return <span className="px-2 py-1 rounded-md bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">{actionStr}</span>;
+        if (actionStr === 'إنشاء') return <span className="px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 text-xs font-bold border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1.5 shadow-sm w-fit"><Plus size={14} strokeWidth={2.5}/> إنشاء</span>;
+        if (actionStr === 'تحديث') return <span className="px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 text-xs font-bold border border-blue-200 dark:border-blue-500/20 flex items-center gap-1.5 shadow-sm w-fit"><Edit2 size={14} strokeWidth={2.5}/> تحديث</span>;
+        if (actionStr === 'حذف') return <span className="px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 text-xs font-bold border border-rose-200 dark:border-rose-500/20 flex items-center gap-1.5 shadow-sm w-fit"><Trash2 size={14} strokeWidth={2.5}/> حذف</span>;
+        return <span className="px-2.5 py-1.5 rounded-lg bg-dark-100 text-dark-600 dark:bg-dark-800 dark:text-dark-300 text-xs font-bold border border-dark-200 dark:border-dark-700 shadow-sm w-fit">{actionStr}</span>;
     };
 
     const formatJson = (obj) => {
@@ -61,60 +63,115 @@ export default function ActivityLogsIndex({ logs, filters, tables, branches = []
         return JSON.stringify(obj, null, 2);
     };
 
+    const [copiedKey, setCopiedKey] = useState(null);
+
+    const handleCopy = (text, key) => {
+        navigator.clipboard.writeText(text);
+        setCopiedKey(key);
+        setTimeout(() => setCopiedKey(null), 2000);
+    };
+
     const renderDiff = (log) => {
         if (!log) return null;
         
         const oldKeys = log.old_values ? Object.keys(log.old_values) : [];
         const newKeys = log.new_values ? Object.keys(log.new_values) : [];
-        const allKeys = [...new Set([...oldKeys, ...newKeys])];
+        // Filter out unchanged keys to reduce clutter
+        const allKeys = [...new Set([...oldKeys, ...newKeys])].filter(key => {
+            const oldVal = log.old_values ? log.old_values[key] : undefined;
+            const newVal = log.new_values ? log.new_values[key] : undefined;
+            // Ignore timestamps that always update automatically if they are the only changes, or just show them
+            return oldVal !== newVal; 
+        });
 
         return (
-            <div className="space-y-4">
-                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/50">
-                    <div className="flex-1">
-                        <p className="text-xs text-slate-500 mb-1 font-bold">المستخدم</p>
-                        <p className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                            <User size={14} className="text-primary-500"/> 
+            <div className="space-y-6">
+                <div className="flex flex-wrap items-center gap-3 p-5 bg-dark-50 dark:bg-dark-800/50 rounded-2xl border border-dark-100 dark:border-dark-700/50 shadow-inner">
+                    <div className="flex-1 min-w-[150px]">
+                        <p className="text-xs text-dark-500 dark:text-dark-400 mb-1.5 font-bold">المستخدم</p>
+                        <p className="text-sm font-black text-dark-800 dark:text-white flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0">
+                                <User size={12} strokeWidth={2.5} />
+                            </div>
                             {log.user?.name || 'النظام'}
                         </p>
                     </div>
-                    <div className="flex-1">
-                        <p className="text-xs text-slate-500 mb-1 font-bold">الجدول (النموذج)</p>
-                        <p className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                            <Database size={14} className="text-emerald-500"/> 
+                    <div className="w-px h-10 bg-dark-200 dark:bg-dark-700 hidden sm:block"></div>
+                    <div className="flex-1 min-w-[150px]">
+                        <p className="text-xs text-dark-500 dark:text-dark-400 mb-1.5 font-bold">الجدول (النموذج)</p>
+                        <p className="text-sm font-black text-dark-800 dark:text-white flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                <Database size={12} strokeWidth={2.5} />
+                            </div>
                             {log.table_name}
                         </p>
                     </div>
-                    <div className="flex-1">
-                        <p className="text-xs text-slate-500 mb-1 font-bold">تاريخ الحركة</p>
-                        <p className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                            <Clock size={14} className="text-amber-500"/> 
-                            {new Date(log.created_at).toLocaleString('ar-SA')}
+                    <div className="w-px h-10 bg-dark-200 dark:bg-dark-700 hidden sm:block"></div>
+                    <div className="flex-1 min-w-[150px]">
+                        <p className="text-xs text-dark-500 dark:text-dark-400 mb-1.5 font-bold">تاريخ الحركة</p>
+                        <p className="text-sm font-black text-dark-800 dark:text-white flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                                <Clock size={12} strokeWidth={2.5} />
+                            </div>
+                            <span dir="ltr">{new Date(log.created_at).toLocaleString('en-US')}</span>
                         </p>
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
-                    <div className="grid grid-cols-3 bg-slate-100 dark:bg-slate-800 p-3 text-xs font-black text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
-                        <div>الحقل</div>
-                        <div>القيمة القديمة</div>
-                        <div>القيمة الجديدة</div>
-                    </div>
-                    <div className="divide-y divide-slate-100 dark:divide-slate-800/50 max-h-[50vh] overflow-y-auto">
-                        {allKeys.map(key => {
-                            const oldVal = log.old_values ? log.old_values[key] : undefined;
-                            const newVal = log.new_values ? log.new_values[key] : undefined;
-                            const isChanged = oldVal !== newVal;
-                            
-                            return (
-                                <div key={key} className={`grid grid-cols-3 p-3 text-sm font-mono ${isChanged ? 'bg-amber-50/30 dark:bg-amber-900/10' : ''}`}>
-                                    <div className="font-bold text-slate-600 dark:text-slate-400 break-words pr-2">{key}</div>
-                                    <div className="text-rose-600 dark:text-rose-400 break-words pr-2 whitespace-pre-wrap">{oldVal !== undefined ? (typeof oldVal === 'object' ? JSON.stringify(oldVal) : String(oldVal)) : '-'}</div>
-                                    <div className="text-emerald-600 dark:text-emerald-400 break-words pr-2 whitespace-pre-wrap">{newVal !== undefined ? (typeof newVal === 'object' ? JSON.stringify(newVal) : String(newVal)) : '-'}</div>
+                <div className="space-y-4 max-h-[55vh] overflow-y-auto custom-scrollbar pr-2">
+                    {allKeys.length === 0 && (
+                        <div className="p-10 text-center text-dark-400 dark:text-dark-500 bg-dark-50 dark:bg-dark-900/50 rounded-2xl border border-dashed border-dark-200 dark:border-dark-700 flex flex-col items-center">
+                            <CheckCircle2 size={40} className="mb-4 text-emerald-500 opacity-80" />
+                            <p className="font-black text-lg text-dark-800 dark:text-dark-200">لا توجد حقول معدلة فعلياً</p>
+                            <p className="text-sm mt-1">يبدو أن هذه الحركة لم تغير أي بيانات أو كانت مجرد قراءة/حفظ بدون تعديل.</p>
+                        </div>
+                    )}
+                    {allKeys.map(key => {
+                        const oldVal = log.old_values ? log.old_values[key] : undefined;
+                        const newVal = log.new_values ? log.new_values[key] : undefined;
+                        
+                        const oldStr = oldVal !== undefined ? (typeof oldVal === 'object' ? JSON.stringify(oldVal, null, 2) : String(oldVal)) : 'لا يوجد (NULL)';
+                        const newStr = newVal !== undefined ? (typeof newVal === 'object' ? JSON.stringify(newVal, null, 2) : String(newVal)) : 'لا يوجد (NULL)';
+
+                        return (
+                            <div key={key} className="bg-white dark:bg-dark-900 border border-dark-200 dark:border-dark-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500/50 transition-all duration-300 group">
+                                <div className="px-4 py-3 border-b border-dark-100 dark:border-dark-800 bg-dark-50/50 dark:bg-dark-950/50 flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-xs font-black text-dark-700 dark:text-dark-300">
+                                        <Fingerprint size={16} className="text-primary-500" />
+                                        <span>الحقل: <code className="px-2 py-0.5 rounded-md bg-white dark:bg-dark-900 border border-dark-200 dark:border-dark-700 font-mono text-[13px]">{key}</code></span>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleCopy(newStr, key)}
+                                        className="text-dark-400 hover:text-primary-500 transition-colors p-1"
+                                        title="نسخ القيمة الجديدة"
+                                    >
+                                        {copiedKey === key ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Copy size={16} />}
+                                    </button>
                                 </div>
-                            );
-                        })}
-                    </div>
+                                <div className="p-5 grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-5 items-center relative bg-gradient-to-br from-white to-dark-50/30 dark:from-dark-900 dark:to-dark-950/50">
+                                    <div className="bg-rose-50/40 dark:bg-rose-900/10 border border-rose-100/50 dark:border-rose-900/30 rounded-xl p-4 h-full relative overflow-hidden group-hover:border-rose-200 dark:group-hover:border-rose-900/50 transition-colors">
+                                        <div className="absolute top-0 right-0 w-1 h-full bg-rose-400/50 dark:bg-rose-500/50"></div>
+                                        <p className="text-[10px] font-black text-rose-500 dark:text-rose-400 mb-2 uppercase tracking-wider flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div> القيمة القديمة</p>
+                                        <p className="text-sm text-dark-800 dark:text-dark-200 font-mono break-words whitespace-pre-wrap leading-relaxed">
+                                            {oldVal !== undefined ? oldStr : <span className="opacity-40 italic">لا يوجد (NULL)</span>}
+                                        </p>
+                                    </div>
+                                    <div className="flex justify-center rotate-90 md:rotate-0">
+                                        <div className="w-10 h-10 rounded-full bg-white dark:bg-dark-900 border-2 border-dark-100 dark:border-dark-800 text-dark-300 dark:text-dark-600 flex items-center justify-center shadow-sm z-10">
+                                            <ArrowLeft size={18} />
+                                        </div>
+                                    </div>
+                                    <div className="bg-emerald-50/40 dark:bg-emerald-900/10 border border-emerald-100/50 dark:border-emerald-900/30 rounded-xl p-4 h-full relative overflow-hidden group-hover:border-emerald-200 dark:group-hover:border-emerald-900/50 transition-colors">
+                                        <div className="absolute top-0 right-0 w-1 h-full bg-emerald-400/50 dark:bg-emerald-500/50"></div>
+                                        <p className="text-[10px] font-black text-emerald-500 dark:text-emerald-400 mb-2 uppercase tracking-wider flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> القيمة الجديدة</p>
+                                        <p className="text-sm text-dark-800 dark:text-dark-200 font-mono break-words whitespace-pre-wrap leading-relaxed">
+                                            {newVal !== undefined ? newStr : <span className="opacity-40 italic">لا يوجد (NULL)</span>}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         );
@@ -126,47 +183,80 @@ export default function ActivityLogsIndex({ logs, filters, tables, branches = []
 
             <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 animate-fade-in">
                 <div>
-                    <h1 className="text-2xl font-black text-dark-900 dark:text-white flex items-center gap-2">
-                        <Activity className="text-primary-500" size={28} />
-                        سجل نشاطات النظام (Audit Trail)
+                    <h1 className="text-3xl font-black text-dark-900 dark:text-white flex items-center gap-3 tracking-tight">
+                        <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 flex items-center justify-center shadow-inner">
+                            <Activity size={24} strokeWidth={2.5} />
+                        </div>
+                        سجل نشاطات النظام
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium text-sm">
-                        تتبع كافة حركات الإضافة والتعديل والحذف التي تمت على مستوى النظام
+                    <p className="text-dark-500 dark:text-dark-400 mt-2 font-semibold text-sm">
+                        تتبع كافة حركات الإضافة والتعديل والحذف التي تمت على مستوى النظام (Audit Trail)
                     </p>
                 </div>
             </div>
 
+            {/* Analytics Header */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white/60 dark:bg-dark-900/40 backdrop-blur-xl border border-dark-100 dark:border-dark-800 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                    <div>
+                        <p className="text-xs font-bold text-dark-500 mb-1">إجمالي الحركات الكلية</p>
+                        <p className="text-2xl font-black text-dark-900 dark:text-white">{logs.total || 0}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-500 flex items-center justify-center">
+                        <BarChart3 size={24} />
+                    </div>
+                </div>
+                <div className="bg-white/60 dark:bg-dark-900/40 backdrop-blur-xl border border-dark-100 dark:border-dark-800 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                    <div>
+                        <p className="text-xs font-bold text-dark-500 mb-1">عمليات الإنشاء (الصفحة الحالية)</p>
+                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{logs.data.filter(l => l.action === 'إنشاء').length}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center">
+                        <Plus size={24} />
+                    </div>
+                </div>
+                <div className="bg-white/60 dark:bg-dark-900/40 backdrop-blur-xl border border-dark-100 dark:border-dark-800 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                    <div>
+                        <p className="text-xs font-bold text-dark-500 mb-1">عمليات الحذف (الصفحة الحالية)</p>
+                        <p className="text-2xl font-black text-rose-600 dark:text-rose-400">{logs.data.filter(l => l.action === 'حذف').length}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-900/20 text-rose-500 flex items-center justify-center">
+                        <Trash2 size={24} />
+                    </div>
+                </div>
+            </div>
+
             {/* Filters */}
-            <div className="bg-white dark:bg-slate-900/60 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-6">
+            <div className="bg-white/60 dark:bg-dark-900/40 backdrop-blur-xl p-5 rounded-[2rem] shadow-sm border border-dark-100 dark:border-dark-800 mb-8">
                 <form onSubmit={handleFilter} className="flex flex-wrap gap-4 items-end">
                     <div className="flex-1 min-w-[200px]">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">بحث شامل (مستخدم، جدول)</label>
-                        <div className="relative">
-                            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <label className="block text-xs font-bold text-dark-500 dark:text-dark-400 mb-2">بحث شامل (مستخدم، جدول)</label>
+                        <div className="relative group">
+                            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 group-focus-within:text-primary-500 transition-colors" size={18} />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="w-full pr-9 pl-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:text-white"
-                                placeholder="ابحث..."
+                                className="w-full pr-11 pl-4 py-3 bg-dark-50 dark:bg-dark-800/50 border-2 border-transparent dark:border-transparent focus:border-primary-500 dark:focus:border-primary-500 rounded-xl text-sm font-bold text-dark-900 dark:text-white placeholder:text-dark-400 focus:ring-4 focus:ring-primary-500/10 transition-all outline-none"
+                                placeholder="ابحث باسم المستخدم أو الجدول..."
                             />
                         </div>
                     </div>
                     <div className="w-full sm:w-48 group/select flex flex-col">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">نوع الحركة</label>
+                        <label className="block text-xs font-bold text-dark-500 dark:text-dark-400 mb-2">نوع الحركة</label>
                         <SelectInput
                             value={action}
                             onChange={(val) => setAction(val)}
                             options={[
                                 { value: '', label: 'الكل' },
-                                { value: 'إنشاء', label: 'إنشاء' },
-                                { value: 'تحديث', label: 'تحديث' },
-                                { value: 'حذف', label: 'حذف' }
+                                { value: 'إنشاء', label: 'إنشاء (Create)' },
+                                { value: 'تحديث', label: 'تحديث (Update)' },
+                                { value: 'حذف', label: 'حذف (Delete)' }
                             ]}
                         />
                     </div>
                     <div className="w-full sm:w-48 group/select flex flex-col">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">الجدول</label>
+                        <label className="block text-xs font-bold text-dark-500 dark:text-dark-400 mb-2">الجدول (النموذج)</label>
                         <SelectInput
                             value={tableName}
                             onChange={(val) => setTableName(val)}
@@ -179,7 +269,7 @@ export default function ActivityLogsIndex({ logs, filters, tables, branches = []
 
                     {isSystemAdmin && (
                         <div className="w-full sm:w-48 group/select flex flex-col">
-                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">الفرع</label>
+                            <label className="block text-xs font-bold text-dark-500 dark:text-dark-400 mb-2">الفرع</label>
                             <SelectInput
                                 value={branchId}
                                 onChange={(val) => setBranchId(val)}
@@ -192,7 +282,7 @@ export default function ActivityLogsIndex({ logs, filters, tables, branches = []
                     )}
 
                     <div className="w-full sm:w-48 group/select flex flex-col">
-                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">القسم</label>
+                        <label className="block text-xs font-bold text-dark-500 dark:text-dark-400 mb-2">القسم</label>
                         <SelectInput
                             value={departmentId}
                             onChange={(val) => setDepartmentId(val)}
@@ -203,99 +293,118 @@ export default function ActivityLogsIndex({ logs, filters, tables, branches = []
                         />
                     </div>
 
-                    <button type="submit" className="w-full sm:w-auto px-6 py-[10px] bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-sm shadow-primary-500/20">
-                        <Filter size={16} /> تصفية
+                    <button type="submit" className="w-full sm:w-auto px-8 py-3 bg-gradient-to-l from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/40 hover:-translate-y-0.5">
+                        <Filter size={18} /> تصفية السجلات
                     </button>
                 </form>
             </div>
 
-            {/* Table */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-right border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
-                                <th className="p-4 text-xs font-black text-slate-500 dark:text-slate-400 w-16">#</th>
-                                <th className="p-4 text-xs font-black text-slate-500 dark:text-slate-400">المستخدم</th>
-                                <th className="p-4 text-xs font-black text-slate-500 dark:text-slate-400">الفرع</th>
-                                <th className="p-4 text-xs font-black text-slate-500 dark:text-slate-400">الحركة</th>
-                                <th className="p-4 text-xs font-black text-slate-500 dark:text-slate-400">الجدول المستهدف</th>
-                                <th className="p-4 text-xs font-black text-slate-500 dark:text-slate-400">التاريخ والوقت</th>
-                                <th className="p-4 text-xs font-black text-slate-500 dark:text-slate-400 w-24">تفاصيل</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                            {logs.data.map((log) => (
-                                <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
-                                    <td className="p-4 text-sm font-bold text-slate-500">{log.id}</td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                                                <User size={14} className="text-primary-500" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight">{log.user?.name || 'نظام'}</p>
-                                                <p className="text-[10px] text-slate-500 mt-0.5">{log.user?.role?.name}</p>
+            {/* Timeline View */}
+            <div className="relative mb-6 pb-6">
+                {/* Timeline Line */}
+                <div className="absolute right-[23px] sm:right-[31px] top-6 bottom-0 w-[2px] bg-dark-100 dark:bg-dark-800 rounded-full z-0"></div>
+                
+                <div className="space-y-6 relative z-10">
+                    {logs.data.map((log) => (
+                        <div key={log.id} className="relative pr-14 sm:pr-20 group">
+                            {/* Dot */}
+                            <div className={`absolute right-3 sm:right-5 top-5 w-7 h-7 rounded-full border-4 border-white dark:border-dark-950 flex items-center justify-center z-10 transition-transform group-hover:scale-125 shadow-sm ${
+                                log.action === 'إنشاء' ? 'bg-emerald-500' :
+                                log.action === 'تحديث' ? 'bg-blue-500' :
+                                log.action === 'حذف' ? 'bg-rose-500' : 'bg-dark-400'
+                            }`}>
+                                {log.action === 'إنشاء' && <Plus size={12} className="text-white" strokeWidth={4} />}
+                                {log.action === 'تحديث' && <Edit2 size={12} className="text-white" strokeWidth={4} />}
+                                {log.action === 'حذف' && <Trash2 size={12} className="text-white" strokeWidth={4} />}
+                                {log.action !== 'إنشاء' && log.action !== 'تحديث' && log.action !== 'حذف' && <Activity size={12} className="text-white" strokeWidth={3} />}
+                            </div>
+
+                            {/* Card */}
+                            <div className="bg-white/70 dark:bg-dark-900/60 backdrop-blur-xl border border-dark-100 dark:border-dark-800 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-lg hover:shadow-dark-200/50 dark:hover:shadow-black/50 transition-all group-hover:border-primary-500/30">
+                                <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                                    <div className="flex gap-4 items-start xl:items-center">
+                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-dark-50 to-dark-100 dark:from-dark-800 dark:to-dark-700 flex items-center justify-center shrink-0 shadow-inner border border-dark-200/50 dark:border-dark-600/50">
+                                            <User size={20} className="text-primary-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-dark-900 dark:text-white leading-relaxed flex flex-wrap items-center gap-1.5">
+                                                <span>قام</span>
+                                                <span className="text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 px-2 py-0.5 rounded-md border border-primary-100 dark:border-primary-900/30">{log.user?.name || 'النظام (System)'}</span>
+                                                <span>بإجراء عملية</span>
+                                                <span className={`font-bold px-2 py-0.5 rounded-md border shadow-sm ${
+                                                    log.action === 'إنشاء' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400' :
+                                                    log.action === 'تحديث' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/30 dark:text-blue-400' :
+                                                    log.action === 'حذف' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-400' : 
+                                                    'bg-dark-100 border-dark-200 text-dark-700 dark:bg-dark-800 dark:border-dark-700 dark:text-dark-300'
+                                                }`}>{log.action}</span>
+                                                <span>في جدول</span>
+                                                <span className="font-mono bg-dark-50 dark:bg-dark-800 px-2 py-0.5 rounded-md border border-dark-100 dark:border-dark-700 text-dark-700 dark:text-dark-300 shadow-inner">
+                                                    <Database size={10} className="inline mr-1 mb-0.5 opacity-50" />
+                                                    {log.table_name}
+                                                </span>
+                                            </p>
+                                            <div className="flex flex-wrap items-center gap-4 mt-3 text-xs font-bold text-dark-500">
+                                                <span className="flex items-center gap-1.5"><Clock size={14} className="text-primary-500" /> <span dir="ltr">{new Date(log.created_at).toLocaleString('en-US', { hour12: true, dateStyle: 'medium', timeStyle: 'short' })}</span></span>
+                                                <span className="flex items-center gap-1.5"><MapPin size={14} className="text-emerald-500" /> {log.branch?.name || 'النظام العام'}</span>
+                                                <span className="flex items-center gap-1.5 bg-dark-50 dark:bg-dark-800 px-2 py-0.5 rounded-md"><ShieldAlert size={14} className="text-amber-500" /> معرف الحركة: #{log.id}</span>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td className="p-4">
-                                        <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-600 dark:text-slate-400">
-                                            <MapPin size={12} /> {log.branch?.name || 'النظام العام'}
-                                        </span>
-                                    </td>
-                                    <td className="p-4">
-                                        {getActionBadge(log.action)}
-                                    </td>
-                                    <td className="p-4">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold font-mono">
-                                            <Database size={10} className="text-slate-400" />
-                                            {log.table_name}
-                                        </span>
-                                    </td>
-                                    <td className="p-4">
-                                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                                            <Clock size={12} />
-                                            <span dir="ltr">{new Date(log.created_at).toLocaleString('en-US', { hour12: false })}</span>
-                                        </div>
-                                    </td>
-                                    <td className="p-4">
+                                    </div>
+                                    <div className="shrink-0 xl:ml-2 mr-16 xl:mr-0">
                                         <button
                                             onClick={() => setSelectedLog(log)}
-                                            className="w-8 h-8 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 flex items-center justify-center hover:bg-primary-500 hover:text-white transition-colors"
+                                            className="w-full xl:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/20 dark:hover:text-primary-400 transition-colors font-black text-xs border border-dark-200 dark:border-dark-700 shadow-sm hover:shadow group/btn"
                                         >
-                                            <Eye size={14} strokeWidth={2.5} />
+                                            <Eye size={16} strokeWidth={2.5} className="group-hover/btn:scale-110 transition-transform" /> تفاصيل التغييرات
                                         </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {logs.data.length === 0 && (
-                                <tr>
-                                    <td colSpan="7" className="p-8 text-center text-slate-500">
-                                        <ShieldAlert size={32} className="mx-auto mb-3 opacity-30" />
-                                        <p className="font-bold">لا توجد سجلات نشاط تطابق الفلتر</p>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+
+                    {logs.data.length === 0 && (
+                        <div className="p-16 text-center text-dark-500 bg-white/50 dark:bg-dark-900/40 rounded-[2rem] border border-dashed border-dark-200 dark:border-dark-700 backdrop-blur-xl">
+                            <div className="flex flex-col items-center justify-center">
+                                <div className="w-24 h-24 bg-dark-50 dark:bg-dark-800/50 rounded-full flex items-center justify-center mb-6 border border-dark-100 dark:border-dark-700 shadow-inner">
+                                    <History size={40} className="text-dark-300 dark:text-dark-600" />
+                                </div>
+                                <p className="font-black text-xl text-dark-900 dark:text-white mb-2">لا يوجد سجلات في هذا النطاق الزمني</p>
+                                <p className="text-dark-500 font-semibold text-sm">حاول تغيير خيارات البحث أو الفلترة للحصول على نتائج.</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
-                {logs.data.length > 0 && (
-                    <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-                        <Pagination data={logs} />
-                    </div>
-                )}
             </div>
 
-            <Modal show={!!selectedLog} onClose={() => setSelectedLog(null)} maxWidth="2xl">
-                <div className="p-6 dark:bg-[#121820]">
-                    <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
-                        <h2 className="text-lg font-bold text-slate-800 dark:text-white">تفاصيل الحركة والتغييرات</h2>
-                        <button onClick={() => setSelectedLog(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                            ✕
-                        </button>
+            {logs.data.length > 0 && (
+                <div className="bg-white/60 dark:bg-dark-900/40 backdrop-blur-xl rounded-2xl overflow-hidden shadow-sm border border-dark-100 dark:border-dark-800">
+                    <Pagination data={logs} />
+                </div>
+            )}
+
+            <Modal show={!!selectedLog} onClose={() => setSelectedLog(null)} maxWidth="3xl">
+                <div className="relative bg-white dark:bg-dark-900 rounded-[2rem] shadow-2xl w-full overflow-hidden border border-dark-100 dark:border-dark-800 transform transition-all">
+                    <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-500 via-emerald-400 to-primary-600" />
+                    <div className="p-6 md:p-8">
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-dark-100 dark:border-dark-800">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400 flex items-center justify-center shadow-inner">
+                                    <Activity size={24} />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-black text-dark-900 dark:text-white">
+                                        تفاصيل الحركة والتغييرات
+                                    </h2>
+                                    <p className="text-sm font-bold text-dark-500 mt-1">مقارنة بين البيانات السابقة والحالية</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedLog(null)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-dark-50 dark:bg-dark-800 text-dark-400 hover:text-dark-600 dark:hover:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors">
+                                <span className="text-xl font-black">✕</span>
+                            </button>
+                        </div>
+                        {renderDiff(selectedLog)}
                     </div>
-                    {renderDiff(selectedLog)}
                 </div>
             </Modal>
         </AdminLayout>
