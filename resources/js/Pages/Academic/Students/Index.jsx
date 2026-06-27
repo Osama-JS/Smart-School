@@ -73,54 +73,76 @@ export default function StudentsIndex({ students, academicYears, sections }) {
 
                     <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-6">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30">
+                            <div className="w-14 h-14 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-700">
                                 <GraduationCap size={28} strokeWidth={1.5} />
                             </div>
                             <div>
                                 <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">سجل الطلاب</h1>
-                                <p className="text-primary-700/80 dark:text-primary-300/80 text-sm mt-1 font-semibold">إدارة ملفات الطلاب وسجلاتهم الأكاديمية</p>
+                                <p className="text-sm font-semibold text-primary-700/80 dark:text-primary-300/80 mt-1">إدارة ملفات الطلاب وسجلاتهم الأكاديمية</p>
                             </div>
                         </div>
 
                         <Link
                             href={route('academic.students.create')}
-                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary-500/30 transition-all shrink-0"
+                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-primary-500/30 transition-all hover:-translate-y-0.5 shrink-0 active:scale-95"
                         >
                             <Plus size={18} />
                             <span>تسجيل طالب جديد</span>
                         </Link>
                     </div>
+                </div>
 
-                    {/* Filter Bar */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
-                        <div className="relative group">
-                            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
-                            <input
-                                type="text"
-                                placeholder="بحث باسم الطالب أو الهوية..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl px-10 py-2.5 text-sm outline-none transition-all dark:text-white"
-                            />
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6 relative z-10">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+                            <Users size={26} strokeWidth={1.5} />
                         </div>
-                        
                         <div>
-                            <SelectInput
-                                options={academicYears.map(y => ({ value: y.id, label: y.name }))}
-                                value={selectedYear}
-                                onChange={setSelectedYear}
-                                placeholder="كل السنوات الدراسية"
-                            />
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">الطلاب المطابقين للبحث</p>
+                            <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{students.total}</p>
                         </div>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                            <Building2 size={26} strokeWidth={1.5} />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">الأقسام التعليمية</p>
+                            <p className="text-2xl font-black text-slate-800 dark:text-white mt-1">{sections.length}</p>
+                        </div>
+                    </div>
+                </div>
 
-                        <div>
-                            <SelectInput
-                                options={sections.map(s => ({ value: s.id, label: s.name }))}
-                                value={selectedSection}
-                                onChange={setSelectedSection}
-                                placeholder="كل الأقسام والمراحل"
-                            />
-                        </div>
+                {/* Filter Bar */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative z-10 flex flex-col lg:flex-row gap-4">
+                    <div className="relative group flex-1">
+                        <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors" size={18} />
+                        <input
+                            type="text"
+                            placeholder="بحث باسم الطالب أو الهوية..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 rounded-2xl px-10 py-3 text-sm font-semibold outline-none transition-all dark:text-white placeholder:text-slate-400"
+                        />
+                    </div>
+                    
+                    <div className="w-full lg:w-64 shrink-0">
+                        <SelectInput
+                            options={academicYears.map(y => ({ value: y.id, label: y.name }))}
+                            value={selectedYear}
+                            onChange={setSelectedYear}
+                            placeholder="كل السنوات الدراسية"
+                        />
+                    </div>
+
+                    <div className="w-full lg:w-64 shrink-0">
+                        <SelectInput
+                            options={sections.map(s => ({ value: s.id, label: s.name }))}
+                            value={selectedSection}
+                            onChange={setSelectedSection}
+                            placeholder="كل الأقسام والمراحل"
+                        />
                     </div>
                 </div>
 
@@ -131,7 +153,7 @@ export default function StudentsIndex({ students, academicYears, sections }) {
                             const enroll = student.current_enrollment;
                             
                             return (
-                                <div key={student.id} className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden flex flex-col h-full">
+                                <div key={student.id} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group relative overflow-hidden flex flex-col h-full">
                                     <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
                                         <Link href={route('academic.students.edit', student.id)} className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 transition-colors">
                                             <Edit size={16} />
@@ -142,7 +164,7 @@ export default function StudentsIndex({ students, academicYears, sections }) {
                                     </div>
 
                                     <div className="flex items-center gap-4 mb-5">
-                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900/40 dark:to-blue-900/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-xl border border-indigo-200/50 dark:border-indigo-500/20 shrink-0 shadow-inner">
+                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xl border border-primary-200/50 dark:border-primary-500/20 shrink-0 shadow-inner">
                                             {student.user.name.charAt(0)}
                                         </div>
                                         <div>
@@ -152,7 +174,7 @@ export default function StudentsIndex({ students, academicYears, sections }) {
                                     </div>
 
                                     {/* Academic Status Widget */}
-                                    <div className="mb-5 p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-500/5 border border-indigo-100/50 dark:border-indigo-500/10 flex-grow">
+                                    <div className="mb-5 p-4 rounded-2xl bg-primary-50 dark:bg-primary-500/5 border border-primary-100/50 dark:border-primary-500/10 flex-grow">
                                         {enroll ? (
                                             <div className="space-y-3">
                                                 <div className="flex items-center gap-2">
@@ -163,14 +185,14 @@ export default function StudentsIndex({ students, academicYears, sections }) {
                                                     }`}>
                                                         {enroll.status === 'active' ? 'نشط' : enroll.status === 'transferred' ? 'منقول' : 'مسحوب/خريج'}
                                                     </span>
-                                                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{enroll.academic_year?.name}</span>
+                                                    <span className="text-xs font-bold text-primary-600 dark:text-primary-400">{enroll.academic_year?.name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                                    <Building2 size={16} className="text-indigo-400" />
+                                                    <Building2 size={16} className="text-primary-400" />
                                                     <span className="font-medium">{enroll.division?.grade?.section?.name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                                    <BookOpen size={16} className="text-indigo-400" />
+                                                    <BookOpen size={16} className="text-primary-400" />
                                                     <span>{enroll.division?.grade?.name} - {enroll.division?.name}</span>
                                                 </div>
                                             </div>
@@ -191,7 +213,7 @@ export default function StudentsIndex({ students, academicYears, sections }) {
                                                 </div>
                                             )}
                                         </div>
-                                        <Link href={route('academic.students.edit', student.id)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
+                                        <Link href={route('academic.students.edit', student.id)} className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors">
                                             الملف الكامل &larr;
                                         </Link>
                                     </div>
@@ -199,7 +221,7 @@ export default function StudentsIndex({ students, academicYears, sections }) {
                             );
                         })
                     ) : (
-                        <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-3xl">
+                        <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
                             <GraduationCap size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
                             <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-1">لا يوجد طلاب</h3>
                             <p className="text-sm text-slate-500">لم يتم العثور على أي طلاب مطابقين لبحثك.</p>
@@ -217,7 +239,7 @@ export default function StudentsIndex({ students, academicYears, sections }) {
                                     href={link.url}
                                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                                         link.active 
-                                            ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/30' 
+                                            ? 'bg-primary-500 text-white shadow-md shadow-primary-500/30' 
                                             : !link.url 
                                                 ? 'text-slate-300 dark:text-slate-600 cursor-not-allowed'
                                                 : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'

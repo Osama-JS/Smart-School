@@ -163,7 +163,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
     const renderFieldBuilder = () => (
         <div className="space-y-6">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-101 dark:border-slate-800">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div>
                     <h3 className="text-sm font-black text-slate-800 dark:text-white">حقول التقرير (الأسئلة)</h3>
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-semibold">أضف الحقول المخصصة التي سيقوم الموظفون بتعبئتها</p>
@@ -191,7 +191,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
             ) : (
                 <div className="space-y-4">
                     {fieldsForm.data.fields.map((field, index) => (
-                        <div key={index} className="relative p-5 bg-white dark:bg-slate-955/40 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 group/card">
+                        <div key={index} className="relative p-5 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 group/card">
                             {/* Card number badge */}
                             <div className="absolute -right-3 -top-3 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-black shadow-sm group-hover/card:bg-primary-500 group-hover/card:text-white group-hover/card:border-primary-400 transition-all duration-300">
                                 {index + 1}
@@ -247,7 +247,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 <button 
                                     type="button" 
                                     onClick={() => removeField(index)}
-                                    className="p-2.5 text-red-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-650 rounded-2xl transition-all border border-slate-200 dark:border-slate-800 hover:border-red-500 dark:hover:border-red-600 active:scale-95 mt-5 flex items-center justify-center w-10 h-10 shrink-0 shadow-sm"
+                                    className="p-2.5 text-red-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 rounded-2xl transition-all border border-slate-200 dark:border-slate-800 hover:border-red-500 dark:hover:border-red-600 active:scale-95 mt-5 flex items-center justify-center w-10 h-10 shrink-0 shadow-sm"
                                     title="حذف هذا الحقل"
                                 >
                                     <Trash2 size={16} />
@@ -290,7 +290,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         <div className={`w-9 h-5.5 rounded-full transition-colors duration-300 ${field.is_required ? 'bg-primary-500 dark:bg-primary-600' : 'bg-slate-200 dark:bg-slate-800'}`} />
                                         <div className={`absolute top-0.5 right-0.5 w-4.5 h-4.5 rounded-full bg-white transition-transform duration-300 shadow-md ${field.is_required ? '-translate-x-3.5' : ''}`} />
                                     </div>
-                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-450 group-hover/toggle:text-slate-850 dark:group-hover/toggle:text-slate-200 transition-colors">
+                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400 group-hover/toggle:text-slate-800 dark:group-hover/toggle:text-slate-200 transition-colors">
                                         حقل إجباري (مطلوب عند الإدخال)
                                     </span>
                                 </label>
@@ -326,7 +326,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-black text-slate-855 dark:text-white tracking-tight">إدارة قوالب التقارير</h1>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">إدارة قوالب التقارير</h1>
                             <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">قم بإنشاء وتصميم النماذج التي سيقوم الموظفون بتعبئتها بناءً على درجاتهم الوظيفية</p>
                         </div>
                         
@@ -348,13 +348,13 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             { label: 'الحقول المخصصة', value: stats.total_fields, icon: Settings, color: 'text-accent-600 dark:text-accent-400', bg: 'bg-accent-50 dark:bg-accent-500/10', glow: 'bg-accent-500/5 dark:bg-accent-500/10', grad: 'from-accent-400 to-accent-600' },
                             { label: 'التقارير المرفوعة', value: stats.total_reports, icon: CheckSquare, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800/40', glow: 'bg-slate-500/5 dark:bg-slate-800/10', grad: 'from-slate-400 to-slate-600 dark:from-slate-600 dark:to-slate-800' }
                         ].map((stat, idx) => (
-                            <div key={idx} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#5b8a2d_1.2px,transparent_1.2px)] [background-size:16px_16px]">
+                            <div key={idx} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#27313f_1.2px,transparent_1.2px)] [background-size:16px_16px]">
                                 <div className={`absolute top-0 right-0 left-0 h-1 bg-gradient-to-r ${stat.grad} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                                 <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glow} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
                                 
                                 <div className="relative z-10 min-w-0">
                                     <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">{stat.label}</p>
-                                    <h3 className="text-2xl font-black text-slate-855 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
+                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
                                 </div>
                                 <div className={`relative z-10 w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}>
                                     <stat.icon size={20} strokeWidth={2.5} />
@@ -368,19 +368,19 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 <div className="relative z-20 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px] mb-8">
                     <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
                         <div className="flex-1 relative group">
-                            <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-405 group-focus-within:text-primary-500 transition-colors" />
+                            <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
                             <input
                                 type="text"
                                 value={filterForm.data.search}
                                 onChange={(e) => filterForm.setData('search', e.target.value)}
                                 placeholder="ابحث عن قالب..."
-                                className="w-full bg-slate-50/50 dark:bg-slate-955/50 border border-slate-205 dark:border-slate-800 rounded-2xl pr-11 pl-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                                className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
                             />
                             {filterForm.data.search && (
                                 <button 
                                     type="button"
                                     onClick={() => filterForm.setData('search', '')}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 dark:hover:bg-slate-805 rounded-lg text-slate-450 hover:text-slate-655 transition-all">
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 transition-all">
                                     <X size={14} />
                                 </button>
                             )}
@@ -417,32 +417,32 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                     <div className="overflow-x-auto">
                         <table className="w-full text-right border-collapse">
                             <thead>
-                                <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-101 dark:border-slate-800">
-                                    <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider">
+                                <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
+                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                         <div className="flex items-center gap-1.5">
                                             <FileText size={14} className="text-primary-500" />
                                             <span>اسم القالب</span>
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider">
+                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                         <div className="flex items-center gap-1.5">
                                             <ShieldCheck size={14} className="text-indigo-500" />
                                             <span>الدرجة الوظيفية المستهدفة</span>
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider">
+                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                         <div className="flex items-center gap-1.5">
                                             <AlignLeft size={14} className="text-slate-400" />
                                             <span>الوصف</span>
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider">
+                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                         <div className="flex items-center gap-1.5">
                                             <Calendar size={14} className="text-slate-400" />
                                             <span>تاريخ الإنشاء</span>
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider w-40 text-center">
+                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider w-40 text-center">
                                         <div className="flex items-center justify-center gap-1.5">
                                             <Settings size={14} className="text-slate-400" />
                                             <span>الإجراءات</span>
@@ -453,11 +453,11 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             <tbody className="divide-y divide-slate-100/70 dark:divide-slate-800/60">
                                 {templates.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-8 text-center text-slate-450 dark:text-slate-500 font-bold">لا توجد قوالب حتى الآن.</td>
+                                        <td colSpan="5" className="px-6 py-8 text-center text-slate-400 dark:text-slate-500 font-bold">لا توجد قوالب حتى الآن.</td>
                                     </tr>
                                 ) : (
                                     templates.data.map((template) => (
-                                        <tr key={template.id} className="group border-r-4 border-r-transparent hover:border-r-primary-500 hover:bg-slate-50/40 dark:hover:bg-primary-500/5 transition-all duration-200">
+                                        <tr key={template.id} className="group border-r-4 border-r-transparent hover:border-r-primary-500 hover:bg-slate-50/40 dark:hover:bg-primary-500/10 transition-all duration-200">
                                             <td className="px-6 py-4.5 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-100 dark:border-primary-500/20 shadow-sm transition-transform group-hover:scale-110">
@@ -529,13 +529,13 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         <PlusCircle size={20} className="animate-pulse" />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-850 dark:text-white leading-none">إنشاء قالب تقرير جديد</h2>
+                                        <h2 className="text-lg font-black text-slate-800 dark:text-white leading-none">إنشاء قالب تقرير جديد</h2>
                                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-bold">إعداد نموذج بيانات مخصص لتقارير الموظفين</p>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => setIsCreateModalOpen(false)} 
-                                    className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-150 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-205 transition-all duration-300 hover:rotate-90 active:scale-90"
+                                    className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all duration-300 hover:rotate-90 active:scale-90"
                                 >
                                     <X size={16} />
                                 </button>
@@ -554,7 +554,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     type="text" 
                                                     value={form.data.name}
                                                     onChange={e => form.setData('name', e.target.value)}
-                                                    className="w-full bg-slate-50/50 dark:bg-slate-955/40 border border-slate-202 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600 shadow-inner-sm"
+                                                    className="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600 shadow-inner-sm"
                                                     placeholder="مثال: التقرير اليومي للمبيعات"
                                                     required
                                                 />
@@ -620,7 +620,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             <textarea 
                                                 value={form.data.description}
                                                 onChange={e => form.setData('description', e.target.value)}
-                                                className="w-full bg-slate-50/50 dark:bg-slate-955/40 border border-slate-202 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600 shadow-inner-sm"
+                                                className="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600 shadow-inner-sm"
                                                 placeholder="اكتب وصفاً مختصراً للقالب وأهداف استخدامه..."
                                                 rows="3"
                                             ></textarea>
@@ -652,23 +652,23 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Modal Edit */}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-955/60 backdrop-blur-md animate-fade-in">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
                         <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-3xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in">
                             <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 z-50" />
                             
-                            <div className="relative p-6 md:p-7 border-b border-slate-101 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-8">
+                            <div className="relative p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-8">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-500 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20 border border-blue-400/20">
                                         <Edit size={20} />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-855 dark:text-white leading-none">تعديل قالب التقرير</h2>
+                                        <h2 className="text-lg font-black text-slate-800 dark:text-white leading-none">تعديل قالب التقرير</h2>
                                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-bold">القالب الحالي: {editingTemplate?.name}</p>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => setIsEditModalOpen(false)} 
-                                    className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-150 dark:hover:bg-slate-800 text-slate-405 hover:text-slate-600 dark:hover:text-slate-205 transition-all duration-300 hover:rotate-90 active:scale-90"
+                                    className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all duration-300 hover:rotate-90 active:scale-90"
                                 >
                                     <X size={16} />
                                 </button>
@@ -687,13 +687,13 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     type="text" 
                                                     value={editForm.data.name}
                                                     onChange={e => editForm.setData('name', e.target.value)}
-                                                    className="w-full bg-slate-50/50 dark:bg-slate-955/40 border border-slate-202 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 shadow-inner-sm"
+                                                    className="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 shadow-inner-sm"
                                                     required
                                                 />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2 flex items-center gap-1">
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>الدرجة الوظيفية المستهدفة</span>
                                                 <span className="text-red-500">*</span>
                                             </label>
@@ -743,13 +743,13 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         </div>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الوصف (اختياري)</label>
+                                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الوصف (اختياري)</label>
                                         <div className="relative group">
                                             <AlignLeft size={16} className="absolute right-4 top-4 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none" />
                                             <textarea 
                                                 value={editForm.data.description}
                                                 onChange={e => editForm.setData('description', e.target.value)}
-                                                className="w-full bg-slate-50/50 dark:bg-slate-955/40 border border-slate-202 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 shadow-inner-sm"
+                                                className="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 shadow-inner-sm"
                                                 rows="3"
                                             ></textarea>
                                         </div>
@@ -760,7 +760,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 <button 
                                     type="button" 
                                     onClick={() => setIsEditModalOpen(false)}
-                                    className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-205 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
+                                    className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
@@ -780,7 +780,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Modal Fields */}
                 {isFieldsModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-955/60 backdrop-blur-md animate-fade-in">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
                         <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-4xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in">
                             <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 z-50" />
                             
@@ -790,9 +790,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         <List size={20} />
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-black text-slate-855 dark:text-white leading-none">إدارة حقول التقرير</h2>
+                                        <h2 className="text-lg font-black text-slate-800 dark:text-white leading-none">إدارة حقول التقرير</h2>
                                         <div className="flex items-center gap-2 mt-1.5">
-                                            <span className="text-[10px] text-slate-405 dark:text-slate-500 font-bold">القالب المستهدف:</span>
+                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">القالب المستهدف:</span>
                                             <span className="px-2 py-0.5 text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 rounded-md font-bold">
                                                 {editingTemplate?.name}
                                             </span>
@@ -801,7 +801,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 </div>
                                 <button 
                                     onClick={() => setIsFieldsModalOpen(false)} 
-                                    className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-150 dark:hover:bg-slate-800 text-slate-405 hover:text-slate-600 dark:hover:text-slate-205 transition-colors duration-300 hover:rotate-90 active:scale-90"
+                                    className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors duration-300 hover:rotate-90 active:scale-90"
                                 >
                                     <X size={20} />
                                 </button>
@@ -815,7 +815,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 <button 
                                     type="button" 
                                     onClick={() => setIsFieldsModalOpen(false)}
-                                    className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-205 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
+                                    className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>

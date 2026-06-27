@@ -110,11 +110,10 @@ export default function StudentsCreate({ parents, academicYears, sections }) {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     
                     {/* Academic Enrollment Section */}
-                    <div className="bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-900/10 dark:to-slate-800/50 rounded-3xl border border-indigo-100 dark:border-indigo-500/20 shadow-sm overflow-hidden relative">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl" />
-                        <div className="border-b border-indigo-100 dark:border-indigo-500/20 bg-indigo-50/50 dark:bg-indigo-900/20 px-6 py-4 flex items-center gap-3">
-                            <GraduationCap className="text-indigo-600 dark:text-indigo-400" size={20} />
-                            <h2 className="text-lg font-bold text-indigo-900 dark:text-indigo-100">التسجيل الأكاديمي (السنة الحالية)</h2>
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4 flex items-center gap-3">
+                            <GraduationCap className="text-primary-500" size={20} />
+                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">التسجيل الأكاديمي (السنة الحالية)</h2>
                         </div>
                         
                         <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
@@ -157,10 +156,10 @@ export default function StudentsCreate({ parents, academicYears, sections }) {
                         
                         {/* Student Account Data */}
                         <div className="lg:col-span-2 space-y-6">
-                            <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                                 <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4 flex items-center gap-3">
                                     <User className="text-primary-500" size={20} />
-                                    <h2 className="text-lg font-bold text-dark-900 dark:text-white">بيانات الطالب ومعلومات الدخول</h2>
+                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">بيانات الطالب ومعلومات الدخول</h2>
                                 </div>
                                 
                                 <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -222,7 +221,7 @@ export default function StudentsCreate({ parents, academicYears, sections }) {
                         <div className="lg:col-span-1 space-y-6">
                             
                             {/* Parent Linking */}
-                            <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden p-6">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden p-6">
                                 <div className="flex items-center gap-3 mb-5">
                                     <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
                                         <Users size={20} />
@@ -266,7 +265,7 @@ export default function StudentsCreate({ parents, academicYears, sections }) {
                             </div>
 
                             {/* Transport Services */}
-                            <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden p-6">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden p-6">
                                 <div className="flex items-center gap-3 mb-5">
                                     <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center">
                                         <Bus size={20} />

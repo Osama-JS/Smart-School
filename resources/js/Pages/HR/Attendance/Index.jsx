@@ -1256,7 +1256,7 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                             <div className="overflow-x-auto">
                                 <table className="w-full text-right border-collapse">
                                     <thead>
-                                        <tr className="bg-gradient-to-r from-primary-50 via-primary-100/50 to-primary-50 dark:from-primary-950/40 dark:via-primary-900/20 dark:to-primary-950/40 border-b border-primary-200/60 dark:border-primary-900/30">
+                                        <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
                                             <th className="px-4 py-4 text-center w-12 no-print">
                                                 <input
                                                     type="checkbox"

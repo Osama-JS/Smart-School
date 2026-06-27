@@ -89,9 +89,8 @@ export default function ReportsIndex({ auth, reportsToReview, stats }) {
         <AdminLayout activeMenu="التقارير">
             <Head title="متابعة التقارير" />
 
-            <div className="py-12" style={{ direction: 'rtl' }}>
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-8">
-                    
+            <div className="max-w-7xl mx-auto space-y-6">
+                
                     {/* Header Section */}
                     <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                         <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
@@ -213,7 +212,6 @@ export default function ReportsIndex({ auth, reportsToReview, stats }) {
                     </div>
 
                 </div>
-            </div>
         </AdminLayout>
     );
 }

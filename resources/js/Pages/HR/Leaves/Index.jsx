@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
-import { Calendar, Plus, Edit2, Trash2, X, Save, Clock, CheckCircle, XCircle, Eye, AlertCircle, FileText, User, Tag, ShieldAlert, FolderOpen, Filter, CheckCircle2, AlignLeft, LayoutGrid, Table2, MoreVertical } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, X, Save, Clock, CheckCircle, XCircle, Eye, AlertCircle, FileText, User, Tag, ShieldAlert, FolderOpen, Filter, CheckCircle2, AlignLeft, LayoutGrid, Table2, MoreVertical, RotateCcw } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
+import InputLabel from '@/Components/InputLabel';
 
 export default function LeavesIndex({ leaves, employees, academicYears = [], leaveTypes = [], isAdmin, filters = {} }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -11,7 +12,6 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
     const [editingLeave, setEditingLeave] = useState(null);
     const [viewingLeave, setViewingLeave] = useState(null);
     const [leaveToDelete, setLeaveToDelete] = useState(null);
-    const [viewMode, setViewMode] = useState('cards');
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         employee_id: '',
@@ -77,8 +77,45 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
         });
     };
 
-    const handleFilterChange = (key, value) => {
-        router.get(route('hr.leaves.index'), { ...filters, [key]: value }, { preserveState: true, preserveScroll: true });
+    const [filterData, setFilterData] = useState({
+        employee_id: filters.employee_id || '',
+        leave_type_id: filters.leave_type_id || '',
+        status: filters.status || '',
+        academic_year_id: filters.academic_year_id || '',
+        semester_id: filters.semester_id || '',
+        start_date: filters.start_date || '',
+        end_date: filters.end_date || '',
+    });
+
+    const applyFilters = () => {
+        router.get(route('hr.leaves'), filterData, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
+
+    const clearFilters = () => {
+        setFilterData({
+            employee_id: '',
+            leave_type_id: '',
+            status: '',
+            academic_year_id: '',
+            semester_id: '',
+            start_date: '',
+            end_date: ''
+        });
+        router.get(route('hr.leaves'), {
+            employee_id: '',
+            leave_type_id: '',
+            status: '',
+            academic_year_id: '',
+            semester_id: '',
+            start_date: '',
+            end_date: ''
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
 
     const stats = {
@@ -178,66 +215,132 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="bg-white dark:bg-[#121820]/60 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center">
-                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold shrink-0 px-2">
-                        <Filter size={18} />
-                        <span>تصفية:</span>
+                {/* Filters Section */}
+                <div className="bg-white dark:bg-[#121820]/60 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden mb-6">
+                    <div className="absolute top-0 right-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-primary-500/20 to-transparent" />
+                    
+                    <div className="flex items-center gap-2 mb-4">
+                        <Filter size={18} className="text-primary-500" />
+                        <h3 className="font-bold text-slate-800 dark:text-white">تصفية النتائج</h3>
                     </div>
-                    <div className="flex-1 w-full flex items-center gap-2 bg-slate-50 dark:bg-slate-800/40 rounded-xl px-3 py-2 border border-slate-200 dark:border-slate-700 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-500/20 transition-all">
-                        <User size={18} className="text-slate-400 shrink-0" />
-                        <SelectInput
-                            className="w-full border-none bg-transparent shadow-none focus:ring-0 px-0 h-auto"
-                            options={[
-                                { value: '', label: 'جميع الموظفين' },
-                                ...employees.map(e => ({ value: e.id, label: `${e.first_name} ${e.last_name}` }))
-                            ]}
-                            value={filters.employee_id || ''}
-                            onChange={(val) => handleFilterChange('employee_id', val)}
-                            placeholder="ابحث عن موظف..."
-                        />
-                    </div>
-                    <div className="flex-1 w-full flex items-center gap-2 bg-slate-50 dark:bg-slate-800/40 rounded-xl px-3 py-2 border border-slate-200 dark:border-slate-700 focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-500/20 transition-all">
-                        <AlertCircle size={18} className="text-slate-400 shrink-0" />
-                        <SelectInput
-                            className="w-full border-none bg-transparent shadow-none focus:ring-0 px-0 h-auto"
-                            options={[
-                                { value: '', label: 'جميع الحالات' },
-                                { value: 'pending', label: 'قيد الانتظار' },
-                                { value: 'approved', label: 'موافق عليها' },
-                                { value: 'rejected', label: 'مرفوضة' }
-                            ]}
-                            value={filters.status || ''}
-                            onChange={(val) => handleFilterChange('status', val)}
-                            placeholder="تصفية بالحالة..."
-                        />
-                    </div>
-                </div>
 
-                {/* View Toggle */}
-                <div className="flex items-center justify-end gap-2 mb-6 mt-2">
-                    <button
-                        onClick={() => setViewMode('cards')}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all border ${
-                            viewMode === 'cards'
-                                ? 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/30'
-                                : 'bg-white dark:bg-[#121820]/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                        }`}
-                    >
-                        <LayoutGrid size={16} />
-                        <span>بطاقات</span>
-                    </button>
-                    <button
-                        onClick={() => setViewMode('table')}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all border ${
-                            viewMode === 'table'
-                                ? 'bg-primary-600 text-white border-primary-600 shadow-sm shadow-primary-500/30'
-                                : 'bg-white dark:bg-[#121820]/60 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
-                        }`}
-                    >
-                        <Table2 size={16} />
-                        <span>جدول</span>
-                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                        {/* Employee Filter */}
+                        <div className="group flex flex-col">
+                            <InputLabel value="الموظف" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <SelectInput 
+                                className="w-full" 
+                                value={filterData.employee_id} 
+                                onChange={val => setFilterData({...filterData, employee_id: val})}
+                                options={[
+                                    { value: '', label: 'جميع الموظفين' },
+                                    ...employees.map(emp => ({ value: emp.id, label: `${emp.first_name} ${emp.last_name}` }))
+                                ]}
+                            />
+                        </div>
+                        
+                        {/* Leave Type Filter */}
+                        <div className="group flex flex-col">
+                            <InputLabel value="نوع الإجازة" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <SelectInput 
+                                className="w-full" 
+                                value={filterData.leave_type_id} 
+                                onChange={val => setFilterData({...filterData, leave_type_id: val})}
+                                options={[
+                                    { value: '', label: 'جميع أنواع الإجازات' },
+                                    ...leaveTypes.map(t => ({ value: t.id, label: t.name }))
+                                ]}
+                            />
+                        </div>
+
+                        {/* Status Filter */}
+                        <div className="group flex flex-col">
+                            <InputLabel value="حالة الطلب" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <SelectInput 
+                                className="w-full" 
+                                value={filterData.status} 
+                                onChange={val => setFilterData({...filterData, status: val})}
+                                options={[
+                                    { value: '', label: 'جميع الحالات' },
+                                    { value: 'pending', label: 'قيد الانتظار' },
+                                    { value: 'approved', label: 'موافق عليها' },
+                                    { value: 'rejected', label: 'مرفوضة' }
+                                ]}
+                            />
+                        </div>
+
+                        {/* Academic Year Filter */}
+                        <div className="group flex flex-col">
+                            <InputLabel value="السنة الدراسية" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <SelectInput 
+                                className="w-full" 
+                                value={filterData.academic_year_id} 
+                                onChange={val => setFilterData({...filterData, academic_year_id: val, semester_id: ''})}
+                                options={[
+                                    { value: '', label: 'جميع السنوات الدراسية' },
+                                    ...academicYears.map(y => ({ value: y.id, label: y.name }))
+                                ]}
+                            />
+                        </div>
+
+                        {/* Semester Filter */}
+                        <div className="group flex flex-col">
+                            <InputLabel value="الفصل الدراسي" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <SelectInput 
+                                className="w-full" 
+                                value={filterData.semester_id} 
+                                onChange={val => setFilterData({...filterData, semester_id: val})}
+                                options={[
+                                    { value: '', label: 'جميع الفصول الدراسية' },
+                                    ...(academicYears.find(y => y.id == filterData.academic_year_id)?.semesters || []).map(s => ({ value: s.id, label: s.name }))
+                                ]}
+                                disabled={!filterData.academic_year_id}
+                            />
+                        </div>
+
+                        {/* Date From Filter */}
+                        <div className="group flex flex-col">
+                            <InputLabel value="من تاريخ" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <FlatpickrInput 
+                                type="date"
+                                className="w-full bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 transition-all hover:bg-slate-100 dark:hover:bg-slate-800/80 !pl-10"
+                                value={filterData.start_date}
+                                onChange={val => setFilterData({...filterData, start_date: val})}
+                                placeholder="اختر البداية..."
+                            />
+                        </div>
+
+                        {/* Date To Filter */}
+                        <div className="group flex flex-col">
+                            <InputLabel value="إلى تاريخ" className="mb-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider" />
+                            <FlatpickrInput 
+                                type="date"
+                                className="w-full bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 rounded-xl py-2.5 transition-all hover:bg-slate-100 dark:hover:bg-slate-800/80 !pl-10"
+                                value={filterData.end_date}
+                                onChange={val => setFilterData({...filterData, end_date: val})}
+                                placeholder="اختر النهاية..."
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-6 pt-5 border-t border-slate-100 dark:border-slate-800/80">
+                        <button 
+                            onClick={applyFilters} 
+                            className="px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm hover:shadow-md hover:shadow-primary-500/20 text-sm"
+                        >
+                            <Filter size={16} />
+                            تطبيق الفرز
+                        </button>
+                        {(filterData.employee_id || filterData.leave_type_id || filterData.status || filterData.academic_year_id || filterData.semester_id || filterData.start_date || filterData.end_date) && (
+                            <button 
+                                onClick={clearFilters} 
+                                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold flex items-center gap-2 transition-all text-sm"
+                            >
+                                <RotateCcw size={16} />
+                                إعادة ضبط
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -251,7 +354,7 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                             <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm">لم يتم تسجيل أي إجازات للموظفين بناءً على الفلاتر المحددة. يمكنك إضافة إجازة جديدة من الزر بالأعلى.</p>
                         </div>
                     </div>
-                ) : viewMode === 'table' ? (
+                ) : (
                     <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-right min-w-[800px]">
@@ -333,93 +436,6 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {leaves.map((leave, index) => {
-                            const days = Math.ceil((new Date(leave.end_date) - new Date(leave.start_date)) / (1000 * 60 * 60 * 24)) + 1;
-                            const statusColor = leave.status === 'approved' ? 'bg-emerald-500' : leave.status === 'rejected' ? 'bg-rose-500' : 'bg-amber-500';
-
-                            return (
-                                <div 
-                                    key={leave.id} 
-                                    className="group relative bg-white dark:bg-[#121820]/80 rounded-[2rem] border border-slate-200/80 dark:border-slate-800 p-6 transition-all duration-500 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] dark:hover:shadow-none hover:-translate-y-1.5 overflow-hidden flex flex-col h-full"
-                                    style={{ animationDelay: `${index * 50}ms` }}
-                                >
-                                    {/* Background Accent */}
-                                    <div className={`absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-multiply filter blur-3xl opacity-[0.08] transition-all duration-500 group-hover:scale-150 ${statusColor}`} />
-                                    
-                                    <div className="relative z-10 flex justify-between items-start mb-5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-lg font-black text-slate-600 dark:text-slate-300 ring-2 ring-white dark:ring-[#121820] shadow-sm">
-                                                {leave.employee?.user?.name ? leave.employee.user.name.charAt(0) : '?'}
-                                            </div>
-                                            <div>
-                                                <h3 className="font-black text-slate-900 dark:text-white leading-tight mb-0.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                                                    {leave.employee?.user?.name || '-'}
-                                                </h3>
-                                                <p className="text-xs font-semibold text-slate-500">{leave.employee?.job_title || 'موظف'}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Type & Status */}
-                                    <div className="relative z-10 flex flex-wrap items-center gap-2 mb-5">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 rounded-xl text-xs font-bold border border-indigo-100/50 dark:border-transparent shadow-sm">
-                                            <Tag size={12} />
-                                            {leave.leave_type?.name || '-'}
-                                        </span>
-                                        <StatusBadge status={leave.status} />
-                                    </div>
-
-                                    {/* Dates Grid */}
-                                    <div className="relative z-10 flex flex-col gap-2 mb-5 mt-auto">
-                                        <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Calendar size={10}/> البدء</span>
-                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{new Date(leave.start_date).toLocaleDateString('ar-SA')}</span>
-                                            </div>
-                                            <div className="w-6 h-[2px] bg-slate-200 dark:bg-slate-700 rounded-full flex-shrink-0 relative">
-                                                <div className={`absolute inset-0 rounded-full opacity-50 ${statusColor}`}></div>
-                                            </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><Calendar size={10}/> الانتهاء</span>
-                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{new Date(leave.end_date).toLocaleDateString('ar-SA')}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Actions */}
-                                    <div className="relative z-10 flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800/80">
-                                        <div className="flex items-center gap-2">
-                                            <span className="inline-flex items-center justify-center min-w-[32px] h-8 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-black shadow-sm">
-                                                {days} أيام
-                                            </span>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-1.5">
-                                            <button onClick={() => setViewingLeave(leave)} className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 transition-all border border-slate-200/50 dark:border-slate-700 shadow-sm" title="التفاصيل">
-                                                <Eye size={14} strokeWidth={2.5} />
-                                            </button>
-                                            {leave.status !== 'approved' ? (
-                                                <>
-                                                    <button onClick={() => openModal(leave)} className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 transition-all border border-slate-200/50 dark:border-slate-700 shadow-sm" title="تعديل">
-                                                        <Edit2 size={14} strokeWidth={2.5} />
-                                                    </button>
-                                                    <button onClick={() => confirmDelete(leave)} className="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/20 transition-all border border-slate-200/50 dark:border-slate-700 shadow-sm" title="حذف">
-                                                        <Trash2 size={14} strokeWidth={2.5} />
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 border border-emerald-100 dark:border-emerald-800/50 shadow-sm" title="مقفلة">
-                                                    <CheckCircle size={14} strokeWidth={2.5} />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
                     </div>
                 )}
 

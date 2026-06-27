@@ -171,9 +171,7 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                 </div>
 
                 {/* Filters */}
-                <div className="relative group z-20">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 via-purple-500 to-primary-500 rounded-[2.5rem] blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative bg-white/70 dark:bg-[#121820]/80 backdrop-blur-2xl border border-white/50 dark:border-white/5 rounded-[2rem] p-6 shadow-xl shadow-slate-200/50 dark:shadow-black/20">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative z-20">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shadow-inner relative overflow-hidden">
@@ -196,16 +194,16 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
-                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">السنة الدراسية</label>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">السنة الدراسية</label>
                                 <SelectInput
                                     options={academicYears.map(y => ({ value: y.id, label: y.name }))}
                                     value={selectedYear}
                                     onChange={val => { setSelectedYear(val); setSelectedSemester(''); }}
                                 />
                             </div>
-                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
-                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">الفصل الدراسي</label>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">الفصل الدراسي</label>
                                 <SelectInput
                                     options={availableSemesters.map(s => ({ value: s.id, label: s.name }))}
                                     value={selectedSemester}
@@ -213,16 +211,16 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                                     disabled={!selectedYear}
                                 />
                             </div>
-                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
-                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">القسم</label>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">القسم</label>
                                 <SelectInput
                                     options={sections.map(s => ({ value: s.id, label: s.name }))}
                                     value={selectedSection}
                                     onChange={val => { setSelectedSection(val); setSelectedGrade(''); setSelectedDivision(''); }}
                                 />
                             </div>
-                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
-                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">الصف</label>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">الصف</label>
                                 <SelectInput
                                     options={availableGrades.map(g => ({ value: g.id, label: g.name }))}
                                     value={selectedGrade}
@@ -230,8 +228,8 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                                     disabled={!selectedSection}
                                 />
                             </div>
-                            <div className="bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-800/50">
-                                <label className="block text-xs font-black text-slate-500 dark:text-slate-400 mb-2 px-1">الشعبة</label>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">الشعبة</label>
                                 <SelectInput
                                     options={availableDivisions.map(d => ({ value: d.id, label: d.name }))}
                                     value={selectedDivision}
@@ -250,24 +248,20 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                                 <Search size={18} strokeWidth={2.5} /> استعراض الجدول
                             </button>
                         </div>
-                    </div>
                 </div>
 
                 {/* Timetable Grid */}
                 {selectedDivision && filters.division_id == selectedDivision && filters.semester_id == selectedSemester ? (
-                    <div className="bg-white/70 dark:bg-[#121820]/80 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 dark:border-white/5 shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden flex flex-col max-h-[75vh] animate-fade-in relative z-10">
-                        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary-500/10 rounded-full blur-[100px] pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] pointer-events-none" />
-                        
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col max-h-[75vh] animate-fade-in relative z-10">
                         <div className="overflow-auto custom-scrollbar flex-1 relative p-2 md:p-4">
                             <table className="w-full text-right border-separate border-spacing-1.5 min-w-max">
                                 <thead className="sticky top-0 z-30">
                                     <tr>
-                                        <th className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl min-w-[140px] text-slate-700 dark:text-slate-300 font-black text-center shadow-sm sticky right-0 z-40 border border-slate-200/50 dark:border-slate-800/50">
+                                        <th className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl min-w-[140px] text-slate-700 dark:text-slate-300 font-black text-center shadow-sm sticky right-0 z-40 border border-slate-200 dark:border-slate-700">
                                             اليوم / الحصة
                                         </th>
                                         {periods.map((period, idx) => (
-                                            <th key={period.id} className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl min-w-[220px] text-center shadow-sm border border-slate-200/50 dark:border-slate-800/50 group relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500/50">
+                                            <th key={period.id} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl min-w-[220px] text-center shadow-sm border border-slate-200 dark:border-slate-700 group relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500/50">
                                                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-200/20 dark:to-slate-800/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 <div className="absolute -inset-x-4 bottom-0 h-1 bg-primary-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-right duration-500"></div>
                                                 <div className="font-black text-slate-900 dark:text-white mb-2 text-[15px] group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors relative z-10">{period.period_name}</div>
@@ -282,7 +276,7 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                                 <tbody>
                                     {workingDays.map(day => (
                                         <tr key={day} className="group/row">
-                                            <td className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl font-black text-slate-800 dark:text-white text-center text-lg sticky right-0 z-20 shadow-sm border border-slate-200/50 dark:border-slate-800/50 group-hover/row:bg-primary-50/80 dark:group-hover/row:bg-primary-900/20 transition-colors">
+                                            <td className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-black text-slate-800 dark:text-white text-center text-lg sticky right-0 z-20 shadow-sm border border-slate-200 dark:border-slate-700 group-hover/row:bg-primary-50 dark:group-hover/row:bg-primary-900/20 transition-colors">
                                                 {daysTranslation[day] || day}
                                             </td>
                                             {periods.map(period => {
@@ -359,7 +353,7 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white/50 dark:bg-dark-900/40 backdrop-blur-xl rounded-[2rem] border border-dark-100 dark:border-dark-800 shadow-sm overflow-hidden p-8 md:p-16 text-center relative">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden p-8 md:p-16 text-center relative z-10">
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary-500/5 rounded-full blur-3xl pointer-events-none" />
                         <div className="relative z-10">
                             <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 text-primary-600 mb-8 shadow-inner transform rotate-3">

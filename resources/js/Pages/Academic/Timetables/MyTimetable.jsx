@@ -82,9 +82,7 @@ export default function MyTimetable({ academicYears, periods, timetable, coverag
                 </div>
 
                 {/* Filter */}
-                <div className="relative group z-20">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary-500 to-primary-600 rounded-[2rem] blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative bg-white/70 dark:bg-[#121820]/80 backdrop-blur-xl border border-white/50 dark:border-white/5 p-5 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-black/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 md:p-6 border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shadow-inner">
                                 <Search size={20} strokeWidth={2} />
@@ -102,22 +100,20 @@ export default function MyTimetable({ academicYears, periods, timetable, coverag
                                 placeholder="اختر الفصل الدراسي"
                             />
                         </div>
-                    </div>
                 </div>
 
                 {/* Timetable Grid */}
                 {selectedSemesterId ? (
-                    <div className="bg-white/70 dark:bg-[#121820]/80 backdrop-blur-2xl rounded-[2.5rem] border border-white/50 dark:border-white/5 shadow-xl shadow-slate-200/50 dark:shadow-black/20 overflow-hidden flex flex-col relative z-10">
-                        <div className="absolute top-0 left-0 w-64 h-64 bg-primary-500/10 rounded-full blur-[100px] pointer-events-none" />
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col relative z-10">
                         <div className="overflow-x-auto p-2 md:p-4 custom-scrollbar">
                             <table className="w-full text-right border-separate border-spacing-2">
                                 <thead>
                                     <tr>
-                                        <th className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl min-w-[140px] text-slate-700 dark:text-slate-300 font-black text-center shadow-sm sticky right-0 z-40 border border-slate-200/50 dark:border-slate-800/50">
+                                        <th className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl min-w-[140px] text-slate-700 dark:text-slate-300 font-black text-center shadow-sm sticky right-0 z-40 border border-slate-200 dark:border-slate-700">
                                             اليوم / الحصة
                                         </th>
                                         {periods.map((period) => (
-                                            <th key={period.id} className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl min-w-[200px] text-center shadow-sm border border-slate-200/50 dark:border-slate-800/50 group relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500/50">
+                                            <th key={period.id} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl min-w-[200px] text-center shadow-sm border border-slate-200 dark:border-slate-700 group relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500/50">
                                                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-200/20 dark:to-slate-800/50 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 <div className="absolute -inset-x-4 bottom-0 h-1 bg-primary-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-right duration-500"></div>
                                                 <div className="font-black text-slate-900 dark:text-white mb-2 text-[15px] group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors relative z-10">{period.period_name}</div>
@@ -132,7 +128,7 @@ export default function MyTimetable({ academicYears, periods, timetable, coverag
                                 <tbody>
                                     {workingDays.map(day => (
                                         <tr key={day} className="group/row">
-                                            <td className="bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl p-4 rounded-2xl font-black text-slate-800 dark:text-white text-center text-lg sticky right-0 z-20 shadow-sm border border-slate-200/50 dark:border-slate-800/50 group-hover/row:bg-primary-50/80 dark:group-hover/row:bg-primary-900/20 transition-colors">
+                                            <td className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-black text-slate-800 dark:text-white text-center text-lg sticky right-0 z-20 shadow-sm border border-slate-200 dark:border-slate-700 group-hover/row:bg-primary-50 dark:group-hover/row:bg-primary-900/20 transition-colors">
                                                 {daysTranslation[day] || day}
                                             </td>
                                             {periods.map(period => {
@@ -193,8 +189,7 @@ export default function MyTimetable({ academicYears, periods, timetable, coverag
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white/70 dark:bg-[#121820]/80 backdrop-blur-xl rounded-[2.5rem] border border-white/50 dark:border-white/5 p-12 text-center shadow-xl shadow-slate-200/50 dark:shadow-black/20 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 dark:to-slate-900/50 pointer-events-none" />
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-12 text-center relative overflow-hidden">
                         <div className="relative z-10 flex flex-col items-center">
                             <div className="inline-flex items-center justify-center w-24 h-24 rounded-[2rem] bg-slate-100 dark:bg-slate-800 text-slate-400 mb-6 shadow-inner transform rotate-3">
                                 <Search size={40} strokeWidth={1.5} />

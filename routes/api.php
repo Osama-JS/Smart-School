@@ -30,5 +30,5 @@ Route::middleware('web')->name('api.')->group(function () {
 Route::prefix('attendance')->group(function () {
     Route::post('/check-in',  [AttendanceApiController::class, 'checkIn']);
     Route::post('/check-out', [AttendanceApiController::class, 'checkOut']);
-    Route::get('/report/{employeeId}', [AttendanceApiController::class, 'employeeReport']);
+    Route::get('/report/{employeeId}', [AttendanceApiController::class, 'employeeReport'])->name('api.attendance.employee-report');
 });

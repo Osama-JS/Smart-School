@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Edit, Trash2, ShieldAlert, Edit2, X, Save, FileText, CheckCircle, AlertTriangle, AlignLeft, AlertCircle, UserCheck, UserCog, CheckCircle2, Search, Filter, LayoutGrid, Table2, ChevronLeft, Flag } from 'lucide-react';
+import { Plus, Edit, Trash2, ShieldAlert, Edit2, X, Save, FileText, CheckCircle, AlertTriangle, AlignLeft, AlertCircle, UserCheck, UserCog, CheckCircle2, Search, Filter, LayoutGrid, Table2, ChevronLeft, Flag, Printer } from 'lucide-react';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
@@ -113,8 +113,51 @@ export default function Types({ auth, types, stats, jobGrades }) {
     );
 
     return (
-        <AdminLayout user={auth.user}>
+        <AdminLayout user={auth.user} activeMenu="أنواع المخالفات">
             <Head title="أنواع المخالفات" />
+
+            {/* Print Styles */}
+            <style dangerouslySetInnerHTML={{__html: `
+                @media print {
+                    aside, nav, header, .no-print, button, a, [type="checkbox"], select, input, .print\\:hidden, .custom-scrollbar {
+                        display: none !important;
+                    }
+                    main, .print\\:w-full {
+                        width: 100% !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    body {
+                        background-color: white !important;
+                        color: black !important;
+                    }
+                    .print\\:block { display: block !important; }
+                    /* Make table text black for better printing */
+                    table { color: black !important; border-collapse: collapse !important; width: 100% !important; }
+                    th, td { border: 1px solid #ddd !important; padding: 12px !important; text-align: right !important; color: black !important; }
+                    th { background-color: #f8fafc !important; font-weight: bold !important; }
+                    /* Force the background colors for roles and steps if needed */
+                    .print\\:text-black { color: black !important; }
+                    .print\\:border-gray { border: 1px solid #ccc !important; }
+                    
+                    /* Hide cards view in print, force table view */
+                    .cards-view { display: none !important; }
+                    .table-view { display: block !important; }
+                }
+            `}} />
+
+            {/* Print Only Header Banner */}
+            <div className="hidden print:block mb-8 text-right font-sans" dir="rtl">
+                <div className="flex items-center justify-between border-b-2 border-primary-600 pb-4 mb-4">
+                    <div>
+                        <h2 className="text-xl font-black text-dark-900">مدارس القيم الأهلية</h2>
+                        <p className="text-xs text-slate-500 font-semibold mt-1">سجل أنواع المخالفات والإجراءات</p>
+                    </div>
+                    <div className="text-left font-semibold">
+                        <p className="text-xs text-slate-500 mt-1">تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</p>
+                    </div>
+                </div>
+            </div>
 
             <div className="max-w-[1600px] mx-auto space-y-6">
                 
@@ -139,7 +182,12 @@ export default function Types({ auth, types, stats, jobGrades }) {
                             </h1>
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة وتصنيف المخالفات والإجراءات الافتراضية الخاصة بها</p>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex items-center gap-3 shrink-0 no-print">
+                            <button onClick={() => window.print()}
+                                className="flex items-center gap-2 px-4 py-3 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 hover:border-primary-400 text-slate-600 dark:text-slate-300 rounded-2xl shadow-sm text-sm font-bold transition-all">
+                                <Printer size={18} />
+                                <span className="hidden sm:inline">طباعة</span>
+                            </button>
                             <button
                                 onClick={() => openModal()}
                                 className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95"
@@ -266,7 +314,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                         </div>
                     ) : (
                         <>
-                            {viewMode === 'cards' && (
+                            <div className={viewMode === 'cards' ? 'cards-view' : 'hidden'}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                                     {filteredTypes.map(type => (
                                         <div key={type.id} className="group relative bg-white dark:bg-[#121820]/80 rounded-[2rem] border border-slate-200/80 dark:border-slate-800 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/40 dark:hover:shadow-none hover:-translate-y-1 flex flex-col h-full overflow-hidden">
@@ -324,10 +372,10 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                         </div>
                                     ))}
                                 </div>
-                            )}
+                            </div>
 
-                            {viewMode === 'table' && (
-                                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div className={viewMode === 'table' ? 'table-view' : 'hidden print:block table-view'}>
+                                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden print:border-none print:shadow-none print:rounded-none">
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-right min-w-[900px]">
                                             <thead>
@@ -402,7 +450,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                         </table>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </>
                     )}
                 </div>

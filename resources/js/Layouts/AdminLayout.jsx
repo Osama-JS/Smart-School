@@ -165,7 +165,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             title: 'الحضور والانصراف',
             items: [
                 { name: 'سجل الحضور', icon: CheckSquare, url: route('hr.attendance'), permission: 'إدارة الحضور والانصراف' },
-                { name: 'تقرير الموظف الشهري', icon: FileText, url: route('hr.attendance.report'), permission: 'إدارة الحضور والانصراف' },
+                { name: 'كشف الحضور الشهري', icon: FileText, url: route('hr.attendance.report'), permission: 'إدارة الحضور والانصراف' },
                 { name: 'الإجازات الرسمية', icon: Calendar, url: route('hr.holidays'), permission: 'إدارة الموظفين' },
                 { name: 'أنواع الإجازات', icon: Sliders, url: route('hr.leave-types'), permission: 'إدارة الموظفين' },
                 { name: 'أرصدة الإجازات', icon: Activity, url: route('hr.leave-balances'), permission: 'إدارة الموظفين' },

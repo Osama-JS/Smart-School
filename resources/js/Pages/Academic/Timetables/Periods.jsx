@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Clock, Plus, Edit, Trash2, Save, X, Coffee, BookOpen } from 'lucide-react';
+import { Clock, Plus, Edit, Trash2, Save, X, Coffee, BookOpen, Table2, List } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Modal from '@/Components/Modal';
 import FlatpickrInput from '@/Components/FlatpickrInput';
@@ -9,6 +9,7 @@ import FlatpickrInput from '@/Components/FlatpickrInput';
 export default function PeriodsIndex({ periods }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPeriod, setEditingPeriod] = useState(null);
+    const [viewMode, setViewMode] = useState('timeline'); // 'timeline' or 'table'
 
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         period_name: '',
@@ -75,6 +76,23 @@ export default function PeriodsIndex({ periods }) {
             if (result.isConfirmed) {
                 router.delete(route('academic.periods.destroy', id), {
                     preserveScroll: true,
+                    onError: (errors) => {
+                        if (errors.error) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'عذراً، لا يمكن الحذف',
+                                text: errors.error,
+                                confirmButtonText: 'حسناً',
+                                confirmButtonColor: '#3b82f6',
+                                customClass: {
+                                    confirmButton: 'rounded-xl px-5 py-2.5 font-bold',
+                                    popup: 'rounded-3xl dark:bg-slate-900 dark:border dark:border-slate-800',
+                                    title: 'text-slate-800 dark:text-white',
+                                    htmlContainer: 'text-slate-500 dark:text-slate-400'
+                                }
+                            });
+                        }
+                    }
                 });
             }
         });
@@ -120,67 +138,164 @@ export default function PeriodsIndex({ periods }) {
                     </div>
                 </div>
 
+                <div className="flex justify-end z-20 relative">
+                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-dark-800 p-1.5 rounded-2xl w-full sm:w-auto justify-center sm:justify-start shadow-sm border border-slate-200 dark:border-dark-700">
+                        <button 
+                            onClick={() => setViewMode('timeline')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                                viewMode === 'timeline' 
+                                ? 'bg-white dark:bg-dark-700 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200 dark:border-dark-600' 
+                                : 'text-slate-500 hover:text-slate-700 dark:text-dark-400 dark:hover:text-dark-200'
+                            }`}
+                        >
+                            <List size={18} />
+                            <span className="hidden sm:inline">مسار زمني</span>
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('table')}
+                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
+                                viewMode === 'table' 
+                                ? 'bg-white dark:bg-dark-700 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200 dark:border-dark-600' 
+                                : 'text-slate-500 hover:text-slate-700 dark:text-dark-400 dark:hover:text-dark-200'
+                            }`}
+                        >
+                            <Table2 size={18} />
+                            <span className="hidden sm:inline">جدول تفصيلي</span>
+                        </button>
+                    </div>
+                </div>
+
                 {/* Periods Timeline View */}
                 <div className="bg-white/50 dark:bg-dark-900/40 backdrop-blur-xl border border-dark-100 dark:border-dark-800 rounded-[2rem] p-6 md:p-10 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl pointer-events-none" />
                     
                     {periods.length > 0 ? (
-                        <div className="relative max-w-4xl mx-auto before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-dark-200 before:via-primary-300 before:to-dark-200 dark:before:from-dark-700 dark:before:via-primary-700 dark:before:to-dark-700">
-                            {periods.map((period, idx) => {
-                                const start = new Date(`2000-01-01T${period.start_time}`);
-                                const end = new Date(`2000-01-01T${period.end_time}`);
-                                const diffMins = Math.round((end - start) / 60000);
-                                const isBreak = period.period_name.includes('فسحة') || period.period_name.includes('استراحة') || period.period_name.includes('صلاة');
-                                
-                                return (
-                                    <div key={period.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group mb-8 transition-all hover:-translate-y-1">
-                                        
-                                        {/* Timeline Dot */}
-                                        <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-dark-900 bg-white dark:bg-dark-800 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 relative z-10 ${isBreak ? 'text-amber-500' : 'text-primary-500'}`}>
-                                            {isBreak ? <Coffee size={16} /> : <BookOpen size={16} />}
-                                        </div>
-
-                                        {/* Content Card */}
-                                        <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-2xl border ${isBreak ? 'bg-amber-50/50 dark:bg-amber-500/5 border-amber-200/50 dark:border-amber-500/20' : 'bg-white dark:bg-dark-800 border-dark-100 dark:border-dark-700'} shadow-sm hover:shadow-md transition-shadow relative group-hover:border-primary-300 dark:group-hover:border-primary-700`}>
-                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-black ${isBreak ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400' : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'}`}>
-                                                        {idx + 1}
-                                                    </span>
-                                                    <h3 className="font-black text-lg text-dark-900 dark:text-white">{period.period_name}</h3>
-                                                </div>
-                                                <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => openModal(period)} className="p-2 text-dark-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-lg transition-all" title="تعديل">
-                                                        <Edit size={16} />
-                                                    </button>
-                                                    <button onClick={() => handleDelete(period.id)} className="p-2 text-dark-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all" title="حذف">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                            </div>
+                        viewMode === 'timeline' ? (
+                            <div className="relative max-w-4xl mx-auto before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-dark-200 before:via-primary-300 before:to-dark-200 dark:before:from-dark-700 dark:before:via-primary-700 dark:before:to-dark-700">
+                                {periods.map((period, idx) => {
+                                    const start = new Date(`2000-01-01T${period.start_time}`);
+                                    const end = new Date(`2000-01-01T${period.end_time}`);
+                                    const diffMins = Math.round((end - start) / 60000);
+                                    const isBreak = period.period_name.includes('فسحة') || period.period_name.includes('استراحة') || period.period_name.includes('صلاة');
+                                    
+                                    return (
+                                        <div key={period.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group mb-8 transition-all hover:-translate-y-1">
                                             
-                                            <div className="flex flex-wrap items-center gap-4 text-sm font-bold">
-                                                <div className="flex items-center gap-1.5 text-dark-600 dark:text-dark-300 bg-dark-50 dark:bg-dark-900/50 px-3 py-1.5 rounded-lg border border-dark-100 dark:border-dark-800" dir="ltr">
-                                                    <Clock size={14} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
-                                                    {period.start_time ? period.start_time.substring(0, 5) : ''}
-                                                </div>
-                                                <div className="text-dark-300 dark:text-dark-600 font-normal">إلى</div>
-                                                <div className="flex items-center gap-1.5 text-dark-600 dark:text-dark-300 bg-dark-50 dark:bg-dark-900/50 px-3 py-1.5 rounded-lg border border-dark-100 dark:border-dark-800" dir="ltr">
-                                                    <Clock size={14} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
-                                                    {period.end_time ? period.end_time.substring(0, 5) : ''}
+                                            {/* Timeline Dot */}
+                                            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-dark-900 bg-white dark:bg-dark-800 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 relative z-10 ${isBreak ? 'text-amber-500' : 'text-primary-500'}`}>
+                                                {isBreak ? <Coffee size={16} /> : <BookOpen size={16} />}
+                                            </div>
+
+                                            {/* Content Card */}
+                                            <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-2xl border ${isBreak ? 'bg-amber-50/50 dark:bg-amber-500/5 border-amber-200/50 dark:border-amber-500/20' : 'bg-white dark:bg-dark-800 border-dark-100 dark:border-dark-700'} shadow-sm hover:shadow-md transition-shadow relative group-hover:border-primary-300 dark:group-hover:border-primary-700`}>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-black ${isBreak ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400' : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'}`}>
+                                                            {idx + 1}
+                                                        </span>
+                                                        <h3 className="font-black text-lg text-dark-900 dark:text-white">{period.period_name}</h3>
+                                                    </div>
+                                                    <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => openModal(period)} className="p-2 text-dark-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-lg transition-all" title="تعديل">
+                                                            <Edit size={16} />
+                                                        </button>
+                                                        <button onClick={() => handleDelete(period.id)} className="p-2 text-dark-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all" title="حذف">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 
-                                                <div className="mr-auto mt-2 sm:mt-0">
-                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black ${isBreak ? 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' : 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30'}`}>
-                                                        {diffMins} دقيقة
-                                                    </span>
+                                                <div className="flex flex-wrap items-center gap-4 text-sm font-bold">
+                                                    <div className="flex items-center gap-1.5 text-dark-600 dark:text-dark-300 bg-dark-50 dark:bg-dark-900/50 px-3 py-1.5 rounded-lg border border-dark-100 dark:border-dark-800" dir="ltr">
+                                                        <Clock size={14} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
+                                                        {period.start_time ? period.start_time.substring(0, 5) : ''}
+                                                    </div>
+                                                    <div className="text-dark-300 dark:text-dark-600 font-normal">إلى</div>
+                                                    <div className="flex items-center gap-1.5 text-dark-600 dark:text-dark-300 bg-dark-50 dark:bg-dark-900/50 px-3 py-1.5 rounded-lg border border-dark-100 dark:border-dark-800" dir="ltr">
+                                                        <Clock size={14} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
+                                                        {period.end_time ? period.end_time.substring(0, 5) : ''}
+                                                    </div>
+                                                    
+                                                    <div className="mr-auto mt-2 sm:mt-0">
+                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black ${isBreak ? 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' : 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30'}`}>
+                                                            {diffMins} دقيقة
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="relative z-10 w-full overflow-x-auto bg-white dark:bg-dark-800/80 rounded-2xl border border-dark-100 dark:border-dark-700 shadow-sm">
+                                <table className="w-full text-right border-collapse whitespace-nowrap">
+                                    <thead>
+                                        <tr className="bg-dark-50 dark:bg-dark-900/50 border-b border-dark-100 dark:border-dark-700 text-dark-500 dark:text-dark-400 text-sm font-black">
+                                            <th className="py-4 px-6 text-center w-16">#</th>
+                                            <th className="py-4 px-6">النوع / المسمى</th>
+                                            <th className="py-4 px-6">وقت البدء</th>
+                                            <th className="py-4 px-6">وقت الانتهاء</th>
+                                            <th className="py-4 px-6">المدة</th>
+                                            <th className="py-4 px-6 text-left w-32">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-dark-100 dark:divide-dark-800/50">
+                                        {periods.map((period, idx) => {
+                                            const start = new Date(`2000-01-01T${period.start_time}`);
+                                            const end = new Date(`2000-01-01T${period.end_time}`);
+                                            const diffMins = Math.round((end - start) / 60000);
+                                            const isBreak = period.period_name.includes('فسحة') || period.period_name.includes('استراحة') || period.period_name.includes('صلاة');
+                                            
+                                            return (
+                                                <tr key={period.id} className={`hover:bg-dark-50/50 dark:hover:bg-dark-800/30 transition-colors group ${isBreak ? 'bg-amber-50/20 dark:bg-amber-500/5' : ''}`}>
+                                                    <td className="py-4 px-6 text-center">
+                                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-black ${isBreak ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400' : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'}`}>
+                                                            {idx + 1}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${isBreak ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500 border-amber-200 dark:border-amber-800' : 'bg-dark-50 dark:bg-dark-800 text-primary-500 border-dark-200 dark:border-dark-700'}`}>
+                                                                {isBreak ? <Coffee size={20} /> : <BookOpen size={20} />}
+                                                            </div>
+                                                            <span className="font-black text-dark-900 dark:text-white text-base">{period.period_name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center gap-2 text-dark-600 dark:text-dark-300 font-bold" dir="ltr">
+                                                            <Clock size={16} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
+                                                            {period.start_time ? period.start_time.substring(0, 5) : ''}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center gap-2 text-dark-600 dark:text-dark-300 font-bold" dir="ltr">
+                                                            <Clock size={16} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
+                                                            {period.end_time ? period.end_time.substring(0, 5) : ''}
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-black ${isBreak ? 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' : 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30'}`}>
+                                                            {diffMins} دقيقة
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-6 text-left">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button onClick={() => openModal(period)} className="p-2 text-dark-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-xl transition-all" title="تعديل">
+                                                                <Edit size={18} />
+                                                            </button>
+                                                            <button onClick={() => handleDelete(period.id)} className="p-2 text-dark-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all" title="حذف">
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )
                     ) : (
                         <div className="flex flex-col items-center justify-center py-20 text-center relative z-10">
                             <div className="w-24 h-24 bg-dark-50 dark:bg-dark-800/50 rounded-full flex items-center justify-center mb-6 border border-dark-100 dark:border-dark-700 relative shadow-inner">

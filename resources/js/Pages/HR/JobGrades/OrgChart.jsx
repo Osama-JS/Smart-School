@@ -4,7 +4,7 @@ import { Star, ShieldCheck, ZoomIn, ZoomOut, Maximize, MousePointer2 } from 'luc
 const levelColor = (level) => {
     // القيادي / Executive (1-4)
     if (level <= 4) {
-        return 'bg-gradient-to-br from-accent-500 to-accent-600 text-white border-accent-400 shadow-accent-500/30';
+        return 'bg-gradient-to-br from-primary-500 to-primary-600 text-white border-primary-400 shadow-primary-500/30';
     }
     // الإشرافي / Supervisory (5-9)
     if (level <= 9) {
@@ -22,7 +22,7 @@ const TreeNode = ({ node }) => {
             {/* The Node Card */}
             <div className={`relative group px-4 py-3 rounded-2xl border shadow-md hover:shadow-lg hover:-translate-y-1 transition-all duration-300 min-w-[130px] max-w-[160px] z-10 ${levelColor(node.level)}`}>
                 {isTopLevel && (
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-accent-400 to-accent-600 rounded-[1.2rem] blur opacity-20 group-hover:opacity-40 transition-opacity -z-10"></div>
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-400 to-primary-600 rounded-[1.2rem] blur opacity-20 group-hover:opacity-40 transition-opacity -z-10"></div>
                 )}
                 
                 <div className="flex flex-col items-center justify-center text-center">

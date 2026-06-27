@@ -657,41 +657,63 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                             </div>
 
                             {/* Calendar Grid */}
-                            <div className="grid grid-cols-7 gap-px bg-slate-200 dark:bg-slate-800 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800">
-                                {/* Week Days Header */}
-                                {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map(day => (
-                                    <div key={day} className="bg-slate-50 dark:bg-slate-900 py-3 px-2 text-center text-xs font-bold text-slate-500 dark:text-slate-400">
-                                        {day}
-                                    </div>
-                                ))}
-
-                                {/* Padding Days */}
-                                {paddingDays.map(day => (
-                                    <div key={`pad-${day}`} className="bg-white dark:bg-[#121820] min-h-[120px] p-2 opacity-50"></div>
-                                ))}
-
-                                {/* Actual Days */}
-                                {monthDays.map(day => {
-                                    const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                                    const isToday = dateObj.toDateString() === new Date().toDateString();
-                                    const dayMeetings = meetingsByDay[day] || [];
-                                    
-                                    return (
-                                        <div key={day} className={`bg-white dark:bg-[#121820] min-h-[120px] p-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 relative ${isToday ? 'ring-2 ring-inset ring-primary-500' : ''}`}>
-                                            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold mb-2 ${isToday ? 'bg-primary-500 text-white' : 'text-slate-700 dark:text-slate-300'}`}>
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <div className="min-w-[800px] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-800/50">
+                                    <div className="grid grid-cols-7 gap-px bg-slate-200 dark:bg-slate-800">
+                                        {/* Week Days Header */}
+                                        {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map(day => (
+                                            <div key={day} className="bg-slate-50/80 dark:bg-slate-900/80 py-4 px-2 text-center text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                                                 {day}
-                                            </span>
-                                            
-                                            <div className="space-y-1.5 custom-scrollbar max-h-[80px] overflow-y-auto">
-                                                {dayMeetings.map((meeting, idx) => (
-                                                    <Link key={idx} href={route('meetings.show', meeting.id)} className={`block p-1.5 rounded-lg text-[10px] font-bold border truncate transition-colors ${meeting.status === 'scheduled' ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50' : meeting.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50' : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800/50'}`} title={meeting.title}>
-                                                        {formatTimeAr(meeting.time)} - {meeting.title}
-                                                    </Link>
-                                                ))}
                                             </div>
-                                        </div>
-                                    );
-                                })}
+                                        ))}
+
+                                        {/* Padding Days */}
+                                        {paddingDays.map(day => (
+                                            <div key={`pad-${day}`} className="bg-slate-50/50 dark:bg-slate-900/30 min-h-[140px] p-3 opacity-40"></div>
+                                        ))}
+
+                                        {/* Actual Days */}
+                                        {monthDays.map(day => {
+                                            const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                                            const isToday = dateObj.toDateString() === new Date().toDateString();
+                                            const dayMeetings = meetingsByDay[day] || [];
+                                            
+                                            return (
+                                                <div key={day} className={`bg-white dark:bg-slate-900 min-h-[140px] p-2.5 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/80 relative flex flex-col group ${isToday ? 'bg-primary-50/30 dark:bg-primary-900/10' : ''}`}>
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold transition-all ${isToday ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20 scale-110' : 'text-slate-700 dark:text-slate-300 group-hover:bg-slate-100 dark:group-hover:bg-slate-800'}`}>
+                                                            {day}
+                                                        </span>
+                                                        {dayMeetings.length > 0 && (
+                                                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1.5 mr-1">
+                                                                {dayMeetings.length} {dayMeetings.length === 1 ? 'اجتماع' : 'اجتماعات'}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="flex-1 space-y-2 custom-scrollbar overflow-y-auto pr-1">
+                                                        {dayMeetings.map((meeting, idx) => (
+                                                            <Link 
+                                                                key={idx} 
+                                                                href={route('meetings.show', meeting.id)} 
+                                                                className={`block px-2.5 py-2 rounded-xl text-[11px] font-bold border-r-4 transition-all hover:-translate-y-0.5 hover:shadow-sm ${meeting.status === 'scheduled' ? 'bg-amber-50 text-amber-700 border-amber-400 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500' : meeting.status === 'completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-400 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500' : 'bg-red-50 text-red-700 border-red-400 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500'}`} 
+                                                                title={meeting.title}
+                                                            >
+                                                                <div className="flex flex-col gap-0.5">
+                                                                    <div className="flex items-center gap-1 opacity-80 font-mono text-[9px] mb-0.5">
+                                                                        <Clock size={10} className="shrink-0" />
+                                                                        <span>{formatTimeAr(meeting.time)}</span>
+                                                                    </div>
+                                                                    <span className="truncate">{meeting.title}</span>
+                                                                </div>
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

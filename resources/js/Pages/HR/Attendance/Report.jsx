@@ -5,11 +5,14 @@ import SelectInput from '@/Components/SelectInput';
 import { FileText, Calendar, CheckCircle2, Clock, UserX, UserCheck, AlertTriangle, Printer, Loader2, Download } from 'lucide-react';
 
 export default function AttendanceReport({ employees, academicYears = [], isAdmin }) {
+    const defaultYear = academicYears.find(y => y.is_active) || academicYears[0];
+    const defaultSemester = defaultYear?.semesters?.find(s => s.is_active) || defaultYear?.semesters?.[0];
+
     const [selectedEmployee, setSelectedEmployee] = useState('');
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-    const [selectedAcademicYear, setSelectedAcademicYear] = useState('');
-    const [selectedSemester, setSelectedSemester] = useState('');
+    const [selectedAcademicYear, setSelectedAcademicYear] = useState(defaultYear?.id || '');
+    const [selectedSemester, setSelectedSemester] = useState(defaultSemester?.id || '');
     
     const [loading, setLoading] = useState(false);
     const [reportData, setReportData] = useState(null);
@@ -28,10 +31,10 @@ export default function AttendanceReport({ employees, academicYears = [], isAdmi
         if (!selectedEmployee) return;
         setLoading(true);
         try {
-            let url = `/api/attendance/employee/${selectedEmployee}/report?month=${selectedMonth}&year=${selectedYear}`;
-            if (selectedSemester) {
-                url += `&semester_id=${selectedSemester}`;
-            }
+            let params = { month: selectedMonth, year: selectedYear };
+            if (selectedSemester) params.semester_id = selectedSemester;
+            
+            let url = route('api.attendance.employee-report', { employeeId: selectedEmployee, ...params });
 
             const res = await fetch(url, {
                 headers: {
@@ -89,18 +92,54 @@ export default function AttendanceReport({ employees, academicYears = [], isAdmi
     };
 
     return (
-        <AdminLayout>
-            <Head title="تقرير الحضور الشهري" />
+        <AdminLayout activeMenu="كشف الحضور الشهري">
+            <Head title="كشف الحضور الشهري" />
 
             {/* Print Styles */}
             <style dangerouslySetInnerHTML={{__html: `
                 @media print {
-                    aside, nav, header, .no-print, button, select, input { display: none !important; }
-                    main { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-                    body { background-color: white !important; color: black !important; }
+                    aside, nav, header, .no-print, button, a, [type="checkbox"], select, input, .print\\:hidden, .custom-scrollbar {
+                        display: none !important;
+                    }
+                    main, .print\\:w-full {
+                        width: 100% !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    body {
+                        background-color: white !important;
+                        color: black !important;
+                    }
+                    .print\\:block { display: block !important; }
+                    /* Make table text black for better printing */
+                    table { color: black !important; border-collapse: collapse !important; width: 100% !important; }
+                    th, td { border: 1px solid #ddd !important; padding: 12px !important; text-align: right !important; color: black !important; }
+                    th { background-color: #f8fafc !important; font-weight: bold !important; }
+                    
+                    /* Summary cards for print */
                     .print-break { page-break-inside: avoid; }
+                    .print-border-solid { border: 1px solid #ddd !important; }
                 }
             `}} />
+
+            {/* Print Only Header Banner */}
+            <div className="hidden print:block mb-8 text-right font-sans" dir="rtl">
+                <div className="flex items-center justify-between border-b-2 border-primary-600 pb-4 mb-4">
+                    <div>
+                        <h2 className="text-xl font-black text-dark-900">مدارس القيم الأهلية</h2>
+                        <p className="text-xs text-slate-500 font-semibold mt-1">كشف الحضور الشهري</p>
+                        {selectedEmployee && (
+                            <p className="text-sm text-dark-900 font-bold mt-2">
+                                الموظف: {employees.find(e => e.id == selectedEmployee)?.first_name} {employees.find(e => e.id == selectedEmployee)?.last_name}
+                            </p>
+                        )}
+                    </div>
+                    <div className="text-left font-semibold">
+                        <p className="text-xs text-slate-500 mt-1">تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</p>
+                        <p className="text-xs text-slate-500 mt-1">عن شهر: {selectedMonth} / {selectedYear}</p>
+                    </div>
+                </div>
+            </div>
 
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header Section */}
@@ -120,9 +159,9 @@ export default function AttendanceReport({ employees, academicYears = [], isAdmi
                         <div>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight flex items-center gap-3">
                                 <FileText className="text-primary-500" size={32} />
-                                تقرير الحضور المتقدم
+                                كشف الحضور الشهري
                             </h1>
-                            <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">عرض تقرير مفصل يشمل أيام الدوام والإجازات</p>
+                            <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">عرض كشف مفصل يشمل أيام الدوام والإجازات</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
                             {reportData && (
@@ -200,27 +239,27 @@ export default function AttendanceReport({ employees, academicYears = [], isAdmi
                 {!loading && reportData && (
                     <div className="space-y-6">
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print-break">
-                            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
-                                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-1">أيام الحضور</p>
-                                <h3 className="text-2xl font-black text-emerald-700 dark:text-emerald-300">{reportData.summary.present}</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print-break mb-6">
+                            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 print-border-solid">
+                                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 print:text-black mb-1">أيام الحضور</p>
+                                <h3 className="text-2xl font-black text-emerald-700 dark:text-emerald-300 print:text-black">{reportData.summary.present}</h3>
                             </div>
-                            <div className="bg-warning-50 dark:bg-warning-900/20 p-5 rounded-2xl border border-warning-100 dark:border-warning-800/30">
-                                <p className="text-xs font-bold text-warning-600 dark:text-warning-400 mb-1">حضور بتأخير</p>
-                                <h3 className="text-2xl font-black text-warning-700 dark:text-warning-300">{reportData.summary.late}</h3>
+                            <div className="bg-warning-50 dark:bg-warning-900/20 p-5 rounded-2xl border border-warning-100 dark:border-warning-800/30 print-border-solid">
+                                <p className="text-xs font-bold text-warning-600 dark:text-warning-400 print:text-black mb-1">حضور بتأخير</p>
+                                <h3 className="text-2xl font-black text-warning-700 dark:text-warning-300 print:text-black">{reportData.summary.late}</h3>
                             </div>
-                            <div className="bg-rose-50 dark:bg-rose-900/20 p-5 rounded-2xl border border-rose-100 dark:border-rose-800/30">
-                                <p className="text-xs font-bold text-rose-600 dark:text-rose-400 mb-1">أيام الغياب</p>
-                                <h3 className="text-2xl font-black text-rose-700 dark:text-rose-300">{reportData.summary.absent}</h3>
+                            <div className="bg-rose-50 dark:bg-rose-900/20 p-5 rounded-2xl border border-rose-100 dark:border-rose-800/30 print-border-solid">
+                                <p className="text-xs font-bold text-rose-600 dark:text-rose-400 print:text-black mb-1">أيام الغياب</p>
+                                <h3 className="text-2xl font-black text-rose-700 dark:text-rose-300 print:text-black">{reportData.summary.absent}</h3>
                             </div>
-                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-800/30">
-                                <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-1">الإجازات المستهلكة (رسمية وخاصة)</p>
-                                <h3 className="text-2xl font-black text-indigo-700 dark:text-indigo-300">{reportData.summary.holiday + reportData.summary.leave}</h3>
+                            <div className="bg-indigo-50 dark:bg-indigo-900/20 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 print-border-solid">
+                                <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 print:text-black mb-1">الإجازات المستهلكة (رسمية وخاصة)</p>
+                                <h3 className="text-2xl font-black text-indigo-700 dark:text-indigo-300 print:text-black">{reportData.summary.holiday + reportData.summary.leave}</h3>
                             </div>
                         </div>
 
                         {/* Detailed Table */}
-                        <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden print-break">
+                        <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden print-break print:border-none print:shadow-none print:rounded-none">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-right">
                                     <thead>
@@ -271,8 +310,8 @@ export default function AttendanceReport({ employees, academicYears = [], isAdmi
                 {!loading && !reportData && !selectedEmployee && (
                     <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 text-center no-print">
                         <UserCheck className="text-slate-300 dark:text-slate-700 mb-4" size={48} />
-                        <h3 className="text-lg font-bold text-dark-900 dark:text-white mb-2">اختر موظفاً لعرض التقرير</h3>
-                        <p className="text-slate-500 max-w-md">يرجى تحديد الموظف من القائمة العلوية لعرض التقرير الشهري المفصل للحضور والانصراف.</p>
+                        <h3 className="text-lg font-bold text-dark-900 dark:text-white mb-2">اختر موظفاً لعرض الكشف</h3>
+                        <p className="text-slate-500 max-w-md">يرجى تحديد الموظف من القائمة العلوية لعرض الكشف الشهري المفصل للحضور والانصراف.</p>
                     </div>
                 )}
             </div>
