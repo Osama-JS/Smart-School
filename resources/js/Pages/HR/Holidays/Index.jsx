@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 import { Calendar, Plus, Edit2, Trash2, X, Save, FileText, CheckCircle2, Search, Filter, ChevronDown, ChevronUp, RefreshCw, LayoutGrid, List, MapPin, GraduationCap, Layers, AlignLeft, CalendarDays, Building2, Download, AlertCircle, Clock, CheckSquare } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
+import ExcelJS from 'exceljs';
 
 export default function HolidaysIndex({ holidays, branches, academicYears, isAdmin, filters }) {
+    const { logo_url } = usePage().props;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingHoliday, setEditingHoliday] = useState(null);
 
@@ -24,33 +26,251 @@ export default function HolidaysIndex({ holidays, branches, academicYears, isAdm
     // Bulk Select State
     const [selectedHolidays, setSelectedHolidays] = useState([]);
 
-    // Export to CSV Function
-    const exportToCSV = () => {
-        if (!holidays || holidays.length === 0) return;
+    // Export to Excel Function
+    const exportToExcel = async () => {
+        if (!holidays || holidays.length === 0) {
+            Swal.fire({ title: 'لا يوجد بيانات', text: 'لا يوجد إجازات لتصديرها', icon: 'info' });
+            return;
+        }
 
-        const headers = ['اسم الإجازة', 'تاريخ البدء', 'تاريخ الانتهاء', 'الفرع', 'السنة الدراسية', 'الفصل الدراسي', 'ملاحظات'];
-        const csvContent = [
-            headers.join(','),
-            ...holidays.map(h => [
-                `"${h.name}"`,
-                `"${h.start_date}"`,
-                `"${h.end_date}"`,
-                `"${h.branch?.name || 'عام - جميع الفروع'}"`,
-                `"${h.academic_year?.name || ''}"`,
-                `"${h.semester?.name || ''}"`,
-                `"${h.notes || ''}"`
-            ].join(','))
-        ].join('\n');
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('الإجازات', { views: [{ rightToLeft: true }] });
 
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', `holidays_export_${new Date().toISOString().split('T')[0]}.csv`);
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Add Logo
+        let logoId = null;
+        if (logo_url) {
+            const getLogoBase64 = async (url) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png').split(',')[1]);
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            };
+            const base64Clean = await getLogoBase64(logo_url);
+            if (base64Clean) {
+                logoId = workbook.addImage({ base64: base64Clean, extension: 'png' });
+            }
+        }
+
+        // Columns width
+        sheet.columns = [
+            { width: 35 }, // A: اسم الإجازة
+            { width: 15 }, // B: تاريخ البدء
+            { width: 15 }, // C: تاريخ الانتهاء
+            { width: 25 }, // D: الفرع
+            { width: 20 }, // E: السنة الدراسية
+            { width: 15 }, // F: الفصل الدراسي
+            { width: 40 }, // G: ملاحظات
+            { width: 15 }  // H: الحالة
+        ];
+
+        // Insert logo if exists
+        if (logoId !== null) {
+            const logoColIndex = 3.8; // roughly center
+            sheet.addImage(logoId, { tl: { col: logoColIndex, row: 1.1 }, ext: { width: 85, height: 85 } });
+        }
+
+        // Add Top Border / Accent Line
+        sheet.getRow(1).height = 10;
+        sheet.mergeCells('A1:H1');
+        sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } }; // Brand Green
+
+        // Title Rows
+        sheet.mergeCells('A2:C2');
+        const titleCell = sheet.getCell('A2');
+        titleCell.value = 'مدارس القيم الأهلية';
+        titleCell.font = { name: 'Segoe UI', size: 24, bold: true, color: { argb: 'FF6B9B37' } };
+        titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A3:C3');
+        const enTitleCell = sheet.getCell('A3');
+        enTitleCell.value = 'AL QIYAM CIVEL SCHOOLS';
+        enTitleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FF6B9B37' } };
+        enTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A4:C4');
+        const subTitleCell = sheet.getCell('A4');
+        subTitleCell.value = 'النظام الإداري - الإجازات الرسمية والعطلات';
+        subTitleCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FFE32636' } };
+        subTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        // Meta data on the left
+        sheet.mergeCells('F2:H2');
+        const typeCell = sheet.getCell('F2');
+        typeCell.value = 'نوع التقرير: سجل الإجازات والعطلات';
+        typeCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        typeCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        const printDate = new Date().toLocaleString('ar-EG');
+        sheet.mergeCells('F3:H3');
+        const dateCell = sheet.getCell('F3');
+        dateCell.value = `تاريخ التصدير: ${printDate}`;
+        dateCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        dateCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        sheet.mergeCells('F4:H4');
+        const statusCell = sheet.getCell('F4');
+        statusCell.value = 'حالة التقرير: معتمد ✔';
+        statusCell.font = { size: 11, bold: true, color: { argb: 'FF6B9B37' }, name: 'Segoe UI' };
+        statusCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        // Row 5: Empty Spacer
+        sheet.getRow(5).height = 15;
+
+        // Statistics Bar
+        const statRowIndex = 7;
+        const totalHolidays = holidays?.length || 0;
+        const upcomingHolidays = holidays?.filter(h => new Date(h.start_date) > new Date() && (new Date(h.start_date) - new Date()) / (1000 * 60 * 60 * 24) <= 30).length || 0;
+        const branchSpecificHolidays = holidays?.filter(h => h.branch_id).length || 0;
+        const generalHolidays = totalHolidays - branchSpecificHolidays;
+
+        sheet.mergeCells(`A${statRowIndex}:H${statRowIndex}`);
+        const statCell = sheet.getCell(`A${statRowIndex}`);
+        statCell.value = `📊 إجمالي الإجازات: ${totalHolidays}   |   🌟 إجازات قادمة: ${upcomingHolidays}   |   🌍 إجازات عامة: ${generalHolidays}   |   🏢 خاصة بفروع: ${branchSpecificHolidays}`;
+        statCell.font = { size: 11, bold: true, color: { argb: 'FF437020' }, name: 'Segoe UI' };
+        statCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        statCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7EB' } }; // Light Green Background
+        statCell.border = {
+            top: { style: 'medium', color: { argb: 'FF96CF75' } },
+            bottom: { style: 'medium', color: { argb: 'FF96CF75' } },
+            left: { style: 'medium', color: { argb: 'FF96CF75' } },
+            right: { style: 'medium', color: { argb: 'FF96CF75' } }
+        };
+        sheet.getRow(statRowIndex).height = 30;
+
+        // Row 8: Empty Spacer
+        sheet.getRow(8).height = 10;
+
+        // Set Headers
+        const headers = ['اسم الإجازة', 'تاريخ البدء', 'تاريخ الانتهاء', 'الفرع', 'السنة الدراسية', 'الفصل الدراسي', 'ملاحظات', 'الحالة'];
+        const headerRow = sheet.addRow(headers);
+        headerRow.height = 30;
+
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF6B9B37' } // Brand Green
+            };
+            cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }; // smaller font
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        // Add Data
+        holidays.forEach((h, index) => {
+            let rowData = [
+                h.name || '-',
+                h.start_date || '-',
+                h.end_date || '-',
+                h.branch?.name || 'عام - جميع الفروع',
+                h.academic_year?.name || '-',
+                h.semester?.name || '-',
+                h.notes || '-'
+            ];
+
+            // Calculate Status
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const start = new Date(h.start_date);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(h.end_date);
+            end.setHours(0, 0, 0, 0);
+
+            let statusLabel = '';
+            let statusColor = 'FF212529'; // Default dark gray
+            let statusBg = null;
+
+            if (today > end) {
+                statusLabel = 'منتهية';
+                statusColor = 'FF64748B'; // Slate
+            } else if (today >= start && today <= end) {
+                statusLabel = 'جارية الآن';
+                statusColor = 'FF1D4ED8'; // Blue
+                statusBg = 'FFDBEAFE'; // Light Blue
+            } else {
+                statusLabel = 'قادمة';
+                statusColor = 'FF15803D'; // Green
+            }
+
+            rowData.push(statusLabel);
+
+            const row = sheet.addRow(rowData);
+            row.height = 35;
+            
+            row.eachCell((cell, colNumber) => {
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } };
+                cell.border = {
+                    bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } }, // Soft Gray Border
+                    left: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    right: { style: 'thin', color: { argb: 'FFDEE2E6' } }
+                };
+                
+                // Color status column (8th column)
+                if (colNumber === 8) {
+                    cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: statusColor } };
+                    if (statusBg) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusBg } };
+                    }
+                }
+            });
+        });
+
+        // Add Auto-filters
+        sheet.autoFilter = `A9:H${holidays.length + 9}`;
+
+        // Freeze panes
+        sheet.views = [{ state: 'frozen', ySplit: 9, rightToLeft: true }];
+
+        // Page settings
+        sheet.pageSetup = {
+            paperSize: 9,
+            orientation: 'landscape',
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0,
+            margins: { left: 0.2, right: 0.2, top: 0.4, bottom: 0.4, header: 0.1, footer: 0.1 }
+        };
+
+        // Footer settings
+        sheet.headerFooter.oddFooter = '&L&10مدارس القيم الأهلية &C&10صفحة &P من &N &R&10تاريخ الطباعة: &D';
+
+        // Protect Sheet
+        await sheet.protect('SmartSchool123', {
+            selectLockedCells: true,
+            selectUnlockedCells: true,
+            formatCells: true,
+            formatColumns: true,
+            formatRows: true,
+            sort: false,
+            autoFilter: false,
+        });
+
+        // Download Excel
+        workbook.xlsx.writeBuffer().then((buffer) => {
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `سجل_الإجازات_والعطلات_${new Date().toISOString().split('T')[0]}.xlsx`;
+            anchor.click();
+            window.URL.revokeObjectURL(url);
+        });
     };
 
     // Time Status logic
@@ -229,9 +449,9 @@ export default function HolidaysIndex({ holidays, branches, academicYears, isAdm
                             </div>
 
                             <button
-                                onClick={exportToCSV}
+                                onClick={exportToExcel}
                                 className="flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm text-sm font-bold transition-all"
-                                title="تصدير إلى Excel/CSV"
+                                title="تصدير إلى Excel"
                             >
                                 <Download size={18} />
                                 <span className="hidden md:inline">تصدير</span>

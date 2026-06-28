@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
-import { Calendar, Plus, Edit2, Trash2, X, Save, Clock, CheckCircle, XCircle, Eye, AlertCircle, FileText, User, Tag, ShieldAlert, FolderOpen, Filter, CheckCircle2, AlignLeft, LayoutGrid, Table2, MoreVertical, RotateCcw } from 'lucide-react';
+import { Calendar, Plus, Edit2, Trash2, X, Save, Clock, CheckCircle, XCircle, Eye, AlertCircle, FileText, User, Tag, ShieldAlert, FolderOpen, Filter, CheckCircle2, AlignLeft, LayoutGrid, Table2, MoreVertical, RotateCcw, Download } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 import InputLabel from '@/Components/InputLabel';
+import ExcelJS from 'exceljs';
+import Swal from 'sweetalert2';
 
 export default function LeavesIndex({ leaves, employees, academicYears = [], leaveTypes = [], isAdmin, filters = {} }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -133,6 +135,261 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
         }
     }
 
+    const { props } = usePage();
+    const logo_url = props.app?.logo_url || null;
+
+    const exportToExcel = async () => {
+        const recordsToExport = leaves || [];
+        if (recordsToExport.length === 0) {
+            Swal.fire({ title: 'لا يوجد بيانات', text: 'لا يوجد سجلات لتصديرها', icon: 'info' });
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('سجل الإجازات', { views: [{ rightToLeft: true }] });
+
+        let logoId = null;
+        if (logo_url) {
+            const getLogoBase64 = async (url) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png').split(',')[1]);
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            };
+            const base64Clean = await getLogoBase64(logo_url);
+            if (base64Clean) {
+                logoId = workbook.addImage({ base64: base64Clean, extension: 'png' });
+            }
+        }
+
+        const columns = [
+            { header: 'الموظف', key: 'employee', width: 35 },
+            { header: 'القسم', key: 'department', width: 20 },
+            { header: 'نوع الإجازة', key: 'leave_type', width: 20 },
+            { header: 'تاريخ البداية', key: 'start_date', width: 15 },
+            { header: 'تاريخ النهاية', key: 'end_date', width: 15 },
+            { header: 'مدة الإجازة (أيام)', key: 'duration', width: 15 },
+            { header: 'السنة الدراسية', key: 'academic_year', width: 20 },
+            { header: 'الفصل الدراسي', key: 'semester', width: 20 },
+            { header: 'حالة الطلب', key: 'status', width: 15 },
+            { header: 'البيان/السبب', key: 'reason', width: 35 }
+        ];
+
+        if (logoId !== null) {
+            sheet.addImage(logoId, { tl: { col: 4.8, row: 1.1 }, ext: { width: 85, height: 85 } });
+        }
+
+        const lastColLetter = 'J';
+        sheet.getRow(1).height = 10;
+        sheet.mergeCells(`A1:${lastColLetter}1`);
+        sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+
+        sheet.mergeCells('A2:C2');
+        const titleCell = sheet.getCell('A2');
+        titleCell.value = 'مدارس القيم الأهلية';
+        titleCell.font = { name: 'Segoe UI', size: 24, bold: true, color: { argb: 'FF6B9B37' } };
+        titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A3:C3');
+        const enTitleCell = sheet.getCell('A3');
+        enTitleCell.value = 'AL QIYAM CIVEL SCHOOLS';
+        enTitleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FF6B9B37' } };
+        enTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A4:C4');
+        const subTitleCell = sheet.getCell('A4');
+        subTitleCell.value = 'النظام الإداري - سجل الإجازات';
+        subTitleCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FFE32636' } };
+        subTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells(`H2:J2`);
+        const typeCell = sheet.getCell(`H2`);
+        typeCell.value = 'نوع التقرير: سجل الإجازات';
+        typeCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        typeCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        const printDate = new Date().toLocaleString('ar-EG');
+        sheet.mergeCells(`H3:J3`);
+        const dateCell = sheet.getCell(`H3`);
+        dateCell.value = `تاريخ التصدير: ${printDate}`;
+        dateCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        dateCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        sheet.getRow(5).height = 15;
+
+        sheet.mergeCells(`A6:J6`);
+        const statCell = sheet.getCell(`A6`);
+        statCell.value = `📊 إجمالي الطلبات: ${stats.total}   |   ✅ موافق عليها: ${stats.approved}   |   ⚠️ قيد الانتظار: ${stats.pending}   |   ❌ مرفوضة: ${stats.rejected}`;
+        statCell.font = { size: 11, bold: true, color: { argb: 'FF437020' }, name: 'Segoe UI' };
+        statCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        statCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7EB' } }; 
+        statCell.border = { top: { style: 'medium', color: { argb: 'FF96CF75' } }, bottom: { style: 'medium', color: { argb: 'FF96CF75' } }, left: { style: 'medium', color: { argb: 'FF96CF75' } }, right: { style: 'medium', color: { argb: 'FF96CF75' } } };
+        sheet.getRow(6).height = 30;
+
+        sheet.getRow(7).height = 10;
+
+        sheet.columns = columns;
+        const headerRow = sheet.getRow(8);
+        headerRow.values = columns.map(c => c.header);
+        headerRow.height = 30;
+
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+            cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = { top: { style: 'thin', color: { argb: 'FFFFFFFF' } }, left: { style: 'thin', color: { argb: 'FFFFFFFF' } }, bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } }, right: { style: 'thin', color: { argb: 'FFFFFFFF' } } };
+        });
+
+        recordsToExport.forEach((r) => {
+            const startD = new Date(r.start_date);
+            const endD = new Date(r.end_date);
+            const diffTime = Math.abs(endD - startD);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+            let statusLabel = 'غير محدد';
+            if(r.status === 'approved') statusLabel = 'موافق عليها';
+            else if(r.status === 'rejected') statusLabel = 'مرفوضة';
+            else if(r.status === 'pending') statusLabel = 'قيد الانتظار';
+
+            const rowData = {
+                employee: r.employee?.user?.name || "",
+                department: r.employee?.department?.name || "",
+                leave_type: r.leave_type?.name || r.leaveType?.name || "",
+                start_date: r.start_date,
+                end_date: r.end_date,
+                duration: diffDays,
+                academic_year: r.academic_year?.name || r.academicYear?.name || "",
+                semester: r.semester?.name || "",
+                status: statusLabel,
+                reason: r.reason || ""
+            };
+
+            const row = sheet.addRow(rowData);
+            row.height = 35;
+            
+            row.eachCell((cell, colNumber) => {
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } };
+                cell.border = { bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } }, left: { style: 'thin', color: { argb: 'FFDEE2E6' } }, right: { style: 'thin', color: { argb: 'FFDEE2E6' } } };
+                
+                if (colNumber === 9) {
+                    if (r.status === 'approved') {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF15803D' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } };
+                    } else if (r.status === 'pending') {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFB45309' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFBEB' } };
+                    } else if (r.status === 'rejected') {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFB91C1C' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF2F2' } };
+                    }
+                }
+
+                if (colNumber === 6) {
+                    cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF2563EB' } };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } };
+                }
+            });
+            row.height = 25;
+        });
+
+        sheet.autoFilter = `A8:${lastColLetter}${recordsToExport.length + 8}`;
+        sheet.views = [{ state: 'frozen', ySplit: 8, rightToLeft: true }];
+        sheet.pageSetup = { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.2, right: 0.2, top: 0.4, bottom: 0.4, header: 0.1, footer: 0.1 } };
+        sheet.headerFooter.oddFooter = '&L&10مدارس القيم الأهلية &C&10صفحة &P من &N &R&10تاريخ الطباعة: &D';
+
+        // Summary Sheet
+        const sumSheet = workbook.addWorksheet('ملخص وإحصائيات الإجازات', { views: [{ rightToLeft: true }] });
+        
+        sumSheet.columns = [
+            { header: 'الموظف', key: 'employee', width: 35 },
+            { header: 'القسم', key: 'department', width: 25 },
+            { header: 'إجمالي الطلبات', key: 'total', width: 15 },
+            { header: 'موافق عليها (أيام)', key: 'approved_days', width: 20 },
+            { header: 'مرفوضة (طلبات)', key: 'rejected', width: 15 },
+            { header: 'قيد الانتظار (طلبات)', key: 'pending', width: 15 },
+        ];
+
+        const sumHeaderRow = sumSheet.getRow(1);
+        sumHeaderRow.values = sumSheet.columns.map(c => c.header);
+        sumHeaderRow.height = 30;
+        sumHeaderRow.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+            cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+
+        const empSummary = {};
+        recordsToExport.forEach(r => {
+            const empName = r.employee?.user?.name || 'غير معروف';
+            if (!empSummary[empName]) {
+                empSummary[empName] = {
+                    dept: r.employee?.department?.name || '',
+                    total: 0,
+                    approved_days: 0,
+                    rejected: 0,
+                    pending: 0
+                };
+            }
+            
+            const startD = new Date(r.start_date);
+            const endD = new Date(r.end_date);
+            const diffTime = Math.abs(endD - startD);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+            empSummary[empName].total++;
+            if (r.status === 'approved') empSummary[empName].approved_days += diffDays;
+            else if (r.status === 'rejected') empSummary[empName].rejected++;
+            else if (r.status === 'pending') empSummary[empName].pending++;
+        });
+
+        Object.keys(empSummary).forEach(emp => {
+            const data = empSummary[emp];
+            const row = sumSheet.addRow({
+                employee: emp,
+                department: data.dept,
+                total: data.total,
+                approved_days: data.approved_days,
+                rejected: data.rejected,
+                pending: data.pending
+            });
+            row.eachCell((cell, colNum) => {
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.font = { name: 'Segoe UI', size: 11 };
+                if (colNum === 4 && data.approved_days > 0) cell.font = { ...cell.font, color: { argb: 'FF15803D' }, bold: true };
+                if (colNum === 5 && data.rejected > 0) cell.font = { ...cell.font, color: { argb: 'FFDC2626' }, bold: true };
+                if (colNum === 6 && data.pending > 0) cell.font = { ...cell.font, color: { argb: 'FFB45309' }, bold: true };
+            });
+            row.height = 25;
+        });
+
+        sumSheet.autoFilter = `A1:F${Object.keys(empSummary).length + 1}`;
+        sumSheet.pageSetup = { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, margins: { left: 0.2, right: 0.2, top: 0.4, bottom: 0.4, header: 0.1, footer: 0.1 } };
+
+        await sheet.protect('SmartSchool123', {
+            selectLockedCells: true, selectUnlockedCells: true, formatColumns: true, formatRows: true, sort: true, autoFilter: true
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `سجل_الإجازات.xlsx`;
+        link.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <AdminLayout>
             <Head title="إجازات الموظفين" />
@@ -161,6 +418,11 @@ export default function LeavesIndex({ leaves, employees, academicYears = [], lea
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة الأرصدة والطلبات والإجازات الممنوحة للموظفين بشكل احترافي</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
+                            <button onClick={exportToExcel}
+                                className="flex items-center justify-center p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820] text-slate-550 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300 shadow-sm transition-all"
+                                title="تصدير كملف Excel">
+                                <Download size={18} />
+                            </button>
                             <button
                                 onClick={() => openModal()}
                                 className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95"

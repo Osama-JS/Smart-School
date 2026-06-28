@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Search, Filter, ShieldAlert, FileText, Send, CheckCircle, Trash2, Edit2, X, Save, RotateCcw, AlertTriangle, CalendarDays, Clock, Eye, AlertCircle } from 'lucide-react';
+import { Plus, Search, Filter, ShieldAlert, FileText, Send, CheckCircle, Trash2, Edit2, X, Save, RotateCcw, AlertTriangle, CalendarDays, Clock, Eye, AlertCircle, User, Calendar, AlertOctagon, Activity, AlignLeft, Paperclip, PenTool } from 'lucide-react';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
@@ -438,7 +438,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                             <form onSubmit={submit} className="space-y-6" id="violationForm">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">الموظف <span className="text-accent-500">*</span></label>
+                                    <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                        <User size={16} className="text-primary-500" />
+                                        الموظف <span className="text-rose-500">*</span>
+                                    </label>
                                     <SelectInput
                                         className="w-full"
                                         value={data.user_id}
@@ -451,7 +454,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">تاريخ المخالفة <span className="text-accent-500">*</span></label>
+                                    <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                        <Calendar size={16} className="text-blue-500" />
+                                        تاريخ المخالفة <span className="text-rose-500">*</span>
+                                    </label>
                                     <FlatpickrInput
                                         type="date"
                                         className="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-2xl py-3 transition-all hover:bg-slate-100 dark:hover:bg-slate-800/80 !pl-10"
@@ -463,7 +469,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">نوع المخالفة <span className="text-accent-500">*</span></label>
+                                    <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                        <AlertOctagon size={16} className="text-rose-500" />
+                                        نوع المخالفة <span className="text-rose-500">*</span>
+                                    </label>
                                     <SelectInput
                                         className="w-full"
                                         value={data.violation_type_id}
@@ -477,7 +486,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
 
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <label className="block text-sm font-bold text-slate-900 dark:text-white">الإجراء المتخذ <span className="text-accent-500">*</span></label>
+                                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                            <Activity size={16} className="text-amber-500" />
+                                            الإجراء المتخذ <span className="text-rose-500">*</span>
+                                        </label>
                                         {isCheckingRepetition ? (
                                             <span className="text-xs text-primary-500 animate-pulse">جاري فحص التكرار...</span>
                                         ) : repetitionLevel && (
@@ -498,7 +510,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                             </div>
                             
                             <div>
-                                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">حالة الإجراء <span className="text-accent-500">*</span></label>
+                                <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                    <Clock size={16} className="text-emerald-500" />
+                                    حالة الإجراء <span className="text-rose-500">*</span>
+                                </label>
                                 <SelectInput
                                     className="w-full"
                                     value={data.status}
@@ -513,7 +528,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">التفاصيل <span className="text-accent-500">*</span></label>
+                                <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                    <AlignLeft size={16} className="text-indigo-500" />
+                                    التفاصيل <span className="text-rose-500">*</span>
+                                </label>
                                 <textarea
                                     className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-400"
                                     value={data.details}
@@ -525,7 +543,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">مرفقات (تعهد، تقرير...)</label>
+                                <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                    <Paperclip size={16} className="text-slate-500" />
+                                    مرفقات (تعهد، تقرير...)
+                                </label>
                                 <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-slate-300 dark:border-slate-700 border-dashed rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                                     <div className="space-y-1 text-center">
                                         <svg className="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
@@ -545,7 +566,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                             </div>
 
                             <div>
-                                <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2">توقيع المسؤول الإداري</label>
+                                <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                    <PenTool size={16} className="text-primary-500" />
+                                    توقيع المسؤول الإداري
+                                </label>
                                 <div className="border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden bg-white dark:bg-slate-800">
                                     <SignaturePad 
                                         onChange={(val) => setData('admin_signature', val)} 
@@ -595,7 +619,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                             </p>
                             <form onSubmit={sendNotify} className="space-y-4 text-right" id="notifyForm">
                                 <div>
-                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">قنوات الإرسال:</span>
+                                    <span className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                        <Send size={16} className="text-amber-500" />
+                                        قنوات الإرسال:
+                                    </span>
                                     <div className="mt-3 space-y-3">
                                         <label className="flex items-center gap-3 p-3 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                             <input 
@@ -717,21 +744,33 @@ export default function Index({ auth, violations, types, employees, filters, sta
                         <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar flex-1">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">تاريخ المخالفة</span>
+                                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">
+                                        <Calendar size={14} className="text-blue-500" />
+                                        تاريخ المخالفة
+                                    </span>
                                     <span className="text-slate-800 dark:text-slate-200 font-semibold">{selectedViolation.violation_date}</span>
                                 </div>
                                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">نوع المخالفة</span>
+                                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">
+                                        <AlertOctagon size={14} className="text-rose-500" />
+                                        نوع المخالفة
+                                    </span>
                                     <span className="text-red-600 dark:text-red-400 font-bold">{selectedViolation.violation_type?.name}</span>
                                 </div>
                                 <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800 md:col-span-2">
-                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">الموظف المخالف</span>
+                                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">
+                                        <User size={14} className="text-primary-500" />
+                                        الموظف المخالف
+                                    </span>
                                     <span className="text-slate-800 dark:text-slate-200 font-semibold">{selectedViolation.user?.name}</span>
                                 </div>
                             </div>
 
                             <div className="mb-6">
-                                <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">التفاصيل الكاملة</span>
+                                <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">
+                                    <AlignLeft size={14} className="text-indigo-500" />
+                                    التفاصيل الكاملة
+                                </span>
                                 <div className="bg-slate-50 dark:bg-slate-800/30 p-4 rounded-xl border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 leading-relaxed min-h-[100px]">
                                     {selectedViolation.details}
                                 </div>
@@ -739,13 +778,19 @@ export default function Index({ auth, violations, types, employees, filters, sta
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                                 <div>
-                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">الإجراء المتخذ</span>
+                                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">
+                                        <Activity size={14} className="text-amber-500" />
+                                        الإجراء المتخذ
+                                    </span>
                                     <div className="bg-orange-50/50 dark:bg-orange-900/10 p-4 rounded-xl border border-orange-100 dark:border-orange-900/30 text-orange-800 dark:text-orange-300 font-medium">
                                         {selectedViolation.action_taken}
                                     </div>
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">حالة الإجراء</span>
+                                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">
+                                        <Clock size={14} className="text-emerald-500" />
+                                        حالة الإجراء
+                                    </span>
                                     <div className={`p-4 rounded-xl border font-bold flex items-center gap-2 ${selectedViolation.status === 'تم تنفيذ الإجراء' ? 'bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-400' : 'bg-slate-50/50 dark:bg-slate-800/30 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'}`}>
                                         {selectedViolation.status === 'تم تنفيذ الإجراء' ? <CheckCircle size={18} /> : <Clock size={18} />}
                                         {selectedViolation.status || 'قيد المتابعة'}
@@ -755,7 +800,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">توقيع الإدارة</span>
+                                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">
+                                        <PenTool size={14} className="text-primary-500" />
+                                        توقيع الإدارة
+                                    </span>
                                     {selectedViolation.admin_signature_url ? (
                                         <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-800 flex justify-center h-32 items-center">
                                             <img src={selectedViolation.admin_signature_url} alt="توقيع الإدارة" className="max-h-full max-w-full object-contain" />
@@ -767,7 +815,10 @@ export default function Index({ auth, violations, types, employees, filters, sta
                                     )}
                                 </div>
                                 <div>
-                                    <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">توقيع الموظف</span>
+                                    <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">
+                                        <CheckCircle size={14} className="text-green-500" />
+                                        توقيع الموظف
+                                    </span>
                                     {selectedViolation.employee_signature_url ? (
                                         <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-2 bg-white dark:bg-slate-800 flex justify-center h-32 items-center relative">
                                             <div className="absolute top-2 right-2 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">

@@ -3,6 +3,7 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 import SelectInput from '@/Components/SelectInput';
+import ExcelJS from 'exceljs';
 import { 
     Search, Plus, Filter, Mail, Building, ShieldCheck,
     MoreVertical, Edit2, Trash2, X, Check, Users, Calendar, 
@@ -93,7 +94,7 @@ function Pagination({ data }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function EmployeesIndex({ employees, stats, departments, jobGrades, filters }) {
-    const { flash } = usePage().props;
+    const { flash, logo_url } = usePage().props;
     
     // Safety check for filters properties
     const getFilterVal = (key, fallback = '') => {
@@ -229,27 +230,206 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
         }, { preserveScroll: true });
     };
 
-    const handleExportCSV = () => {
-        const headers = ['الموظف', 'اسم المستخدم', 'البريد الإلكتروني', 'القسم', 'الدرجة الوظيفية', 'تاريخ التعيين', 'الحالة'];
-        const rows = empData.map(emp => [
-            emp.name,
-            emp.username,
-            `${emp.username}@school.com`,
-            emp.department,
-            emp.jobGrade,
-            emp.hire_date ?? '—',
-            emp.is_active ? 'نشط' : 'معطل'
-        ]);
+    const [isExporting, setIsExporting] = useState(false);
 
-        const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(','))].join('\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `تقرير_الموظفين_${new Date().toLocaleDateString('ar-EG').replace(/\//g, '-')}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const exportToExcel = async () => {
+        if (empData.length === 0) return;
+
+        setIsExporting(true);
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('دليل الموظفين', {
+                views: [{ rightToLeft: true, state: 'frozen', ySplit: 9 }],
+                pageSetup: {
+                    paperSize: 9,
+                    orientation: 'landscape',
+                    fitToPage: true,
+                    fitToWidth: 1,
+                    fitToHeight: 0,
+                    margins: { left: 0.25, right: 0.25, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 }
+                },
+                headerFooter: {
+                    oddFooter: '&Rتاريخ الطباعة: &D &T&Cالصفحة &P من &N&Lمدارس القيم الأهلية - إدارة النظام',
+                    evenFooter: '&Rتاريخ الطباعة: &D &T&Cالصفحة &P من &N&Lمدارس القيم الأهلية - إدارة النظام'
+                }
+            });
+
+            // Logo Fetching
+            let logoId = null;
+            const logoPath = logo_url || '/images/logo.png';
+            const getLogoBase64 = async (url) => {
+                try {
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        if (blob.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            return await new Promise((resolve) => {
+                                reader.readAsDataURL(blob);
+                                reader.onloadend = () => resolve(reader.result);
+                            });
+                        }
+                    }
+                } catch (e) {}
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            };
+
+            const base64Clean = await getLogoBase64(logoPath);
+            if (base64Clean) {
+                logoId = workbook.addImage({ base64: base64Clean, extension: 'png' });
+            }
+
+            // Columns layout matching header below
+            sheet.columns = [
+                { width: 15 }, // ID
+                { width: 40 }, // Name
+                { width: 25 }, // Email/Username
+                { width: 25 }, // Dept
+                { width: 20 }, // Grade
+                { width: 20 }, // Hire Date
+                { width: 15 }  // Status
+            ];
+
+            sheet.getRow(1).height = 10;
+            sheet.mergeCells('A1:G1');
+            sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+
+            sheet.getRow(2).height = 35;
+            sheet.getRow(3).height = 25;
+            sheet.getRow(4).height = 20;
+
+            if (logoId !== null) {
+                sheet.addImage(logoId, { tl: { col: 3.3, row: 1.1 }, ext: { width: 85, height: 85 } });
+            }
+
+            sheet.mergeCells('A2:C2');
+            const titleCell = sheet.getCell('A2');
+            titleCell.value = 'مدارس القيم الأهلية';
+            titleCell.font = { name: 'Segoe UI', size: 24, bold: true, color: { argb: 'FF6B9B37' } }; 
+            titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            sheet.mergeCells('A3:C3');
+            const enTitleCell = sheet.getCell('A3');
+            enTitleCell.value = 'AL QIYAM CIVEL SCHOOLS';
+            enTitleCell.font = { name: 'Segoe UI', size: 18, bold: true, color: { argb: 'FF6B9B37' } }; 
+            enTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            sheet.mergeCells('A4:C4');
+            const subTitleCell = sheet.getCell('A4');
+            subTitleCell.value = 'النظام الإداري - دليل الموظفين';
+            subTitleCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FFE32636' } }; 
+            subTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            sheet.mergeCells('E2:G2');
+            const meta1Cell = sheet.getCell('E2');
+            meta1Cell.value = 'نوع التقرير: كشف الموظفين';
+            meta1Cell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+            meta1Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            const exportDate = new Date().toLocaleString('ar-EG');
+            sheet.mergeCells('E3:G3');
+            const meta2Cell = sheet.getCell('E3');
+            meta2Cell.value = `تاريخ التصدير: ${exportDate}`;
+            meta2Cell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+            meta2Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            sheet.mergeCells('E4:G4');
+            const meta3Cell = sheet.getCell('E4');
+            meta3Cell.value = 'حالة التقرير: معتمد ✔';
+            meta3Cell.font = { size: 11, bold: true, color: { argb: 'FF6B9B37' }, name: 'Segoe UI' };
+            meta3Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            sheet.getRow(5).height = 15;
+
+            sheet.getRow(7).height = 30;
+            sheet.mergeCells('A7:G7');
+            const statsCell = sheet.getCell('A7');
+            statsCell.value = `📊 إجمالي الموظفين: ${stats?.total || 0}   |   ✅ النشطون: ${stats?.active || 0}   |   ⚠️ المعطلون: ${stats?.inactive || 0}`;
+            statsCell.font = { size: 11, bold: true, color: { argb: 'FF437020' }, name: 'Segoe UI' };
+            statsCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            statsCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7EB' } };
+            statsCell.border = { top: { style: 'medium', color: { argb: 'FF96CF75' } }, bottom: { style: 'medium', color: { argb: 'FF96CF75' } }, left: { style: 'medium', color: { argb: 'FF96CF75' } }, right: { style: 'medium', color: { argb: 'FF96CF75' } } };
+
+            sheet.getRow(8).height = 10;
+
+            const headerRow = sheet.addRow(["الرقم الوظيفي", "اسم الموظف", "البريد الإلكتروني", "القسم", "الدرجة الوظيفية", "تاريخ التعيين", "الحالة"]);
+            headerRow.height = 30;
+            headerRow.eachCell((cell) => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+                cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = { top: { style: 'thin', color: { argb: 'FFFFFFFF' } }, left: { style: 'thin', color: { argb: 'FFFFFFFF' } }, bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } }, right: { style: 'thin', color: { argb: 'FFFFFFFF' } } };
+            });
+
+            empData.forEach((emp, index) => {
+                const row = sheet.addRow([
+                    emp.id || index + 1,
+                    emp.name,
+                    `${emp.username}@school.com`,
+                    emp.department || '-',
+                    emp.jobGrade || '-',
+                    emp.hire_date || '-',
+                    emp.is_active ? 'نشط' : 'معطل'
+                ]);
+
+                row.height = 35;
+                row.eachCell((cell, colNumber) => {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                    cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } };
+                    cell.border = { bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } }, left: { style: 'thin', color: { argb: 'FFDEE2E6' } }, right: { style: 'thin', color: { argb: 'FFDEE2E6' } } };
+                    
+                    if (colNumber === 1 && typeof cell.value === 'number') {
+                        cell.numFmt = '0000';
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF475569' } };
+                    }
+                });
+
+                if (index % 2 === 0) {
+                    row.eachCell(cell => cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FCF7' } });
+                }
+
+                const statusCell = row.getCell(7);
+                if (emp.is_active) {
+                    statusCell.font = { color: { argb: 'FF558A2A' }, bold: true, name: 'Segoe UI', size: 10 };
+                    statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCEFD1' } };
+                } else {
+                    statusCell.font = { color: { argb: 'FFCC2B2B' }, bold: true, name: 'Segoe UI', size: 10 };
+                    statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF2F2' } };
+                }
+            });
+
+            sheet.autoFilter = `A9:G${9 + empData.length}`;
+            await sheet.protect('', { selectLockedCells: true, selectUnlockedCells: true, autoFilter: true, sort: true, formatCells: true, formatColumns: true, formatRows: true });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `employees_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Export failed:", error);
+            alert("حدث خطأ أثناء التصدير.");
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     const handlePrint = () => {
@@ -369,10 +549,10 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                             <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة ومتابعة الهيكل التنظيمي لجميع موظفي المدرسة</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                            <button onClick={handleExportCSV}
-                                className="flex items-center justify-center p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-650 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-primary-600 transition-colors shadow-sm"
-                                title="تصدير كملف CSV">
-                                <Download size={18} />
+                            <button onClick={exportToExcel} disabled={isExporting}
+                                className="flex items-center justify-center p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-650 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-primary-600 transition-colors shadow-sm disabled:opacity-50"
+                                title="تصدير إكسيل">
+                                {isExporting ? <RotateCcw size={18} className="animate-spin" /> : <Download size={18} />}
                             </button>
                             <button onClick={handlePrint}
                                 className="flex items-center justify-center p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-650 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-primary-600 transition-colors shadow-sm"

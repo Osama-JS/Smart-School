@@ -3,6 +3,7 @@ import { Head, router, usePage, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import { Search, Plus, Filter, MoreVertical, Edit2, Trash2, ShieldCheck, Check, AlertTriangle, Users as UsersIcon, Shield, Store, ChevronDown, UserCheck, RotateCcw, Key, Lock, Eye, EyeOff, Calendar, LayoutGrid, List, Download, Printer, ArrowUpDown, ArrowUp, ArrowDown, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import ExcelJS from 'exceljs';
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function Modal({ isOpen, onClose, title, children }) {
@@ -74,13 +75,12 @@ function Pagination({ data }) {
                 {data.links.map((link, i) => (
                     <button key={i} disabled={!link.url || link.active}
                         onClick={() => link.url && router.get(link.url, {}, { preserveScroll: true })}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${
-                            link.active
-                                ? 'bg-primary-500 text-white border-primary-500 dark:bg-primary-600 dark:border-primary-600 shadow-sm'
-                                : link.url
-                                    ? 'bg-white dark:bg-[#121820] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50'
-                                    : 'bg-white dark:bg-[#121820]/40 text-slate-300 dark:text-slate-650 border-slate-100 dark:border-slate-800/50 cursor-not-allowed'
-                        }`}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${link.active
+                            ? 'bg-primary-500 text-white border-primary-500 dark:bg-primary-600 dark:border-primary-600 shadow-sm'
+                            : link.url
+                                ? 'bg-white dark:bg-[#121820] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50'
+                                : 'bg-white dark:bg-[#121820]/40 text-slate-300 dark:text-slate-650 border-slate-100 dark:border-slate-800/50 cursor-not-allowed'
+                            }`}
                         dangerouslySetInnerHTML={{ __html: link.label }}
                     />
                 ))}
@@ -91,7 +91,7 @@ function Pagination({ data }) {
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 export default function UsersIndex({ users, roles, branches, filters, stats, isAdmin = false }) {
-    const { flash, auth } = usePage().props;
+    const { flash, auth, logo_url } = usePage().props;
     const [searchValue, setSearch] = useState(filters?.search ?? '');
     const [roleFilter, setRoleFilter] = useState(filters?.role_id ?? '');
     const [statusFilter, setStatusFilter] = useState(filters?.status ?? '');
@@ -223,37 +223,291 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
         });
     };
 
-    const exportToCSV = () => {
+    const [isExporting, setIsExporting] = useState(false);
+
+    const exportToExcel = async () => {
         const usersToExport = selectedUsers.length > 0
             ? (users?.data ?? []).filter(u => selectedUsers.includes(u.id))
             : (users?.data ?? []);
 
         if (usersToExport.length === 0) return;
 
-        const headers = ["الرقم التعريفي", "الاسم كامل", "اسم المستخدم", "الدور / الصلاحية", "الفرع", "حالة الحساب", "آخر ظهور", "الجهاز المستعمل"];
-        const rows = usersToExport.map(u => [
-            u.id,
-            u.name,
-            u.username,
-            u.role,
-            u.branch,
-            u.is_active ? "نشط" : "معطل",
-            u.last_login,
-            u.device
-        ]);
+        setIsExporting(true);
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('المستخدمين', {
+                views: [{ rightToLeft: true, state: 'frozen', ySplit: 9 }], // Freeze top 9 rows
+                pageSetup: {
+                    paperSize: 9, // A4
+                    orientation: 'landscape',
+                    fitToPage: true,
+                    fitToWidth: 1,
+                    fitToHeight: 0,
+                    margins: {
+                        left: 0.25, right: 0.25,
+                        top: 0.75, bottom: 0.75,
+                        header: 0.3, footer: 0.3
+                    }
+                },
+                headerFooter: {
+                    oddFooter: '&Rتاريخ الطباعة: &D &T&Cالصفحة &P من &N&Lمدارس القيم الأهلية - إدارة النظام',
+                    evenFooter: '&Rتاريخ الطباعة: &D &T&Cالصفحة &P من &N&Lمدارس القيم الأهلية - إدارة النظام'
+                }
+            });
 
-        const csvContent = "\uFEFF" + [headers, ...rows]
-            .map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
-            .join("\n");
+            // Try to fetch the logo robustly
+            let logoId = null;
+            const logoPath = logo_url || '/images/logo.png';
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `users_report_${new Date().toISOString().slice(0, 10)}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+            const getLogoBase64 = async (url) => {
+                try {
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        if (blob.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            return await new Promise((resolve) => {
+                                reader.readAsDataURL(blob);
+                                reader.onloadend = () => resolve(reader.result);
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Fetch failed, falling back to canvas", e);
+                }
+
+                // Fallback: Use native Image + Canvas
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            };
+
+            const base64Clean = await getLogoBase64(logoPath);
+            if (base64Clean) {
+                logoId = workbook.addImage({
+                    base64: base64Clean,
+                    extension: 'png',
+                });
+            }
+
+            // Columns width (Scaled down to fit screen perfectly)
+            sheet.columns = [
+                { width: 12 }, // A: ID
+                { width: 40 }, // B: Name
+                { width: 20 }, // C: Username
+                { width: 16 }, // D: Role
+                { width: 20 }, // E: Branch
+                { width: 14 }, // F: Status
+                { width: 22 }, // G: Last Login
+                { width: 22 }  // H: Device
+            ];
+
+            // Add Top Border / Accent Line
+            sheet.getRow(1).height = 10;
+            sheet.mergeCells('A1:H1');
+            sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } }; // Brand Green
+
+            // --- 3-COLUMN PROFESSIONAL LETTERHEAD ---
+            // Row 2-4 Heights
+            sheet.getRow(2).height = 35;
+            sheet.getRow(3).height = 25; // Adjusted height for size 16 font
+            sheet.getRow(4).height = 20;
+
+            // 1. Insert Logo in the Center (Floating over Columns D & E)
+            if (logoId !== null) {
+                // col: 3.3 means it's positioned roughly in the middle (Column D) since there are 8 columns
+                sheet.addImage(logoId, {
+                    tl: { col: 3.3, row: 1.1 },
+                    ext: { width: 85, height: 85 }
+                });
+            }
+
+            // 2. Title & Subtitle (Right side in RTL, Columns A-C)
+            sheet.mergeCells('A2:C2');
+            const titleCell = sheet.getCell('A2');
+            titleCell.value = 'مدارس القيم الأهلية';
+            titleCell.font = { name: 'Segoe UI', size: 24, bold: true, color: { argb: 'FF6B9B37' } };
+            titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            sheet.mergeCells('A3:C3');
+            const enTitleCell = sheet.getCell('A3');
+            enTitleCell.value = 'AL QIYAM CIVEL SCHOOLS'; // Reverted to NATIONAL to match user prompt
+            enTitleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FF6B9B37' } }; // Size 16 aligns visually with Arabic size 24
+            enTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            sheet.mergeCells('A4:C4');
+            const subTitleCell = sheet.getCell('A4');
+            subTitleCell.value = 'النظام الإداري - إدارة المستخدمين';
+            subTitleCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FFE32636' } }; // Red Color, smaller size
+            subTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            // 3. Meta Data (Left side in RTL, Columns F-H)
+            sheet.mergeCells('F2:H2');
+            const meta1Cell = sheet.getCell('F2');
+            meta1Cell.value = 'نوع التقرير: كشف مستخدمين';
+            meta1Cell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+            meta1Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            const exportDate = new Date().toLocaleString('ar-EG');
+            sheet.mergeCells('F3:H3');
+            const meta2Cell = sheet.getCell('F3');
+            meta2Cell.value = `تاريخ التصدير: ${exportDate}`;
+            meta2Cell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+            meta2Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            sheet.mergeCells('F4:H4');
+            const meta3Cell = sheet.getCell('F4');
+            meta3Cell.value = 'حالة التقرير: معتمد ✔';
+            meta3Cell.font = { size: 11, bold: true, color: { argb: 'FF6B9B37' }, name: 'Segoe UI' };
+            meta3Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            // Row 5: Empty Spacer
+            sheet.getRow(5).height = 15;
+
+            // Row 7: Stats Bar
+            sheet.getRow(7).height = 30; // slightly smaller height
+            sheet.mergeCells('A7:H7');
+            const statsCell = sheet.getCell('A7');
+            statsCell.value = `📊 إجمالي الحسابات: ${stats?.total || 0}   |   👨‍🏫 المعلمون: ${stats?.teachers || 0}   |   🛡️ مدراء النظام: ${stats?.admins || 0}   |   ⚠️ الحسابات المعطلة: ${stats?.inactive || 0}`;
+            statsCell.font = { size: 11, bold: true, color: { argb: 'FF437020' }, name: 'Segoe UI' };
+            statsCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            statsCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7EB' } }; // Light Green Background
+            statsCell.border = {
+                top: { style: 'medium', color: { argb: 'FF96CF75' } },
+                bottom: { style: 'medium', color: { argb: 'FF96CF75' } },
+                left: { style: 'medium', color: { argb: 'FF96CF75' } },
+                right: { style: 'medium', color: { argb: 'FF96CF75' } }
+            };
+
+            // Row 8: Empty Spacer
+            sheet.getRow(8).height = 10;
+
+            // Row 9: Table Header
+            const headerRow = sheet.addRow(["الرقم التعريفي", "الاسم كامل", "اسم المستخدم", "الدور / الصلاحية", "الفرع", "حالة الحساب", "آخر ظهور", "الجهاز المستعمل"]);
+            headerRow.height = 30; // compact header
+            headerRow.eachCell((cell) => {
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF6B9B37' } // Brand Green
+                };
+                cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }; // smaller font
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = {
+                    top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                    right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+                };
+            });
+
+            // Add Data
+            usersToExport.forEach((u, index) => {
+                // Try to parse last_login as real Date if possible
+                let parsedDate = u.last_login || '-';
+                if (parsedDate !== '-' && parsedDate !== 'نشط الآن') {
+                    const d = new Date(parsedDate);
+                    if (!isNaN(d)) parsedDate = d;
+                }
+
+                const row = sheet.addRow([
+                    u.id,
+                    u.name,
+                    u.username,
+                    u.role,
+                    u.branch || '-',
+                    u.is_active ? "نشط" : "معطل",
+                    parsedDate,
+                    u.device || '-'
+                ]);
+
+                row.height = 35; // increased slightly to accommodate wrapped text
+
+                row.eachCell((cell, colNumber) => {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                    cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } }; // smaller font
+                    cell.border = {
+                        bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } }, // Soft Gray Border
+                        left: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                        right: { style: 'thin', color: { argb: 'FFDEE2E6' } }
+                    };
+                    cell.protection = { locked: false }; // Unlock data cells for editing
+
+                    // Apply date format if it's a date object
+                    if (cell.value instanceof Date) {
+                        cell.numFmt = 'yyyy-mm-dd hh:mm:ss';
+                    }
+
+                    // Professional ID Formatting (Column 1)
+                    if (colNumber === 1 && typeof cell.value === 'number') {
+                        cell.numFmt = '0000'; // Zero-pad to 4 digits (e.g., 0001)
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF475569' } }; // Bold Slate Gray
+                    }
+                });
+
+                // Alternate background: White and Very Light Green
+                if (index % 2 === 0) {
+                    row.eachCell((cell) => {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FCF7' } }; // Very light tint of green
+                    });
+                } else {
+                    row.eachCell((cell) => {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } };
+                    });
+                }
+
+                // Active status styling (Using Logo Colors)
+                const statusCell = row.getCell(6);
+                if (u.is_active) {
+                    statusCell.font = { color: { argb: 'FF558A2A' }, bold: true, name: 'Segoe UI', size: 10 }; // Green, size 10
+                    statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCEFD1' } }; // Light Green
+                } else {
+                    statusCell.font = { color: { argb: 'FFCC2B2B' }, bold: true, name: 'Segoe UI', size: 10 }; // Red, size 10
+                    statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF2F2' } }; // Light Red
+                }
+            });
+
+            // Apply Auto-Filter
+            sheet.autoFilter = `A9:H${9 + usersToExport.length}`;
+
+            // Protect the sheet (prevents accidental edits on header/logo)
+            await sheet.protect('', {
+                selectLockedCells: true,
+                selectUnlockedCells: true,
+                autoFilter: true, // Allow filtering
+                sort: true, // Allow sorting
+                formatCells: true,
+                formatColumns: true,
+                formatRows: true
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `users_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Export failed:", error);
+            alert("حدث خطأ أثناء التصدير.");
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     const triggerPrint = () => {
@@ -402,7 +656,8 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
             <Head title="إدارة المستخدمين | النظام الإداري" />
 
             {/* Injecting Print Stylesheet dynamically */}
-            <style dangerouslySetInnerHTML={{__html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media print {
                     aside, nav, header, .no-print, button, a, [type="checkbox"], select, input, .print\\:hidden {
                         display: none !important;
@@ -452,7 +707,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
             {/* Header Banner - Developed and Premium styled in Brand colors (Styled like Staff Directory) */}
             <div className="relative bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none no-print bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px] z-40">
                 <div className="absolute top-0 right-0 left-0 h-1 rounded-t-3xl bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                
+
                 {/* Visual geometric lines */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden rounded-3xl">
                     <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -467,7 +722,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                         <h1 className="text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight">إدارة المستخدمين</h1>
                         <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">التحكم الكامل في حسابات دخول النظام وصلاحياتها</p>
                     </div>
-                    
+
                     {/* Buttons on Left in RTL */}
                     <div className="flex items-center gap-3 self-end sm:self-auto" ref={columnToggleRef}>
                         {/* View Mode Toggle (Grid vs Table) */}
@@ -475,11 +730,10 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                             <button
                                 type="button"
                                 onClick={() => setViewMode('table')}
-                                className={`p-2 rounded-xl transition-all ${
-                                    viewMode === 'table'
-                                        ? 'bg-white dark:bg-[#121820] text-primary-500 shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                                }`}
+                                className={`p-2 rounded-xl transition-all ${viewMode === 'table'
+                                    ? 'bg-white dark:bg-[#121820] text-primary-500 shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                    }`}
                                 title="عرض جدول"
                             >
                                 <List size={16} />
@@ -487,25 +741,25 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                             <button
                                 type="button"
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2 rounded-xl transition-all ${
-                                    viewMode === 'grid'
-                                        ? 'bg-white dark:bg-[#121820] text-primary-500 shadow-sm'
-                                        : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-                                }`}
+                                className={`p-2 rounded-xl transition-all ${viewMode === 'grid'
+                                    ? 'bg-white dark:bg-[#121820] text-primary-500 shadow-sm'
+                                    : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                                    }`}
                                 title="عرض بطاقات"
                             >
                                 <LayoutGrid size={16} />
                             </button>
                         </div>
 
-                        {/* Export CSV button */}
+                        {/* Export Excel button */}
                         <button
                             type="button"
-                            onClick={exportToCSV}
-                            className="flex items-center justify-center p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820] text-slate-550 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300 shadow-sm transition-all"
-                            title="تصدير كملف Excel (CSV)"
+                            onClick={exportToExcel}
+                            disabled={isExporting}
+                            className={`flex items-center justify-center p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820] text-slate-550 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300 shadow-sm transition-all ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title="تصدير كملف Excel"
                         >
-                            <Download size={16} />
+                            {isExporting ? <RotateCcw size={16} className="animate-spin" /> : <Download size={16} />}
                         </button>
 
                         {/* Print PDF button */}
@@ -521,11 +775,10 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                         {/* Columns Selector Dropdown */}
                         <div className="relative">
                             <button onClick={() => setShowColumnToggle(!showColumnToggle)}
-                                className={`flex items-center gap-2 px-5 py-3 rounded-2xl border text-sm font-bold shadow-sm transition-all shrink-0 ${
-                                    showColumnToggle
-                                        ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-300 dark:border-primary-500/30 text-primary-700 dark:text-primary-400'
-                                        : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-dark-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300'
-                                }`}>
+                                className={`flex items-center gap-2 px-5 py-3 rounded-2xl border text-sm font-bold shadow-sm transition-all shrink-0 ${showColumnToggle
+                                    ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-300 dark:border-primary-500/30 text-primary-700 dark:text-primary-400'
+                                    : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-dark-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300'
+                                    }`}>
                                 <UsersIcon size={16} className={showColumnToggle ? 'text-primary-500' : 'text-slate-500 dark:text-slate-400'} />
                                 <span>الأعمدة</span>
                             </button>
@@ -534,43 +787,43 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1">تحديد الأعمدة الظاهرة:</span>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-650 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.user}
-                                            onChange={() => setVisibleColumns({...visibleColumns, user: !visibleColumns.user})}
+                                            onChange={() => setVisibleColumns({ ...visibleColumns, user: !visibleColumns.user })}
                                             className="rounded text-primary-500 focus:ring-primary-500/10" />
                                         <span>المستخدم الأساسي</span>
                                     </label>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.username}
-                                            onChange={() => setVisibleColumns({...visibleColumns, username: !visibleColumns.username})}
+                                            onChange={() => setVisibleColumns({ ...visibleColumns, username: !visibleColumns.username })}
                                             className="rounded text-primary-500 focus:ring-primary-500/10" />
                                         <span>اسم المستخدم (إضافي)</span>
                                     </label>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.last_login}
-                                            onChange={() => setVisibleColumns({...visibleColumns, last_login: !visibleColumns.last_login})}
+                                            onChange={() => setVisibleColumns({ ...visibleColumns, last_login: !visibleColumns.last_login })}
                                             className="rounded text-primary-500 focus:ring-primary-500/10" />
                                         <span>آخر ظهور</span>
                                     </label>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.device}
-                                            onChange={() => setVisibleColumns({...visibleColumns, device: !visibleColumns.device})}
+                                            onChange={() => setVisibleColumns({ ...visibleColumns, device: !visibleColumns.device })}
                                             className="rounded text-primary-500 focus:ring-primary-500/10" />
                                         <span>الجهاز الموثوق</span>
                                     </label>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.role}
-                                            onChange={() => setVisibleColumns({...visibleColumns, role: !visibleColumns.role})}
+                                            onChange={() => setVisibleColumns({ ...visibleColumns, role: !visibleColumns.role })}
                                             className="rounded text-primary-500 focus:ring-primary-500/10" />
                                         <span>الدور (الصلاحية)</span>
                                     </label>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.branch}
-                                            onChange={() => setVisibleColumns({...visibleColumns, branch: !visibleColumns.branch})}
+                                            onChange={() => setVisibleColumns({ ...visibleColumns, branch: !visibleColumns.branch })}
                                             className="rounded text-primary-500 focus:ring-primary-500/10" />
                                         <span>الفرع</span>
                                     </label>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-655 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.status}
-                                            onChange={() => setVisibleColumns({...visibleColumns, status: !visibleColumns.status})}
+                                            onChange={() => setVisibleColumns({ ...visibleColumns, status: !visibleColumns.status })}
                                             className="rounded text-primary-500 focus:ring-primary-500/10" />
                                         <span>الحالة</span>
                                     </label>
@@ -579,12 +832,11 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                         </div>
 
                         <button onClick={() => setShowFilter(!showFilter)}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-2xl border text-sm font-bold shadow-sm transition-all shrink-0 ${
-                                showFilter 
-                                    ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-300 dark:border-primary-500/30 text-primary-700 dark:text-primary-400' 
-                                    : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-dark-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300'
-                            }`}>
-                            <Filter size={16} className={showFilter ? 'text-primary-500 dark:text-primary-450' : 'text-slate-500 dark:text-slate-400'} /> 
+                            className={`flex items-center gap-2 px-5 py-3 rounded-2xl border text-sm font-bold shadow-sm transition-all shrink-0 ${showFilter
+                                ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-300 dark:border-primary-500/30 text-primary-700 dark:text-primary-400'
+                                : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-dark-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300'
+                                }`}>
+                            <Filter size={16} className={showFilter ? 'text-primary-500 dark:text-primary-450' : 'text-slate-500 dark:text-slate-400'} />
                             <span>تصفية</span>
                             {activeFiltersCount > 0 && (
                                 <span className="w-5 h-5 rounded-full bg-primary-500 text-white flex items-center justify-center text-[10px] font-bold font-mono">
@@ -594,7 +846,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                         </button>
                         <Link href={route('users.create')}
                             className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0">
-                            <Plus size={18} /> 
+                            <Plus size={18} />
                             <span>إضافة مستخدم</span>
                         </Link>
                     </div>
@@ -621,7 +873,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                     <stat.icon size={20} strokeWidth={2.5} />
                                 </div>
                             </div>
-                            
+
                             {/* Progress bar and trend badge */}
                             <div className="relative z-10 space-y-2.5 mt-1">
                                 <div className="w-full bg-slate-100/80 dark:bg-slate-950 h-1.5 rounded-full overflow-hidden">
@@ -645,19 +897,19 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                 {/* Search Header - Refactored search container with integrated button */}
                 <div className="p-6 border-b border-slate-50 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-b from-white to-slate-50/30 dark:from-transparent dark:to-transparent">
                     <h2 className="text-base font-bold text-dark-900 dark:text-white">قائمة المستخدمين</h2>
-                    
+
                     {/* Integrated Search Input and Search Button */}
                     <div className="relative max-w-sm w-full flex items-center bg-slate-100/60 dark:bg-slate-900/50 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 focus-within:bg-white dark:focus-within:bg-[#121820] border border-transparent dark:border-slate-800 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-primary-500/10 rounded-2xl transition-all p-1">
                         <div className="flex-1 relative flex items-center">
                             <Search size={16} className="absolute right-3.5 text-slate-400 pointer-events-none" />
                             <input type="text" placeholder="بحث بالاسم أو اسم المستخدم..."
                                 className="w-full bg-transparent border-none pr-10 pl-3 py-2 text-sm outline-none text-dark-900 dark:text-slate-100 font-medium"
-                                value={searchValue} 
-                                onChange={e => handleSearch(e.target.value)} 
+                                value={searchValue}
+                                onChange={e => handleSearch(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') triggerSearch(); }}
                             />
                         </div>
-                        <button 
+                        <button
                             onClick={triggerSearch}
                             className="px-4 py-2 text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-xl transition-all shadow-sm hover:shadow shrink-0 ml-1 flex items-center gap-1"
                         >
@@ -672,7 +924,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                     <div className="p-6 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/20 dark:bg-slate-900/10 relative">
                         {/* Decorative Grid Line inside panel */}
                         <div className="absolute top-0 right-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-primary-500/20 to-transparent" />
-                        
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
                             {/* Role Filter */}
                             <div className="group/select flex flex-col">
@@ -705,30 +957,30 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                             {isAdmin && (
                                 <div className="group/select flex flex-col">
                                     <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الفرع المدرسي</label>
-                                        <SelectInput
-                                            value={branchFilter}
-                                            onChange={val => handleFilterChange(roleFilter, statusFilter, val, dateFilter)}
-                                            options={[
-                                                { value: '', label: 'كل الفروع' },
-                                                ...(branches || []).map(b => ({ value: b.id, label: b.name }))
-                                            ]}
-                                        />
+                                    <SelectInput
+                                        value={branchFilter}
+                                        onChange={val => handleFilterChange(roleFilter, statusFilter, val, dateFilter)}
+                                        options={[
+                                            { value: '', label: 'كل الفروع' },
+                                            ...(branches || []).map(b => ({ value: b.id, label: b.name }))
+                                        ]}
+                                    />
                                 </div>
                             )}
 
                             {/* Date Registered Filter */}
                             <div className="group/select flex flex-col">
                                 <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">تاريخ التسجيل</label>
-                                    <SelectInput
-                                        value={dateFilter}
-                                        onChange={val => handleFilterChange(roleFilter, statusFilter, branchFilter, val)}
-                                        options={[
-                                            { value: '', label: 'كل الأوقات' },
-                                            { value: 'today', label: 'اليوم' },
-                                            { value: 'week', label: 'هذا الأسبوع' },
-                                            { value: 'month', label: 'هذا الشهر' }
-                                        ]}
-                                    />
+                                <SelectInput
+                                    value={dateFilter}
+                                    onChange={val => handleFilterChange(roleFilter, statusFilter, branchFilter, val)}
+                                    options={[
+                                        { value: '', label: 'كل الأوقات' },
+                                        { value: 'today', label: 'اليوم' },
+                                        { value: 'week', label: 'هذا الأسبوع' },
+                                        { value: 'month', label: 'هذا الشهر' }
+                                    ]}
+                                />
                             </div>
                         </div>
 
@@ -773,55 +1025,50 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                     <button
                         type="button"
                         onClick={clearFilters}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            !roleFilter && !statusFilter && !branchFilter && !dateFilter
-                                ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
-                        }`}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${!roleFilter && !statusFilter && !branchFilter && !dateFilter
+                            ? 'bg-primary-500 text-white shadow-sm'
+                            : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
+                            }`}
                     >
                         الكل
                     </button>
                     <button
                         type="button"
                         onClick={() => handleFilterChange(roles?.find(r => r.name.includes('مدير'))?.id ?? '', '', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('مدير')
-                                ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
-                        }`}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('مدير')
+                            ? 'bg-primary-500 text-white shadow-sm'
+                            : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
+                            }`}
                     >
                         المدراء
                     </button>
                     <button
                         type="button"
                         onClick={() => handleFilterChange(roles?.find(r => r.name.includes('معلم'))?.id ?? '', '', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('معلم')
-                                ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
-                        }`}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('معلم')
+                            ? 'bg-primary-500 text-white shadow-sm'
+                            : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
+                            }`}
                     >
                         المعلمون
                     </button>
                     <button
                         type="button"
                         onClick={() => handleFilterChange('', 'active', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            statusFilter === 'active' && !roleFilter && !branchFilter && !dateFilter
-                                ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
-                        }`}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${statusFilter === 'active' && !roleFilter && !branchFilter && !dateFilter
+                            ? 'bg-primary-500 text-white shadow-sm'
+                            : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
+                            }`}
                     >
                         النشطون
                     </button>
                     <button
                         type="button"
                         onClick={() => handleFilterChange('', 'inactive', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                            statusFilter === 'inactive' && !roleFilter && !branchFilter && !dateFilter
-                                ? 'bg-primary-500 text-white shadow-sm'
-                                : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
-                        }`}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${statusFilter === 'inactive' && !roleFilter && !branchFilter && !dateFilter
+                            ? 'bg-primary-500 text-white shadow-sm'
+                            : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
+                            }`}
                     >
                         المعطلون
                     </button>
@@ -845,7 +1092,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                         <div key={user.id} className={`relative bg-white dark:bg-slate-900/40 border rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 group ${isSelected ? 'border-primary-500 dark:border-primary-600 bg-primary-50/10 dark:bg-primary-950/10' : 'border-slate-100 dark:border-slate-800/80'}`}>
                                             {/* Ambient Glow */}
                                             <div className="absolute -left-6 -top-6 w-20 h-20 bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
-                                            
+
                                             {/* Card Header: Checkbox, Role & Quick Status Toggle & Actions */}
                                             <div className="flex items-center justify-between gap-2 mb-4">
                                                 <div className="flex items-center gap-2">
@@ -956,15 +1203,14 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                             const isAdmin = user.role?.includes('مدير');
                                             const isTeacher = user.role?.includes('معلم');
                                             const isSelected = selectedUsers.includes(user.id);
-                                            
+
                                             return (
-                                                <tr key={user.id} className={`group border-r-4 border-r-transparent transition-all duration-200 cursor-pointer ${
-                                                    isSelected 
-                                                        ? 'bg-primary-50/10 dark:bg-primary-950/10 border-r-primary-500' 
-                                                        : !user.is_active
-                                                            ? 'hover:border-r-rose-500 hover:bg-rose-50/5 dark:hover:bg-rose-950/5 border-r-rose-500/20'
-                                                            : 'hover:border-r-primary-500 hover:bg-slate-50/40 dark:hover:bg-primary-500/5'
-                                                }`}>
+                                                <tr key={user.id} className={`group border-r-4 border-r-transparent transition-all duration-200 cursor-pointer ${isSelected
+                                                    ? 'bg-primary-50/10 dark:bg-primary-950/10 border-r-primary-500'
+                                                    : !user.is_active
+                                                        ? 'hover:border-r-rose-500 hover:bg-rose-50/5 dark:hover:bg-rose-950/5 border-r-rose-500/20'
+                                                        : 'hover:border-r-primary-500 hover:bg-slate-50/40 dark:hover:bg-primary-500/5'
+                                                    }`}>
                                                     {/* Checkbox column */}
                                                     <td className="px-6 py-4.5 whitespace-nowrap text-center no-print">
                                                         <input type="checkbox"
@@ -1009,7 +1255,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                             <span className="text-sm font-mono text-slate-600 dark:text-slate-300">@{user.username}</span>
                                                         </td>
                                                     )}
-                                                    
+
                                                     {visibleColumns.last_login && (
                                                         <td className="px-6 py-4.5 whitespace-nowrap">
                                                             <span className={`text-sm font-bold ${user.last_login === 'نشط الآن' ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -1017,7 +1263,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                             </span>
                                                         </td>
                                                     )}
-                                                    
+
                                                     {visibleColumns.device && (
                                                         <td className="px-6 py-4.5 whitespace-nowrap">
                                                             <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
@@ -1044,7 +1290,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                             )}
                                                         </td>
                                                     )}
-                                                    
+
                                                     {/* Branch */}
                                                     {visibleColumns.branch && (
                                                         <td className="px-6 py-4.5 whitespace-nowrap">
@@ -1054,7 +1300,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                             </div>
                                                         </td>
                                                     )}
-                                                    
+
                                                     {/* Status Badge - Clickable Status toggle */}
                                                     {visibleColumns.status && (
                                                         <td className="px-6 py-4.5 whitespace-nowrap">
@@ -1080,7 +1326,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                             </span>
                                                         </td>
                                                     )}
-                                                    
+
                                                     {/* Action Menu */}
                                                     <td className="px-6 py-4.5 whitespace-nowrap text-center no-print">
                                                         <ActionMenu user={user} onDelete={setShowDel} onResetPassword={setResetUser} currentUser={auth?.user} />
@@ -1176,7 +1422,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                     <div>
                         <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">اختر الفرع الجديد</label>
                         <SelectInput
-                            value={bulkBranchId} 
+                            value={bulkBranchId}
                             onChange={val => setBulkBranchId(val)}
                             options={[
                                 { value: '', label: 'اختر الفرع' },

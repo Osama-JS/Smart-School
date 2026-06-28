@@ -3,7 +3,7 @@ import { Head, useForm, router, Link } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import Select from "react-select";
 import SelectInput from "@/Components/SelectInput";
-import { Plus, Trash2, X, Users, Calendar as CalendarIcon, Clock, MapPin, Eye, FileText, CheckCircle, Search, Filter, PlusCircle, ArrowUpRight, ArrowUpLeft, Bell, Mail, Smartphone, Edit, AlertCircle, LayoutGrid, List, CalendarDays, ChevronRight, ChevronLeft } from "lucide-react";
+import { Plus, Trash2, X, Users, Calendar as CalendarIcon, Clock, MapPin, Eye, FileText, CheckCircle, Search, Filter, PlusCircle, ArrowUpRight, ArrowUpLeft, Bell, Mail, Smartphone, Edit, AlertCircle, LayoutGrid, List, CalendarDays, ChevronRight, ChevronLeft, Type, ListTodo } from "lucide-react";
 import FlatpickrInput from "@/Components/FlatpickrInput";
 
 export default function MeetingsIndex({ auth, meetings, users, stats, filters }) {
@@ -741,87 +741,135 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                         <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
                             <form id="createForm" onSubmit={handleCreateSubmit} className="space-y-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">عنوان الاجتماع <span className="text-red-500">*</span></label>
-                                    <input 
-                                        type="text" 
-                                        value={createForm.data.title}
-                                        onChange={e => createForm.setData('title', e.target.value)}
-                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
-                                        required
-                                    />
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                        عنوان الاجتماع <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
+                                            <Type size={18} />
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            value={createForm.data.title}
+                                            onChange={e => createForm.setData('title', e.target.value)}
+                                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pr-10 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all dark:text-white"
+                                            placeholder="أدخل عنواناً واضحاً للاجتماع..."
+                                            required
+                                        />
+                                    </div>
                                     {createForm.errors.title && <p className="text-red-500 text-xs mt-1">{createForm.errors.title}</p>}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تاريخ الاجتماع <span className="text-red-500">*</span></label>
-                                        <FlatpickrInput 
-                                            type="date"
-                                            value={createForm.data.date}
-                                            onChange={(date) => createForm.setData('date', date)}
-                                            required
-                                        />
-                                        {createForm.errors.date && <p className="text-red-500 text-xs mt-1">{createForm.errors.date}</p>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت الاجتماع <span className="text-red-500">*</span></label>
-                                        <FlatpickrInput 
-                                            type="time"
-                                            value={createForm.data.time}
-                                            onChange={(time) => createForm.setData('time', time)}
-                                            required
-                                        />
-                                        {createForm.errors.time && <p className="text-red-500 text-xs mt-1">{createForm.errors.time}</p>}
+                                <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 dark:border-slate-800/80 dark:bg-slate-900/20">
+                                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+                                        <CalendarDays size={18} className="text-primary-500" /> موعد الاجتماع
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">تاريخ الاجتماع <span className="text-red-500">*</span></label>
+                                            <div className="relative group">
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors z-10">
+                                                    <CalendarIcon size={18} />
+                                                </div>
+                                                <div className="[&>input]:pr-10 [&>input]:bg-slate-50 dark:[&>input]:bg-slate-800/50 [&>input]:border-slate-200 dark:[&>input]:border-slate-700 [&>input]:focus:bg-white dark:[&>input]:focus:bg-slate-900 [&>input]:focus:ring-4 [&>input]:focus:ring-blue-500/10 [&>input]:focus:border-blue-500">
+                                                    <FlatpickrInput 
+                                                        type="date"
+                                                        value={createForm.data.date}
+                                                        onChange={(date) => createForm.setData('date', date)}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                            {createForm.errors.date && <p className="text-red-500 text-xs mt-1">{createForm.errors.date}</p>}
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">وقت الاجتماع <span className="text-red-500">*</span></label>
+                                            <div className="relative group">
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 group-focus-within:text-amber-500 transition-colors z-10">
+                                                    <Clock size={18} />
+                                                </div>
+                                                <div className="[&>input]:pr-10 [&>input]:bg-slate-50 dark:[&>input]:bg-slate-800/50 [&>input]:border-slate-200 dark:[&>input]:border-slate-700 [&>input]:focus:bg-white dark:[&>input]:focus:bg-slate-900 [&>input]:focus:ring-4 [&>input]:focus:ring-amber-500/10 [&>input]:focus:border-amber-500">
+                                                    <FlatpickrInput 
+                                                        type="time"
+                                                        value={createForm.data.time}
+                                                        onChange={(time) => createForm.setData('time', time)}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                            {createForm.errors.time && <p className="text-red-500 text-xs mt-1">{createForm.errors.time}</p>}
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">نوع الاجتماع <span className="text-red-500">*</span></label>
-                                    <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="type" value="in_person" checked={createForm.data.type === 'in_person'} onChange={e => createForm.setData('type', e.target.value)} className="text-primary-600 focus:ring-primary-500 w-4 h-4" />
-                                            <span className="text-sm text-slate-700 dark:text-slate-300">حضوري</span>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">
+                                        نوع الاجتماع <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all hover:-translate-y-0.5 ${createForm.data.type === 'in_person' ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 shadow-sm shadow-primary-500/10' : 'border-slate-100 hover:border-slate-200 dark:border-slate-800 dark:hover:border-slate-700 bg-white dark:bg-slate-900 shadow-sm'}`}>
+                                            <input type="radio" name="type" value="in_person" checked={createForm.data.type === 'in_person'} onChange={e => createForm.setData('type', e.target.value)} className="sr-only" />
+                                            <div className={`p-3 rounded-full transition-colors ${createForm.data.type === 'in_person' ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400' : 'bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-slate-500'}`}>
+                                                <MapPin size={24} />
+                                            </div>
+                                            <span className={`font-bold text-sm ${createForm.data.type === 'in_person' ? 'text-primary-700 dark:text-primary-400' : 'text-slate-600 dark:text-slate-400'}`}>حضوري</span>
+                                            {createForm.data.type === 'in_person' && <div className="absolute top-3 left-3 text-primary-500"><CheckCircle size={16} /></div>}
                                         </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input type="radio" name="type" value="online" checked={createForm.data.type === 'online'} onChange={e => createForm.setData('type', e.target.value)} className="text-primary-600 focus:ring-primary-500 w-4 h-4" />
-                                            <span className="text-sm text-slate-700 dark:text-slate-300">عن بعد (Online)</span>
+                                        <label className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 cursor-pointer transition-all hover:-translate-y-0.5 ${createForm.data.type === 'online' ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 shadow-sm shadow-primary-500/10' : 'border-slate-100 hover:border-slate-200 dark:border-slate-800 dark:hover:border-slate-700 bg-white dark:bg-slate-900 shadow-sm'}`}>
+                                            <input type="radio" name="type" value="online" checked={createForm.data.type === 'online'} onChange={e => createForm.setData('type', e.target.value)} className="sr-only" />
+                                            <div className={`p-3 rounded-full transition-colors ${createForm.data.type === 'online' ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400' : 'bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-slate-500'}`}>
+                                                <Smartphone size={24} /> 
+                                            </div>
+                                            <span className={`font-bold text-sm ${createForm.data.type === 'online' ? 'text-primary-700 dark:text-primary-400' : 'text-slate-600 dark:text-slate-400'}`}>عن بعد (Online)</span>
+                                            {createForm.data.type === 'online' && <div className="absolute top-3 left-3 text-primary-500"><CheckCircle size={16} /></div>}
                                         </label>
                                     </div>
                                     {createForm.errors.type && <p className="text-red-500 text-xs mt-1">{createForm.errors.type}</p>}
                                 </div>
 
-                                <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">محاور الاجتماع <span className="text-red-500">*</span></label>
-                                        <button type="button" onClick={addCreateAgenda} className="text-sm text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/30 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
-                                            <PlusCircle size={16} /> إضافة محور
+                                <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/30 dark:border-slate-800/80 dark:bg-slate-900/10">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            <ListTodo size={18} className="text-indigo-500" />
+                                            محاور الاجتماع <span className="text-red-500">*</span>
+                                        </label>
+                                        <button type="button" onClick={addCreateAgenda} className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-indigo-100 dark:border-indigo-800/50">
+                                            <Plus size={14} /> إضافة محور
                                         </button>
                                     </div>
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 relative before:absolute before:inset-y-2 before:right-4 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
                                         {createForm.data.agendas.map((agenda, idx) => (
-                                            <div key={idx} className="flex gap-2">
-                                                <input 
-                                                    type="text" 
-                                                    value={agenda}
-                                                    onChange={e => updateCreateAgenda(idx, e.target.value)}
-                                                    placeholder={`المحور ${idx + 1}`}
-                                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
-                                                    required
-                                                />
-                                                {createForm.data.agendas.length > 1 && (
-                                                    <button type="button" onClick={() => removeCreateAgenda(idx)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 px-3 rounded-xl transition-colors">
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                )}
+                                            <div key={idx} className="flex gap-3 relative z-10 group items-center">
+                                                <div className="w-8 h-8 shrink-0 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-xs shadow-sm group-focus-within:border-indigo-500 group-focus-within:text-indigo-600 dark:group-focus-within:border-indigo-400 dark:group-focus-within:text-indigo-400 transition-colors">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1 flex gap-2">
+                                                    <input 
+                                                        type="text" 
+                                                        value={agenda}
+                                                        onChange={e => updateCreateAgenda(idx, e.target.value)}
+                                                        placeholder={`اكتب تفاصيل المحور ${idx + 1}...`}
+                                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all dark:text-white shadow-sm"
+                                                        required
+                                                    />
+                                                    {createForm.data.agendas.length > 1 && (
+                                                        <button type="button" onClick={() => removeCreateAgenda(idx)} className="text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 w-10 flex items-center justify-center rounded-xl transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
-                                    {createForm.errors.agendas && <p className="text-red-500 text-xs mt-1">{createForm.errors.agendas}</p>}
+                                    {createForm.errors.agendas && <p className="text-red-500 text-xs mt-2">{createForm.errors.agendas}</p>}
                                 </div>
 
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">المدعوون (المشاركون) <span className="text-red-500">*</span></label>
+                                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                            <Users size={16} className="text-teal-500" />
+                                            المدعوون (المشاركون) <span className="text-red-500">*</span>
+                                        </label>
                                         <div className="flex gap-2">
                                             <button type="button" onClick={() => createForm.setData('participants', userOptions.map(opt => opt.value))} className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/40 px-2 py-1 rounded-md transition-colors">
                                                 تحديد الكل
@@ -848,7 +896,10 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">طرق إرسال الدعوة (التنبيهات)</label>
+                                    <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                        <Bell size={16} className="text-orange-500" />
+                                        طرق إرسال الدعوة (التنبيهات)
+                                    </label>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${createForm.data.notification_channels.includes('system') ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20' : 'border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'}`}>
                                             <input type="checkbox" checked={createForm.data.notification_channels.includes('system')} onChange={() => toggleCreateChannel('system')} className="w-4 h-4 text-primary-600 rounded border-slate-300 focus:ring-primary-500" />
@@ -931,91 +982,139 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                             )}
                             <form id="editForm" onSubmit={handleEditSubmit} className="space-y-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">عنوان الاجتماع <span className="text-red-500">*</span></label>
-                                    <input 
-                                        type="text" 
-                                        value={editForm.data.title}
-                                        onChange={e => editForm.setData('title', e.target.value)}
-                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-800/50"
-                                        required
-                                        disabled={selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled'}
-                                    />
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                                        عنوان الاجتماع <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="relative group">
+                                        <div className="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none text-slate-400 group-focus-within:text-primary-500 transition-colors">
+                                            <Type size={18} />
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            value={editForm.data.title}
+                                            onChange={e => editForm.setData('title', e.target.value)}
+                                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pr-10 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 outline-none transition-all dark:text-white disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-800/80"
+                                            placeholder="أدخل عنواناً واضحاً للاجتماع..."
+                                            required
+                                            disabled={selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled'}
+                                        />
+                                    </div>
                                     {editForm.errors.title && <p className="text-red-500 text-xs mt-1">{editForm.errors.title}</p>}
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تاريخ الاجتماع <span className="text-red-500">*</span></label>
-                                        <FlatpickrInput 
-                                            type="date"
-                                            value={editForm.data.date}
-                                            onChange={(date) => editForm.setData('date', date)}
-                                            required
-                                        />
-                                        {editForm.errors.date && <p className="text-red-500 text-xs mt-1">{editForm.errors.date}</p>}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وقت الاجتماع <span className="text-red-500">*</span></label>
-                                        <FlatpickrInput 
-                                            type="time"
-                                            value={editForm.data.time}
-                                            onChange={(time) => editForm.setData('time', time)}
-                                            required
-                                        />
-                                        {editForm.errors.time && <p className="text-red-500 text-xs mt-1">{editForm.errors.time}</p>}
+                                <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/50 dark:border-slate-800/80 dark:bg-slate-900/20">
+                                    <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+                                        <CalendarDays size={18} className="text-primary-500" /> موعد الاجتماع
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">تاريخ الاجتماع <span className="text-red-500">*</span></label>
+                                            <div className="relative group">
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors z-10">
+                                                    <CalendarIcon size={18} />
+                                                </div>
+                                                <div className="[&>input]:pr-10 [&>input]:bg-slate-50 dark:[&>input]:bg-slate-800/50 [&>input]:border-slate-200 dark:[&>input]:border-slate-700 [&>input]:focus:bg-white dark:[&>input]:focus:bg-slate-900 [&>input]:focus:ring-4 [&>input]:focus:ring-blue-500/10 [&>input]:focus:border-blue-500">
+                                                    <FlatpickrInput 
+                                                        type="date"
+                                                        value={editForm.data.date}
+                                                        onChange={(date) => editForm.setData('date', date)}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                            {editForm.errors.date && <p className="text-red-500 text-xs mt-1">{editForm.errors.date}</p>}
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">وقت الاجتماع <span className="text-red-500">*</span></label>
+                                            <div className="relative group">
+                                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400 group-focus-within:text-amber-500 transition-colors z-10">
+                                                    <Clock size={18} />
+                                                </div>
+                                                <div className="[&>input]:pr-10 [&>input]:bg-slate-50 dark:[&>input]:bg-slate-800/50 [&>input]:border-slate-200 dark:[&>input]:border-slate-700 [&>input]:focus:bg-white dark:[&>input]:focus:bg-slate-900 [&>input]:focus:ring-4 [&>input]:focus:ring-amber-500/10 [&>input]:focus:border-amber-500">
+                                                    <FlatpickrInput 
+                                                        type="time"
+                                                        value={editForm.data.time}
+                                                        onChange={(time) => editForm.setData('time', time)}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                            {editForm.errors.time && <p className="text-red-500 text-xs mt-1">{editForm.errors.time}</p>}
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">نوع الاجتماع <span className="text-red-500">*</span></label>
-                                    <div className="flex gap-4">
-                                        <label className={`flex items-center gap-2 ${selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
-                                            <input type="radio" name="type" value="in_person" checked={editForm.data.type === 'in_person'} onChange={e => editForm.setData('type', e.target.value)} disabled={selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled'} className="text-primary-600 focus:ring-primary-500 w-4 h-4" />
-                                            <span className="text-sm text-slate-700 dark:text-slate-300">حضوري</span>
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">
+                                        نوع الاجتماع <span className="text-red-500">*</span>
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled' ? 'cursor-not-allowed opacity-60 bg-slate-50 dark:bg-slate-800' : 'cursor-pointer hover:-translate-y-0.5'} ${editForm.data.type === 'in_person' ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 shadow-sm shadow-primary-500/10' : 'border-slate-100 hover:border-slate-200 dark:border-slate-800 dark:hover:border-slate-700 bg-white dark:bg-slate-900 shadow-sm'}`}>
+                                            <input type="radio" name="type" value="in_person" checked={editForm.data.type === 'in_person'} onChange={e => editForm.setData('type', e.target.value)} disabled={selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled'} className="sr-only" />
+                                            <div className={`p-3 rounded-full transition-colors ${editForm.data.type === 'in_person' ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400' : 'bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-slate-500'}`}>
+                                                <MapPin size={24} />
+                                            </div>
+                                            <span className={`font-bold text-sm ${editForm.data.type === 'in_person' ? 'text-primary-700 dark:text-primary-400' : 'text-slate-600 dark:text-slate-400'}`}>حضوري</span>
+                                            {editForm.data.type === 'in_person' && <div className="absolute top-3 left-3 text-primary-500"><CheckCircle size={16} /></div>}
                                         </label>
-                                        <label className={`flex items-center gap-2 ${selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
-                                            <input type="radio" name="type" value="online" checked={editForm.data.type === 'online'} onChange={e => editForm.setData('type', e.target.value)} disabled={selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled'} className="text-primary-600 focus:ring-primary-500 w-4 h-4" />
-                                            <span className="text-sm text-slate-700 dark:text-slate-300">عن بعد (Online)</span>
+                                        <label className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled' ? 'cursor-not-allowed opacity-60 bg-slate-50 dark:bg-slate-800' : 'cursor-pointer hover:-translate-y-0.5'} ${editForm.data.type === 'online' ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20 shadow-sm shadow-primary-500/10' : 'border-slate-100 hover:border-slate-200 dark:border-slate-800 dark:hover:border-slate-700 bg-white dark:bg-slate-900 shadow-sm'}`}>
+                                            <input type="radio" name="type" value="online" checked={editForm.data.type === 'online'} onChange={e => editForm.setData('type', e.target.value)} disabled={selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled'} className="sr-only" />
+                                            <div className={`p-3 rounded-full transition-colors ${editForm.data.type === 'online' ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400' : 'bg-slate-50 text-slate-400 dark:bg-slate-800 dark:text-slate-500'}`}>
+                                                <Smartphone size={24} /> 
+                                            </div>
+                                            <span className={`font-bold text-sm ${editForm.data.type === 'online' ? 'text-primary-700 dark:text-primary-400' : 'text-slate-600 dark:text-slate-400'}`}>عن بعد (Online)</span>
+                                            {editForm.data.type === 'online' && <div className="absolute top-3 left-3 text-primary-500"><CheckCircle size={16} /></div>}
                                         </label>
                                     </div>
                                     {editForm.errors.type && <p className="text-red-500 text-xs mt-1">{editForm.errors.type}</p>}
                                 </div>
 
-                                <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">محاور الاجتماع <span className="text-red-500">*</span></label>
+                                <div className="p-5 rounded-2xl border border-slate-100 bg-slate-50/30 dark:border-slate-800/80 dark:bg-slate-900/10">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                                            <ListTodo size={18} className="text-indigo-500" />
+                                            محاور الاجتماع <span className="text-red-500">*</span>
+                                        </label>
                                         {!(selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled') && (
-                                            <button type="button" onClick={addEditAgenda} className="text-sm text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/30 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
-                                                <PlusCircle size={16} /> إضافة محور
+                                            <button type="button" onClick={addEditAgenda} className="text-xs font-bold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-indigo-100 dark:border-indigo-800/50">
+                                                <Plus size={14} /> إضافة محور
                                             </button>
                                         )}
                                     </div>
-                                    <div className="space-y-3">
+                                    <div className="space-y-3 relative before:absolute before:inset-y-2 before:right-4 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-700">
                                         {editForm.data.agendas.map((agenda, idx) => (
-                                            <div key={idx} className="flex gap-2">
-                                                <input 
-                                                    type="text" 
-                                                    value={agenda}
-                                                    onChange={e => updateEditAgenda(idx, e.target.value)}
-                                                    placeholder={`المحور ${idx + 1}`}
-                                                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white disabled:bg-slate-50 disabled:text-slate-400 dark:disabled:bg-slate-800/50"
-                                                    required
-                                                    disabled={selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled'}
-                                                />
-                                                {editForm.data.agendas.length > 1 && !(selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled') && (
-                                                    <button type="button" onClick={() => removeEditAgenda(idx)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 px-3 rounded-xl transition-colors">
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                )}
+                                            <div key={idx} className="flex gap-3 relative z-10 group items-center">
+                                                <div className="w-8 h-8 shrink-0 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-xs shadow-sm group-focus-within:border-indigo-500 group-focus-within:text-indigo-600 dark:group-focus-within:border-indigo-400 dark:group-focus-within:text-indigo-400 transition-colors">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1 flex gap-2">
+                                                    <input 
+                                                        type="text" 
+                                                        value={agenda}
+                                                        onChange={e => updateEditAgenda(idx, e.target.value)}
+                                                        placeholder={`اكتب تفاصيل المحور ${idx + 1}...`}
+                                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all dark:text-white shadow-sm disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-800/80"
+                                                        required
+                                                        disabled={selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled'}
+                                                    />
+                                                    {editForm.data.agendas.length > 1 && !(selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled') && (
+                                                        <button type="button" onClick={() => removeEditAgenda(idx)} className="text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 w-10 flex items-center justify-center rounded-xl transition-all opacity-0 group-hover:opacity-100 focus:opacity-100">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
-                                    {editForm.errors.agendas && <p className="text-red-500 text-xs mt-1">{editForm.errors.agendas}</p>}
+                                    {editForm.errors.agendas && <p className="text-red-500 text-xs mt-2">{editForm.errors.agendas}</p>}
                                 </div>
 
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">المدعوون (المشاركون) <span className="text-red-500">*</span></label>
+                                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                            <Users size={16} className="text-teal-500" />
+                                            المدعوون (المشاركون) <span className="text-red-500">*</span>
+                                        </label>
                                         {!(selectedMeeting && new Date(`${selectedMeeting.date}T${selectedMeeting.time}`) < new Date() && selectedMeeting.status === 'scheduled') && (
                                             <div className="flex gap-2">
                                                 <button type="button" onClick={() => editForm.setData('participants', userOptions.map(opt => opt.value))} className="text-xs font-bold text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/40 px-2 py-1 rounded-md transition-colors">
@@ -1045,7 +1144,10 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تنبيه المدعوين الجدد عبر</label>
+                                    <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                        <Bell size={16} className="text-orange-500" />
+                                        تنبيه المدعوين الجدد عبر
+                                    </label>
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${editForm.data.notification_channels.includes('system') ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20' : 'border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800'}`}>
                                             <input type="checkbox" checked={editForm.data.notification_channels.includes('system')} onChange={() => toggleEditChannel('system')} className="w-4 h-4 text-primary-600 rounded border-slate-300 focus:ring-primary-500" />
@@ -1116,7 +1218,10 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                         <div className="p-6">
                             <form id="remindForm" onSubmit={handleRemindSubmit} className="space-y-6">
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">نوع التذكير <span className="text-red-500">*</span></label>
+                                    <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-3">
+                                        <Bell size={16} className="text-blue-500" />
+                                        نوع التذكير <span className="text-red-500">*</span>
+                                    </label>
                                     <div className="grid grid-cols-2 gap-3">
                                         <label className={`flex items-center gap-3 cursor-pointer p-3 rounded-xl border-2 transition-all ${remindForm.data.reminder_type === 'now' ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/20' : 'border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-800/50'}`}>
                                             <input type="radio" name="reminder_type" value="now" checked={remindForm.data.reminder_type === 'now'} onChange={e => remindForm.setData('reminder_type', e.target.value)} className="w-4 h-4 text-blue-600 focus:ring-blue-500" />
@@ -1139,7 +1244,10 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
 
                                 {remindForm.data.reminder_type === 'custom' && (
                                     <div className="animate-in fade-in slide-in-from-top-2">
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الرسالة المخصصة <span className="text-red-500">*</span></label>
+                                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-2">
+                                            <FileText size={16} className="text-slate-500" />
+                                            الرسالة المخصصة <span className="text-red-500">*</span>
+                                        </label>
                                         <textarea 
                                             value={remindForm.data.custom_message}
                                             onChange={e => remindForm.setData('custom_message', e.target.value)}
@@ -1152,7 +1260,10 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                                 )}
 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">قنوات الإرسال</label>
+                                    <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-3">
+                                        <Smartphone size={16} className="text-indigo-500" />
+                                        قنوات الإرسال
+                                    </label>
                                     <div className="flex flex-wrap gap-3">
                                         <button 
                                             type="button"
@@ -1231,7 +1342,10 @@ export default function MeetingsIndex({ auth, meetings, users, stats, filters })
                             </p>
 
                             <div className="w-full text-right p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-800 mb-2">
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">إشعار المدعوين بالإلغاء عبر:</label>
+                                <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300 mb-3">
+                                    <Mail size={16} className="text-slate-500" />
+                                    إشعار المدعوين بالإلغاء عبر:
+                                </label>
                                 <div className="flex flex-wrap gap-2">
                                     <button 
                                         type="button"

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ExcelJS from 'exceljs';
 import { Head, router, usePage, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
@@ -595,7 +596,7 @@ const RegisterLeaveModal = ({ record, leaveTypes, leaveBalances, academicYears, 
 
 // ── Main Page ─────────────────────────────────────────────────
 export default function AttendanceIndex({ records, stats, weeklyTrend = [], branches, shifts, departments = [], academicYears = [], filters, today, startDate, endDate, isSystemAdmin, activeHolidays = [], leaveTypes = [], leaveBalances = [] }) {
-    const { flash } = usePage().props;
+    const { flash, logo_url } = usePage().props;
     const [editRecord, setEditRecord] = useState(null);
     const [selectedIds, setSelectedIds] = useState([]);
     const [showBulkModal, setShowBulkModal] = useState(false);
@@ -804,45 +805,416 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
         applyFilter({ sort_by: field, sort_dir: nextDir });
     };
 
-    const exportToCSV = () => {
+    const calculateDiff = (start, end) => {
+        if (!start || !end || start === '---' || end === '---') return null;
+        const s = start.split(':');
+        const e = end.split(':');
+        const d1 = new Date(0, 0, 0, s[0], s[1], s[2] || 0);
+        let d2 = new Date(0, 0, 0, e[0], e[1], e[2] || 0);
+        if (d2 < d1) d2.setDate(d2.getDate() + 1);
+        const diff = (d2 - d1) / 60000;
+        return diff;
+    };
+    
+    const formatMins = (mins) => {
+        if (mins === null || isNaN(mins)) return '---';
+        if (mins <= 0) return '0د';
+        const h = Math.floor(mins / 60);
+        const m = Math.floor(mins % 60);
+        return h > 0 ? `${h}س ${m}د` : `${m}د`;
+    };
+
+    const exportToExcel = async () => {
         const recordsToExport = records?.data ?? [];
-        if (recordsToExport.length === 0) return;
+        if (recordsToExport.length === 0) {
+            Swal.fire({ title: 'لا يوجد بيانات', text: 'لا يوجد سجلات لتصديرها', icon: 'info' });
+            return;
+        }
 
-        const headers = [
-            "الموظف", 
-            ...(isRangeFiltered ? ["التاريخ"] : []),
-            "القسم", 
-            "الفرع", 
-            "الشفت", 
-            "وقت الدخول", 
-            "وقت الخروج", 
-            "الحالة", 
-            "التأخير"
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('سجل الحضور', { views: [{ rightToLeft: true }] });
+
+        // Add Logo
+        let logoId = null;
+        if (logo_url) {
+            const getLogoBase64 = async (url) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png').split(',')[1]);
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            };
+            const base64Clean = await getLogoBase64(logo_url);
+            if (base64Clean) {
+                logoId = workbook.addImage({ base64: base64Clean, extension: 'png' });
+            }
+        }
+
+        // Setup Columns
+        const columns = [
+            { header: 'الموظف', key: 'employee', width: 35 },
+            ...(isRangeFiltered ? [{ header: 'التاريخ', key: 'date', width: 20 }] : []),
+            { header: 'القسم', key: 'department', width: 20 },
+            { header: 'الفرع', key: 'branch', width: 20 },
+            { header: 'الشفت', key: 'shift', width: 15 },
+            { header: 'وقت الدخول', key: 'check_in', width: 15 },
+            { header: 'وقت الخروج', key: 'check_out', width: 15 },
+            { header: 'الحالة', key: 'status', width: 15 },
+            { header: 'التأخير (دقيقة)', key: 'late', width: 15 },
+            { header: 'ساعات العمل', key: 'working_hours', width: 15 },
+            { header: 'العمل الإضافي', key: 'overtime', width: 15 }
         ];
-        const rows = recordsToExport.map(r => [
-            r.employee?.name || "",
-            ...(isRangeFiltered ? [r.date || ""] : []),
-            r.employee?.department?.name || "",
-            r.branch?.name || "",
-            r.shift?.name || "",
-            r.check_in || "",
-            r.check_out || "",
-            r.status === 'present' ? 'حاضر' : r.status === 'late' ? 'متأخر' : r.status === 'absent' ? 'غائب' : 'بعذر',
-            r.late_minutes || 0
-        ]);
 
-        const csvContent = "\uFEFF" + [headers, ...rows]
-            .map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
-            .join("\n");
+        // Insert logo if exists
+        if (logoId !== null) {
+            const logoColIndex = isRangeFiltered ? 5.3 : 4.8; // Center roughly
+            sheet.addImage(logoId, { tl: { col: logoColIndex, row: 1.1 }, ext: { width: 85, height: 85 } });
+        }
 
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        // Add Top Border / Accent Line
+        const lastColLetter = isRangeFiltered ? 'K' : 'J';
+        sheet.getRow(1).height = 10;
+        sheet.mergeCells(`A1:${lastColLetter}1`);
+        sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } }; // Brand Green
+
+        // Title Rows
+        sheet.mergeCells('A2:C2');
+        const titleCell = sheet.getCell('A2');
+        titleCell.value = 'مدارس القيم الأهلية';
+        titleCell.font = { name: 'Segoe UI', size: 24, bold: true, color: { argb: 'FF6B9B37' } };
+        titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A3:C3');
+        const enTitleCell = sheet.getCell('A3');
+        enTitleCell.value = 'AL QIYAM CIVEL SCHOOLS';
+        enTitleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FF6B9B37' } };
+        enTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A4:C4');
+        const subTitleCell = sheet.getCell('A4');
+        subTitleCell.value = 'النظام الإداري - سجل الحضور والانصراف';
+        subTitleCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FFE32636' } };
+        subTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        // Meta data on the left
+        const metaStartCol = isRangeFiltered ? 'I' : 'H';
+        const metaEndCol = isRangeFiltered ? 'K' : 'J';
+        
+        sheet.mergeCells(`${metaStartCol}2:${metaEndCol}2`);
+        const typeCell = sheet.getCell(`${metaStartCol}2`);
+        typeCell.value = 'نوع التقرير: سجل الحضور والانصراف';
+        typeCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        typeCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        const printDate = new Date().toLocaleString('ar-EG');
+        sheet.mergeCells(`${metaStartCol}3:${metaEndCol}3`);
+        const dateCell = sheet.getCell(`${metaStartCol}3`);
+        dateCell.value = `تاريخ التصدير: ${printDate}`;
+        dateCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        dateCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        sheet.mergeCells(`${metaStartCol}4:${metaEndCol}4`);
+        const statusCell = sheet.getCell(`${metaStartCol}4`);
+        statusCell.value = 'حالة التقرير: معتمد ✔';
+        statusCell.font = { size: 11, bold: true, color: { argb: 'FF6B9B37' }, name: 'Segoe UI' };
+        statusCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        // Row 5: Empty Spacer
+        sheet.getRow(5).height = 15;
+
+        // Period Information
+        const periodRowIndex = 6;
+        sheet.mergeCells(`A${periodRowIndex}:${metaEndCol}${periodRowIndex}`);
+        const periodCell = sheet.getCell(`A${periodRowIndex}`);
+        periodCell.value = customStartDate === customEndDate 
+            ? `سجل يوم: ${customStartDate}` 
+            : `السجل من: ${customStartDate} إلى: ${customEndDate}`;
+        periodCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FF1E293B' } };
+        periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        periodCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+        sheet.getRow(periodRowIndex).height = 30;
+
+        // Statistics Bar
+        const statRowIndex = 7;
+        const totalEmployees = recordsToExport.length;
+        const presentCount = recordsToExport.filter(r => r.status === 'present').length;
+        const lateCount = recordsToExport.filter(r => r.status === 'late').length;
+        const absentCount = recordsToExport.filter(r => r.status === 'absent').length;
+
+        sheet.mergeCells(`A${statRowIndex}:${metaEndCol}${statRowIndex}`);
+        const statCell = sheet.getCell(`A${statRowIndex}`);
+        statCell.value = `📊 إجمالي السجلات: ${totalEmployees}   |   ✅ الحضور: ${presentCount}   |   ⚠️ التأخير: ${lateCount}   |   ❌ الغياب: ${absentCount}`;
+        statCell.font = { size: 11, bold: true, color: { argb: 'FF437020' }, name: 'Segoe UI' };
+        statCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        statCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7EB' } }; // Light Green Background
+        statCell.border = {
+            top: { style: 'medium', color: { argb: 'FF96CF75' } },
+            bottom: { style: 'medium', color: { argb: 'FF96CF75' } },
+            left: { style: 'medium', color: { argb: 'FF96CF75' } },
+            right: { style: 'medium', color: { argb: 'FF96CF75' } }
+        };
+        sheet.getRow(statRowIndex).height = 30;
+
+        // Row 8: Empty Spacer
+        sheet.getRow(8).height = 10;
+
+        // Set Headers
+        sheet.columns = columns;
+        const headerRow = sheet.getRow(9);
+        headerRow.values = columns.map(c => c.header);
+        headerRow.height = 30;
+
+        headerRow.eachCell((cell) => {
+            cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF6B9B37' } // Brand Green
+            };
+            cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }; // smaller font
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        // Add Data
+        recordsToExport.forEach((r, index) => {
+            let rowData = {};
+            rowData.employee = r.employee?.user?.name || r.user?.name || "";
+            if (isRangeFiltered) rowData.date = r.date || "";
+            rowData.department = r.employee?.department?.name || "";
+            rowData.branch = r.branch?.name || "";
+            rowData.shift = r.shift?.name || "";
+            rowData.check_in = r.check_in || "---";
+            rowData.check_out = r.check_out || "---";
+            
+            let statusLabel = 'غير محدد';
+            if(r.status === 'present') statusLabel = 'حاضر';
+            else if(r.status === 'late') statusLabel = 'متأخر';
+            else if(r.status === 'absent') statusLabel = 'غائب';
+            else if(r.status === 'excused') statusLabel = 'بعذر';
+            else if(r.status === 'leave') statusLabel = 'إجازة';
+            else if(r.status === 'holiday') statusLabel = 'عطلة رسمية';
+            else if(r.status === 'weekend') statusLabel = 'عطلة أسبوعية';
+            
+            rowData.status = statusLabel;
+            rowData.late = r.late_minutes || 0;
+
+            const workMins = calculateDiff(r.check_in, r.check_out);
+            rowData.working_hours = formatMins(workMins);
+
+            let otMins = null;
+            if (r.shift?.end_time && r.check_out && r.check_out !== '---') {
+                otMins = calculateDiff(r.shift.end_time.substring(0, 5), r.check_out);
+                if (otMins < 0) otMins = 0;
+            }
+            rowData.overtime = otMins > 0 ? formatMins(otMins) : '---';
+
+            const row = sheet.addRow(rowData);
+            row.height = 35;
+            
+            row.eachCell((cell, colNumber) => {
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } };
+                cell.border = {
+                    bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } }, // Soft Gray Border
+                    left: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    right: { style: 'thin', color: { argb: 'FFDEE2E6' } }
+                };
+                
+                // Coloring Status
+                const statusKey = isRangeFiltered ? 8 : 7;
+                if (colNumber === statusKey) {
+                    if (r.status === 'present') {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF15803D' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } };
+                    } else if (r.status === 'late') {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFB45309' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFBEB' } };
+                    } else if (r.status === 'absent') {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFB91C1C' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF2F2' } };
+                    } else if (r.status === 'excused') {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF334155' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                    } else if (['leave', 'holiday'].includes(r.status)) {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF7E22CE' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3E8FF' } };
+                    } else if (r.status === 'weekend') {
+                        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF64748B' } };
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                    }
+                }
+                
+                // Missing checkout formatting
+                const checkOutKey = isRangeFiltered ? 7 : 6;
+                if (colNumber === checkOutKey && r.check_in && r.check_in !== '---' && (!r.check_out || r.check_out === '---')) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF0F0' } };
+                    cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFEF4444' } };
+                }
+
+                // Bold late minutes if > 0
+                const lateKey = isRangeFiltered ? 9 : 8;
+                if (colNumber === lateKey && r.late_minutes > 0) {
+                    cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFDC2626' } };
+                }
+
+                // Overtime formatting
+                const otKey = isRangeFiltered ? 11 : 10;
+                if (colNumber === otKey && otMins > 0) {
+                    cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF059669' } };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFECFDF5' } };
+                }
+            });
+            row.height = 25;
+        });
+
+        // Add Auto-filters
+        sheet.autoFilter = `A9:${lastColLetter}${recordsToExport.length + 9}`;
+
+        // Freeze panes
+        sheet.views = [{ state: 'frozen', ySplit: 9, rightToLeft: true }];
+
+        // Add Data Bars for Late Minutes via Conditional Formatting
+        const lateColLetter = isRangeFiltered ? 'I' : 'H';
+        sheet.addConditionalFormatting({
+            ref: `${lateColLetter}10:${lateColLetter}${recordsToExport.length + 9}`,
+            rules: [
+                {
+                    type: 'dataBar',
+                    cfvo: [{ type: 'num', value: 0 }, { type: 'max' }],
+                    color: { argb: 'FFFF6B6B' } // Soft Red data bar
+                }
+            ]
+        });
+
+        // Page settings
+        sheet.pageSetup = {
+            paperSize: 9,
+            orientation: 'landscape',
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0,
+            margins: { left: 0.2, right: 0.2, top: 0.4, bottom: 0.4, header: 0.1, footer: 0.1 }
+        };
+
+        // Footer settings
+        sheet.headerFooter.oddFooter = '&L&10مدارس القيم الأهلية &C&10صفحة &P من &N &R&10تاريخ الطباعة: &D';
+
+        // ---------------- SUMMARY SHEET (if range filtered) ---------------- //
+        if (isRangeFiltered) {
+            const sumSheet = workbook.addWorksheet('ملخص الفترة', { views: [{ rightToLeft: true }] });
+            
+            sumSheet.columns = [
+                { header: 'الموظف', key: 'employee', width: 35 },
+                { header: 'القسم', key: 'department', width: 25 },
+                { header: 'أيام الحضور', key: 'present', width: 15 },
+                { header: 'أيام الغياب', key: 'absent', width: 15 },
+                { header: 'دقائق التأخير', key: 'late', width: 15 },
+                { header: 'العمل الإضافي', key: 'overtime', width: 15 },
+                { header: 'أيام الأعذار', key: 'excused', width: 15 },
+            ];
+
+            const sumHeaderRow = sumSheet.getRow(1);
+            sumHeaderRow.values = sumSheet.columns.map(c => c.header);
+            sumHeaderRow.height = 30;
+            sumHeaderRow.eachCell((cell) => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+                cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+
+            // Group by employee
+            const empSummary = {};
+            recordsToExport.forEach(r => {
+                const empName = r.employee?.user?.name || r.user?.name || 'غير معروف';
+                if (!empSummary[empName]) {
+                    empSummary[empName] = {
+                        dept: r.employee?.department?.name || '',
+                        present: 0,
+                        absent: 0,
+                        late: 0,
+                        excused: 0,
+                        ot: 0
+                    };
+                }
+                if (r.status === 'present' || r.status === 'late') empSummary[empName].present++;
+                if (r.status === 'absent') empSummary[empName].absent++;
+                if (r.status === 'excused') empSummary[empName].excused++;
+                empSummary[empName].late += (r.late_minutes || 0);
+
+                if (r.shift?.end_time && r.check_out && r.check_out !== '---') {
+                    const otMins = calculateDiff(r.shift.end_time.substring(0, 5), r.check_out);
+                    if (otMins > 0) empSummary[empName].ot += otMins;
+                }
+            });
+
+            Object.keys(empSummary).forEach(emp => {
+                const data = empSummary[emp];
+                const row = sumSheet.addRow({
+                    employee: emp,
+                    department: data.dept,
+                    present: data.present,
+                    absent: data.absent,
+                    late: data.late,
+                    overtime: formatMins(data.ot),
+                    excused: data.excused
+                });
+                row.eachCell((cell, colNum) => {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    cell.font = { name: 'Segoe UI', size: 11 };
+                    if (colNum === 3 && data.present > 0) cell.font = { ...cell.font, color: { argb: 'FF15803D' }, bold: true };
+                    if (colNum === 4 && data.absent > 0) cell.font = { ...cell.font, color: { argb: 'FFDC2626' }, bold: true };
+                    if (colNum === 5 && data.late > 0) cell.font = { ...cell.font, color: { argb: 'FFB45309' }, bold: true };
+                });
+                row.height = 25;
+            });
+
+            sumSheet.autoFilter = `A1:G${Object.keys(empSummary).length + 1}`;
+            sumSheet.pageSetup = {
+                paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0,
+                margins: { left: 0.2, right: 0.2, top: 0.4, bottom: 0.4, header: 0.1, footer: 0.1 }
+            };
+        }
+        // ---------------- END SUMMARY SHEET ---------------- //
+
+        // Protect Sheet
+        await sheet.protect('SmartSchool123', {
+            selectLockedCells: true,
+            selectUnlockedCells: true,
+            formatCells: false,
+            formatColumns: true,
+            formatRows: true,
+            insertColumns: false,
+            insertRows: false,
+            insertHyperlinks: false,
+            deleteColumns: false,
+            deleteRows: false,
+            sort: true,
+            autoFilter: true,
+            pivotTables: false
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.setAttribute("href", url);
-        link.setAttribute("download", `attendance_report_${customStartDate}_to_${customEndDate}.csv`);
-        document.body.appendChild(link);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `سجل_الحضور_${customStartDate}_إلى_${customEndDate}.xlsx`;
         link.click();
-        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     const activeFiltersCount = (branchId ? 1 : 0) + (shiftId ? 1 : 0) + (departmentId ? 1 : 0) + (status ? 1 : 0) + (academicYearId ? 1 : 0) + (semesterId ? 1 : 0);
@@ -1013,9 +1385,9 @@ export default function AttendanceIndex({ records, stats, weeklyTrend = [], bran
                                 </button>
                             </div>
 
-                            <button onClick={exportToCSV}
+                            <button onClick={exportToExcel}
                                 className="flex items-center justify-center p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820] text-slate-550 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300 shadow-sm transition-all"
-                                title="تصدير كملف Excel (CSV)">
+                                title="تصدير كملف Excel">
                                 <Download size={18} />
                             </button>
 

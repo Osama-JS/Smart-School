@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 
 import Pagination from '@/Components/Pagination';
 import Modal from '@/Components/Modal';
@@ -8,12 +8,14 @@ import InputLabel from '@/Components/InputLabel';
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 import SecondaryButton from '@/Components/SecondaryButton';
-import { BookOpen, Trash, Eye, Calendar, User, Filter } from 'lucide-react';
+import { BookOpen, Trash, Eye, Calendar, User, Filter, X, FileText, CheckCircle, Clock, CheckSquare, AlignLeft, Info, Download } from 'lucide-react';
+import ExcelJS from 'exceljs';
 import Swal from 'sweetalert2';
 
 export default function Index({ auth, preparations, teachers, grades, subjects, filters }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [viewingPrep, setViewingPrep] = useState(null);
+    const { logo_url } = usePage().props;
 
     const { delete: destroy } = useForm();
 
@@ -55,6 +57,168 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
         });
     };
 
+    const exportToExcel = async () => {
+        if (!preparations?.data || preparations.data.length === 0) {
+            alert('لا توجد بيانات لتصديرها');
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('دفاتر التحضير', { views: [{ rightToLeft: true }] });
+
+        let logoId = null;
+        if (logo_url) {
+            const getLogoBase64 = async (url) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png').split(',')[1]);
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            };
+            const base64Clean = await getLogoBase64(logo_url);
+            if (base64Clean) {
+                logoId = workbook.addImage({ base64: base64Clean, extension: 'png' });
+            }
+        }
+
+        sheet.columns = [
+            { width: 20 }, // A: تاريخ التنفيذ
+            { width: 30 }, // B: المعلم
+            { width: 25 }, // C: الصف
+            { width: 25 }, // D: المادة
+            { width: 40 }, // E: عنوان الدرس
+        ];
+
+        if (logoId !== null) {
+            sheet.addImage(logoId, { tl: { col: 2.5, row: 1.1 }, ext: { width: 85, height: 85 } });
+        }
+
+        sheet.getRow(1).height = 10;
+        sheet.mergeCells('A1:E1');
+        sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+
+        sheet.mergeCells('A2:B2');
+        const titleCell = sheet.getCell('A2');
+        titleCell.value = 'مدارس القيم الأهلية';
+        titleCell.font = { name: 'Segoe UI', size: 24, bold: true, color: { argb: 'FF6B9B37' } };
+        titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A3:B3');
+        const enTitleCell = sheet.getCell('A3');
+        enTitleCell.value = 'AL QIYAM CIVEL SCHOOLS';
+        enTitleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FF6B9B37' } };
+        enTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A4:B4');
+        const subTitleCell = sheet.getCell('A4');
+        subTitleCell.value = 'النظام الإداري - دفاتر التحضير ومتابعة الدروس';
+        subTitleCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FFE32636' } };
+        subTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('D2:E2');
+        const typeCell = sheet.getCell('D2');
+        typeCell.value = 'نوع التقرير: سجل دفاتر التحضير';
+        typeCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        typeCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        const printDate = new Date().toLocaleString('ar-EG');
+        sheet.mergeCells('D3:E3');
+        const dateCell = sheet.getCell('D3');
+        dateCell.value = `تاريخ التصدير: ${printDate}`;
+        dateCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        dateCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        sheet.mergeCells('D4:E4');
+        const statusCell = sheet.getCell('D4');
+        statusCell.value = 'حالة التقرير: معتمد ✔';
+        statusCell.font = { size: 11, bold: true, color: { argb: 'FF6B9B37' }, name: 'Segoe UI' };
+        statusCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        sheet.getRow(5).height = 15;
+
+        const headers = ['تاريخ التنفيذ', 'المعلم', 'الصف', 'المادة', 'عنوان الدرس'];
+        const headerRow = sheet.addRow(headers);
+        headerRow.height = 30;
+
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+            cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        preparations.data.forEach((prep) => {
+            const rowData = [
+                prep.preparation_date || '-',
+                prep.teacher?.name || '-',
+                `${prep.grade?.name || '-'} ${prep.division ? `- ${prep.division.name}` : ''}`,
+                prep.subject?.name || '-',
+                prep.lesson_title || '-'
+            ];
+
+            const row = sheet.addRow(rowData);
+            row.height = 35;
+            
+            row.eachCell((cell) => {
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } };
+                cell.border = {
+                    bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    left: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    right: { style: 'thin', color: { argb: 'FFDEE2E6' } }
+                };
+            });
+        });
+
+        sheet.autoFilter = `A6:E${preparations.data.length + 6}`;
+        sheet.views = [{ state: 'frozen', ySplit: 6, rightToLeft: true }];
+
+        sheet.pageSetup = {
+            paperSize: 9,
+            orientation: 'landscape',
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0,
+            margins: { left: 0.2, right: 0.2, top: 0.4, bottom: 0.4, header: 0.1, footer: 0.1 }
+        };
+
+        sheet.headerFooter.oddFooter = '&L&10مدارس القيم الأهلية &C&10صفحة &P من &N &R&10تاريخ الطباعة: &D';
+
+        await sheet.protect('SmartSchool123', {
+            selectLockedCells: true,
+            selectUnlockedCells: true,
+            formatCells: true,
+            formatColumns: true,
+            formatRows: true,
+            sort: false,
+            autoFilter: false,
+        });
+
+        workbook.xlsx.writeBuffer().then((buffer) => {
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `دفاتر_التحضير_${new Date().toISOString().split('T')[0]}.xlsx`;
+            anchor.click();
+            window.URL.revokeObjectURL(url);
+        });
+    };
+
     return (
         <AdminLayout user={auth.user}>
             <Head title="دفاتر التحضير ومتابعة الدروس" />
@@ -81,6 +245,16 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
                                 دفاتر التحضير ومتابعة الدروس
                             </h1>
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">متابعة سجلات إنجاز الدروس والواجبات الخاصة بالمعلمين</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                            <button
+                                onClick={exportToExcel}
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm text-sm font-bold transition-all"
+                                title="تصدير إلى Excel"
+                            >
+                                <Download size={18} />
+                                <span className="hidden md:inline">تصدير</span>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -222,69 +396,119 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
             {/* View Modal */}
             <Modal show={isModalOpen} onClose={closeModal} maxWidth="2xl">
                 {viewingPrep && (
-                    <div className="bg-white rounded-3xl shadow-xl overflow-hidden backdrop-blur-sm">
+                    <div className="relative bg-white dark:bg-[#121820] w-full max-h-[85vh] overflow-y-auto custom-scrollbar rounded-2xl">
+                        {/* Decorative Header Background */}
+                        <div className="absolute top-0 right-0 left-0 h-32 bg-gradient-to-br from-primary-600 via-primary-700 to-primary-900 dark:from-primary-800/60 dark:via-primary-900/60 dark:to-slate-900 overflow-hidden">
+                            <div className="absolute inset-0 opacity-10 dark:opacity-5 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] mix-blend-overlay"></div>
+                            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                            <div className="absolute top-5 -left-10 w-24 h-24 bg-primary-400/20 rounded-full blur-xl pointer-events-none"></div>
+                        </div>
+
                         {/* Modal Header */}
-                        <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
-                            <div>
-                                <h2 className="text-xl font-bold text-slate-800">تفاصيل إنجاز الحصة</h2>
-                                <p className="text-sm text-slate-500 mt-1 flex items-center gap-2">
-                                    <Calendar className="w-4 h-4" />
-                                    تاريخ التنفيذ: <span className="font-medium text-slate-700">{viewingPrep.preparation_date}</span>
-                                </p>
+                        <div className="relative px-6 pt-6 pb-5 flex justify-between items-start">
+                            <div className="flex gap-4 items-center text-white">
+                                <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-lg shadow-black/10">
+                                    <BookOpen className="w-7 h-7 text-white drop-shadow-md" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-[9px] font-bold backdrop-blur-md border border-white/20 shadow-sm">
+                                            سجل إنجاز
+                                        </span>
+                                        <span className="px-2.5 py-0.5 rounded-full bg-black/20 text-white text-[9px] font-bold backdrop-blur-md border border-white/10 flex items-center gap-1 shadow-sm">
+                                            <Calendar className="w-2.5 h-2.5" />
+                                            {viewingPrep.preparation_date}
+                                        </span>
+                                    </div>
+                                    <h2 className="text-xl font-black text-white tracking-tight drop-shadow-md">
+                                        تفاصيل إنجاز الحصة
+                                    </h2>
+                                </div>
                             </div>
-                            <div className="p-3 bg-primary-100 rounded-2xl">
-                                <BookOpen className="w-7 h-7 text-primary-600" />
-                            </div>
+                            <button onClick={closeModal} className="w-9 h-9 flex items-center justify-center text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-all border border-white/10 hover:scale-105 active:scale-95 shadow-sm">
+                                <X size={18} />
+                            </button>
                         </div>
 
                         {/* Modal Body */}
-                        <div className="p-8 space-y-6">
-                            {/* Meta Info */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">المعلم</div>
-                                    <div className="flex items-center gap-2">
-                                        <User className="w-4 h-4 text-primary-500" />
-                                        <span className="font-bold text-slate-800">{viewingPrep.teacher?.name}</span>
-                                    </div>
+                        <div className="relative px-6 pb-6 space-y-5">
+                            
+                            {/* Meta Info Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 -mt-2">
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-primary-200 dark:hover:border-primary-500/30 transition-colors">
+                                    <div className="absolute top-0 right-0 w-1 h-full bg-primary-500 rounded-r-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <User className="w-3.5 h-3.5 text-primary-500" />
+                                        المعلم المنفذ
+                                    </p>
+                                    <p className="text-sm font-black text-slate-800 dark:text-white line-clamp-1">{viewingPrep.teacher?.name}</p>
                                 </div>
-                                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">المادة والصف</div>
-                                    <div className="font-bold text-slate-800">{viewingPrep.subject?.name}</div>
-                                    <div className="text-sm text-slate-500">{viewingPrep.grade?.name} {viewingPrep.division ? `- ${viewingPrep.division.name}` : ''}</div>
+                                
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-purple-200 dark:hover:border-purple-500/30 transition-colors">
+                                    <div className="absolute top-0 right-0 w-1 h-full bg-purple-500 rounded-r-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <BookOpen className="w-3.5 h-3.5 text-purple-500" />
+                                        المادة الدراسية
+                                    </p>
+                                    <p className="text-sm font-black text-slate-800 dark:text-white line-clamp-1">{viewingPrep.subject?.name}</p>
+                                </div>
+                                
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col justify-center relative overflow-hidden group hover:border-orange-200 dark:hover:border-orange-500/30 transition-colors">
+                                    <div className="absolute top-0 right-0 w-1 h-full bg-orange-500 rounded-r-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <User className="w-3.5 h-3.5 text-orange-500" />
+                                        الصف والشعبة
+                                    </p>
+                                    <p className="text-sm font-black text-slate-800 dark:text-white line-clamp-1">
+                                        {viewingPrep.grade?.name} {viewingPrep.division ? `- ${viewingPrep.division.name}` : ''}
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Content Info */}
-                            <div>
-                                <h4 className="text-sm font-bold text-slate-800 mb-2 border-r-4 border-primary-500 pr-3">عنوان الحصة</h4>
-                                <div className="bg-white p-4 rounded-xl border border-slate-200 text-slate-700 leading-relaxed shadow-sm">
+                            {/* Lesson Title Section */}
+                            <div className="bg-primary-50/50 dark:bg-primary-500/5 rounded-2xl p-5 border border-primary-100/50 dark:border-primary-500/10 shadow-sm">
+                                <h4 className="text-xs font-black text-primary-600 dark:text-primary-400 mb-2 flex items-center gap-2">
+                                    <AlignLeft className="w-4 h-4" />
+                                    عنوان الحصة / الدرس
+                                </h4>
+                                <div className="text-slate-800 dark:text-slate-100 font-bold text-base md:text-lg leading-relaxed">
                                     {viewingPrep.lesson_title}
                                 </div>
                             </div>
 
-                            {viewingPrep.topics_covered && (
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-800 mb-2 border-r-4 border-blue-500 pr-3">ما تم دراسته</h4>
-                                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 text-slate-700 leading-relaxed whitespace-pre-wrap">
-                                        {viewingPrep.topics_covered}
+                            {/* Rich Content Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                {/* Topics Covered */}
+                                <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm h-full">
+                                    <h4 className="text-xs font-black text-blue-600 dark:text-blue-400 mb-3 flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-700/50">
+                                        <CheckSquare className="w-4 h-4" />
+                                        ما تم دراسته
+                                    </h4>
+                                    <div className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                                        {viewingPrep.topics_covered ? viewingPrep.topics_covered : <span className="text-slate-400 dark:text-slate-500 italic">لم يتم إدخال تفاصيل إضافية.</span>}
                                     </div>
                                 </div>
-                            )}
 
-                            {viewingPrep.homework && (
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-800 mb-2 border-r-4 border-emerald-500 pr-3">الواجب المنزلي المطلوب</h4>
-                                    <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 text-slate-700 leading-relaxed whitespace-pre-wrap">
-                                        {viewingPrep.homework}
+                                {/* Homework */}
+                                <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-100 dark:border-slate-700 shadow-sm h-full">
+                                    <h4 className="text-xs font-black text-emerald-600 dark:text-emerald-400 mb-3 flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-700/50">
+                                        <FileText className="w-4 h-4" />
+                                        الواجب المنزلي
+                                    </h4>
+                                    <div className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                                        {viewingPrep.homework ? viewingPrep.homework : <span className="text-slate-400 dark:text-slate-500 italic">لا يوجد واجب منزلي.</span>}
                                     </div>
                                 </div>
-                            )}
+                            </div>
 
+                            {/* Notes Section */}
                             {viewingPrep.notes && (
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-800 mb-2 border-r-4 border-amber-500 pr-3">الملاحظات</h4>
-                                    <div className="bg-amber-50/50 p-4 rounded-xl border border-amber-100 text-slate-700 leading-relaxed whitespace-pre-wrap">
+                                <div className="bg-amber-50/30 dark:bg-amber-500/5 rounded-2xl p-5 border border-amber-100/50 dark:border-amber-500/10 shadow-sm">
+                                    <h4 className="text-xs font-black text-amber-600 dark:text-amber-400 mb-2 flex items-center gap-2">
+                                        <Info className="w-4 h-4" />
+                                        ملاحظات المعلم
+                                    </h4>
+                                    <div className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap font-medium">
                                         {viewingPrep.notes}
                                     </div>
                                 </div>
@@ -292,10 +516,10 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
                         </div>
 
                         {/* Modal Footer */}
-                        <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex justify-end">
-                            <SecondaryButton onClick={closeModal} className="!rounded-xl px-6">
+                        <div className="sticky bottom-0 px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-[#121820]/80 backdrop-blur-xl flex justify-end gap-3 z-20 rounded-b-2xl">
+                            <button onClick={closeModal} className="px-6 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors shadow-sm text-sm">
                                 إغلاق
-                            </SecondaryButton>
+                            </button>
                         </div>
                     </div>
                 )}

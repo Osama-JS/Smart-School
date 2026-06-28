@@ -23,6 +23,8 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "exceljs": "^4.4.0",
+        "file-saver": "^2.0.5",
         "firebase": "^12.15.0",
         "flatpickr": "^4.6.13",
         "lucide-react": "^1.14.0",

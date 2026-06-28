@@ -8,8 +8,9 @@ import {
     Search, Plus, Clock, Edit2, Trash2, MoreVertical, X, Check, 
     AlertTriangle, AlertCircle, Filter, RotateCcw,
     CheckCircle2, Hourglass, Users, ChevronDown, Activity, Sparkles,
-    LayoutGrid, Table2, MapPin
+    LayoutGrid, Table2, MapPin, Type, Save, ToggleRight, Download
 } from 'lucide-react';
+import ExcelJS from 'exceljs';
 
 function Modal({ isOpen, onClose, title, children }) {
     useEffect(() => {
@@ -128,7 +129,7 @@ function Pagination({ data }) {
 }
 
 export default function ShiftsIndex({ shifts, filters, stats, branches = [], isAdmin = false }) {
-    const { flash } = usePage().props;
+    const { flash, logo_url } = usePage().props;
     const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
 
     const getFilterVal = (key, fallback = '') => {
@@ -152,6 +153,198 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
     const [processing, setProcessing] = useState(false);
     
     const isFirstRender = useRef(true);
+
+    const exportToExcel = async () => {
+        if (!shiftsData || shiftsData.length === 0) {
+            alert('لا يوجد شفتات لتصديرها');
+            return;
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('الشفتات', { views: [{ rightToLeft: true }] });
+
+        let logoId = null;
+        if (logo_url) {
+            const getLogoBase64 = async (url) => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png').split(',')[1]);
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            };
+            const base64Clean = await getLogoBase64(logo_url);
+            if (base64Clean) {
+                logoId = workbook.addImage({ base64: base64Clean, extension: 'png' });
+            }
+        }
+
+        sheet.columns = [
+            { width: 30 }, // A: اسم الشفت
+            { width: 15 }, // B: وقت الحضور
+            { width: 15 }, // C: وقت الانصراف
+            { width: 20 }, // D: فترة السماح
+            { width: 25 }, // E: الفرع
+            { width: 15 }, // F: الحالة
+            { width: 15 }  // G: عدد الموظفين
+        ];
+
+        if (logoId !== null) {
+            sheet.addImage(logoId, { tl: { col: 3.5, row: 1.1 }, ext: { width: 85, height: 85 } });
+        }
+
+        sheet.getRow(1).height = 10;
+        sheet.mergeCells('A1:G1');
+        sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+
+        sheet.mergeCells('A2:C2');
+        const titleCell = sheet.getCell('A2');
+        titleCell.value = 'مدارس القيم الأهلية';
+        titleCell.font = { name: 'Segoe UI', size: 24, bold: true, color: { argb: 'FF6B9B37' } };
+        titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A3:C3');
+        const enTitleCell = sheet.getCell('A3');
+        enTitleCell.value = 'AL QIYAM CIVEL SCHOOLS';
+        enTitleCell.font = { name: 'Segoe UI', size: 16, bold: true, color: { argb: 'FF6B9B37' } };
+        enTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('A4:C4');
+        const subTitleCell = sheet.getCell('A4');
+        subTitleCell.value = 'النظام الإداري - شفتات العمل';
+        subTitleCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FFE32636' } };
+        subTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+        sheet.mergeCells('E2:G2');
+        const typeCell = sheet.getCell('E2');
+        typeCell.value = 'نوع التقرير: سجل الشفتات';
+        typeCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        typeCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        const printDate = new Date().toLocaleString('ar-EG');
+        sheet.mergeCells('E3:G3');
+        const dateCell = sheet.getCell('E3');
+        dateCell.value = `تاريخ التصدير: ${printDate}`;
+        dateCell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+        dateCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        sheet.mergeCells('E4:G4');
+        const statusCell = sheet.getCell('E4');
+        statusCell.value = 'حالة التقرير: معتمد ✔';
+        statusCell.font = { size: 11, bold: true, color: { argb: 'FF6B9B37' }, name: 'Segoe UI' };
+        statusCell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+        sheet.getRow(5).height = 15;
+
+        const statRowIndex = 7;
+        sheet.mergeCells(`A${statRowIndex}:G${statRowIndex}`);
+        const statCell = sheet.getCell(`A${statRowIndex}`);
+        statCell.value = `📊 إجمالي الشفتات: ${stats?.total_shifts ?? 0}   |   ✅ نشطة: ${stats?.active_shifts ?? 0}   |   ⏳ متوسط السماح: ${stats?.avg_grace ?? 0} دقيقة   |   👥 موظفون: ${stats?.total_assigned_employees ?? 0}`;
+        statCell.font = { size: 11, bold: true, color: { argb: 'FF437020' }, name: 'Segoe UI' };
+        statCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        statCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7EB' } };
+        statCell.border = {
+            top: { style: 'medium', color: { argb: 'FF96CF75' } },
+            bottom: { style: 'medium', color: { argb: 'FF96CF75' } },
+            left: { style: 'medium', color: { argb: 'FF96CF75' } },
+            right: { style: 'medium', color: { argb: 'FF96CF75' } }
+        };
+        sheet.getRow(statRowIndex).height = 30;
+
+        sheet.getRow(8).height = 10;
+
+        const headers = ['اسم الشفت', 'وقت الحضور', 'وقت الانصراف', 'فترة السماح (دقيقة)', 'الفرع', 'الحالة', 'عدد الموظفين'];
+        const headerRow = sheet.addRow(headers);
+        headerRow.height = 30;
+
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+            cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+                top: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                left: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } },
+                right: { style: 'thin', color: { argb: 'FFFFFFFF' } }
+            };
+        });
+
+        shiftsData.forEach((shift) => {
+            const rowData = [
+                shift.name || '-',
+                formatTime(shift.start_time) || '-',
+                formatTime(shift.end_time) || '-',
+                shift.grace_period_minutes || '0',
+                shift.branch?.name || 'عام - جميع الفروع',
+                shift.is_active ? 'نشط' : 'متوقف',
+                shift.employees_count || 0
+            ];
+
+            const row = sheet.addRow(rowData);
+            row.height = 35;
+            
+            row.eachCell((cell, colNumber) => {
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } };
+                cell.border = {
+                    bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    left: { style: 'thin', color: { argb: 'FFDEE2E6' } },
+                    right: { style: 'thin', color: { argb: 'FFDEE2E6' } }
+                };
+                
+                if (colNumber === 6) {
+                    cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: shift.is_active ? 'FF15803D' : 'FF64748B' } };
+                    if (shift.is_active) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCFCE7' } };
+                    } else {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                    }
+                }
+            });
+        });
+
+        sheet.autoFilter = `A9:G${shiftsData.length + 9}`;
+        sheet.views = [{ state: 'frozen', ySplit: 9, rightToLeft: true }];
+
+        sheet.pageSetup = {
+            paperSize: 9,
+            orientation: 'landscape',
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 0,
+            margins: { left: 0.2, right: 0.2, top: 0.4, bottom: 0.4, header: 0.1, footer: 0.1 }
+        };
+
+        sheet.headerFooter.oddFooter = '&L&10مدارس القيم الأهلية &C&10صفحة &P من &N &R&10تاريخ الطباعة: &D';
+
+        await sheet.protect('SmartSchool123', {
+            selectLockedCells: true,
+            selectUnlockedCells: true,
+            formatCells: true,
+            formatColumns: true,
+            formatRows: true,
+            sort: false,
+            autoFilter: false,
+        });
+
+        workbook.xlsx.writeBuffer().then((buffer) => {
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `شفتات_العمل_${new Date().toISOString().split('T')[0]}.xlsx`;
+            anchor.click();
+            window.URL.revokeObjectURL(url);
+        });
+    };
 
     const applyFilters = (updates) => {
         const params = {
@@ -265,19 +458,29 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                     </svg>
                 </div>
                 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                    <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">إدارة شفتات العمل</h1>
-                        <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">تحكم كامل في أوقات الدوام الرسمي وفترات السماح للموظفين</p>
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div>
+                            <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">إدارة شفتات العمل</h1>
+                            <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">تحكم كامل في أوقات الدوام الرسمي وفترات السماح للموظفين</p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                            <button
+                                onClick={exportToExcel}
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm text-sm font-bold transition-all"
+                                title="تصدير إلى Excel"
+                            >
+                                <Download size={18} />
+                                <span className="hidden md:inline">تصدير</span>
+                            </button>
+                            <button
+                                onClick={openAdd}
+                                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95"
+                            >
+                                <Plus size={18} /> 
+                                <span>إضافة شفت جديد</span>
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        onClick={openAdd}
-                        className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95 self-end sm:self-auto"
-                    >
-                        <Plus size={18} /> 
-                        <span>إضافة شفت جديد</span>
-                    </button>
-                </div>
             </div>
 
             {/* Premium Stats Grid */}
@@ -618,36 +821,51 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
             {/* Modal Components */}
             <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="إضافة شفت جديد">
                 <form onSubmit={handleStore} className="space-y-5">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">اسم الشفت <span className="text-rose-500">*</span></label>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Type size={16} className="text-primary-500" />
+                            اسم الشفت <span className="text-rose-500">*</span>
+                        </label>
                         <input type="text" required placeholder="مثال: الدوام الصباحي"
                             className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold" 
                             value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-5">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">وقت البدء <span className="text-rose-500">*</span></label>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                <Clock size={16} className="text-blue-500" />
+                                وقت البدء <span className="text-rose-500">*</span>
+                            </label>
                             <FlatpickrInput type="time" required 
                                 value={form.start_time} onChange={time => setForm({ ...form, start_time: time })} />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">وقت الانتهاء <span className="text-rose-500">*</span></label>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                <Clock size={16} className="text-rose-500" />
+                                وقت الانتهاء <span className="text-rose-500">*</span>
+                            </label>
                             <FlatpickrInput type="time" required 
                                 value={form.end_time} onChange={time => setForm({ ...form, end_time: time })} />
                         </div>
                     </div>
                     
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">فترة السماح (بالدقائق) <span className="text-rose-500">*</span></label>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Hourglass size={16} className="text-amber-500" />
+                            فترة السماح (بالدقائق) <span className="text-rose-500">*</span>
+                        </label>
                         <input type="number" min="0" required placeholder="مثال: 15"
                             className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold font-sans" 
                             value={form.grace_period_minutes} onChange={e => setForm({ ...form, grace_period_minutes: e.target.value })} />
                     </div>
 
                     {isAdmin && branches.length > 0 && (
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">الفرع التابع له الشفت <span className="text-rose-500">*</span></label>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                <MapPin size={16} className="text-emerald-500" />
+                                الفرع التابع له الشفت <span className="text-rose-500">*</span>
+                            </label>
                             <SelectInput required
                                 value={form.branch_id} onChange={val => setForm({ ...form, branch_id: val })}
                                 placeholder="-- اختر الفرع --"
@@ -662,48 +880,72 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                                 className="peer sr-only" />
                             <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
                         </div>
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">تفعيل الشفت فور الإضافة</span>
+                        <span className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Activity size={16} className="text-indigo-500" />
+                            تفعيل الشفت فور الإضافة
+                        </span>
                     </label>
 
-                    <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={() => setShowAdd(false)} className="flex-1 py-3.5 text-sm font-black text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">إلغاء</button>
-                        <button type="submit" disabled={processing} className="flex-1 py-3.5 text-sm font-black text-white bg-primary-500 hover:bg-primary-600 rounded-2xl disabled:opacity-70 transition-all shadow-lg shadow-primary-500/30">حفظ الشفت</button>
+                    <div className="flex gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button type="submit" disabled={processing} className="flex-[2] py-3.5 text-sm font-black flex justify-center items-center gap-2 text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-2xl disabled:opacity-70 transition-all shadow-lg shadow-primary-500/30">
+                            <Save size={18} />
+                            حفظ الشفت
+                        </button>
+                        <button type="button" onClick={() => setShowAdd(false)} className="flex-1 flex justify-center items-center gap-2 py-3.5 text-sm font-black text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <X size={18} />
+                            إلغاء
+                        </button>
                     </div>
                 </form>
             </Modal>
 
             <Modal isOpen={!!editShift} onClose={() => setEditShift(null)} title="تعديل بيانات الشفت">
                 <form onSubmit={handleUpdate} className="space-y-5">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">اسم الشفت <span className="text-rose-500">*</span></label>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Type size={16} className="text-primary-500" />
+                            اسم الشفت <span className="text-rose-500">*</span>
+                        </label>
                         <input type="text" required 
                             className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold" 
                             value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                     </div>
                     
                     <div className="grid grid-cols-2 gap-5">
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">وقت البدء <span className="text-rose-500">*</span></label>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                <Clock size={16} className="text-blue-500" />
+                                وقت البدء <span className="text-rose-500">*</span>
+                            </label>
                             <FlatpickrInput type="time" required 
                                 value={form.start_time} onChange={time => setForm({ ...form, start_time: time })} />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">وقت الانتهاء <span className="text-rose-500">*</span></label>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                <Clock size={16} className="text-rose-500" />
+                                وقت الانتهاء <span className="text-rose-500">*</span>
+                            </label>
                             <FlatpickrInput type="time" required 
                                 value={form.end_time} onChange={time => setForm({ ...form, end_time: time })} />
                         </div>
                     </div>
                     
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300">فترة السماح (بالدقائق) <span className="text-rose-500">*</span></label>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Hourglass size={16} className="text-amber-500" />
+                            فترة السماح (بالدقائق) <span className="text-rose-500">*</span>
+                        </label>
                         <input type="number" min="0" required 
                             className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold font-sans" 
                             value={form.grace_period_minutes} onChange={e => setForm({ ...form, grace_period_minutes: e.target.value })} />
                     </div>
 
                     {isAdmin && branches.length > 0 && (
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">الفرع التابع له الشفت <span className="text-rose-500">*</span></label>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                                <MapPin size={16} className="text-emerald-500" />
+                                الفرع التابع له الشفت <span className="text-rose-500">*</span>
+                            </label>
                             <SelectInput required
                                 value={form.branch_id} onChange={val => setForm({ ...form, branch_id: val })}
                                 placeholder="-- اختر الفرع --"
@@ -718,12 +960,21 @@ export default function ShiftsIndex({ shifts, filters, stats, branches = [], isA
                                 className="peer sr-only" />
                             <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
                         </div>
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">حالة الشفت (مفعل/غير مفعل)</span>
+                        <span className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Activity size={16} className="text-indigo-500" />
+                            حالة الشفت (مفعل/غير مفعل)
+                        </span>
                     </label>
 
-                    <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={() => setEditShift(null)} className="flex-1 py-3.5 text-sm font-black text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">إلغاء</button>
-                        <button type="submit" disabled={processing} className="flex-1 py-3.5 text-sm font-black text-white bg-primary-500 hover:bg-primary-600 rounded-2xl disabled:opacity-70 transition-all shadow-lg shadow-primary-500/30">حفظ التعديلات</button>
+                    <div className="flex gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button type="submit" disabled={processing} className="flex-[2] py-3.5 text-sm font-black flex justify-center items-center gap-2 text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-2xl disabled:opacity-70 transition-all shadow-lg shadow-primary-500/30">
+                            <Save size={18} />
+                            حفظ التعديلات
+                        </button>
+                        <button type="button" onClick={() => setEditShift(null)} className="flex-1 flex justify-center items-center gap-2 py-3.5 text-sm font-black text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <X size={18} />
+                            إلغاء
+                        </button>
                     </div>
                 </form>
             </Modal>

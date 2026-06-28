@@ -4,7 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import {
     Search, Plus, ShieldCheck, Star, Users, Edit2, Trash2,
-    MoreVertical, X, Check, AlertTriangle, Save, SlidersHorizontal, RotateCcw, Award, ChevronDown, Network, LayoutGrid
+    MoreVertical, X, Check, AlertTriangle, Save, SlidersHorizontal, RotateCcw, Award, ChevronDown, Network, LayoutGrid, Sparkles, Type
 } from 'lucide-react';
 import OrgChart from './OrgChart';
 
@@ -19,18 +19,26 @@ function Modal({ isOpen, onClose, title, children }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[#090d16]/50 dark:bg-black/60 backdrop-blur-md transition-all duration-300" onClick={onClose} />
-            <div className="relative bg-white dark:bg-[#121820] rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden border border-slate-100 dark:border-slate-800/80 animate-scale-in">
-                {/* Soft ambient brand glow */}
-                <div className="absolute -right-10 -top-10 w-36 h-36 bg-primary-500/10 dark:bg-primary-500/5 rounded-full blur-2xl pointer-events-none -z-10" />
-                <div className="relative z-10">
-                    <div className="flex items-center justify-between p-6 border-b border-slate-50 dark:border-slate-800/60">
-                        <div className="text-lg font-bold text-dark-900 dark:text-white">{title}</div>
-                        <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-400 dark:text-slate-500 transition-colors">✕</button>
-                    </div>
-                    <div className="p-6 text-slate-700 dark:text-slate-300">{children}</div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+            <div 
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+                onClick={onClose} 
+            />
+            <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg z-10 overflow-hidden border border-slate-100 dark:border-slate-800 transform transition-all duration-300 scale-100 opacity-100">
+                <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-indigo-500 to-primary-500" />
+                <div className="flex items-center justify-between p-6 border-b border-slate-100/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-900/30">
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-primary-500" />
+                        {title}
+                    </h3>
+                    <button 
+                        onClick={onClose} 
+                        className="p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
+                <div className="p-6 md:p-8">{children}</div>
             </div>
         </div>
     );
@@ -734,36 +742,39 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
             {/* ── Add Modal ── */}
             <Modal isOpen={showAdd} onClose={() => setShowAdd(false)} title="إضافة درجة وظيفية جديدة">
                 <form onSubmit={handleStore} className="space-y-5">
-                    <div>
-                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">اسم الدرجة الوظيفية <span className="text-accent-500">*</span></label>
-                        <div className="relative flex items-center group">
-                            <ShieldCheck size={16} className="absolute right-4 text-slate-450 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200" />
-                            <input
-                                type="text"
-                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl pr-11 pl-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-semibold"
-                                value={form.name}
-                                onChange={e => setForm({ ...form, name: e.target.value })}
-                                required
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Type size={16} className="text-primary-500" />
+                            اسم الدرجة الوظيفية <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold"
+                            value={form.name}
+                            onChange={e => setForm({ ...form, name: e.target.value })}
+                            required
+                        />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">المستوى الوظيفي (1-15) <span className="text-accent-500">*</span></label>
-                        <div className="relative flex items-center group">
-                            <Star size={16} className="absolute right-4 text-slate-450 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200" />
-                            <input
-                                type="number"
-                                min="1"
-                                max="15"
-                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl pr-11 pl-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-semibold"
-                                value={form.level}
-                                onChange={e => setForm({ ...form, level: e.target.value })}
-                                required
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Star size={16} className="text-indigo-500" />
+                            المستوى الوظيفي (1-15) <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="number"
+                            min="1"
+                            max="15"
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold"
+                            value={form.level}
+                            onChange={e => setForm({ ...form, level: e.target.value })}
+                            required
+                        />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">يرفع تقاريره إلى (التبعية)</label>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Network size={16} className="text-emerald-500" />
+                            يرفع تقاريره إلى (التبعية)
+                        </label>
                         <SelectInput
                             value={form.parent_id}
                             onChange={val => setForm({ ...form, parent_id: val })}
@@ -776,11 +787,14 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
                             ]}
                         />
                     </div>
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button type="button" onClick={() => setShowAdd(false)} className="px-5 py-2.5 text-sm font-bold text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
-                        <button type="submit" disabled={processing} className="px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 dark:shadow-none hover:shadow-lg hover:shadow-primary-500/20 active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5">
-                            <Plus size={16} />
+                    <div className="flex gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button type="submit" disabled={processing} className="flex-[2] py-3.5 text-sm font-black flex justify-center items-center gap-2 text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-2xl disabled:opacity-70 transition-all shadow-lg shadow-primary-500/30">
+                            <Plus size={18} />
                             <span>{processing ? 'جاري الحفظ...' : 'حفظ الدرجة'}</span>
+                        </button>
+                        <button type="button" onClick={() => setShowAdd(false)} className="flex-1 flex justify-center items-center gap-2 py-3.5 text-sm font-black text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <X size={18} />
+                            <span>إلغاء</span>
                         </button>
                     </div>
                 </form>
@@ -789,36 +803,39 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
             {/* ── Edit Modal ── */}
             <Modal isOpen={!!editGrade} onClose={() => setEditGrade(null)} title="تعديل الدرجة الوظيفية">
                 <form onSubmit={handleUpdate} className="space-y-5">
-                    <div>
-                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">اسم الدرجة الوظيفية <span className="text-accent-500">*</span></label>
-                        <div className="relative flex items-center group">
-                            <ShieldCheck size={16} className="absolute right-4 text-slate-450 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200" />
-                            <input
-                                type="text"
-                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl pr-11 pl-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-semibold"
-                                value={form.name}
-                                onChange={e => setForm({ ...form, name: e.target.value })}
-                                required
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Type size={16} className="text-primary-500" />
+                            اسم الدرجة الوظيفية <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold"
+                            value={form.name}
+                            onChange={e => setForm({ ...form, name: e.target.value })}
+                            required
+                        />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">المستوى الوظيفي (1-15) <span className="text-accent-500">*</span></label>
-                        <div className="relative flex items-center group">
-                            <Star size={16} className="absolute right-4 text-slate-450 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200" />
-                            <input
-                                type="number"
-                                min="1"
-                                max="15"
-                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl pr-11 pl-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 focus:shadow-lg focus:shadow-primary-500/5 outline-none transition-all font-semibold"
-                                value={form.level}
-                                onChange={e => setForm({ ...form, level: e.target.value })}
-                                required
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Star size={16} className="text-indigo-500" />
+                            المستوى الوظيفي (1-15) <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="number"
+                            min="1"
+                            max="15"
+                            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3.5 text-base outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 transition-all font-bold"
+                            value={form.level}
+                            onChange={e => setForm({ ...form, level: e.target.value })}
+                            required
+                        />
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">يرفع تقاريره إلى (التبعية)</label>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm font-black text-slate-700 dark:text-slate-300">
+                            <Network size={16} className="text-emerald-500" />
+                            يرفع تقاريره إلى (التبعية)
+                        </label>
                         <SelectInput
                             value={form.parent_id}
                             onChange={val => setForm({ ...form, parent_id: val })}
@@ -831,11 +848,14 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
                             ]}
                         />
                     </div>
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button type="button" onClick={() => setEditGrade(null)} className="px-5 py-2.5 text-sm font-bold text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
-                        <button type="submit" disabled={processing} className="px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 dark:shadow-none hover:shadow-lg hover:shadow-primary-500/20 active:scale-95 transition-all disabled:opacity-60 flex items-center gap-1.5">
-                            <Save size={16} />
+                    <div className="flex gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button type="submit" disabled={processing} className="flex-[2] py-3.5 text-sm font-black flex justify-center items-center gap-2 text-white bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 rounded-2xl disabled:opacity-70 transition-all shadow-lg shadow-primary-500/30">
+                            <Save size={18} />
                             <span>{processing ? 'جاري التعديل...' : 'تحديث البيانات'}</span>
+                        </button>
+                        <button type="button" onClick={() => setEditGrade(null)} className="flex-1 flex justify-center items-center gap-2 py-3.5 text-sm font-black text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <X size={18} />
+                            <span>إلغاء</span>
                         </button>
                     </div>
                 </form>
@@ -843,17 +863,20 @@ export default function JobGradesIndex({ jobGrades, allGrades = [], stats, filte
 
             {/* ── Delete Confirm Modal ── */}
             <Modal isOpen={!!deleteGrade} onClose={() => setDeleteGrade(null)} title="تأكيد الحذف">
-                <div className="flex flex-col items-center text-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-accent-50 dark:bg-accent-950/20 flex items-center justify-center animate-pulse">
-                        <AlertTriangle size={32} className="text-accent-500 dark:text-accent-400" />
+                <div className="flex flex-col items-center text-center gap-5">
+                    <div className="w-20 h-20 rounded-full bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center relative">
+                        <div className="absolute inset-0 bg-rose-400 rounded-full animate-ping opacity-20"></div>
+                        <AlertTriangle size={36} className="text-rose-500 dark:text-rose-400" />
                     </div>
                     <div>
-                        <p className="font-bold text-dark-900 dark:text-white text-lg mb-1">تأكيد الحذف</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">هل أنت متأكد من حذف الدرجة الوظيفية؟ سيتم حذف "<span className="font-bold text-accent-600 dark:text-accent-400">{deleteGrade?.name}</span>" بشكل نهائي.</p>
+                        <h4 className="text-2xl font-black text-slate-800 dark:text-white mb-2">هل أنت متأكد؟</h4>
+                        <p className="text-base font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+                            سيتم حذف الدرجة الوظيفية "<span className="font-bold text-rose-500 mx-1">{deleteGrade?.name}</span>" نهائياً.
+                        </p>
                     </div>
-                    <div className="flex gap-3 w-full mt-2">
-                        <button onClick={() => setDeleteGrade(null)} className="flex-1 py-3 text-sm font-bold text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
-                        <button onClick={handleDelete} className="flex-1 py-3 text-sm font-bold text-white bg-accent-500 dark:bg-accent-600 hover:bg-accent-600 dark:hover:bg-accent-750 rounded-2xl shadow-md shadow-accent-500/10 dark:shadow-none transition-all">حذف نهائياً</button>
+                    <div className="flex gap-4 w-full mt-4">
+                        <button onClick={() => setDeleteGrade(null)} className="flex-1 py-3.5 text-sm font-black text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 rounded-2xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">تراجع</button>
+                        <button onClick={handleDelete} className="flex-1 py-3.5 text-sm font-black text-white bg-rose-500 hover:bg-rose-600 rounded-2xl transition-colors shadow-lg shadow-rose-500/30">نعم، احذف الدرجة</button>
                     </div>
                 </div>
             </Modal>
