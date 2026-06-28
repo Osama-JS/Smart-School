@@ -1,7 +1,7 @@
 import React from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { CheckCircle, CornerUpLeft, ArrowRight, User, Calendar, Briefcase, FileText, Download, Image as ImageIcon, Eye, File, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle, CornerUpLeft, ArrowRight, User, Calendar, Briefcase, FileText, Download, Image as ImageIcon, Eye, File, Clock, AlertCircle, Database } from 'lucide-react';
 
 export default function ReviewReport({ auth, report }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -15,8 +15,11 @@ export default function ReviewReport({ auth, report }) {
     };
 
     const renderFieldValue = (field, value) => {
-        if (value === null || value === undefined || value === '') {
-            return <span className="text-slate-400 italic">لم يتم إدخال قيمة</span>;
+        // data_source fields always render their own UI (even when empty array)
+        if (field.type !== 'data_source') {
+            if (value === null || value === undefined || value === '') {
+                return <span className="text-slate-400 italic">لم يتم إدخال قيمة</span>;
+            }
         }
 
         switch (field.type) {
@@ -136,6 +139,62 @@ export default function ReviewReport({ auth, report }) {
                     );
                 }
                 return <span className="text-slate-400 font-bold">لا توجد أنشطة مدخلة</span>;
+            case 'data_source':
+                const sourceData = value || [];
+                const options = typeof field.options === 'string' ? JSON.parse(field.options) : (field.options || {});
+                const columns = options.columns || [];
+                
+                const columnHeaders = {
+                    day: 'اليوم',
+                    date: 'التاريخ',
+                    teacher_name: 'اسم المعلم',
+                    visit_type: 'نوع الزيارة',
+                    notes: 'الملاحظات والتوصيات',
+                    evaluation: 'التقييم',
+                    discussed_points: 'نقاط النقاش'
+                };
+                
+                return (
+                    <div className="border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="bg-primary-50 dark:bg-primary-900/10 p-4 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-800 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+                                <Database size={16} />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">بيانات مسحوبة آلياً</h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">هذه البيانات تم جلبها تلقائياً من النظام بناءً على نشاط الموظف.</p>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50">
+                                    <tr>
+                                        {columns.map(col => (
+                                            <th key={col} className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">{columnHeaders[col] || col}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {sourceData.length > 0 ? sourceData.map((row, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                            {columns.map(col => (
+                                                <td key={col} className="p-3 align-top font-semibold text-slate-700 dark:text-slate-300">
+                                                    {row[col] || '-'}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={columns.length || 1} className="p-6 text-center text-slate-400 text-sm font-semibold">
+                                                لا توجد بيانات متاحة.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
             case 'textarea':
                 return (
                     <div className="prose dark:prose-invert max-w-none text-base bg-white dark:bg-[#0f141a] p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm font-medium leading-relaxed">
@@ -162,15 +221,21 @@ export default function ReviewReport({ auth, report }) {
             <Head title="تفاصيل التقرير" />
 
             <div className="py-12" style={{ direction: 'rtl' }}>
-                <div className="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
+                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
                     
-                    <div className="relative overflow-hidden bg-white dark:bg-dark-900 border border-dark-200/60 dark:border-dark-800 rounded-[2rem] p-8 md:p-10 shadow-xl shadow-dark-200/20 dark:shadow-none">
-                        <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
-                        <div className="absolute -top-32 -right-32 w-64 h-64 bg-primary-500/10 blur-[80px] rounded-full pointer-events-none" />
-                        <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+                    <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
+                        <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                        
+                        <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                            <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                                <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                                <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                            </svg>
+                        </div>
                         
                         <div className="relative z-10">
-                            <Link href={route('reports.index')} className="inline-flex items-center gap-2 text-sm font-bold text-dark-500 hover:text-primary-600 dark:text-dark-400 dark:hover:text-primary-400 transition-colors mb-6 bg-dark-50 dark:bg-dark-800/50 hover:bg-dark-100 dark:hover:bg-dark-700 px-4 py-2 rounded-xl border border-dark-200/50 dark:border-dark-700 w-fit backdrop-blur-sm">
+                            <Link href={auth.user.id === report.submitter_id ? route('hr.reports.my-reports.index') : route('reports.index')} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-colors mb-6 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 px-4 py-2 rounded-xl border border-slate-200/50 dark:border-slate-700 w-fit backdrop-blur-sm">
                                 <ArrowRight size={16} /> العودة للقائمة
                             </Link>
                             
@@ -178,14 +243,14 @@ export default function ReviewReport({ auth, report }) {
                                 <div>
                                     <div className="flex items-center gap-3 mb-4">
                                         <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border shadow-sm bg-primary-50 text-primary-700 border-primary-200 dark:bg-primary-900/30 dark:text-primary-400 dark:border-primary-800 shadow-primary-500/10">
-                                            <FileText size={14} /> استعراض وتقييم
+                                            <FileText size={14} /> {auth.user.id === report.submitter_id ? 'استعراض التقرير' : 'استعراض وتقييم'}
                                         </span>
                                     </div>
-                                    <h1 className="text-3xl md:text-4xl font-black text-dark-900 dark:text-white tracking-tight mb-2 leading-tight">
-                                        تفاصيل ومراجعة التقرير
+                                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 leading-tight">
+                                        {auth.user.id === report.submitter_id ? 'تفاصيل التقرير' : 'تفاصيل ومراجعة التقرير'}
                                     </h1>
-                                    <p className="text-dark-500 dark:text-dark-400 font-bold text-sm">
-                                        يمكنك مراجعة كافة البيانات المدخلة وتقييم التقرير
+                                    <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">
+                                        {auth.user.id === report.submitter_id ? 'يمكنك استعراض تفاصيل تقريرك وحالة مراجعته' : 'يمكنك مراجعة كافة البيانات المدخلة وتقييم التقرير'}
                                     </p>
                                 </div>
                             </div>
@@ -194,62 +259,62 @@ export default function ReviewReport({ auth, report }) {
                     
                     {/* Report Meta Data (Smart Widgets) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-                        <div className="bg-white dark:bg-dark-900 p-6 rounded-[2rem] border border-dark-100 dark:border-dark-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
                             <div className="flex items-start gap-5">
                                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-2xl group-hover:scale-110 transition-transform"><User size={24} /></div>
                                 <div>
-                                    <p className="text-xs font-bold text-dark-400 dark:text-dark-500 uppercase tracking-wider mb-1.5">مقدم التقرير</p>
-                                    <p className="font-black text-dark-900 dark:text-white text-sm line-clamp-1">{report.submitter?.name}</p>
+                                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">مقدم التقرير</p>
+                                    <p className="font-black text-slate-900 dark:text-white text-sm line-clamp-1">{report.submitter?.name}</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-dark-900 p-6 rounded-[2rem] border border-dark-100 dark:border-dark-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
                             <div className="flex items-start gap-5">
                                 <div className="p-4 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-2xl group-hover:scale-110 transition-transform"><Briefcase size={24} /></div>
                                 <div>
-                                    <p className="text-xs font-bold text-dark-400 dark:text-dark-500 uppercase tracking-wider mb-1.5">الدرجة الوظيفية</p>
-                                    <p className="font-black text-dark-900 dark:text-white text-sm line-clamp-1">{report.submitter?.employee?.job_grade?.name || '-'}</p>
+                                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">الدرجة الوظيفية</p>
+                                    <p className="font-black text-slate-900 dark:text-white text-sm line-clamp-1">{report.submitter?.employee?.job_grade?.name || '-'}</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-dark-900 p-6 rounded-[2rem] border border-dark-100 dark:border-dark-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
                             <div className="flex items-start gap-5">
                                 <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-2xl group-hover:scale-110 transition-transform"><Calendar size={24} /></div>
                                 <div>
-                                    <p className="text-xs font-bold text-dark-400 dark:text-dark-500 uppercase tracking-wider mb-1.5">تاريخ التقديم</p>
-                                    <p className="font-black text-dark-900 dark:text-white text-sm">{new Date(report.created_at).toLocaleDateString('ar-EG')}</p>
+                                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">تاريخ التقديم</p>
+                                    <p className="font-black text-slate-900 dark:text-white text-sm">{new Date(report.created_at).toLocaleDateString('ar-EG')}</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="bg-white dark:bg-dark-900 p-6 rounded-[2rem] border border-dark-100 dark:border-dark-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
                             <div className="flex items-start gap-5">
                                 <div className="p-4 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-2xl group-hover:scale-110 transition-transform"><FileText size={24} /></div>
                                 <div>
-                                    <p className="text-xs font-bold text-dark-400 dark:text-dark-500 uppercase tracking-wider mb-1.5">اسم القالب</p>
-                                    <p className="font-black text-dark-900 dark:text-white text-sm line-clamp-1">{report.template?.name}</p>
+                                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5">اسم القالب</p>
+                                    <p className="font-black text-slate-900 dark:text-white text-sm line-clamp-1">{report.template?.name}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Report Data */}
-                    <div className="bg-white dark:bg-dark-900 rounded-[2.5rem] border border-dark-100 dark:border-dark-800 shadow-xl overflow-hidden relative">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl overflow-hidden relative">
                         <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-primary-500 to-indigo-500" />
                         
-                        <div className="p-6 md:p-10 border-b border-dark-100 dark:border-dark-800/50 bg-dark-50/50 dark:bg-dark-800/30 flex items-center gap-3">
+                        <div className="p-6 md:p-10 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/30 flex items-center gap-3">
                             <FileText className="text-primary-500" size={24} />
-                            <h3 className="text-xl font-black text-dark-900 dark:text-white">تفاصيل التقرير المدخلة</h3>
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white">تفاصيل التقرير المدخلة</h3>
                         </div>
                         <div className="p-6 md:p-10 space-y-8">
                             {report.template?.fields?.sort((a,b) => a.order - b.order).map((field, idx) => (
-                                <div key={field.id} className="relative group/field border-b border-dark-100 dark:border-dark-800/50 pb-8 last:border-0 last:pb-0">
+                                <div key={field.id} className="relative group/field border-b border-slate-100 dark:border-slate-800/50 pb-8 last:border-0 last:pb-0">
                                     <div className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-dark-50 dark:bg-dark-800 text-dark-400 dark:text-dark-500 flex items-center justify-center shrink-0 font-bold text-sm mt-0.5 border border-dark-200/60 dark:border-dark-700">
+                                        <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center shrink-0 font-bold text-sm mt-0.5 border border-slate-200/60 dark:border-slate-700">
                                             {idx + 1}
                                         </div>
                                         <div className="flex-1 w-full overflow-hidden">
-                                            <h4 className="text-base font-black text-dark-900 dark:text-dark-200 mb-4">{field.name}</h4>
-                                            <div className="bg-dark-50/50 dark:bg-dark-800/30 p-5 rounded-2xl border border-dark-100 dark:border-dark-800/60 shadow-inner overflow-x-auto w-full">
+                                            <h4 className="text-base font-black text-slate-900 dark:text-slate-200 mb-4">{field.name}</h4>
+                                            <div className="overflow-x-auto w-full">
                                                 {renderFieldValue(field, report.data ? report.data[field.name] : null)}
                                             </div>
                                         </div>
@@ -261,49 +326,49 @@ export default function ReviewReport({ auth, report }) {
 
                     {/* Manager Review Action */}
                     {(report.reviewer_id === null || report.status === 'pending') && auth.user.id !== report.submitter_id ? (
-                        <div className="bg-white dark:bg-dark-900 rounded-[2.5rem] border border-primary-200 dark:border-primary-900/50 shadow-2xl shadow-primary-500/10 overflow-hidden relative">
+                        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-primary-200 dark:border-primary-900/50 shadow-2xl shadow-primary-500/10 overflow-hidden relative">
                             <div className="absolute top-0 right-0 w-full h-1.5 bg-gradient-to-r from-primary-500 via-indigo-500 to-purple-500"></div>
-                            <div className="p-6 md:p-10 border-b border-dark-100 dark:border-dark-800/50 flex items-center gap-3">
+                            <div className="p-6 md:p-10 border-b border-slate-100 dark:border-slate-800/50 flex items-center gap-3">
                                 <AlertCircle className="text-primary-500" size={24} />
-                                <h3 className="text-xl font-black text-dark-900 dark:text-white">إجراءات المراجعة (للمدير)</h3>
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white">إجراءات المراجعة (للمدير)</h3>
                             </div>
                             <div className="p-6 md:p-10">
                                 <form onSubmit={handleSubmit} className="space-y-8">
                                     <div>
-                                        <label className="block text-base font-black text-dark-900 dark:text-dark-200 mb-4">قرار المراجعة <span className="text-rose-500">*</span></label>
+                                        <label className="block text-base font-black text-slate-900 dark:text-slate-200 mb-4">قرار المراجعة <span className="text-rose-500">*</span></label>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            <label className={`relative flex items-center gap-3 p-5 rounded-2xl border-2 cursor-pointer transition-all ${data.status === 'reviewed' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-800 dark:text-emerald-400 shadow-md shadow-emerald-500/10' : 'bg-dark-50 dark:bg-dark-900 border-dark-200 dark:border-dark-700 text-dark-600 dark:text-dark-400 hover:border-emerald-300 dark:hover:border-emerald-700'}`}>
+                                            <label className={`relative flex items-center gap-3 p-5 rounded-2xl border-2 cursor-pointer transition-all ${data.status === 'reviewed' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-800 dark:text-emerald-400 shadow-md shadow-emerald-500/10' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-emerald-300 dark:hover:border-emerald-700'}`}>
                                                 <input 
                                                     type="radio" 
                                                     name="status" 
                                                     value="reviewed" 
                                                     checked={data.status === 'reviewed'} 
                                                     onChange={e => setData('status', e.target.value)}
-                                                    className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 border-dark-300 dark:border-dark-600"
+                                                    className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600"
                                                 />
-                                                <span className="font-bold flex items-center gap-2 text-base"><CheckCircle size={20} className={data.status === 'reviewed' ? 'text-emerald-500' : 'text-dark-400'}/> اعتماد التقرير</span>
+                                                <span className="font-bold flex items-center gap-2 text-base"><CheckCircle size={20} className={data.status === 'reviewed' ? 'text-emerald-500' : 'text-slate-400'}/> اعتماد التقرير</span>
                                             </label>
                                             
-                                            <label className={`relative flex items-center gap-3 p-5 rounded-2xl border-2 cursor-pointer transition-all ${data.status === 'returned' ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-500 text-rose-800 dark:text-rose-400 shadow-md shadow-rose-500/10' : 'bg-dark-50 dark:bg-dark-900 border-dark-200 dark:border-dark-700 text-dark-600 dark:text-dark-400 hover:border-rose-300 dark:hover:border-rose-700'}`}>
+                                            <label className={`relative flex items-center gap-3 p-5 rounded-2xl border-2 cursor-pointer transition-all ${data.status === 'returned' ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-500 text-rose-800 dark:text-rose-400 shadow-md shadow-rose-500/10' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-rose-300 dark:hover:border-rose-700'}`}>
                                                 <input 
                                                     type="radio" 
                                                     name="status" 
                                                     value="returned" 
                                                     checked={data.status === 'returned'} 
                                                     onChange={e => setData('status', e.target.value)}
-                                                    className="w-5 h-5 text-rose-600 focus:ring-rose-500 border-dark-300 dark:border-dark-600"
+                                                    className="w-5 h-5 text-rose-600 focus:ring-rose-500 border-slate-300 dark:border-slate-600"
                                                 />
-                                                <span className="font-bold flex items-center gap-2 text-base"><CornerUpLeft size={20} className={data.status === 'returned' ? 'text-rose-500' : 'text-dark-400'}/> إعادة التقرير للموظف</span>
+                                                <span className="font-bold flex items-center gap-2 text-base"><CornerUpLeft size={20} className={data.status === 'returned' ? 'text-rose-500' : 'text-slate-400'}/> إعادة التقرير للموظف</span>
                                             </label>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <label className="block text-base font-black text-dark-900 dark:text-dark-200 mb-3">ملاحظات المدير <span className="text-dark-400 font-normal text-sm">(اختياري)</span></label>
+                                        <label className="block text-base font-black text-slate-900 dark:text-slate-200 mb-3">ملاحظات المدير <span className="text-slate-400 font-normal text-sm">(اختياري)</span></label>
                                         <textarea 
                                             value={data.manager_notes}
                                             onChange={e => setData('manager_notes', e.target.value)}
-                                            className="w-full bg-dark-50 dark:bg-dark-800/50 border border-dark-200 dark:border-dark-800 rounded-2xl px-5 py-4 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all shadow-inner font-semibold dark:text-white"
+                                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all shadow-inner font-semibold dark:text-white"
                                             rows="4"
                                             placeholder="اكتب ملاحظاتك وأسباب إعادة التقرير (إن وجدت) هنا..."
                                         ></textarea>
@@ -322,15 +387,15 @@ export default function ReviewReport({ auth, report }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="bg-white dark:bg-dark-900 rounded-[2.5rem] border border-dark-200/50 dark:border-dark-800 shadow-xl overflow-hidden">
-                            <div className="p-6 md:p-8 border-b border-dark-100 dark:border-dark-800/50 flex items-center gap-3 bg-dark-50/50 dark:bg-dark-800/30">
+                        <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200/50 dark:border-slate-800 shadow-xl overflow-hidden">
+                            <div className="p-6 md:p-8 border-b border-slate-100 dark:border-slate-800/50 flex items-center gap-3 bg-slate-50/50 dark:bg-slate-800/30">
                                 <CheckCircle className="text-emerald-500" size={24} />
-                                <h3 className="text-xl font-black text-dark-900 dark:text-white">حالة ونتيجة المراجعة</h3>
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white">حالة ونتيجة المراجعة</h3>
                             </div>
                             
                             <div className="p-6 md:p-8 space-y-6">
-                                <div className="flex items-center gap-4 bg-dark-50 dark:bg-dark-800/50 p-5 rounded-2xl border border-dark-100 dark:border-dark-800/60 shadow-sm">
-                                    <span className="text-base font-bold text-dark-600 dark:text-dark-400">حالة التقرير:</span>
+                                <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
+                                    <span className="text-base font-bold text-slate-600 dark:text-slate-400">حالة التقرير:</span>
                                     {report.status === 'reviewed' ? (
                                         <span className="bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full text-sm font-black border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1.5"><CheckCircle size={16}/> تم الاعتماد</span>
                                     ) : report.status === 'returned' ? (
@@ -341,9 +406,9 @@ export default function ReviewReport({ auth, report }) {
                                 </div>
                                 
                                 {report.manager_notes && (
-                                    <div className="bg-dark-50 dark:bg-dark-800/50 p-6 rounded-2xl border border-dark-100 dark:border-dark-800/60 shadow-sm">
-                                        <span className="text-base font-bold text-dark-800 dark:text-white mb-3 flex items-center gap-2"><User size={18} className="text-dark-400"/> ملاحظات المشرف / المدير:</span>
-                                        <div className="bg-white dark:bg-dark-900/50 p-5 rounded-xl border border-dark-200 dark:border-dark-700 text-base text-dark-700 dark:text-dark-300 leading-relaxed shadow-inner font-medium">
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
+                                        <span className="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><User size={18} className="text-slate-400"/> ملاحظات المشرف / المدير:</span>
+                                        <div className="bg-white dark:bg-slate-900/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 text-base text-slate-700 dark:text-slate-300 leading-relaxed shadow-inner font-medium">
                                             {report.manager_notes}
                                         </div>
                                     </div>

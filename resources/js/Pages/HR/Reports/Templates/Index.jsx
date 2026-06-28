@@ -7,7 +7,7 @@ import {
     Plus, Edit, Trash2, X, PlusCircle, AlignLeft, List, Hash, 
     CheckSquare, Image as ImageIcon, Search, FileText, Settings, 
     ShieldCheck, Calendar, Sparkles, ChevronDown, FileSpreadsheet, 
-    AlertCircle, Type, Clock, Paperclip, Star, Table2, ListTodo, CalendarRange 
+    AlertCircle, Type, Clock, Paperclip, Star, Table2, ListTodo, CalendarRange, Database 
 } from 'lucide-react';
 
 export default function TemplatesIndex({ auth, templates, jobGrades, stats, filters }) {
@@ -81,6 +81,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
             case 'matrix_text': return <Table2 size={16} />;
             case 'tasks_matrix': return <ListTodo size={16} />;
             case 'activities_matrix': return <CalendarRange size={16} />;
+            case 'data_source': return <Database size={16} />;
             default: return <AlignLeft size={16} />;
         }
     };
@@ -236,7 +237,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     { value: 'rating', label: 'تقييم (Rating)' },
                                                     { value: 'matrix_text', label: 'جدول ملاحظات (Matrix Text)' },
                                                     { value: 'tasks_matrix', label: 'جدول الأعمال (Tasks Matrix)' },
-                                                    { value: 'activities_matrix', label: 'جدول الأنشطة (Activities Matrix)' }
+                                                    { value: 'activities_matrix', label: 'جدول الأنشطة (Activities Matrix)' },
+                                                    { value: 'data_source', label: 'جدول بيانات آلي من النظام (Data Source)' }
                                                 ]}
                                                 isClearable={false}
                                             />
@@ -274,6 +276,67 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             ? 'ملاحظة: سيتم رسم جدول للأعمال المطلوبة، ويقوم الموظف بتحديد حالة كل عمل (نفذ / لم ينفذ) مع ذكر السبب.'
                                             : 'ملاحظة: سيتم عرض هذه الكلمات كخيارات قائمة منسدلة للموظف عند تعبئة التقرير.'}
                                     </span>
+                                </div>
+                            )}
+
+                            {/* Data Source Configuration */}
+                            {field.type === 'data_source' && (
+                                <div className="mt-1 bg-slate-50/50 dark:bg-slate-900/10 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 animate-slide-down">
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">مصدر البيانات الآلي</label>
+                                    <SelectInput 
+                                        value={field.options?.source || ''}
+                                        onChange={(val) => {
+                                            const currentOptions = Array.isArray(field.options) ? {} : (field.options || {});
+                                            updateField(index, 'options', { ...currentOptions, source: val });
+                                        }}
+                                        options={[
+                                            { value: 'classroom_visits', label: 'جدول الزيارات الصفية (للمشرف/الوكيل)' }
+                                        ]}
+                                        placeholder="اختر مصدر البيانات..."
+                                        className="mb-4"
+                                    />
+                                    
+                                    {field.options?.source === 'classroom_visits' && (
+                                        <div className="mt-4">
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الأعمدة المطلوب عرضها في الجدول</label>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                {[
+                                                    { id: 'day', label: 'اليوم' },
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'teacher_name', label: 'اسم المعلم' },
+                                                    { id: 'visit_type', label: 'نوع الزيارة' },
+                                                    { id: 'notes', label: 'الملاحظات والتوصيات' },
+                                                    { id: 'evaluation', label: 'التقييم' }
+                                                ].map(col => {
+                                                    const columns = Array.isArray(field.options?.columns) ? field.options.columns : [];
+                                                    const isChecked = columns.includes(col.id);
+                                                    return (
+                                                        <label key={col.id} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900/40 p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-400 transition-all">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={isChecked}
+                                                                onChange={(e) => {
+                                                                    const currentOptions = Array.isArray(field.options) ? {} : (field.options || {});
+                                                                    let newColumns = [...(currentOptions.columns || [])];
+                                                                    if (e.target.checked) {
+                                                                        newColumns.push(col.id);
+                                                                    } else {
+                                                                        newColumns = newColumns.filter(c => c !== col.id);
+                                                                    }
+                                                                    updateField(index, 'options', { ...currentOptions, columns: newColumns });
+                                                                }}
+                                                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                                            />
+                                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{col.label}</span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block font-semibold">
+                                                ملاحظة: سيتم عرض جدول تلقائي يحتوي على زيارات המوظف للفترة المحددة في هذا القالب.
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

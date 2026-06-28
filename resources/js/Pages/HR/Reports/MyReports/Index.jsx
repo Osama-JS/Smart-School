@@ -1,9 +1,23 @@
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { FileText, Plus, Calendar, Clock, CheckCircle, Clock3, RotateCcw, Eye, ChevronLeft } from 'lucide-react';
+import Modal from '@/Components/Modal';
+import { FileText, Plus, Calendar, Clock, CheckCircle, Clock3, RotateCcw, Eye, ChevronLeft, Trash2, AlertCircle } from 'lucide-react';
 
 export default function MyReportsIndex({ auth, templates, myReports, stats }) {
+    const [reportToDelete, setReportToDelete] = useState(null);
+
+    const closeDeleteModal = () => {
+        setReportToDelete(null);
+    };
+
+    const confirmDelete = () => {
+        if (!reportToDelete) return;
+        router.delete(route('hr.reports.my-reports.destroy', reportToDelete.id), {
+            preserveScroll: true,
+            onSuccess: () => closeDeleteModal(),
+        });
+    };
     
     const getStatusIcon = (status) => {
         switch (status) {
@@ -268,13 +282,25 @@ export default function MyReportsIndex({ auth, templates, myReports, stats }) {
                                             {getStatusText(report.status)}
                                         </div>
 
-                                        <Link 
-                                            href={route('hr.reports.my-reports.show', report.id)} 
-                                            className="flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-50 hover:bg-primary-50 text-slate-600 hover:text-primary-600 dark:bg-slate-800/50 dark:hover:bg-primary-900/30 dark:text-slate-300 dark:hover:text-primary-400 border border-slate-200 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800/50 rounded-xl font-bold text-xs transition-all shadow-sm active:scale-95 group/btn"
-                                        >
-                                            عرض
-                                            <ChevronLeft size={14} className="group-hover/btn:-translate-x-0.5 transition-transform" />
-                                        </Link>
+                                        <div className="flex items-center gap-2">
+                                            {report.status === 'returned' && (
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setReportToDelete(report)}
+                                                    className="flex items-center justify-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 rounded-xl font-bold text-xs transition-all shadow-sm active:scale-95 group/btn"
+                                                    title="حذف التقرير"
+                                                >
+                                                    <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
+                                                </button>
+                                            )}
+                                            <Link 
+                                                href={route('hr.reports.my-reports.show', report.id)} 
+                                                className="flex items-center justify-center gap-1.5 px-4 py-2 bg-slate-50 hover:bg-primary-50 text-slate-600 hover:text-primary-600 dark:bg-slate-800/50 dark:hover:bg-primary-900/30 dark:text-slate-300 dark:hover:text-primary-400 border border-slate-200 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800/50 rounded-xl font-bold text-xs transition-all shadow-sm active:scale-95 group/btn"
+                                            >
+                                                عرض
+                                                <ChevronLeft size={14} className="group-hover/btn:-translate-x-0.5 transition-transform" />
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             ))
@@ -282,6 +308,38 @@ export default function MyReportsIndex({ auth, templates, myReports, stats }) {
                     </div>
                 </div>
             </div>
+
+            <Modal show={reportToDelete !== null} onClose={closeDeleteModal} maxWidth="md">
+                <div className="p-6 text-right">
+                    <div className="flex items-center justify-center w-12 h-12 mx-auto bg-rose-100 dark:bg-rose-900/30 rounded-full mb-4">
+                        <AlertCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2 text-center">
+                        تأكيد حذف التقرير
+                    </h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 text-center font-semibold leading-relaxed">
+                        هل أنت متأكد من رغبتك في حذف هذا التقرير المرفوض بشكل نهائي؟ لا يمكن التراجع عن هذه الخطوة.
+                    </p>
+
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-center gap-3">
+                        <button
+                            type="button"
+                            onClick={closeDeleteModal}
+                            className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm transition-all"
+                        >
+                            إلغاء
+                        </button>
+                        <button
+                            type="button"
+                            onClick={confirmDelete}
+                            className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
+                        >
+                            <Trash2 size={16} />
+                            تأكيد الحذف
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </AdminLayout>
     );
 }

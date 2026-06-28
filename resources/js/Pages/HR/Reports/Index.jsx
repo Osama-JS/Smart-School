@@ -1,9 +1,48 @@
-import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { FileText, ClipboardList, CheckCircle, Clock, CornerUpLeft, Plus, Clock3, RotateCcw } from 'lucide-react';
+import Modal from '@/Components/Modal';
+import TextInput from '@/Components/TextInput';
+import SelectInput from '@/Components/SelectInput';
+import Pagination from '@/Components/Pagination';
+import FlatpickrInput from '@/Components/FlatpickrInput';
+import { FileText, ClipboardList, CheckCircle, Clock, CornerUpLeft, Plus, Clock3, RotateCcw, Trash2, Eye, AlertCircle, X, Search, Filter, RotateCcw as ResetIcon } from 'lucide-react';
 
-export default function ReportsIndex({ auth, reportsToReview, stats }) {
+export default function ReportsIndex({ auth, reportsToReview, stats, filters }) {
+    const [reportToDelete, setReportToDelete] = useState(null);
+
+    const closeDeleteModal = () => {
+        setReportToDelete(null);
+    };
+
+    const confirmDelete = () => {
+        if (!reportToDelete) return;
+        router.delete(route('reports.destroy', reportToDelete.id), {
+            preserveScroll: true,
+            onSuccess: () => closeDeleteModal(),
+        });
+    };
+    
+    const [filterData, setFilterData] = useState({
+        search: filters?.search || '',
+        status: filters?.status || 'all',
+        date_start: filters?.date_start || '',
+        date_end: filters?.date_end || '',
+    });
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilterData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const applyFilters = (e) => {
+        if (e) e.preventDefault();
+        router.get(route('reports.index'), filterData, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
     
     const getStatusBadge = (status) => {
         switch (status) {
@@ -152,6 +191,77 @@ export default function ReportsIndex({ auth, reportsToReview, stats }) {
                         </div>
                     )}
 
+                    {/* Filters Section */}
+                    <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-3xl p-5 shadow-sm relative z-40 mb-6">
+                        <form onSubmit={applyFilters}>
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                                <div className="relative flex-1 max-w-md group">
+                                    <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-405 group-focus-within:text-primary-500 transition-colors" />
+                                    <input 
+                                        type="text" 
+                                        placeholder="ابحث باسم الموظف أو القالب..."
+                                        className="w-full bg-slate-50/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-12 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                                        value={filterData.search} 
+                                        onChange={handleFilterChange} 
+                                        name="search"
+                                    />
+                                    {filterData.search && (
+                                        <button 
+                                            type="button"
+                                            onClick={() => {
+                                                setFilterData(prev => ({ ...prev, search: '' }));
+                                            }}
+                                            className="absolute left-4 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 dark:hover:bg-slate-805 rounded-lg text-slate-450 hover:text-slate-650 transition-all">
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <button type="submit" className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold bg-primary-500 text-white border-primary-500 shadow-sm transition-all hover:bg-primary-600">
+                                        <Filter size={16} />
+                                        <span>تطبيق الفرز</span>
+                                    </button>
+                                    <Link href={route('reports.index')} className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold text-accent-600 dark:text-accent-400 bg-accent-50 dark:bg-accent-500/10 hover:bg-accent-100 dark:hover:bg-accent-500/20 transition-all border border-accent-100 dark:border-accent-550/10">
+                                        <ResetIcon size={16} />
+                                        <span>إعادة تعيين</span>
+                                    </Link>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الحالة التشغيلية</label>
+                                    <SelectInput
+                                        name="status"
+                                        value={filterData.status}
+                                        onChange={handleFilterChange}
+                                        className="w-full"
+                                        options={[
+                                            { value: 'all', label: 'الكل' },
+                                            { value: 'pending', label: 'قيد المراجعة' },
+                                            { value: 'reviewed', label: 'معتمد' },
+                                            { value: 'returned', label: 'معاد للتعديل' },
+                                        ]}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">من تاريخ</label>
+                                    <FlatpickrInput
+                                        value={filterData.date_start}
+                                        onChange={(date) => setFilterData(prev => ({ ...prev, date_start: date }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">إلى تاريخ</label>
+                                    <FlatpickrInput
+                                        value={filterData.date_end}
+                                        onChange={(date) => setFilterData(prev => ({ ...prev, date_end: date }))}
+                                    />
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
                     {/* Reports pending review by this manager */}
                     <div className="bg-white dark:bg-[#121820] rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -164,44 +274,65 @@ export default function ReportsIndex({ auth, reportsToReview, stats }) {
                             <table className="w-full text-right">
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
-                                        <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">القالب</th>
+                                        <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300 w-16">#</th>
                                         <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">مقدم التقرير</th>
+                                        <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">القالب</th>
                                         <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">الدرجة الوظيفية</th>
-                                        <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">تاريخ التقديم</th>
+                                        <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">تاريخ ووقت التقديم</th>
+                                        <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">المراجع/المعتمد</th>
                                         <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">الحالة</th>
                                         <th className="px-6 py-4 text-sm font-bold text-slate-600 dark:text-slate-300">إجراء</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {(!reportsToReview || reportsToReview.length === 0) ? (
+                                    {(!reportsToReview || !reportsToReview.data || reportsToReview.data.length === 0) ? (
                                         <tr>
-                                            <td colSpan="6" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400 font-medium">لا توجد تقارير متاحة للمراجعة حالياً.</td>
+                                            <td colSpan="8" className="px-6 py-8 text-center text-slate-500 dark:text-slate-400 font-medium">لا توجد تقارير متاحة حالياً بناءً على محددات البحث.</td>
                                         </tr>
                                     ) : (
-                                        reportsToReview.map((report) => (
+                                        reportsToReview.data.map((report, index) => (
                                             <tr key={report.id} className="border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                                <td className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-white">
-                                                    {report.template?.name}
+                                                <td className="px-6 py-4 text-sm font-bold text-slate-500 dark:text-slate-400">
+                                                    {(reportsToReview.current_page - 1) * reportsToReview.per_page + index + 1}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                                     {report.submitter?.name}
                                                 </td>
+                                                <td className="px-6 py-4 text-sm font-bold text-slate-800 dark:text-white">
+                                                    {report.template?.name}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                                                     {report.submitter?.employee?.job_grade?.name || '-'}
                                                 </td>
+                                                <td className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-400" dir="ltr">
+                                                    {new Date(report.created_at).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
-                                                    {new Date(report.created_at).toLocaleDateString('ar-EG')}
+                                                    {report.reviewer?.name || '-'}
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     {getStatusBadge(report.status)}
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <Link 
-                                                        href={route('reports.show', report.id)}
-                                                        className="text-sm font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 hover:underline"
-                                                    >
-                                                        مراجعة التفاصيل
-                                                    </Link>
+                                                    <div className="flex items-center gap-2">
+                                                        <Link 
+                                                            href={route('reports.show', report.id)}
+                                                            className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary-50 hover:bg-primary-100 text-primary-600 dark:bg-primary-900/20 dark:hover:bg-primary-900/40 dark:text-primary-400 border border-primary-100 dark:border-primary-800/30 rounded-lg font-bold text-xs transition-all shadow-sm active:scale-95 group/btn"
+                                                        >
+                                                            <Eye size={14} className="group-hover/btn:scale-110 transition-transform" />
+                                                            مراجعة
+                                                        </Link>
+                                                        {report.status === 'returned' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setReportToDelete(report)}
+                                                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 dark:text-rose-400 border border-rose-100 dark:border-rose-800/30 rounded-lg font-bold text-xs transition-all shadow-sm active:scale-95 group/btn"
+                                                            >
+                                                                <Trash2 size={14} className="group-hover/btn:scale-110 transition-transform" />
+                                                                حذف
+                                                            </button>
+                                                        )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))
@@ -209,9 +340,45 @@ export default function ReportsIndex({ auth, reportsToReview, stats }) {
                                 </tbody>
                             </table>
                         </div>
+                        {reportsToReview && reportsToReview.links && reportsToReview.links.length > 3 && (
+                            <div className="p-6 border-t border-slate-100 dark:border-slate-800">
+                                <Pagination links={reportsToReview.links} />
+                            </div>
+                        )}
                     </div>
-
                 </div>
+
+                <Modal show={reportToDelete !== null} onClose={closeDeleteModal} maxWidth="md">
+                    <div className="p-6 text-right">
+                        <div className="flex items-center justify-center w-12 h-12 mx-auto bg-rose-100 dark:bg-rose-900/30 rounded-full mb-4">
+                            <AlertCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white mb-2 text-center">
+                            تأكيد حذف التقرير
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 text-center font-semibold leading-relaxed">
+                            هل أنت متأكد من رغبتك في حذف هذا التقرير المرفوض بشكل نهائي؟ لا يمكن التراجع عن هذه الخطوة.
+                        </p>
+
+                        <div className="flex flex-col-reverse sm:flex-row sm:justify-center gap-3">
+                            <button
+                                type="button"
+                                onClick={closeDeleteModal}
+                                className="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm transition-all"
+                            >
+                                إلغاء
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmDelete}
+                                className="w-full sm:w-auto px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-sm shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2"
+                            >
+                                <Trash2 size={16} />
+                                تأكيد الحذف
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
         </AdminLayout>
     );
 }

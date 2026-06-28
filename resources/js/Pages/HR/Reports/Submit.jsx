@@ -3,7 +3,7 @@ import { Head, useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
-import { Send, ArrowRight, Plus, Trash2 } from 'lucide-react';
+import { Send, ArrowRight, Plus, Trash2, Database } from 'lucide-react';
 
 export default function SubmitReport({ auth, template }) {
     // Dynamically generate initial state for the form
@@ -11,6 +11,8 @@ export default function SubmitReport({ auth, template }) {
     template.fields.forEach(field => {
         if (field.type === 'activities_matrix') {
             initialData[`field_${field.id}`] = [{ time: '', date: '', type: '', notes: '' }];
+        } else if (field.type === 'data_source') {
+            initialData[`field_${field.id}`] = field.prefilled_data || [];
         } else {
             initialData[`field_${field.id}`] = field.type === 'checkbox' ? false : '';
         }
@@ -275,6 +277,63 @@ export default function SubmitReport({ auth, template }) {
                             >
                                 <Plus size={16} /> إضافة نشاط آخر
                             </button>
+                        </div>
+                    </div>
+                );
+                break;
+            case 'data_source':
+                const sourceData = data[key] || [];
+                const options = typeof field.options === 'string' ? JSON.parse(field.options) : (field.options || {});
+                const columns = options.columns || [];
+                
+                const columnHeaders = {
+                    day: 'اليوم',
+                    date: 'التاريخ',
+                    teacher_name: 'اسم المعلم',
+                    visit_type: 'نوع الزيارة',
+                    notes: 'الملاحظات والتوصيات',
+                    evaluation: 'التقييم',
+                    discussed_points: 'نقاط النقاش'
+                };
+                
+                inputElement = (
+                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <div className="bg-primary-50 dark:bg-primary-900/10 p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-800 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+                                <Database size={16} />
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">بيانات مسحوبة آلياً</h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">هذه البيانات تم جلبها تلقائياً من النظام بناءً على نشاطك خلال فترة التقرير.</p>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                    <tr>
+                                        {columns.map(col => (
+                                            <th key={col} className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">{columnHeaders[col] || col}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {sourceData.length > 0 ? sourceData.map((row, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                            {columns.map(col => (
+                                                <td key={col} className="p-3 align-top font-semibold text-slate-700 dark:text-slate-300">
+                                                    {row[col] || '-'}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={columns.length || 1} className="p-6 text-center text-slate-400 text-sm font-semibold">
+                                                لا توجد بيانات متاحة في هذه الفترة.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 );

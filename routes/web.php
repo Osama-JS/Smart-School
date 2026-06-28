@@ -317,6 +317,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/hr/reports/my-reports/create/{template}', [\App\Http\Controllers\HR\MyReportController::class, 'create'])->name('hr.reports.my-reports.create');
     Route::post('/hr/reports/my-reports/{template}', [\App\Http\Controllers\HR\MyReportController::class, 'store'])->name('hr.reports.my-reports.store');
     Route::get('/hr/reports/my-reports/show/{report}', [\App\Http\Controllers\HR\MyReportController::class, 'show'])->name('hr.reports.my-reports.show');
+    Route::delete('/hr/reports/my-reports/{report}', [\App\Http\Controllers\HR\MyReportController::class, 'destroy'])->name('hr.reports.my-reports.destroy');
 
     Route::middleware('permission:إدارة التقارير')->group(function () {
         Route::get('/hr/reports', [\App\Http\Controllers\HR\ReportController::class, 'index'])->name('reports.index');
@@ -324,6 +325,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/hr/reports/template/{template}', [\App\Http\Controllers\HR\ReportController::class, 'store'])->name('reports.store');
         Route::get('/hr/reports/{report}', [\App\Http\Controllers\HR\ReportController::class, 'show'])->name('reports.show');
         Route::post('/hr/reports/{report}/review', [\App\Http\Controllers\HR\ReportController::class, 'review'])->name('reports.review');
+        Route::delete('/hr/reports/{report}', [\App\Http\Controllers\HR\ReportController::class, 'destroy'])->name('reports.destroy');
     });
 
     // ── Meetings ──

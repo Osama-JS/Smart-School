@@ -53,20 +53,79 @@ class MyReportController extends Controller
     public function create(ReportTemplate $template)
     {
         $template->load('fields');
+        $user = auth()->user();
+
+        $templateArray = $template->toArray();
+
+        $fieldsArray = $template->fields->map(function ($field) use ($user, $template) {
+            $fieldArr = $field->toArray();
+
+            if ($field->type === 'data_source') {
+                $options = is_array($field->options) ? $field->options : json_decode($field->options, true) ?? [];
+                $source = $options['source'] ?? null;
+
+                if ($source === 'classroom_visits') {
+                    $startDate = request()->has('start_date') ? \Carbon\Carbon::parse(request()->get('start_date')) : now()->startOfWeek();
+                    $endDate   = request()->has('end_date') ? \Carbon\Carbon::parse(request()->get('end_date')) : now()->endOfWeek();
+
+                    if (!request()->has('start_date') && !request()->has('end_date')) {
+                        if ($template->period_type === 'monthly') {
+                            $startDate = now()->startOfMonth();
+                            $endDate   = now()->endOfMonth();
+                        } elseif ($template->period_type === 'daily') {
+                            $startDate = now()->startOfDay();
+                            $endDate   = now()->endOfDay();
+                        }
+                    }
+
+                    $visits = \App\Models\ClassroomVisit::with('teacher')
+                        ->where('supervisor_id', $user->id)
+                        ->whereBetween('visit_date', [$startDate->startOfDay(), $endDate->endOfDay()])
+                        ->get()
+                        ->map(function ($visit) {
+                            return [
+                                'id'               => $visit->id,
+                                'day'              => $visit->visit_date->locale('ar')->isoFormat('dddd'),
+                                'date'             => $visit->visit_date->format('Y-m-d'),
+                                'teacher_name'     => $visit->teacher ? $visit->teacher->name : '',
+                                'visit_type'       => $visit->visit_type,
+                                'notes'            => $visit->notes,
+                                'evaluation'       => $visit->score,
+                                'discussed_points' => $visit->discussed_points,
+                            ];
+                        });
+
+                    $fieldArr['prefilled_data'] = $visits;
+                }
+            }
+
+            return $fieldArr;
+        })->toArray();
+
+        $templateArray['fields'] = $fieldsArray;
 
         return Inertia::render('HR/Reports/MyReports/Create', [
-            'template' => $template
+            'template' => $templateArray,
         ]);
     }
 
     public function store(Request $request, ReportTemplate $template)
     {
-        $validated = $request->validate([
-            'period_start_date' => 'nullable|date',
-            'period_end_date' => 'nullable|date',
-            'period_label' => 'nullable|string|max:255',
+        $rules = [
             'data' => 'required|array',
-        ]);
+        ];
+
+        if (!empty($template->period_type) && $template->period_type !== 'none') {
+            $rules['period_start_date'] = 'required|date';
+            $rules['period_end_date'] = 'required|date';
+            $rules['period_label'] = 'required|string|max:255';
+        } else {
+            $rules['period_start_date'] = 'nullable|date';
+            $rules['period_end_date'] = 'nullable|date';
+            $rules['period_label'] = 'nullable|string|max:255';
+        }
+
+        $validated = $request->validate($rules);
 
         $user = auth()->user();
         
@@ -103,5 +162,21 @@ class MyReportController extends Controller
         return Inertia::render('HR/Reports/Review', [
             'report' => $report
         ]);
+    }
+
+    public function destroy(Report $report)
+    {
+        if ($report->submitter_id !== auth()->id()) {
+            abort(403, 'غير مصرح لك بحذف هذا التقرير');
+        }
+
+        if ($report->status !== 'returned') {
+            abort(403, 'لا يمكن حذف التقرير إلا إذا كان مرفوضاً (معاداً).');
+        }
+
+        $report->delete();
+
+        return redirect()->route('hr.reports.my-reports.index')
+            ->with('success', 'تم حذف التقرير المرفوض بنجاح.');
     }
 }

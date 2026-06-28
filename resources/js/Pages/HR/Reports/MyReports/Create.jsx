@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
+import { Toaster, toast } from 'react-hot-toast';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { FileText, ArrowRight, Save, Calendar as CalendarIcon, Plus, Trash2, CalendarRange, Clock, Tag, CheckSquare, Edit3, Image as ImageIcon } from 'lucide-react';
 import FlatpickrInput from '@/Components/FlatpickrInput';
@@ -37,6 +38,9 @@ export default function MyReportsCreate({ auth, template }) {
             initialData[field.name] = [{ time: '', date: '', type: '', notes: '' }];
         } else if (field.type === 'checkbox') {
             initialData[field.name] = false;
+        } else if (field.type === 'data_source') {
+            // Pre-fill with data fetched from the server (e.g. classroom visits)
+            initialData[field.name] = Array.isArray(field.prefilled_data) ? field.prefilled_data : [];
         } else {
             initialData[field.name] = '';
         }
@@ -48,6 +52,29 @@ export default function MyReportsCreate({ auth, template }) {
         period_label: '',
         data: initialData
     });
+
+    // When the template updates (e.g. after router.reload fetches new data_source data), sync it to the form
+    useEffect(() => {
+        if (!template || !template.fields) return;
+        let hasChanges = false;
+        const newData = { ...form.data.data };
+        
+        template.fields.forEach(field => {
+            if (field.type === 'data_source') {
+                const fetchedData = Array.isArray(field.prefilled_data) ? field.prefilled_data : [];
+                // naive check to prevent infinite loop (if length differs or first id differs)
+                const currentData = newData[field.name] || [];
+                if (fetchedData.length !== currentData.length || (fetchedData[0] && currentData[0] && fetchedData[0].id !== currentData[0].id)) {
+                    newData[field.name] = fetchedData;
+                    hasChanges = true;
+                }
+            }
+        });
+
+        if (hasChanges) {
+            form.setData('data', newData);
+        }
+    }, [template]);
 
     // Handle period selection based on template type
     const renderPeriodSelector = () => {
@@ -61,11 +88,16 @@ export default function MyReportsCreate({ auth, template }) {
                     <FlatpickrInput 
                         value={form.data.period_start_date}
                         onChange={(dateStr) => {
-                            form.setData({
-                                ...form.data,
-                                period_start_date: dateStr,
-                                period_end_date: dateStr,
-                                period_label: `تاريخ: ${dateStr}`
+                            if (!dateStr) return;
+                            form.setData('period_start_date', dateStr);
+                            form.setData('period_end_date', dateStr);
+                            form.setData('period_label', `تاريخ: ${dateStr}`);
+                            
+                            router.reload({
+                                data: { start_date: dateStr, end_date: dateStr },
+                                only: ['template'],
+                                preserveState: true,
+                                preserveScroll: true,
                             });
                         }}
                         placeholder="اختر اليوم..."
@@ -88,11 +120,20 @@ export default function MyReportsCreate({ auth, template }) {
                         onChange={(e) => {
                             const val = e.target.value; // YYYY-MM
                             if(val) {
-                                form.setData({
-                                    ...form.data,
-                                    period_start_date: `${val}-01`,
-                                    period_end_date: `${val}-28`, // approximation for logic, ideally calculate last day
-                                    period_label: `شهر: ${val}`
+                                const [year, month] = val.split('-');
+                                const lastDay = new Date(year, month, 0).getDate();
+                                const sd = `${val}-01`;
+                                const ed = `${val}-${lastDay}`;
+                                
+                                form.setData('period_start_date', sd);
+                                form.setData('period_end_date', ed);
+                                form.setData('period_label', `شهر: ${val}`);
+
+                                router.reload({
+                                    data: { start_date: sd, end_date: ed },
+                                    only: ['template'],
+                                    preserveState: true,
+                                    preserveScroll: true,
                                 });
                             }
                         }}
@@ -115,16 +156,30 @@ export default function MyReportsCreate({ auth, template }) {
                             if (!dateStr) return;
                             const dates = dateStr.split(' to ');
                             if (dates.length === 2) {
-                                form.setData({
-                                    ...form.data,
-                                    period_start_date: dates[0],
-                                    period_end_date: dates[1],
-                                    period_label: `الأسبوع من ${dates[0]} إلى ${dates[1]}`
+                                const d1 = new Date(dates[0]);
+                                const d2 = new Date(dates[1]);
+                                const diffTime = Math.abs(d2 - d1);
+                                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+                                
+                                if (diffDays !== 6) {
+                                    toast.error('تنبيه: يجب أن تكون الفترة المحددة 7 أيام بالضبط للتقرير الأسبوعي.');
+                                    return;
+                                }
+
+                                form.setData('period_start_date', dates[0]);
+                                form.setData('period_end_date', dates[1]);
+                                form.setData('period_label', `الأسبوع من ${dates[0]} إلى ${dates[1]}`);
+
+                                router.reload({
+                                    data: { start_date: dates[0], end_date: dates[1] },
+                                    only: ['template'],
+                                    preserveState: true,
+                                    preserveScroll: true,
                                 });
                             }
                         }}
                         options={{ mode: 'range' }}
-                        placeholder="اختر تاريخ بداية ونهاية الأسبوع..."
+                        placeholder="اختر تاريخ بداية ونهاية الأسبوع (7 أيام)..."
                         required
                         className="!w-full !bg-white dark:!bg-[#0f141a] !border-slate-200 dark:!border-slate-800 !rounded-xl !px-5 !py-4 !text-sm focus:!border-primary-500 focus:!ring-2 focus:!ring-primary-500/20 !shadow-inner !font-semibold !transition-all"
                     />
@@ -145,11 +200,15 @@ export default function MyReportsCreate({ auth, template }) {
                             if (!dateStr) return;
                             const dates = dateStr.split(' to ');
                             if (dates.length === 2) {
-                                form.setData({
-                                    ...form.data,
-                                    period_start_date: dates[0],
-                                    period_end_date: dates[1],
-                                    period_label: `الفترة من ${dates[0]} إلى ${dates[1]}`
+                                form.setData('period_start_date', dates[0]);
+                                form.setData('period_end_date', dates[1]);
+                                form.setData('period_label', `الفترة من ${dates[0]} إلى ${dates[1]}`);
+
+                                router.reload({
+                                    data: { start_date: dates[0], end_date: dates[1] },
+                                    only: ['template'],
+                                    preserveState: true,
+                                    preserveScroll: true,
                                 });
                             }
                         }}
@@ -507,6 +566,62 @@ export default function MyReportsCreate({ auth, template }) {
                         </div>
                     </div>
                 );
+            case 'data_source': {
+                const sourceRows = Array.isArray(val) ? val : [];
+                const columnHeaders = {
+                    day: 'اليوم',
+                    date: 'التاريخ',
+                    teacher_name: 'اسم المعلم',
+                    visit_type: 'نوع الزيارة',
+                    evaluation: 'التقييم',
+                    discussed_points: 'نقاط النقاش',
+                    notes: 'الملاحظات',
+                };
+                const columns = sourceRows.length > 0
+                    ? Object.keys(sourceRows[0]).filter(k => k !== 'id')
+                    : Object.keys(columnHeaders);
+                return (
+                    <div className="border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden shadow-sm">
+                        <div className="bg-primary-50 dark:bg-primary-900/10 p-4 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-800 text-primary-600 dark:text-primary-400 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200">بيانات مسحوبة آلياً من النظام</h4>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">هذه البيانات تم جلبها تلقائياً بناءً على نشاطك في الفترة المحددة.</p>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700/50">
+                                    <tr>
+                                        {columns.map(col => (
+                                            <th key={col} className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">{columnHeaders[col] || col}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {sourceRows.length > 0 ? sourceRows.map((row, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                            {columns.map(col => (
+                                                <td key={col} className="px-4 py-3 text-slate-700 dark:text-slate-300 font-medium">
+                                                    {row[col] != null && row[col] !== '' ? String(row[col]).replace(/<[^>]*>/g, '') : '-'}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={columns.length || 1} className="p-6 text-center text-slate-400 text-sm font-semibold">
+                                                لا توجد بيانات متاحة في الفترة الزمنية المحددة.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            }
             default:
                 return <span className="text-slate-400 text-sm">نوع الحقل غير مدعوم</span>;
         }
@@ -514,21 +629,36 @@ export default function MyReportsCreate({ auth, template }) {
 
     const submit = (e) => {
         e.preventDefault();
+
+        if (template.period_type && template.period_type !== 'none') {
+            if (!form.data.period_start_date || !form.data.period_end_date) {
+                toast.error('عذراً، يجب تحديد الفترة الزمنية للتقرير أولاً.');
+                return;
+            }
+        }
+
         form.post(route('hr.reports.my-reports.store', template.id));
     };
 
     return (
         <AdminLayout user={auth.user}>
             <Head title={`تعبئة تقرير - ${template.name}`} />
+            <Toaster position="top-center" />
 
-            <div className="max-w-4xl mx-auto space-y-6">
-                <div className="relative overflow-hidden bg-white dark:bg-dark-900 border border-dark-200/60 dark:border-dark-800 rounded-[2rem] p-8 md:p-10 shadow-xl shadow-dark-200/20 dark:shadow-none mb-6">
-                    <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
-                    <div className="absolute -top-32 -right-32 w-64 h-64 bg-primary-500/10 blur-[80px] rounded-full pointer-events-none" />
-                    <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-blue-500/10 blur-[80px] rounded-full pointer-events-none" />
+            <div className="max-w-7xl mx-auto space-y-6">
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                    
+                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                        </svg>
+                    </div>
                     
                     <div className="relative z-10">
-                        <Link href={route('hr.reports.my-reports.index')} className="inline-flex items-center gap-2 text-sm font-bold text-dark-500 hover:text-primary-600 dark:text-dark-400 dark:hover:text-primary-400 transition-colors mb-6 bg-dark-50 dark:bg-dark-800/50 hover:bg-dark-100 dark:hover:bg-dark-700 px-4 py-2 rounded-xl border border-dark-200/50 dark:border-dark-700 w-fit backdrop-blur-sm">
+                        <Link href={route('hr.reports.my-reports.index')} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-colors mb-6 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 px-4 py-2 rounded-xl border border-slate-200/50 dark:border-slate-700 w-fit backdrop-blur-sm">
                             <ArrowRight size={16} /> العودة للقائمة
                         </Link>
                         
@@ -539,15 +669,15 @@ export default function MyReportsCreate({ auth, template }) {
                                         <FileText size={14} /> نموذج تقرير جديد
                                     </span>
                                 </div>
-                                <h1 className="text-3xl md:text-4xl font-black text-dark-900 dark:text-white tracking-tight mb-2 leading-tight">
+                                <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-2 leading-tight">
                                     {template.name}
                                 </h1>
                                 {template.description ? (
-                                    <p className="text-dark-500 dark:text-dark-400 font-bold text-sm">
+                                    <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">
                                         {template.description}
                                     </p>
                                 ) : (
-                                    <p className="text-dark-500 dark:text-dark-400 font-bold text-sm">
+                                    <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">
                                         تعبئة البيانات ورفع المرفقات للتقرير
                                     </p>
                                 )}
