@@ -174,8 +174,8 @@ class DashboardController extends Controller
             ->get();
 
         $pendingViolations = \App\Models\EmployeeViolation::with('violationType')
-            ->where('employee_id', optional($user->employee)->id)
-            ->whereNull('signed_at')
+            ->where('user_id', $user->id)
+            ->whereNull('employee_signature')
             ->get();
 
         return Inertia::render('Dashboards/EmployeeDashboard', [
