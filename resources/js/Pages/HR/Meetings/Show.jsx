@@ -4,6 +4,7 @@ import AdminLayout from "@/Layouts/AdminLayout";
 import { Users, Calendar, Clock, MapPin, CheckCircle, CheckCircle2, XCircle, ChevronRight, FileText, CheckSquare, AlertCircle, PlayCircle, Printer, Square } from "lucide-react";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import RichTextEditor from '@/Components/RichTextEditor';
 
 export default function MeetingShow({ auth, meeting, isSupervisor }) {
     const { logo_url } = usePage().props;
@@ -433,7 +434,9 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
                                                         <CheckCircle2 size={18} className="text-primary-600" />
                                                         مخرجات الاجتماع
                                                     </h4>
-                                                    <div className="text-dark-700 dark:text-dark-300 text-base leading-relaxed prose prose-sm dark:prose-invert max-w-none pl-4" dangerouslySetInnerHTML={{ __html: meeting.outcomes }} />
+                                                    <div className="text-dark-700 dark:text-dark-300 text-base leading-relaxed">
+                                                        <RichTextEditor readOnly value={meeting.outcomes} />
+                                                    </div>
                                                 </div>
                                             </div>
                                             
@@ -444,7 +447,9 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
                                                         <AlertCircle size={18} className="text-accent-600" />
                                                         التوصيات النهائية
                                                     </h4>
-                                                    <div className="text-dark-700 dark:text-dark-300 text-base leading-relaxed prose prose-sm dark:prose-invert max-w-none pl-4" dangerouslySetInnerHTML={{ __html: meeting.recommendations }} />
+                                                    <div className="text-dark-700 dark:text-dark-300 text-base leading-relaxed">
+                                                        <RichTextEditor readOnly value={meeting.recommendations} />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -452,27 +457,19 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
                                         <form onSubmit={handleCompleteSubmit} className="space-y-8">
                                             <div>
                                                 <label className="block text-sm font-black text-dark-800 dark:text-dark-200 mb-3">مخرجات الاجتماع <span className="text-red-500">*</span></label>
-                                                <div className="bg-white dark:bg-dark-800 rounded-2xl overflow-hidden border-2 border-dark-200 dark:border-dark-700 focus-within:border-primary-500 transition-colors shadow-sm">
-                                                    <ReactQuill 
-                                                        theme="snow"
-                                                        value={completionForm.data.outcomes}
-                                                        onChange={val => completionForm.setData('outcomes', val)}
-                                                        className="h-48 [&_.ql-container]:min-h-[192px] border-none text-base font-medium"
-                                                        placeholder="اكتب ما تم التوصل إليه بشكل مفصل..."
-                                                    />
-                                                </div>
+                                                <RichTextEditor 
+                                                    value={completionForm.data.outcomes}
+                                                    onChange={val => completionForm.setData('outcomes', val)}
+                                                    placeholder="اكتب ما تم التوصل إليه بشكل مفصل..."
+                                                />
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-black text-dark-800 dark:text-dark-200 mb-3">التوصيات <span className="text-red-500">*</span></label>
-                                                <div className="bg-white dark:bg-dark-800 rounded-2xl overflow-hidden border-2 border-dark-200 dark:border-dark-700 focus-within:border-accent-500 transition-colors shadow-sm">
-                                                    <ReactQuill 
-                                                        theme="snow"
-                                                        value={completionForm.data.recommendations}
-                                                        onChange={val => completionForm.setData('recommendations', val)}
-                                                        className="h-48 [&_.ql-container]:min-h-[192px] border-none text-base font-medium"
-                                                        placeholder="اكتب التوصيات الخاصة بهذا الاجتماع..."
-                                                    />
-                                                </div>
+                                                <RichTextEditor 
+                                                    value={completionForm.data.recommendations}
+                                                    onChange={val => completionForm.setData('recommendations', val)}
+                                                    placeholder="اكتب التوصيات الخاصة بهذا الاجتماع..."
+                                                />
                                             </div>
                                             <div className="pt-4 border-t border-dark-100 dark:border-dark-800">
                                                 <button type="submit" disabled={completionForm.processing} className="w-full bg-gradient-to-l from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white px-6 py-4 rounded-2xl font-black transition-all flex justify-center items-center gap-3 shadow-lg shadow-primary-500/20 text-lg disabled:opacity-50">

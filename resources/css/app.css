@@ -1464,3 +1464,12 @@ html:not(.dark) main .erp-table tbody tr {
 html:not(.dark) main .erp-table tbody tr:hover {
     background-color: rgba(107, 155, 55, 0.02) !important;
 }
+
+/* ReactQuill RTL Overrides */
+.ql-editor {
+    direction: rtl !important;
+    text-align: right !important;
+}
+.ql-toolbar {
+    direction: rtl !important;
+}

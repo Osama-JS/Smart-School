@@ -5,8 +5,7 @@ import SignaturePad from "@/Components/SignaturePad";
 import { Toaster, toast } from 'react-hot-toast';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 import SelectInput from '@/Components/SelectInput';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import RichTextEditor from '@/Components/RichTextEditor';
 
 import { 
     BookOpen, Search, Filter, Plus, FileText, CheckCircle, RotateCcw,
@@ -829,9 +828,8 @@ export default function ClassroomVisitsIndex({ auth, visits, teachers, superviso
                             <MessageSquare size={16} className="text-primary-500" />
                             النقاط التي تم مناقشتها مع المعلم
                         </label>
-                        <div className="bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-all focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-slate-200 dark:[&_.ql-toolbar]:border-slate-700 [&_.ql-toolbar]:bg-slate-50/50 dark:[&_.ql-toolbar]:bg-slate-800/50 [&_.ql-container]:border-none [&_.ql-container]:text-sm [&_.ql-editor]:min-h-[120px] dark:[&_.ql-editor]:text-white dark:[&_.ql-picker]:text-slate-300 dark:[&_.ql-stroke]:stroke-slate-300 dark:[&_.ql-fill]:fill-slate-300 dark:[&_.ql-picker-options]:bg-slate-800 dark:[&_.ql-picker-options]:border-slate-700">
-                            <ReactQuill 
-                                theme="snow"
+                        <div className="bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-all focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
+                            <RichTextEditor 
                                 value={data.discussed_points}
                                 onChange={content => setData('discussed_points', content)}
                                 placeholder="أدخل النقاط التي تمت مناقشتها خلال الزيارة..."
@@ -844,9 +842,8 @@ export default function ClassroomVisitsIndex({ auth, visits, teachers, superviso
                             <ListTodo size={16} className="text-primary-500" />
                             الملاحظات والتوصيات
                         </label>
-                        <div className="bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-all focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-slate-200 dark:[&_.ql-toolbar]:border-slate-700 [&_.ql-toolbar]:bg-slate-50/50 dark:[&_.ql-toolbar]:bg-slate-800/50 [&_.ql-container]:border-none [&_.ql-container]:text-sm [&_.ql-editor]:min-h-[120px] dark:[&_.ql-editor]:text-white dark:[&_.ql-picker]:text-slate-300 dark:[&_.ql-stroke]:stroke-slate-300 dark:[&_.ql-fill]:fill-slate-300 dark:[&_.ql-picker-options]:bg-slate-800 dark:[&_.ql-picker-options]:border-slate-700">
-                            <ReactQuill 
-                                theme="snow"
+                        <div className="bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm transition-all focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
+                            <RichTextEditor 
                                 value={data.notes}
                                 onChange={content => setData('notes', content)}
                                 placeholder="اكتب أهم الملاحظات والتوصيات الخاصة بالمعلم..."

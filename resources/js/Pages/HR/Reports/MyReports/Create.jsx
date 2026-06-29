@@ -7,6 +7,7 @@ import FlatpickrInput from '@/Components/FlatpickrInput';
 import SelectInput from '@/Components/SelectInput';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import RichTextEditor from '@/Components/RichTextEditor';
 
 export default function MyReportsCreate({ auth, template }) {
     
@@ -250,14 +251,11 @@ export default function MyReportsCreate({ auth, template }) {
                 );
             case 'textarea':
                 return (
-                    <div className="bg-slate-50 dark:bg-[#0f141a] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-inner [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-slate-200/50 dark:[&_.ql-toolbar]:border-slate-800 [&_.ql-toolbar]:bg-white/50 dark:[&_.ql-toolbar]:bg-[#121820]/50 [&_.ql-container]:border-none [&_.ql-container]:text-sm [&_.ql-editor]:min-h-[150px] dark:[&_.ql-editor]:text-white dark:[&_.ql-picker]:text-slate-300 dark:[&_.ql-stroke]:stroke-slate-300 dark:[&_.ql-fill]:fill-slate-300 dark:[&_.ql-picker-options]:bg-[#121820] dark:[&_.ql-picker-options]:border-slate-800">
-                        <ReactQuill 
-                            theme="snow"
-                            value={val || ''}
-                            onChange={(content) => handleFieldChange(field.name, content)}
-                            placeholder="اكتب التفاصيل هنا..."
-                        />
-                    </div>
+                    <RichTextEditor 
+                        value={val || ''}
+                        onChange={(content) => handleFieldChange(field.name, content)}
+                        placeholder="اكتب التفاصيل هنا..."
+                    />
                 );
             case 'select':
                 return (
