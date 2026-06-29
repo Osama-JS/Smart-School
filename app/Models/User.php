@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -12,7 +13,7 @@ use App\Traits\BelongsToBranch;
 class User extends Authenticatable
 {
     use \App\Traits\LogsActivity;
-    use Notifiable, BelongsToBranch;
+    use HasApiTokens, Notifiable, BelongsToBranch;
 
     protected $fillable = [
         'branch_id', 'role_id', 'name', 'username', 'password', 'is_active', 'email', 'phone', 'avatar'

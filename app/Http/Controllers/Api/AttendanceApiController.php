@@ -14,6 +14,36 @@ use Carbon\Carbon;
 class AttendanceApiController extends Controller
 {
     /**
+     * جلب شفتات اليوم للموظف
+     */
+    public function getTodayShifts(Request $request): JsonResponse
+    {
+        $employee = $request->user()->employee;
+        if (!$employee) {
+            return response()->json(['success' => false, 'message' => 'غير مرتبط بحساب موظف'], 403);
+        }
+
+        $shifts = \DB::table('branch_employee_shift')
+            ->join('shifts', 'branch_employee_shift.shift_id', '=', 'shifts.id')
+            ->join('branches', 'branch_employee_shift.branch_id', '=', 'branches.id')
+            ->where('branch_employee_shift.employee_id', $employee->id)
+            ->where('shifts.is_active', true)
+            ->select(
+                'shifts.id as shift_id',
+                'shifts.name as shift_name',
+                'shifts.start_time',
+                'shifts.end_time',
+                'branches.name as branch_name',
+                'branches.id as branch_id'
+            )
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $shifts
+        ]);
+    }
+    /**
      * تسجيل دخول الموظف (Check-In)
      * يتحقق من الموقع الجغرافي ووجود شفت مجدول
      */
@@ -23,6 +53,7 @@ class AttendanceApiController extends Controller
             'employee_id' => 'required|exists:employees,id',
             'latitude'    => 'required|numeric|between:-90,90',
             'longitude'   => 'required|numeric|between:-180,180',
+            'shift_id'    => 'required|exists:shifts,id',
         ]);
 
         $employee = Employee::findOrFail($validated['employee_id']);
@@ -49,6 +80,7 @@ class AttendanceApiController extends Controller
             ->join('shifts', 'branch_employee_shift.shift_id', '=', 'shifts.id')
             ->join('branches', 'branch_employee_shift.branch_id', '=', 'branches.id')
             ->where('branch_employee_shift.employee_id', $employee->id)
+            ->where('branch_employee_shift.shift_id', $validated['shift_id'])
             ->where('shifts.is_active', true)
             ->select(
                 'branch_employee_shift.branch_id',

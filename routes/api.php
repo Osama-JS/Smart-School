@@ -39,6 +39,7 @@ Route::prefix('mobile')->group(function () {
 
 // Attendance API (Protected by Sanctum)
 Route::middleware('auth:sanctum')->prefix('attendance')->group(function () {
+    Route::get('/today-shifts', [AttendanceApiController::class, 'getTodayShifts']);
     Route::post('/check-in',  [AttendanceApiController::class, 'checkIn']);
     Route::post('/check-out', [AttendanceApiController::class, 'checkOut']);
     Route::get('/report/{employeeId}', [AttendanceApiController::class, 'employeeReport'])->name('api.attendance.employee-report');
