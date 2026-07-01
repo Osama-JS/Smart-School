@@ -8,7 +8,7 @@ import {
     Megaphone, ChevronRight, Target, Activity
 } from 'lucide-react';
 
-export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeetings, pendingViolations }) {
+export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeetings, pendingViolations, leaderboard }) {
     // Dynamic Greeting Logic
     const [greeting, setGreeting] = useState({ text: 'مرحباً', icon: Sun, color: 'text-amber-500' });
     
@@ -219,6 +219,31 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
                                 </div>
                             </div>
                         </div>
+
+                        {/* Leaderboard Widget */}
+                        {leaderboard && leaderboard.length > 0 && (
+                            <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm">
+                                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                    <div className="w-10 h-10 bg-amber-50 dark:bg-amber-500/10 text-amber-500 rounded-xl flex items-center justify-center">
+                                        <Target size={20} />
+                                    </div>
+                                    لوحة المتصدرين
+                                </h3>
+                                <div className="space-y-3">
+                                    {leaderboard.map((leader, index) => (
+                                        <div key={leader.user_id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-sm ${index === 0 ? 'bg-amber-100 text-amber-600' : index === 1 ? 'bg-slate-200 text-slate-600' : index === 2 ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                    {index + 1}
+                                                </div>
+                                                <p className="font-bold text-sm text-slate-700 dark:text-slate-300">{leader.user?.name}</p>
+                                            </div>
+                                            <span className="font-black text-emerald-600 dark:text-emerald-400">{leader.total_points} نقطة</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                     </div>
 

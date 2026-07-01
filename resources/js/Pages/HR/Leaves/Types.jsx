@@ -388,119 +388,119 @@ export default function LeaveTypesIndex({ leaveTypes, isSystemAdmin, branches = 
                 </div>
             </div>
 
-            {/* Add/Edit Slide-over Drawer */}
-            <div className={`fixed inset-0 z-50 transition-all duration-300 ${isModalOpen ? 'visible' : 'invisible'}`}>
-                <div className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isModalOpen ? 'opacity-100' : 'opacity-0'}`} onClick={closeModal}></div>
-                
-                <div className={`absolute top-0 bottom-0 left-0 w-full max-w-md bg-white dark:bg-[#121820] shadow-2xl border-r border-slate-100 dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out ${isModalOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                    
-                    {/* Drawer Header */}
-                    <div className="relative p-6 sm:p-8 pb-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
-                        <div className="absolute top-0 right-0 bottom-0 w-1 bg-gradient-to-b from-primary-500 to-primary-600"></div>
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
-                                    <Sliders size={24} />
+            {/* Add/Edit Modal */}
+            {isModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={closeModal}></div>
+                    <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+                        
+                        <div className="relative p-6 sm:p-8 pb-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-primary-600"></div>
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0">
+                                        <Sliders size={24} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-black text-dark-900 dark:text-white tracking-tight">
+                                            {editingType ? 'تعديل نوع الإجازة' : 'إضافة نوع إجازة جديد'}
+                                        </h3>
+                                        <p className="text-slate-500 dark:text-slate-400 text-sm font-semibold mt-1">
+                                            {editingType ? 'تحديث بيانات نوع الإجازة' : 'أدخل تفاصيل الإجازة لإضافتها للنظام'}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-xl font-black text-dark-900 dark:text-white tracking-tight">
-                                        {editingType ? 'تعديل نوع الإجازة' : 'إضافة نوع جديد'}
-                                    </h3>
-                                    <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold mt-1">
-                                        {editingType ? 'تحديث بيانات نوع الإجازة' : 'أدخل تفاصيل الإجازة لإضافتها للنظام'}
-                                    </p>
-                                </div>
+                                <button 
+                                    onClick={closeModal} 
+                                    className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-colors shrink-0"
+                                >
+                                    <X size={20} />
+                                </button>
                             </div>
-                            <button 
-                                onClick={closeModal} 
-                                className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-colors shrink-0"
+                        </div>
+
+                        <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar flex-1">
+                            <form onSubmit={submit} className="space-y-6" id="leaveTypeForm">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
+                                        <label className="flex items-center gap-2 text-sm font-bold text-dark-900 dark:text-white mb-2">
+                                            <AlignLeft size={16} className="text-primary-500" />
+                                            اسم الإجازة <span className="text-accent-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={data.name}
+                                                onChange={e => setData('name', e.target.value)}
+                                                className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 shadow-sm"
+                                                required
+                                                placeholder="مثال: إجازة سنوية، مرضية..."
+                                            />
+                                        </div>
+                                        {errors.name && <p className="text-xs text-accent-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.name}</p>}
+                                    </div>
+
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
+                                        <label className="flex items-center gap-2 text-sm font-bold text-dark-900 dark:text-white mb-2">
+                                            <Hash size={16} className="text-primary-500" />
+                                            الرصيد الافتراضي (عدد الأيام) <span className="text-accent-500">*</span>
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                value={data.default_days}
+                                                onChange={e => setData('default_days', e.target.value)}
+                                                className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 shadow-sm"
+                                                required
+                                                min="0"
+                                            />
+                                        </div>
+                                        {errors.default_days && <p className="text-xs text-accent-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.default_days}</p>}
+                                    </div>
+                                </div>
+
+                                {isSystemAdmin && (
+                                    <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
+                                        <label className="flex items-center gap-2 text-sm font-bold text-dark-900 dark:text-white mb-2">
+                                            <Building2 size={16} className="text-primary-500" />
+                                            الفرع التابع له الإجازة
+                                        </label>
+                                        <SelectInput
+                                            value={data.branch_id}
+                                            onChange={val => setData('branch_id', val)}
+                                            options={[
+                                                { value: '', label: 'عام - لجميع الفروع' },
+                                                ...branches.map(b => ({ value: b.id, label: b.name }))
+                                            ]}
+                                        />
+                                        <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 w-fit px-2 py-1 rounded-md">اتركه فارغاً ليطبق على الجميع.</p>
+                                        {errors.branch_id && <p className="text-xs text-accent-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.branch_id}</p>}
+                                    </div>
+                                )}
+                            </form>
+                        </div>
+                        
+                        <div className="p-6 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row gap-3">
+                            <button
+                                type="submit"
+                                form="leaveTypeForm"
+                                disabled={processing}
+                                className="flex-1 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-primary-500/20 hover:shadow-lg hover:shadow-primary-500/30 active:scale-[0.98]"
                             >
-                                <X size={20} />
+                                <Save size={20} />
+                                {editingType ? 'حفظ التعديلات' : 'إضافة النوع'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                className="sm:w-1/3 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3.5 rounded-xl font-bold transition-all active:scale-[0.98]"
+                            >
+                                إلغاء
                             </button>
                         </div>
                     </div>
-                    
-                    {/* Drawer Body */}
-                    <div className="p-6 sm:p-8 overflow-y-auto custom-scrollbar flex-1">
-                        <form onSubmit={submit} className="space-y-6" id="leaveTypeForm">
-                            <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
-                                <label className="flex items-center gap-2 text-sm font-bold text-dark-900 dark:text-white mb-2">
-                                    <AlignLeft size={16} className="text-primary-500" />
-                                    اسم الإجازة <span className="text-accent-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={data.name}
-                                        onChange={e => setData('name', e.target.value)}
-                                        className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 shadow-sm"
-                                        required
-                                        placeholder="مثال: إجازة سنوية، مرضية..."
-                                    />
-                                </div>
-                                {errors.name && <p className="text-xs text-accent-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.name}</p>}
-                            </div>
-
-                            <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
-                                <label className="flex items-center gap-2 text-sm font-bold text-dark-900 dark:text-white mb-2">
-                                    <Hash size={16} className="text-primary-500" />
-                                    الرصيد الافتراضي (عدد الأيام) <span className="text-accent-500">*</span>
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="number"
-                                        value={data.default_days}
-                                        onChange={e => setData('default_days', e.target.value)}
-                                        className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none transition-all focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 shadow-sm"
-                                        required
-                                        min="0"
-                                    />
-                                </div>
-                                {errors.default_days && <p className="text-xs text-accent-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.default_days}</p>}
-                            </div>
-
-                            {isSystemAdmin && (
-                                <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
-                                    <label className="flex items-center gap-2 text-sm font-bold text-dark-900 dark:text-white mb-2">
-                                        <Building2 size={16} className="text-primary-500" />
-                                        الفرع التابع له الإجازة
-                                    </label>
-                                    <SelectInput
-                                        value={data.branch_id}
-                                        onChange={val => setData('branch_id', val)}
-                                        options={[
-                                            { value: '', label: 'عام - لجميع الفروع' },
-                                            ...branches.map(b => ({ value: b.id, label: b.name }))
-                                        ]}
-                                    />
-                                    <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 w-fit px-2 py-1 rounded-md">اتركه فارغاً ليطبق على الجميع.</p>
-                                    {errors.branch_id && <p className="text-xs text-accent-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.branch_id}</p>}
-                                </div>
-                            )}
-                        </form>
-                    </div>
-                    
-                    {/* Drawer Footer */}
-                    <div className="p-6 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col gap-3">
-                        <button
-                            type="submit"
-                            form="leaveTypeForm"
-                            disabled={processing}
-                            className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-md shadow-primary-500/20 hover:shadow-lg hover:shadow-primary-500/30 active:scale-[0.98]"
-                        >
-                            <Save size={20} />
-                            {editingType ? 'حفظ التعديلات' : 'إضافة النوع'}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={closeModal}
-                            className="w-full bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 py-3.5 rounded-xl font-bold transition-all active:scale-[0.98]"
-                        >
-                            إلغاء
-                        </button>
-                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Delete Confirmation Modal */}
             {deletingId && (

@@ -251,6 +251,33 @@ Route::middleware('auth')->group(function () {
         Route::post('/hr/my-violations/{violation}/sign', [\App\Http\Controllers\HR\MyViolationController::class, 'sign'])->name('hr.my-violations.sign');
     });
 
+    // ── Achievements (الإنجازات) ──
+    Route::middleware('permission:عرض أنواع الإنجازات')->group(function () {
+        Route::resource('/hr/achievement-types', \App\Http\Controllers\HR\AchievementTypeController::class)->names([
+            'index'   => 'hr.achievement-types',
+            'store'   => 'hr.achievement-types.store',
+            'update'  => 'hr.achievement-types.update',
+            'destroy' => 'hr.achievement-types.destroy',
+        ])->except(['create', 'edit', 'show']);
+    });
+
+    Route::middleware('permission:عرض الإنجازات')->group(function () {
+        Route::resource('/hr/employee-achievements', \App\Http\Controllers\HR\EmployeeAchievementController::class)->names([
+            'index'   => 'hr.employee-achievements',
+            'store'   => 'hr.employee-achievements.store',
+            'update'  => 'hr.employee-achievements.update',
+            'destroy' => 'hr.employee-achievements.destroy',
+        ])->except(['create', 'edit', 'show']);
+        
+        Route::post('/hr/employee-achievements/{achievement}/notify', [\App\Http\Controllers\HR\EmployeeAchievementController::class, 'notifyForSignature'])->name('hr.employee-achievements.notify');
+        Route::post('/hr/employee-achievements/{achievement}/broadcast', [\App\Http\Controllers\HR\EmployeeAchievementController::class, 'broadcast'])->name('hr.employee-achievements.broadcast');
+        Route::get('/hr/employee-achievements/{achievement}/certificate', [\App\Http\Controllers\HR\EmployeeAchievementController::class, 'certificate'])->name('hr.employee-achievements.certificate');
+    });
+
+    // لا نضع صلاحية مخصصة هنا ليتمكن كل موظف من رؤية إنجازاته بمجرد تسجيل الدخول
+    Route::get('/hr/my-achievements', [\App\Http\Controllers\HR\MyAchievementController::class, 'index'])->name('hr.my-achievements');
+    Route::post('/hr/my-achievements/{achievement}/sign', [\App\Http\Controllers\HR\MyAchievementController::class, 'sign'])->name('hr.my-achievements.sign');
+
 
 
     // ── Shifts ──

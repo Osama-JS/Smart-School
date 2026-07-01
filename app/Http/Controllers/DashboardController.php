@@ -77,6 +77,17 @@ class DashboardController extends Controller
             $totalDivisions = \App\Models\MasterTimetable::where('teacher_id', $user->id)->distinct('division_id')->count('division_id');
             $totalSubjects = \App\Models\MasterTimetable::where('teacher_id', $user->id)->distinct('subject_id')->count('subject_id');
 
+            // Leaderboard
+            $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+            $leaderboard = \App\Models\EmployeeAchievement::selectRaw('user_id, SUM(points) as total_points')
+                ->where('academic_year_id', $activeYearId)
+                ->where('points', '>', 0)
+                ->groupBy('user_id')
+                ->orderByDesc('total_points')
+                ->with('user:id,name')
+                ->take(5)
+                ->get();
+
             return Inertia::render('Dashboards/TeacherDashboard', [
                 'todayTimetable' => $todayTimetable,
                 'attendanceStatus' => $todayAttendance,
@@ -84,7 +95,8 @@ class DashboardController extends Controller
                 'stats' => [
                     'divisions' => $totalDivisions,
                     'subjects' => $totalSubjects,
-                ]
+                ],
+                'leaderboard' => $leaderboard
             ]);
         }
 
@@ -178,10 +190,21 @@ class DashboardController extends Controller
             ->whereNull('employee_signature')
             ->get();
 
+        $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+        $leaderboard = \App\Models\EmployeeAchievement::selectRaw('user_id, SUM(points) as total_points')
+            ->where('academic_year_id', $activeYearId)
+            ->where('points', '>', 0)
+            ->groupBy('user_id')
+            ->orderByDesc('total_points')
+            ->with('user:id,name')
+            ->take(5)
+            ->get();
+
         return Inertia::render('Dashboards/EmployeeDashboard', [
             'attendanceStatus' => $todayAttendance,
             'upcomingMeetings' => $upcomingMeetings,
-            'pendingViolations' => $pendingViolations
+            'pendingViolations' => $pendingViolations,
+            'leaderboard' => $leaderboard
         ]);
     }
 }

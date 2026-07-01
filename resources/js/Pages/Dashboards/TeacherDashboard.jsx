@@ -9,7 +9,7 @@ import {
     Megaphone, Trophy, Star, BellRing, ArrowUpRight
 } from 'lucide-react';
 
-export default function TeacherDashboard({ auth, todayTimetable, attendanceStatus, upcomingMeetings, stats }) {
+export default function TeacherDashboard({ auth, todayTimetable, attendanceStatus, upcomingMeetings, stats, leaderboard }) {
     // 1. Dynamic Greeting
     const [greeting, setGreeting] = useState({ text: 'مرحباً', icon: Sun, color: 'text-amber-500' });
     const quotes = [
@@ -273,6 +273,33 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
                                 ))}
                             </div>
                         </div>
+
+                        {/* Leaderboard Widget */}
+                        {leaderboard && leaderboard.length > 0 && (
+                            <div className="bg-white/60 dark:bg-[#121820]/60 backdrop-blur-md border border-slate-100 dark:border-slate-800/80 rounded-[2.5rem] p-6 shadow-sm">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <div className="p-2 bg-amber-50 dark:bg-amber-500/10 text-amber-500 rounded-xl">
+                                            <Trophy size={20} />
+                                        </div>
+                                        لوحة المتصدرين للمعلمين
+                                    </h2>
+                                </div>
+                                <div className="space-y-3">
+                                    {leaderboard.map((leader, index) => (
+                                        <div key={leader.user_id} className="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm ${index === 0 ? 'bg-amber-100 text-amber-600' : index === 1 ? 'bg-slate-200 text-slate-600' : index === 2 ? 'bg-orange-100 text-orange-600' : 'bg-slate-50 text-slate-400'}`}>
+                                                    {index + 1}
+                                                </div>
+                                                <p className="font-bold text-sm text-slate-700 dark:text-slate-300">{leader.user?.name}</p>
+                                            </div>
+                                            <span className="font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-1 rounded-lg text-sm">{leader.total_points} نقطة</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Column: Carousel, ToDo, Meetings (Takes 5 columns) */}

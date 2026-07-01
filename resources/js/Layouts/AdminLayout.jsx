@@ -159,6 +159,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'دليل الموظفين', icon: UserPlus, url: route('hr.employees'), permission: 'إدارة الموظفين' },
                 { name: 'أنواع المخالفات', icon: ShieldAlert, url: route('hr.violation-types'), permission: 'إدارة أنواع المخالفات' },
                 { name: 'مخالفات الموظفين', icon: AlertTriangle, url: route('hr.employee-violations'), permission: 'إدارة المخالفات' },
+                { name: 'أنواع الإنجازات', icon: Star, url: route('hr.achievement-types'), permission: 'عرض أنواع الإنجازات' },
+                { name: 'سجل الإنجازات', icon: CheckCircle, url: route('hr.employee-achievements'), permission: 'عرض الإنجازات' },
             ]
         },
         {
@@ -181,6 +183,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates'), permission: 'إدارة قوالب التقارير' },
                 { name: 'تقاريري', icon: FileText, url: route('hr.reports.my-reports.index'), permission: null },
                 { name: 'مخالفاتي', icon: AlertCircle, url: route('hr.my-violations'), permission: 'عرض مخالفاتي' },
+                { name: 'إنجازاتي', icon: Star, url: route('hr.my-achievements'), permission: null },
                 { name: 'الإجتماعات', icon: Users, url: route('meetings.index'), permission: 'إدارة الاجتماعات' },
             ]
         },
