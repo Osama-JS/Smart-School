@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Head, useForm, Link, usePage } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
-import { Users, Calendar, Clock, MapPin, CheckCircle, CheckCircle2, XCircle, ChevronRight, FileText, CheckSquare, AlertCircle, PlayCircle, Printer, Square } from "lucide-react";
+import { Users, Calendar, Clock, MapPin, CheckCircle, CheckCircle2, XCircle, ChevronRight, FileText, CheckSquare, AlertCircle, PlayCircle, Printer, Square, Paperclip, Upload, Trash2, Download } from "lucide-react";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import RichTextEditor from '@/Components/RichTextEditor';
@@ -23,6 +23,10 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
     const completionForm = useForm({
         outcomes: meeting.outcomes || '',
         recommendations: meeting.recommendations || ''
+    });
+
+    const attachmentForm = useForm({
+        file: null
     });
 
     // Live Mode Timer
@@ -70,6 +74,22 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
 
     const handlePrint = () => {
         window.print();
+    };
+
+    const handleAttachmentUpload = (e) => {
+        e.preventDefault();
+        attachmentForm.post(route('meetings.attachments.store', meeting.id), {
+            preserveScroll: true,
+            onSuccess: () => attachmentForm.reset('file'),
+        });
+    };
+
+    const handleDeleteAttachment = (index) => {
+        if (confirm('هل أنت متأكد من حذف هذا المرفق؟')) {
+            useForm().delete(route('meetings.attachments.destroy', [meeting.id, index]), {
+                preserveScroll: true
+            });
+        }
     };
 
     // Timeline calculations
@@ -300,6 +320,18 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
                                 المخرجات والتوصيات
                                 {meeting.status === 'completed' && <div className="w-2 h-2 rounded-full bg-primary-500"></div>}
                             </button>
+                            <button 
+                                onClick={() => setActiveTab('attachments')} 
+                                className={`px-8 py-3 rounded-xl font-bold text-sm transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${activeTab === 'attachments' ? 'bg-white dark:bg-dark-800 text-primary-600 shadow-sm' : 'text-dark-500 hover:text-dark-900 dark:text-dark-400 dark:hover:text-white hover:bg-dark-200/50 dark:hover:bg-dark-700/50'}`}
+                            >
+                                <Paperclip size={16} className={activeTab === 'attachments' ? 'text-primary-500' : ''} />
+                                المرفقات
+                                {meeting.attachments?.length > 0 && (
+                                    <span className="bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-400 px-2 py-0.5 rounded-full text-xs">
+                                        {meeting.attachments.length}
+                                    </span>
+                                )}
+                            </button>
                         </div>
                     </div>
 
@@ -484,6 +516,90 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
                                             </div>
                                             <h4 className="text-lg font-black text-dark-800 dark:text-white mb-2">الاجتماع لم يكتمل بعد</h4>
                                             <p className="text-dark-500 font-medium max-w-md mx-auto">ستظهر المخرجات والتوصيات هنا فور اعتمادها وإغلاق الاجتماع من قبل المشرف.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ATTACHMENTS TAB */}
+                            {activeTab === 'attachments' && (
+                                <div className="bg-white dark:bg-dark-900 rounded-[2rem] p-8 md:p-10 border border-dark-100 dark:border-dark-800 shadow-sm">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center">
+                                            <Paperclip size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-black text-dark-900 dark:text-white leading-tight">مرفقات الاجتماع</h3>
+                                            <p className="text-sm font-medium text-dark-500 mt-1">الملفات والمستندات الخاصة بهذا الاجتماع</p>
+                                        </div>
+                                    </div>
+                                    
+                                    {isSupervisor && (
+                                        <div className="mb-8 p-6 bg-dark-50 dark:bg-dark-800/50 rounded-2xl border border-dark-100 dark:border-dark-700">
+                                            <form onSubmit={handleAttachmentUpload} className="flex flex-col sm:flex-row gap-4 items-center">
+                                                <div className="flex-1 w-full">
+                                                    <input 
+                                                        type="file" 
+                                                        id="attachment"
+                                                        className="hidden"
+                                                        onChange={e => attachmentForm.setData('file', e.target.files[0])}
+                                                    />
+                                                    <label 
+                                                        htmlFor="attachment"
+                                                        className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-dark-200 dark:border-dark-600 rounded-xl cursor-pointer hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors text-dark-600 dark:text-dark-300"
+                                                    >
+                                                        <Upload size={18} />
+                                                        <span className="font-bold text-sm truncate max-w-[200px]">
+                                                            {attachmentForm.data.file ? attachmentForm.data.file.name : 'اختر ملفاً لرفعه...'}
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                                <button 
+                                                    type="submit" 
+                                                    disabled={!attachmentForm.data.file || attachmentForm.processing}
+                                                    className="w-full sm:w-auto px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 whitespace-nowrap shadow-sm"
+                                                >
+                                                    <Upload size={18} />
+                                                    رفع المرفق
+                                                </button>
+                                            </form>
+                                            {attachmentForm.errors.file && <div className="text-red-500 text-xs font-bold mt-2">{attachmentForm.errors.file}</div>}
+                                        </div>
+                                    )}
+
+                                    {meeting.attachments && meeting.attachments.length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {meeting.attachments.map((attachment, idx) => (
+                                                <div key={idx} className="flex items-center justify-between p-4 bg-white dark:bg-dark-900 border border-dark-200 dark:border-dark-700 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+                                                    <div className="flex items-center gap-3 overflow-hidden">
+                                                        <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 flex items-center justify-center shrink-0">
+                                                            <FileText size={20} />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <p className="font-bold text-sm text-dark-900 dark:text-white truncate" title={attachment.name}>{attachment.name}</p>
+                                                            <p className="text-xs font-medium text-dark-500 mt-0.5">{(attachment.size / 1024).toFixed(2)} KB</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <a href={`/storage/${attachment.path}`} target="_blank" rel="noopener noreferrer" className="p-2 text-dark-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors" title="تحميل / عرض">
+                                                            <Download size={18} />
+                                                        </a>
+                                                        {isSupervisor && (
+                                                            <button onClick={() => handleDeleteAttachment(idx)} className="p-2 text-dark-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="حذف">
+                                                                <Trash2 size={18} />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-16 bg-dark-50 dark:bg-dark-800/50 rounded-3xl border-2 border-dashed border-dark-200 dark:border-dark-700">
+                                            <div className="w-20 h-20 bg-white dark:bg-dark-900 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                                <Paperclip size={36} className="text-dark-300 dark:text-dark-600" />
+                                            </div>
+                                            <h4 className="text-lg font-black text-dark-800 dark:text-white mb-2">لا توجد مرفقات</h4>
+                                            <p className="text-dark-500 font-medium max-w-md mx-auto">لم يتم رفع أي مرفقات أو ملفات خاصة بهذا الاجتماع حتى الآن.</p>
                                         </div>
                                     )}
                                 </div>

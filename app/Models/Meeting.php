@@ -22,13 +22,15 @@ class Meeting extends Model
         'status',
         'agendas',
         'outcomes',
-        'recommendations'
+        'recommendations',
+        'attachments'
     ];
 
     protected $casts = [
         'date' => 'date',
         'time' => 'datetime:H:i',
         'agendas' => 'array',
+        'attachments' => 'array',
     ];
 
     public function supervisor()

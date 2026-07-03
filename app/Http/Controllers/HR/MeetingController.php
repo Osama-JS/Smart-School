@@ -475,4 +475,49 @@ class MeetingController extends Controller implements \Illuminate\Routing\Contro
 
         return redirect()->back()->with('success', 'تم إرسال التنبيه للمدعوين بنجاح');
     }
+
+    public function uploadAttachment(Request $request, Meeting $meeting)
+    {
+        if (auth()->id() !== $meeting->supervisor_id) {
+            abort(403);
+        }
+
+        $request->validate([
+            'file' => 'required|file|max:10240', // 10MB max
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('meetings/attachments', 'public');
+
+        $attachments = $meeting->attachments ?? [];
+        $attachments[] = [
+            'name' => $file->getClientOriginalName(),
+            'path' => $path,
+            'size' => $file->getSize(),
+            'type' => $file->getClientMimeType()
+        ];
+
+        $meeting->update(['attachments' => $attachments]);
+
+        return redirect()->back()->with('success', 'تم رفع المرفق بنجاح');
+    }
+
+    public function deleteAttachment(Request $request, Meeting $meeting, $index)
+    {
+        if (auth()->id() !== $meeting->supervisor_id) {
+            abort(403);
+        }
+
+        $attachments = $meeting->attachments ?? [];
+        
+        if (isset($attachments[$index])) {
+            $attachment = $attachments[$index];
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment['path']);
+            unset($attachments[$index]);
+            $meeting->update(['attachments' => array_values($attachments)]);
+            return redirect()->back()->with('success', 'تم حذف المرفق بنجاح');
+        }
+
+        return redirect()->back()->with('error', 'المرفق غير موجود');
+    }
 }

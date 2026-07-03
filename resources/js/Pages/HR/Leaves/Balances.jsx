@@ -553,11 +553,12 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                 </div>
             </div>
 
-            {/* Add/Edit Slide-over Drawer */}
-            <div className={`fixed inset-0 z-[60] transition-all duration-300 ${isDrawerOpen ? 'visible' : 'invisible'}`}>
-                <div className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isDrawerOpen ? 'opacity-100' : 'opacity-0'}`} onClick={closeDrawer}></div>
-                
-                <div className={`absolute top-0 bottom-0 left-0 w-full max-w-md bg-white dark:bg-[#121820] shadow-2xl border-r border-slate-100 dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            {/* Add/Edit Modal */}
+            {isDrawerOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={closeDrawer}></div>
+                    
+                    <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh]">
                     
                     <div className="relative p-6 sm:p-8 pb-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
                         <div className="absolute top-0 right-0 bottom-0 w-1 bg-gradient-to-b from-primary-500 to-primary-600"></div>
@@ -659,13 +660,15 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                         </button>
                     </div>
                 </div>
-            </div>
+                </div>
+            )}
 
-            {/* Generate Balances Slide-over Drawer */}
-            <div className={`fixed inset-0 z-[60] transition-all duration-300 ${isGenerateDrawerOpen ? 'visible' : 'invisible'}`}>
-                <div className={`absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300 ${isGenerateDrawerOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => { setIsGenerateDrawerOpen(false); genClearErrors(); }}></div>
-                
-                <div className={`absolute top-0 bottom-0 left-0 w-full max-w-md bg-white dark:bg-[#121820] shadow-2xl border-r border-slate-100 dark:border-slate-800 flex flex-col transition-transform duration-300 ease-in-out ${isGenerateDrawerOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+            {/* Generate Balances Modal */}
+            {isGenerateDrawerOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => { setIsGenerateDrawerOpen(false); genClearErrors(); }}></div>
+                    
+                    <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-md shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col animate-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh]">
                     
                     <div className="relative p-6 sm:p-8 pb-6 border-b border-slate-100 dark:border-slate-800 bg-emerald-50/50 dark:bg-emerald-900/10">
                         <div className="absolute top-0 right-0 bottom-0 w-1 bg-gradient-to-b from-emerald-500 to-emerald-600"></div>
@@ -763,7 +766,8 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                         </button>
                     </div>
                 </div>
-            </div>
+                </div>
+            )}
 
             {/* Delete Confirmation Modal */}
             {deletingBalanceId && (

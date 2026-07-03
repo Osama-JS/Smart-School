@@ -368,6 +368,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/meetings/{meeting}/attendance', [\App\Http\Controllers\HR\MeetingController::class, 'updateAttendance'])->name('meetings.attendance');
         Route::post('/meetings/{meeting}/complete', [\App\Http\Controllers\HR\MeetingController::class, 'completeMeeting'])->name('meetings.complete');
         Route::post('/meetings/{meeting}/remind', [\App\Http\Controllers\HR\MeetingController::class, 'remindParticipants'])->name('meetings.remind');
+        Route::post('/meetings/{meeting}/attachments', [\App\Http\Controllers\HR\MeetingController::class, 'uploadAttachment'])->name('meetings.attachments.store');
+        Route::delete('/meetings/{meeting}/attachments/{index}', [\App\Http\Controllers\HR\MeetingController::class, 'deleteAttachment'])->name('meetings.attachments.destroy');
     });
 
     // ── Employee Requests ──
