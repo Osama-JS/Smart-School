@@ -2277,7 +2277,7 @@ html2canvas@^1.0.0, html2canvas@^1.0.0-rc.5:
 
 html2pdf.js@^0.14.0:
   version "0.14.0"
-  resolved "https://registry.npmjs.org/html2pdf.js/-/html2pdf.js-0.14.0.tgz#dd2fdf2ee3036cb4c0d7c0d4606ee2da7c677e83"
+  resolved "https://registry.yarnpkg.com/html2pdf.js/-/html2pdf.js-0.14.0.tgz#dd2fdf2ee3036cb4c0d7c0d4606ee2da7c677e83"
   integrity sha512-yvNJgE/8yru2UeGflkPdjW8YEY+nDH5X7/2WG4uiuSCwYiCp8PZ8EKNiTAa6HxJ1NjC51fZSIEq6xld5CADKBQ==
   dependencies:
     dompurify "^3.3.1"
