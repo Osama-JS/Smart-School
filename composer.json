@@ -85,7 +85,8 @@
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
         },
-        "secure-http": true
+        "secure-http": true,
+        "disable-tls": true
     },
     "minimum-stability": "stable",
     "prefer-stable": true

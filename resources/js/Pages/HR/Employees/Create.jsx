@@ -38,19 +38,33 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
     const [showPassword, setShowPassword] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 4;
+    const [stepErrors, setStepErrors] = useState({});
 
     const selectedGradeLevel = jobGrades?.find(g => String(g.id) === String(data.job_grade_id))?.level;
     const filteredManagers = managerCandidates.filter(m => selectedGradeLevel && m.level < selectedGradeLevel);
 
+    const validateStep = (step) => {
+        const errs = {};
+        if (step === 1) {
+            if (!data.name.trim()) errs.name = 'الاسم الرباعي مطلوب.';
+            if (!data.username.trim()) errs.username = 'اسم المستخدم مطلوب.';
+            if (!data.password || data.password.length < 8) errs.password = 'كلمة المرور مطلوبة ولا تقل عن 8 أحرف.';
+            if (!data.role_id) errs.role_id = 'الصلاحية مطلوبة.';
+        }
+        setStepErrors(errs);
+        return Object.keys(errs).length === 0;
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Since there is no validation per step in this simplified approach, we just submit at the end.
+        if (!validateStep(1)) { setCurrentStep(1); return; }
         post(route('hr.employees.store'), {
             forceFormData: true,
         });
     };
 
     const nextStep = () => {
+        if (!validateStep(currentStep)) return;
         if (currentStep < totalSteps) setCurrentStep(currentStep + 1);
     };
 
@@ -125,16 +139,15 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                                 </h2>
                             </div>
                             <div className="p-6 md:p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {/* Name */}
-                                <div>
+                                    <div>
                                     <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">الاسم الرباعي <span className="text-rose-500">*</span></label>
                                     <div className="relative">
                                         <User size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
-                                        <input type="text" required placeholder="الاسم الكامل باللغة العربية"
-                                            className={inputClass(errors.name)}
+                                        <input type="text" placeholder="الاسم الكامل باللغة العربية"
+                                            className={inputClass(errors.name || stepErrors.name)}
                                             value={data.name} onChange={e => setData('name', e.target.value)} />
                                     </div>
-                                    {errors.name && <p className="text-xs text-rose-500 mt-1">{errors.name}</p>}
+                                    {(errors.name || stepErrors.name) && <p className="text-xs text-rose-500 mt-1">{errors.name || stepErrors.name}</p>}
                                 </div>
 
                                 {/* Username */}
@@ -142,11 +155,11 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                                     <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم المستخدم <span className="text-rose-500">*</span></label>
                                     <div className="relative">
                                         <UserCheck size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
-                                        <input type="text" required dir="ltr" placeholder="username"
-                                            className={inputClass(errors.username)}
+                                        <input type="text" dir="ltr" placeholder="username"
+                                            className={inputClass(errors.username || stepErrors.username)}
                                             value={data.username} onChange={e => setData('username', e.target.value)} />
                                     </div>
-                                    {errors.username && <p className="text-xs text-rose-500 mt-1">{errors.username}</p>}
+                                    {(errors.username || stepErrors.username) && <p className="text-xs text-rose-500 mt-1">{errors.username || stepErrors.username}</p>}
                                 </div>
 
                                 {/* Password */}
@@ -154,14 +167,14 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                                     <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">كلمة المرور <span className="text-rose-500">*</span></label>
                                     <div className="relative">
                                         <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
-                                        <input type={showPassword ? "text" : "password"} required minLength="8" dir="ltr" placeholder="••••••••"
-                                            className={`${inputClass(errors.password)} pl-12`}
+                                        <input type={showPassword ? "text" : "password"} dir="ltr" placeholder="••••••••"
+                                            className={`${inputClass(errors.password || stepErrors.password)} pl-12`}
                                             value={data.password} onChange={e => setData('password', e.target.value)} />
                                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 p-1">
                                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                         </button>
                                     </div>
-                                    {errors.password && <p className="text-xs text-rose-500 mt-1">{errors.password}</p>}
+                                    {(errors.password || stepErrors.password) && <p className="text-xs text-rose-500 mt-1">{errors.password || stepErrors.password}</p>}
                                 </div>
 
                                 {/* Email */}

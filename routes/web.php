@@ -212,6 +212,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:إدارة الموظفين')->group(function () {
+        Route::get('/hr/employees/import/template', [\App\Http\Controllers\HR\EmployeeController::class, 'downloadTemplate'])->name('hr.employees.template');
+        Route::post('/hr/employees/import', [\App\Http\Controllers\HR\EmployeeController::class, 'import'])->name('hr.employees.import');
         Route::patch('/hr/employees/{employee}/quick-update', [\App\Http\Controllers\HR\EmployeeController::class, 'quickUpdate'])->name('hr.employees.quick-update');
         Route::resource('/hr/employees', \App\Http\Controllers\HR\EmployeeController::class)->names([
             'index'   => 'hr.employees',

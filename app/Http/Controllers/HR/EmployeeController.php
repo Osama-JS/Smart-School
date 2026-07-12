@@ -154,9 +154,9 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         $jobGrades   = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
         
         if (!$isAdmin) {
-            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع'])->select('id', 'name')->get();
+            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع', 'طالب', 'ولي أمر', 'ولي امر'])->select('id', 'name')->get();
         } else {
-            $roles = Role::select('id', 'name')->get();
+            $roles = Role::whereNotIn('name', ['طالب', 'ولي أمر', 'ولي امر'])->select('id', 'name')->get();
         }
         
         $branches    = $isAdmin ? Branch::select('id', 'name')->get() : [];
@@ -272,7 +272,238 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         return redirect()->route('hr.employees')->with('success', 'تم إنشاء ملف الموظف بنجاح');
     }
 
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="نموذج_استيراد_الموظفين.xls"',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
+
+        $callback = function () {
+            // Excel HTML output with styles
+            echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            echo '<head>';
+            echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
+            echo '<style>';
+            echo 'table { border-collapse: collapse; direction: rtl; font-family: "Segoe UI", Arial, sans-serif; }';
+            echo 'th { background-color: #2e5c31; color: white; font-weight: bold; padding: 10px; border: 1px solid #dddddd; text-align: center; }';
+            echo 'td { padding: 8px; border: 1px solid #dddddd; text-align: center; }';
+            echo '.instructions { background-color: #fff3cd; color: #856404; font-weight: bold; padding: 15px; border: 2px solid #ffeeba; text-align: center; font-size: 14px; }';
+            echo '</style>';
+            echo '</head>';
+            echo '<body>';
+            
+            echo '<table>';
+            
+            // Row 1: Instructions
+            echo '<tr><td colspan="10" class="instructions">تعليمات هامة: يرجى عدم تغيير أسماء الأعمدة. يجب كتابة (اسم القسم، اسم الدرجة الوظيفية، الصلاحية) مطابقة تماماً لما هو موجود في النظام. كلمة المرور الافتراضية ستكون 1234567 ما لم يتم تعديلها بعد الاستيراد.</td></tr>';
+            echo '<tr><td colspan="10"></td></tr>';
+            
+            // Header Row
+            echo '<tr>';
+            echo '<th width="150">الاسم الرباعي</th>';
+            echo '<th width="120">اسم المستخدم</th>';
+            echo '<th width="180">البريد الإلكتروني</th>';
+            echo '<th width="120">رقم الهاتف</th>';
+            echo '<th width="120">الصلاحية (Role)</th>';
+            echo '<th width="150">اسم القسم (Department)</th>';
+            echo '<th width="150">الدرجة الوظيفية (Job Grade)</th>';
+            echo '<th width="150">المسمى الوظيفي</th>';
+            echo '<th width="180">تاريخ التعيين (YYYY-MM-DD)</th>';
+            echo '<th width="120">رقم الهوية</th>';
+            echo '</tr>';
+
+            // Example Row 1
+            echo '<tr>';
+            echo '<td>أحمد محمد علي</td>';
+            echo '<td>ahmed.m</td>';
+            echo '<td>ahmed@example.com</td>';
+            echo '<td style="mso-number-format:\'@\';">0501234567</td>';
+            echo '<td>موظف</td>';
+            echo '<td>الموارد البشرية</td>';
+            echo '<td>الدرجة الأولى</td>';
+            echo '<td>أخصائي موارد بشرية</td>';
+            echo '<td>2024-01-15</td>';
+            echo '<td style="mso-number-format:\'@\';">1012345678</td>';
+            echo '</tr>';
+
+            // Example Row 2
+            echo '<tr>';
+            echo '<td>سارة خالد عبدالله</td>';
+            echo '<td>sara.k</td>';
+            echo '<td>sara@example.com</td>';
+            echo '<td style="mso-number-format:\'@\';">0507654321</td>';
+            echo '<td>موظف</td>';
+            echo '<td>تقنية المعلومات</td>';
+            echo '<td>الدرجة الثانية</td>';
+            echo '<td>مطور برمجيات</td>';
+            echo '<td>2024-02-01</td>';
+            echo '<td style="mso-number-format:\'@\';">1087654321</td>';
+            echo '</tr>';
+
+            echo '</table>';
+            echo '</body>';
+            echo '</html>';
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
+        ]);
+
+        $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
+
+        $rows = [];
+        
+        // Handle CSV
+        if (in_array($extension, ['csv', 'txt'])) {
+            if (($handle = fopen($file->getRealPath(), 'r')) !== false) {
+                // Remove BOM if present
+                $firstLine = fgets($handle);
+                $bom = "\xef\xbb\xbf";
+                if (strncmp($firstLine, $bom, 3) === 0) {
+                    $firstLine = substr($firstLine, 3);
+                }
+                $rows[] = str_getcsv($firstLine);
+                while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                    $rows[] = $data;
+                }
+                fclose($handle);
+            }
+        } else {
+            // Handle XLSX using SimpleXLSX (already installed)
+            if ($xlsx = \Shuchkin\SimpleXLSX::parse($file->getRealPath())) {
+                $rows = $xlsx->rows();
+            } else {
+                return redirect()->back()->withErrors(['file' => 'فشل في قراءة ملف الإكسل.']);
+            }
+        }
+
+        // Clean up empty rows and find header index (row that contains 'الاسم الرباعي')
+        $headerIndex = -1;
+        foreach ($rows as $index => $row) {
+            if (isset($row[0]) && str_contains($row[0], 'الاسم الرباعي')) {
+                $headerIndex = $index;
+                break;
+            }
+        }
+
+        if ($headerIndex === -1) {
+            return redirect()->back()->withErrors(['file' => 'لم يتم العثور على ترويسة الأعمدة الصحيحة. يرجى استخدام النموذج المعتمد.']);
+        }
+
+        $dataRows = array_slice($rows, $headerIndex + 1);
+
+        // Pre-fetch related data mapping (to avoid N+1 queries)
+        $departments = Department::pluck('id', 'name')->mapWithKeys(function ($id, $name) { return [trim(mb_strtolower($name)) => $id]; })->toArray();
+        $jobGrades = JobGrade::pluck('id', 'name')->mapWithKeys(function ($id, $name) { return [trim(mb_strtolower($name)) => $id]; })->toArray();
+        $roles = Role::pluck('id', 'name')->mapWithKeys(function ($id, $name) { return [trim(mb_strtolower($name)) => $id]; })->toArray();
+        
+        $userAuth = auth()->user();
+        $isAdmin = $userAuth->role && $userAuth->role->name === 'مدير النظام';
+        $branchId = $userAuth->branch_id; // Default branch for non-admins
+
+        $successCount = 0;
+        $errors = [];
+
+        foreach ($dataRows as $index => $row) {
+            // Skip empty rows
+            if (empty(array_filter($row))) continue;
+            
+            // Expected columns matching the template:
+            // 0: الاسم, 1: اسم المستخدم, 2: البريد, 3: الهاتف, 4: الصلاحية, 5: القسم, 6: الدرجة, 7: المسمى الوظيفي, 8: تاريخ التعيين, 9: الهوية
+            $name = trim($row[0] ?? '');
+            $username = trim($row[1] ?? '');
+            $email = trim($row[2] ?? '');
+            $phone = trim($row[3] ?? '');
+            $roleName = trim($row[4] ?? '');
+            $departmentName = trim($row[5] ?? '');
+            $jobGradeName = trim($row[6] ?? '');
+            $jobTitle = trim($row[7] ?? '');
+            $hireDate = trim($row[8] ?? '');
+            $nationalId = trim($row[9] ?? '');
+
+            $rowNumber = $headerIndex + 2 + $index; // +2 because index is 0-based and header is 1 row
+
+            if (empty($name) || empty($username)) {
+                $errors[] = "الصف رقم $rowNumber: الاسم واسم المستخدم مطلوبان.";
+                continue;
+            }
+
+            // Check if username exists
+            if (User::where('username', $username)->exists()) {
+                $errors[] = "الصف رقم $rowNumber: اسم المستخدم ($username) مستخدم مسبقاً.";
+                continue;
+            }
+
+            // Map IDs
+            $roleId = $roles[mb_strtolower($roleName)] ?? null;
+            if (!$roleId) {
+                // Fallback to a default role if not found and not empty, or require it
+                $fallbackRole = Role::where('name', 'موظف')->first();
+                $roleId = $fallbackRole ? $fallbackRole->id : null;
+                if (!$roleId) {
+                    $errors[] = "الصف رقم $rowNumber: الصلاحية ($roleName) غير موجودة.";
+                    continue;
+                }
+            }
+
+            $departmentId = $departmentName ? ($departments[mb_strtolower($departmentName)] ?? null) : null;
+            $jobGradeId = $jobGradeName ? ($jobGrades[mb_strtolower($jobGradeName)] ?? null) : null;
+
+            if ($departmentName && !$departmentId) {
+                $errors[] = "الصف رقم $rowNumber: القسم ($departmentName) غير موجود في النظام.";
+                continue;
+            }
+
+            try {
+                \DB::beginTransaction();
+
+                $user = User::create([
+                    'name'      => $name,
+                    'username'  => $username,
+                    'password'  => \Hash::make('1234567'), // Default password
+                    'role_id'   => $roleId,
+                    'branch_id' => $branchId,
+                    'is_active' => true,
+                    'email'     => !empty($email) ? $email : null,
+                    'phone'     => !empty($phone) ? $phone : null,
+                ]);
+
+                Employee::create([
+                    'user_id'       => $user->id,
+                    'department_id' => $departmentId,
+                    'job_grade_id'  => $jobGradeId,
+                    'hire_date'     => !empty($hireDate) ? date('Y-m-d', strtotime($hireDate)) : null,
+                    'national_id'   => !empty($nationalId) ? $nationalId : null,
+                    'job_title'     => !empty($jobTitle) ? $jobTitle : null,
+                ]);
+
+                \DB::commit();
+                $successCount++;
+            } catch (\Exception $e) {
+                \DB::rollBack();
+                $errors[] = "الصف رقم $rowNumber: خطأ تقني أثناء الحفظ (" . $e->getMessage() . ").";
+            }
+        }
+
+        $message = "تم استيراد $successCount موظف بنجاح.";
+        if (count($errors) > 0) {
+            return redirect()->back()->with('success', $message)->with('import_errors', $errors);
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
+
     public function edit(Employee $employee)
+
     {
         $employee->load(['user', 'shifts']);
         
@@ -287,9 +518,9 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         $jobGrades   = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
         
         if (!$isAdmin) {
-            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع'])->select('id', 'name')->get();
+            $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع', 'طالب', 'ولي أمر', 'ولي امر'])->select('id', 'name')->get();
         } else {
-            $roles = Role::select('id', 'name')->get();
+            $roles = Role::whereNotIn('name', ['طالب', 'ولي أمر', 'ولي امر'])->select('id', 'name')->get();
         }
         $branches    = $isAdmin ? Branch::select('id', 'name')->get() : [];
 

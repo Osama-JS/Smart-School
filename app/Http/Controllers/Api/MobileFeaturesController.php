@@ -43,10 +43,29 @@ class MobileFeaturesController extends Controller
     {
         $user = $request->user();
         
-        $preparations = LessonPreparation::with(['grade', 'division', 'subject'])
+        $query = LessonPreparation::with(['grade', 'division', 'subject'])
             ->where('teacher_id', $user->id)
-            ->latest('preparation_date')
-            ->get();
+            ->latest('preparation_date');
+
+        if ($request->has('grade_id') && $request->grade_id) {
+            $query->where('grade_id', $request->grade_id);
+        }
+
+        if ($request->has('subject_id') && $request->subject_id) {
+            $query->where('subject_id', $request->subject_id);
+        }
+
+        if ($request->has('date_range') && $request->date_range) {
+            $dates = explode(' to ', $request->date_range);
+            if (count($dates) == 2) {
+                $query->whereDate('preparation_date', '>=', trim($dates[0]))
+                      ->whereDate('preparation_date', '<=', trim($dates[1]));
+            } else {
+                $query->whereDate('preparation_date', trim($dates[0]));
+            }
+        }
+
+        $preparations = $query->paginate(15);
 
         return response()->json([
             'success' => true,
@@ -103,10 +122,89 @@ class MobileFeaturesController extends Controller
         
         $preparation->save();
 
+        $this->checkAndSendHomeworkNotification($preparation, true, $request->user());
+
         return response()->json([
             'success' => true,
-            'message' => 'تم حفظ تحضير الدرس بنجاح'
+            'message' => 'تم حفظ تحضير الدرس بنجاح',
+            'data' => $preparation
         ]);
+    }
+
+    /**
+     * Update Lesson Preparation
+     */
+    public function updatePreparation(Request $request, LessonPreparation $lessonPreparation)
+    {
+        if ($lessonPreparation->teacher_id !== $request->user()->id) {
+            return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
+        }
+
+        $validated = $request->validate([
+            'lesson_title' => 'required|string|max:255',
+            'subject_id' => 'required|exists:subjects,id',
+            'grade_id' => 'required|exists:grades,id',
+            'division_id' => 'nullable|exists:divisions,id',
+            'preparation_date' => 'required|date',
+            'topics_covered' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'homework' => 'nullable|string',
+            'status' => 'required|in:draft,published',
+        ]);
+
+        $wasDraft = $lessonPreparation->status === 'draft';
+
+        $lessonPreparation->content = $request->input('topics_covered', $request->input('lesson_title', ''));
+        $lessonPreparation->update($validated);
+
+        $this->checkAndSendHomeworkNotification($lessonPreparation, $wasDraft, $request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تحديث سجل الحصة بنجاح',
+            'data' => $lessonPreparation
+        ]);
+    }
+
+    /**
+     * Delete Lesson Preparation
+     */
+    public function deletePreparation(Request $request, LessonPreparation $lessonPreparation)
+    {
+        if ($lessonPreparation->teacher_id !== $request->user()->id) {
+            return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
+        }
+
+        $lessonPreparation->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حذف سجل الحصة بنجاح'
+        ]);
+    }
+
+    private function checkAndSendHomeworkNotification(LessonPreparation $preparation, $wasDraft, $user)
+    {
+        if ($preparation->status === 'published' && $wasDraft && !empty($preparation->homework) && $preparation->division_id) {
+            $studentUserIds = \App\Models\Student::whereIn('id', 
+                \App\Models\Enrollment::where('division_id', $preparation->division_id)->pluck('student_id')
+            )->pluck('user_id')->toArray();
+
+            if (!empty($studentUserIds)) {
+                $subjectName = $preparation->subject ? $preparation->subject->name : 'المادة';
+                \App\Models\Notification::create([
+                    'sender_id' => $user->id,
+                    'branch_id' => $preparation->branch_id,
+                    'title' => 'واجب منزلي جديد: ' . $subjectName,
+                    'message' => 'تم تحديد واجب جديد: ' . $preparation->homework,
+                    'type' => 'homework',
+                    'target_type' => 'students',
+                    'target_role' => 'student',
+                    'target_users' => $studentUserIds,
+                    'is_read' => false
+                ]);
+            }
+        }
     }
 
     /**
@@ -120,12 +218,29 @@ class MobileFeaturesController extends Controller
             return response()->json(['success' => false, 'message' => 'Not an employee'], 403);
         }
 
-        $requests = EmployeeRequest::where('employee_id', $employee->id)
-            ->latest()
-            ->get();
+        $query = EmployeeRequest::where('employee_id', $employee->id)->latest();
+
+        if ($request->has('status') && !empty($request->status) && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('type') && !empty($request->type) && $request->type !== 'all') {
+            $query->where('type', $request->type);
+        }
+
+        $requests = $query->paginate(15);
+
+        // Fetch summary across all requests for this employee
+        $summary = [
+            'total' => EmployeeRequest::where('employee_id', $employee->id)->count(),
+            'pending' => EmployeeRequest::where('employee_id', $employee->id)->where('status', 'pending')->count(),
+            'approved' => EmployeeRequest::where('employee_id', $employee->id)->where('status', 'approved')->count(),
+            'rejected' => EmployeeRequest::where('employee_id', $employee->id)->where('status', 'rejected')->count(),
+        ];
 
         return response()->json([
             'success' => true,
+            'summary' => $summary,
             'data' => $requests
         ]);
     }
@@ -145,6 +260,7 @@ class MobileFeaturesController extends Controller
             'type' => 'required|string',
             'details' => 'nullable|array',
             'employee_notes' => 'nullable|string',
+            'employee_signature' => 'required|string',
         ]);
 
         $newRequest = new EmployeeRequest();
@@ -154,8 +270,12 @@ class MobileFeaturesController extends Controller
         $newRequest->details = $request->details ?? [];
         $newRequest->employee_notes = $request->employee_notes;
         $newRequest->status = 'pending';
-        // Mocking signature for mobile app for now, or you can send base64
-        $newRequest->employee_signature = 'mobile_app_submission'; 
+        
+        if ($request->filled('employee_signature') && Str::startsWith($request->employee_signature, 'data:image')) {
+            $newRequest->employee_signature = $this->saveBase64Signature($request->employee_signature, 'employee');
+        } else {
+            $newRequest->employee_signature = 'mobile_app_submission'; // fallback
+        }
 
         $newRequest->save();
 
@@ -163,5 +283,126 @@ class MobileFeaturesController extends Controller
             'success' => true,
             'message' => 'تم تقديم الطلب بنجاح'
         ]);
+    }
+
+    public function getAttendanceReview(Request $request)
+    {
+        abort_unless($request->user()->hasPermission('مراجعة الحضور والانصراف') || $request->user()->hasPermission('عرض الحضور والانصراف'), 403, 'لا تملك صلاحية مراجعة الحضور');
+        
+        $branchId = $request->user()->branch_id;
+        $date = $request->input('date', now()->format('Y-m-d'));
+
+        $employees = \App\Models\Employee::with(['attendances' => function ($query) use ($date) {
+            $query->whereDate('attendance_date', $date);
+        }, 'user.role', 'department', 'jobGrade'])
+        ->when($branchId, fn($q) => $q->whereHas('user', function($uq) use ($branchId) {
+            $uq->where('branch_id', $branchId);
+        }))
+        ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $employees,
+            'date' => $date
+        ]);
+    }
+
+    public function getMyClassroomVisits(Request $request)
+    {
+        abort_unless($request->user()->hasPermission('عرض زياراتي الصفية'), 403, 'لا تملك صلاحية عرض زياراتك الصفية');
+        
+        $visits = \App\Models\ClassroomVisit::with(['supervisor', 'grade', 'division'])
+            ->where('teacher_id', $request->user()->id)
+            ->latest('visit_date')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $visits
+        ]);
+    }
+
+    public function getManageClassroomVisits(Request $request)
+    {
+        abort_unless($request->user()->hasPermission('عرض الزيارات الصفية') || $request->user()->hasPermission('إدارة الزيارات الصفية'), 403, 'لا تملك صلاحية عرض الزيارات الصفية');
+        
+        $visits = \App\Models\ClassroomVisit::with(['teacher', 'grade', 'division'])
+            ->where('supervisor_id', $request->user()->id)
+            ->latest('visit_date')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $visits
+        ]);
+    }
+
+    public function storeClassroomVisit(Request $request)
+    {
+        abort_unless($request->user()->hasPermission('إضافة زيارة صفية'), 403, 'لا تملك صلاحية إضافة زيارة صفية');
+        
+        $validated = $request->validate([
+            'teacher_id' => 'required|exists:users,id',
+            'grade_id' => 'required|exists:grades,id',
+            'division_id' => 'nullable|exists:divisions,id',
+            'visit_date' => 'required|date',
+            'score' => 'nullable|numeric|min:0|max:100',
+            'notes' => 'nullable|string',
+            'discussed_points' => 'nullable|string',
+        ]);
+
+        $visit = new \App\Models\ClassroomVisit($validated);
+        $visit->supervisor_id = $request->user()->id;
+        $visit->branch_id = $request->user()->branch_id;
+        $visit->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إضافة الزيارة بنجاح',
+            'data' => $visit
+        ]);
+    }
+
+    public function getInfractions(Request $request)
+    {
+        abort_unless($request->user()->hasPermission('عرض مخالفاتي'), 403, 'لا تملك صلاحية عرض مخالفاتك');
+        
+        $infractions = \App\Models\EmployeeViolation::with('violationType')
+            ->where('user_id', $request->user()->id)
+            ->latest('violation_date')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $infractions
+        ]);
+    }
+
+    public function getAchievements(Request $request)
+    {
+        abort_unless($request->user()->hasPermission('عرض إنجازاتي'), 403, 'لا تملك صلاحية عرض إنجازاتك');
+        
+        $achievements = \App\Models\EmployeeAchievement::with('achievementType')
+            ->where('user_id', $request->user()->id)
+            ->latest('achievement_date')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $achievements
+        ]);
+    }
+
+    private function saveBase64Signature(string $base64String, string $prefix): ?string
+    {
+        if (!preg_match('/^data:image\/(\w+);base64,/', $base64String, $type)) {
+            return null;
+        }
+        $data     = substr($base64String, strpos($base64String, ',') + 1);
+        $ext      = strtolower($type[1]);
+        $decoded  = base64_decode($data);
+        $fileName = 'employee-requests/signatures/' . $prefix . '_' . uniqid() . '.' . $ext;
+        Storage::disk('public')->put($fileName, $decoded);
+        return $fileName;
     }
 }

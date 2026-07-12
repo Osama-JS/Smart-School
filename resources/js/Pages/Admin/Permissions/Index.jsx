@@ -3,7 +3,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
     Shield, Plus, Trash2, Check, X, AlertTriangle, Users,
-    ChevronDown, ChevronUp, Lock, Unlock, MoreVertical, Edit2
+    ChevronDown, ChevronUp, Lock, Unlock, MoreVertical, Edit2, Smartphone
 } from 'lucide-react';
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
@@ -58,6 +58,16 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
     const [newRoleName, setNewRoleName] = useState('');
     const [newRoleAccessType, setNewRoleAccessType] = useState('dashboard');
     const [expandedModules, setExpandedModules] = useState({});
+
+    // قائمة الصلاحيات المرتبطة بتطبيق الجوال
+    const appPermissions = [
+        'إضافة حضور وانصراف', 'تسجيل حضور', 'عرض الحضور والانصراف',
+        'عرض الجداول الدراسية', 'إدارة تحضيري للدروس', 'إدارة دفاتر التحضير',
+        'عرض دفاتر التحضير', 'إدارة الطلبات الإدارية', 'عرض الطلبات الإدارية',
+        'إضافة طلب إداري', 'مراجعة الحضور والانصراف', 'عرض الزيارات الصفية',
+        'إدارة الزيارات الصفية', 'إضافة زيارة صفية', 'عرض زياراتي الصفية',
+        'عرض مخالفاتي', 'عرض إنجازاتي'
+    ];
 
     const selectRole = (role) => {
         setSelectedRole(role);
@@ -264,8 +274,13 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
                                                     {items.map(perm => (
                                                         <div key={perm.name}
                                                             className="flex items-center justify-between px-4 py-3.5 hover:bg-slate-50/30 dark:hover:bg-slate-800/20 transition-colors">
-                                                            <div>
+                                                            <div className="flex items-center gap-2">
                                                                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{perm.name}</p>
+                                                                 {appPermissions.includes(perm.name) && (
+                                                                     <span className="flex items-center gap-1 text-[10px] bg-primary-100 dark:bg-primary-500/20 text-primary-700 dark:text-primary-400 px-1.5 py-0.5 rounded-md font-bold" title="متاحة في تطبيق الجوال">
+                                                                         <Smartphone size={10} /> تطبيق
+                                                                     </span>
+                                                                 )}
                                                             </div>
                                                             <PermissionToggle
                                                                 enabled={rolePerms.has(perm.name)}

@@ -23,6 +23,8 @@ class AttendanceApiController extends Controller
             return response()->json(['success' => false, 'message' => 'غير مرتبط بحساب موظف'], 403);
         }
 
+        $todayDayOfWeek = Carbon::now()->dayOfWeek; // 0=Sun, 6=Sat
+
         $shifts = \DB::table('branch_employee_shift')
             ->join('shifts', 'branch_employee_shift.shift_id', '=', 'shifts.id')
             ->join('branches', 'branch_employee_shift.branch_id', '=', 'branches.id')
@@ -33,10 +35,22 @@ class AttendanceApiController extends Controller
                 'shifts.name as shift_name',
                 'shifts.start_time',
                 'shifts.end_time',
+                'shifts.grace_period_minutes',
                 'branches.name as branch_name',
-                'branches.id as branch_id'
+                'branches.id as branch_id',
+                'branches.latitude as branch_latitude',
+                'branches.longitude as branch_longitude',
+                'branches.radius_meters as branch_radius',
+                'branch_employee_shift.working_days',
             )
-            ->get();
+            ->get()
+            ->map(function ($shift) use ($todayDayOfWeek) {
+                $workingDays = json_decode($shift->working_days ?? '[]', true);
+                // true = يوم دوام رسمي, false = سيُسجَّل كحضور إضافي
+                $shift->is_working_day = empty($workingDays) || in_array($todayDayOfWeek, $workingDays);
+                unset($shift->working_days); // لا ترسل الـ JSON الخام للتطبيق
+                return $shift;
+            });
 
         return response()->json([
             'success' => true,
@@ -85,6 +99,7 @@ class AttendanceApiController extends Controller
             ->select(
                 'branch_employee_shift.branch_id',
                 'branch_employee_shift.shift_id',
+                'branch_employee_shift.working_days',
                 'shifts.start_time',
                 'shifts.end_time',
                 'shifts.grace_period_minutes',
@@ -120,15 +135,36 @@ class AttendanceApiController extends Controller
             ], 422);
         }
 
-        // حساب التأخير
-        $shiftStart     = Carbon::parse($today . ' ' . $validAssignment->start_time);
-        $gracePeriodEnd = $shiftStart->copy()->addMinutes($validAssignment->grace_period_minutes);
-        $lateMinutes    = 0;
-        $status         = 'present';
+        // ① التحقق أن وقت الشفت لم ينتهِ بعد — لا يمكن تسجيل حضور بعد انتهاء الشفت
+        $shiftEnd = Carbon::parse($today . ' ' . $validAssignment->end_time);
+        if ($now->gt($shiftEnd)) {
+            $diffMins = $now->diffInMinutes($shiftEnd);
+            return response()->json([
+                'success' => false,
+                'message' => "لا يمكن تسجيل الحضور. انتهى وقت الشفت منذ {$diffMins} دقيقة.",
+            ], 422);
+        }
 
-        if ($now->gt($gracePeriodEnd)) {
-            $lateMinutes = (int) $now->diffInMinutes($shiftStart);
+        // ② حساب التأخير من نهاية وقت السماح (وليس من بداية الشفت)
+        $shiftStart     = Carbon::parse($today . ' ' . $validAssignment->start_time);
+        $gracePeriodEnd = $shiftStart->copy()->addMinutes($validAssignment->grace_period_minutes ?? 0);
+        $lateMinutes    = 0;
+
+        // ③ تحديد الحالة: إضافي إذا ليس يوم دوام، متأخر، أو حاضر
+        $workingDays    = json_decode($validAssignment->working_days ?? '[]', true);
+        $todayDayOfWeek = $now->dayOfWeek; // 0=Sun ... 6=Sat
+        $isWorkingDay   = empty($workingDays) || in_array($todayDayOfWeek, $workingDays);
+
+        if (!$isWorkingDay) {
+            // حضور في يوم غير رسمي — يُسجَّل كحضور إضافي
+            $status = 'extra';
+        } elseif ($now->gt($gracePeriodEnd)) {
+            // تجاوز وقت السماح — متأخر
+            $lateMinutes = (int) $now->diffInMinutes($gracePeriodEnd);
             $status      = 'late';
+        } else {
+            // داخل وقت السماح — حاضر في الوقت
+            $status = 'present';
         }
 
         $activeYear = \App\Models\AcademicYear::currentForBranch($validAssignment->branch_id);
@@ -141,30 +177,35 @@ class AttendanceApiController extends Controller
                 'date'        => $today,
             ],
             [
-                'branch_id'    => $validAssignment->branch_id,
-                'shift_id'     => $validAssignment->shift_id,
+                'branch_id'        => $validAssignment->branch_id,
+                'shift_id'         => $validAssignment->shift_id,
                 'academic_year_id' => $activeYear ? $activeYear->id : null,
-                'semester_id'  => $activeSemester ? $activeSemester->id : null,
-                'check_in'     => $time,
-                'check_in_lat' => $validated['latitude'],
-                'check_in_lng' => $validated['longitude'],
-                'status'       => $status,
-                'late_minutes' => $lateMinutes,
+                'semester_id'      => $activeSemester ? $activeSemester->id : null,
+                'check_in'         => $time,
+                'check_in_lat'     => $validated['latitude'],
+                'check_in_lng'     => $validated['longitude'],
+                'status'           => $status,
+                'late_minutes'     => $lateMinutes,
             ]
         );
 
+        $message = match ($status) {
+            'extra'   => 'تم تسجيل حضورك بنجاح — حضور إضافي (يوم غير رسمي)',
+            'late'    => "تم تسجيل حضورك بنجاح — متأخر {$lateMinutes} دقيقة",
+            default   => 'تم تسجيل حضورك بنجاح في الوقت المحدد',
+        };
+
         return response()->json([
-            'success'     => true,
-            'message'     => $status === 'late'
-                ? "تم تسجيل حضورك بنجاح - متأخر {$lateMinutes} دقيقة"
-                : 'تم تسجيل حضورك بنجاح في الوقت المحدد',
-            'data'        => [
-                'attendance_id' => $attendance->id,
-                'check_in'      => $time,
-                'branch'        => $validAssignment->branch_name,
-                'shift'         => $validAssignment->shift_name,
-                'status'        => $status,
-                'late_minutes'  => $lateMinutes,
+            'success'  => true,
+            'message'  => $message,
+            'data'     => [
+                'attendance_id'  => $attendance->id,
+                'check_in'       => $time,
+                'branch'         => $validAssignment->branch_name,
+                'shift'          => $validAssignment->shift_name,
+                'status'         => $status,
+                'late_minutes'   => $lateMinutes,
+                'is_working_day' => $isWorkingDay,
             ],
         ]);
     }
@@ -195,6 +236,17 @@ class AttendanceApiController extends Controller
                 'success' => false,
                 'message' => 'لا يوجد تسجيل دخول نشط لهذا اليوم.',
             ], 422);
+        }
+
+        // ④ التحقق الجغرافي عند الانصراف
+        $branch = $attendance->branch;
+        if ($branch && $branch->latitude && $branch->longitude) {
+            if (!$branch->isWithinRadius($validated['latitude'], $validated['longitude'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'أنت خارج النطاق الجغرافي لفرعك. يجب أن تكون داخل المبنى لتسجيل الانصراف.',
+                ], 422);
+            }
         }
 
         $attendance->update([
@@ -290,7 +342,8 @@ class AttendanceApiController extends Controller
         $records = [];
         $summary = [
             'present' => 0, 'late' => 0, 'absent' => 0, 'excused' => 0, 
-            'holiday' => 0, 'leave' => 0, 'weekend' => 0, 'future' => 0, 'out_of_term' => 0,
+            'holiday' => 0, 'leave' => 0, 'weekend' => 0, 'future' => 0,
+            'out_of_term' => 0, 'extra' => 0,
         ];
 
         for ($d = 1; $d <= $daysInMonth; $d++) {

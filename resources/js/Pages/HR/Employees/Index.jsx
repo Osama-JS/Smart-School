@@ -9,8 +9,9 @@ import {
     MoreVertical, Edit2, Trash2, X, Check, Users, Calendar, 
     AlertTriangle, LayoutGrid, List, Download, Printer, RotateCcw,
     ArrowUpDown, ArrowUp, ArrowDown, UserCheck, UserX, CheckCircle2,
-    XCircle, ChevronDown, ArrowUpRight, ArrowDownRight
+    XCircle, ChevronDown, ArrowUpRight, ArrowDownRight, Upload
 } from 'lucide-react';
+import ImportModal from './Components/ImportModal';
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 function Modal({ isOpen, onClose, title, children }) {
@@ -114,6 +115,7 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
 
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
     const [showFilters, setShowFilters] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
     const searchInputRef = useRef(null);
     const isFirstRender = useRef(true);
 
@@ -559,6 +561,11 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                 title="طباعة الكشف">
                                 <Printer size={18} />
                             </button>
+                            <button onClick={() => setShowImportModal(true)}
+                                className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-650 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#5b8a2d] transition-colors shadow-sm font-bold text-sm">
+                                <Upload size={18} />
+                                <span className="hidden sm:inline">استيراد</span>
+                            </button>
                             <Link href={route('hr.employees.create')} className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-2xl hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95">
                                 <Plus size={18} />
                                 <span>إضافة موظف جديد</span>
@@ -566,6 +573,15 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                         </div>
                     </div>
                 </div>
+
+                <ImportModal 
+                    show={showImportModal} 
+                    onClose={() => setShowImportModal(false)} 
+                    onSuccess={() => {
+                        setShowImportModal(false);
+                        router.reload({ only: ['employees', 'stats'] });
+                    }} 
+                />
 
                 {/* Stats Dashboard */}
                 {stats && (

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\AcademicYear;
 
 class MobileAuthController extends Controller
 {
@@ -21,7 +22,7 @@ class MobileAuthController extends Controller
 
         $login_type = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        $user = User::where($login_type, $request->login)->with(['role', 'employee'])->first();
+        $user = User::where($login_type, $request->login)->with(['role', 'employee', 'branch'])->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
@@ -47,6 +48,9 @@ class MobileAuthController extends Controller
 
         $token = $user->createToken('mobile_app_token')->plainTextToken;
 
+        // Get user permissions
+        $permissions = $user->role ? $user->role->permissions()->pluck('name')->toArray() : [];
+
         return response()->json([
             'success' => true,
             'message' => 'تم تسجيل الدخول بنجاح.',
@@ -61,7 +65,12 @@ class MobileAuthController extends Controller
                     'role_id' => $user->role_id,
                     'is_system_role' => $user->role->is_system_role ?? false,
                     'employee_id' => $user->employee->id ?? null,
+                    'phone' => $user->phone ?? null,
+                    'branch_id' => $user->branch_id ?? null,
+                    'branch_name' => $user->branch->name ?? null,
+                    'academic_year_name' => $user->branch_id ? optional(AcademicYear::currentForBranch($user->branch_id))->name : null,
                     'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                    'permissions' => $permissions,
                 ]
             ]
         ]);
