@@ -1,23 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { 
     Calendar, Clock, Users, ShieldAlert,
     CheckCircle, XCircle, AlertCircle, FileText, ChevronLeft,
     Sun, Moon, Quote, Plane, Edit3, PenTool, LayoutList, CheckSquare, Square,
-    Megaphone, ChevronRight, Target, Activity
+    Megaphone, ChevronRight, Target, Activity, Trash2, Plus, Loader2
 } from 'lucide-react';
 
-export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeetings, pendingViolations, leaderboard }) {
+export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeetings, pendingViolations, leaderboard, quickTasks = [] }) {
     // Dynamic Greeting Logic
     const [greeting, setGreeting] = useState({ text: 'مرحباً', icon: Sun, color: 'text-amber-500' });
     
     // Interactive To-Do List State
-    const [tasks, setTasks] = useState([
-        { id: 1, text: 'تسليم درجات أعمال السنة للفصل الدراسي', completed: false },
-        { id: 2, text: 'تحضير مادة العلوم للصف الخامس', completed: true },
-        { id: 3, text: 'الرد على استفسارات أولياء الأمور', completed: false },
-    ]);
+    const [tasks, setTasks] = useState(quickTasks);
+
+    const [newTaskText, setNewTaskText] = useState('');
+    const [isAddingTask, setIsAddingTask] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(null); // hold task id or 'new'
+
+    const toggleTask = (id) => {
+        setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+        router.patch(route('dashboard.quick-tasks.toggle', id), {}, { preserveScroll: true });
+    };
+
+    const deleteTask = (id, e) => {
+        e.stopPropagation();
+        setIsProcessing(id);
+        router.delete(route('dashboard.quick-tasks.destroy', id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setTasks(tasks.filter(t => t.id !== id));
+                setIsProcessing(null);
+            },
+            onError: () => setIsProcessing(null)
+        });
+    };
+
+    const addTask = () => {
+        if (!newTaskText.trim()) {
+            setIsAddingTask(false);
+            return;
+        }
+        setIsProcessing('new');
+        router.post(route('dashboard.quick-tasks.store'), { text: newTaskText }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setNewTaskText('');
+                setIsAddingTask(false);
+                setIsProcessing(null);
+            },
+            onError: () => setIsProcessing(null)
+        });
+    };
+
+    // Update Tasks when props change
+    useEffect(() => {
+        setTasks(quickTasks);
+    }, [quickTasks]);
 
     // Announcements Carousel State
     const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
@@ -64,9 +104,7 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
         return new Date(dateString).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     };
 
-    const toggleTask = (id) => {
-        setTasks(tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
-    };
+
 
     return (
         <AdminLayout user={auth.user} activeMenu="الرئيسية">
@@ -298,29 +336,96 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
                         </div>
 
                         {/* 5. Tasks & Reminders (To-Do List) */}
-                        <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 rounded-[2.5rem] p-6 sm:p-8 shadow-sm">
-                            <h2 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2 mb-6">
-                                <LayoutList className="text-emerald-500" size={24} /> مهام اليوم
-                            </h2>
-                            <div className="space-y-3">
+                        <div className="bg-white/60 dark:bg-[#121820]/60 backdrop-blur-md border border-slate-100 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm flex flex-col">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+                                    <div className="p-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-xl">
+                                        <LayoutList size={20} />
+                                    </div>
+                                    مهام اليوم
+                                </h2>
+                                <span className="text-xs font-bold text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+                                    {tasks.filter(t => t.completed).length} / {tasks.length}
+                                </span>
+                            </div>
+                            <div className="space-y-3 flex-1">
                                 {tasks.map(task => (
                                     <div 
                                         key={task.id} 
-                                        onClick={() => toggleTask(task.id)}
-                                        className={`flex items-start gap-3 p-4 rounded-2xl cursor-pointer transition-all border ${task.completed ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 opacity-60' : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-700 hover:border-emerald-300 shadow-sm'}`}
+                                        onClick={() => toggleTask(task.id)} 
+                                        className={`group flex items-center justify-between gap-3 p-4 rounded-2xl cursor-pointer transition-all duration-300 border relative overflow-hidden ${
+                                            task.completed 
+                                                ? 'bg-slate-50 dark:bg-slate-900/40 border-transparent' 
+                                                : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-700 hover:border-emerald-300 hover:shadow-sm hover:-translate-y-0.5'
+                                        }`}
                                     >
-                                        <div className={`mt-0.5 shrink-0 transition-colors ${task.completed ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}>
-                                            {task.completed ? <CheckSquare size={20} /> : <Square size={20} />}
+                                        <div className="flex items-center gap-4 flex-1">
+                                            <div className={`shrink-0 transition-all duration-500 ${
+                                                task.completed ? 'text-emerald-500 scale-110' : 'text-slate-300 dark:text-slate-600 group-hover:text-emerald-400'
+                                            }`}>
+                                                {isProcessing === task.id ? (
+                                                    <Loader2 size={22} className="animate-spin text-slate-400" />
+                                                ) : task.completed ? (
+                                                    <CheckSquare size={22} className="drop-shadow-sm" />
+                                                ) : (
+                                                    <Square size={22} />
+                                                )}
+                                            </div>
+                                            <p className={`text-sm font-semibold transition-all duration-500 ${
+                                                task.completed 
+                                                    ? 'text-slate-400 dark:text-slate-500 line-through decoration-slate-300 dark:decoration-slate-600' 
+                                                    : 'text-slate-700 dark:text-slate-200'
+                                            }`}>
+                                                {task.text}
+                                            </p>
                                         </div>
-                                        <p className={`text-sm font-bold transition-all ${task.completed ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-300'}`}>
-                                            {task.text}
-                                        </p>
+                                        <button 
+                                            onClick={(e) => deleteTask(task.id, e)}
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                        
+                                        {/* Progress Bar under completed tasks */}
+                                        <div className={`absolute bottom-0 right-0 h-0.5 bg-emerald-500 transition-all duration-500 ease-out ${task.completed ? 'left-0 opacity-100' : 'left-full opacity-0'}`} />
                                     </div>
                                 ))}
+                                
+                                <div className={`transition-all duration-300 overflow-hidden ${isAddingTask ? 'max-h-24 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                                    <div className="flex gap-2 items-center bg-white dark:bg-slate-800 p-2 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all">
+                                        <input 
+                                            type="text" 
+                                            value={newTaskText}
+                                            onChange={e => setNewTaskText(e.target.value)}
+                                            onKeyDown={e => {
+                                                if(e.key === 'Enter') addTask();
+                                                if(e.key === 'Escape') setIsAddingTask(false);
+                                            }}
+                                            autoFocus={isAddingTask}
+                                            disabled={isProcessing === 'new'}
+                                            placeholder="اكتب المهمة واضغط Enter..."
+                                            className="w-full text-sm bg-transparent border-none focus:ring-0 text-slate-700 dark:text-slate-200"
+                                        />
+                                        <button 
+                                            onClick={addTask}
+                                            disabled={isProcessing === 'new' || !newTaskText.trim()}
+                                            className="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500 dark:hover:text-white rounded-xl transition-colors disabled:opacity-50 shrink-0"
+                                        >
+                                            {isProcessing === 'new' ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {!isAddingTask && (
+                                    <button 
+                                        onClick={() => setIsAddingTask(true)} 
+                                        className="w-full mt-2 py-3.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 hover:text-emerald-500 hover:border-emerald-300 dark:hover:border-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-all duration-300 text-sm font-bold flex items-center justify-center gap-2 group"
+                                    >
+                                        <Plus size={18} className="group-hover:scale-110 transition-transform" />
+                                        إضافة مهمة شخصية
+                                    </button>
+                                )}
                             </div>
-                            <button className="w-full mt-4 p-4 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary-500 hover:border-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-all font-bold text-sm flex items-center justify-center gap-2">
-                                + إضافة مهمة شخصية
-                            </button>
                         </div>
                     </div>
 

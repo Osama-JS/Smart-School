@@ -309,7 +309,7 @@ class AttendanceApiController extends Controller
             ->whereYear('date', $yearNum)
             ->with(['branch:id,name', 'shift:id,name,start_time,end_time'])
             ->get()
-            ->keyBy('date');
+            ->keyBy(fn($item) => $item->date->format('Y-m-d'));
 
         // 2. Get Leaves
         $leaves = \App\Models\Leave::with('leaveType')

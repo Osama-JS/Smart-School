@@ -17,7 +17,7 @@ export default function GuestLayout({ children }) {
                     {/* Brand Logo & Name */}
                     <Link href="/" className="inline-flex items-center gap-4 group">
                         <img 
-                            src={logo_url || '/images/logo.png'} 
+                            src={logo_url || '/images/school_logo.png'} 
                             alt="مدارس القيم" 
                             className="h-16 w-16 rounded-2xl object-contain bg-white/95 p-1.5 shadow-xl transition-all duration-300 group-hover:scale-105"
                         />
@@ -91,7 +91,7 @@ export default function GuestLayout({ children }) {
                     <div className="text-center lg:hidden mb-8">
                         <Link href="/" className="inline-flex flex-col items-center gap-3">
                             <img 
-                                src={logo_url || '/images/logo.png'} 
+                                src={logo_url || '/images/school_logo.png'} 
                                 alt="مدارس القيم" 
                                 className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-contain bg-white p-2 shadow-lg"
                             />

@@ -82,7 +82,7 @@ export default function Certificate({ achievement }) {
                             <p className="text-[14px] font-black text-[#9DB833] mt-1 uppercase tracking-[0.18em]">ALQIAM CIVIL SCHOOLS</p>
                         </div>
                         <div className="flex-1 flex justify-center">
-                            <img src={logo_url || "/images/logo.png"} alt="شعار مدارس القيم" className="w-24 h-24 object-contain" crossOrigin="anonymous" />
+                            <img src={logo_url || "/images/school_logo.png"} alt="شعار مدارس القيم" className="w-24 h-24 object-contain" crossOrigin="anonymous" />
                         </div>
                         <div className="text-left flex-1" dir="ltr">
                             <p className="text-xs font-bold text-dark-400 mb-1 uppercase tracking-wider">Date: <span className="text-dark-700">{achievement.achievement_date}</span></p>
@@ -158,7 +158,7 @@ export default function Certificate({ achievement }) {
                             <div className="w-28 h-28 rounded-full border-2 border-primary-200 flex items-center justify-center rotate-[-15deg] bg-white relative">
                                 <div className="absolute inset-1 rounded-full border border-primary-200 border-dashed"></div>
                                 <div className="text-center">
-                                    <img src={logo_url || "/images/logo.png"} alt="ختم" className="w-10 h-10 mx-auto opacity-20 mb-1 grayscale" crossOrigin="anonymous" />
+                                    <img src={logo_url || "/images/school_logo.png"} alt="ختم" className="w-10 h-10 mx-auto opacity-20 mb-1 grayscale" crossOrigin="anonymous" />
                                     <span className="text-[8px] font-black text-primary-400 block tracking-widest uppercase">Official Seal</span>
                                 </div>
                             </div>

@@ -53,6 +53,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 
+    // ── Quick Tasks ──
+    Route::post('/dashboard/quick-tasks', [\App\Http\Controllers\DashboardController::class, 'storeQuickTask'])->name('dashboard.quick-tasks.store');
+    Route::patch('/dashboard/quick-tasks/{task}/toggle', [\App\Http\Controllers\DashboardController::class, 'toggleQuickTask'])->name('dashboard.quick-tasks.toggle');
+    Route::delete('/dashboard/quick-tasks/{task}', [\App\Http\Controllers\DashboardController::class, 'destroyQuickTask'])->name('dashboard.quick-tasks.destroy');
+
     // ── System Admin Only Routes ──
     Route::middleware([\App\Http\Middleware\SystemAdminOnly::class])->group(function () {
         // ── Permissions & Roles ──
@@ -64,6 +69,7 @@ Route::middleware('auth')->group(function () {
         // ── Settings ──
         Route::get('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings');
         Route::post('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('admin.settings.update');
+
 
         // ── Branches ──
         Route::get('/hr/branches', [\App\Http\Controllers\HR\BranchController::class, 'index'])->name('hr.branches');
@@ -225,6 +231,7 @@ Route::middleware('auth')->group(function () {
         ]);
     });
 
+
     // ── Violations (المخالفات) ──
     Route::middleware('permission:إدارة أنواع المخالفات')->group(function () {
         Route::resource('/hr/violation-types', \App\Http\Controllers\HR\ViolationTypeController::class)->names([
@@ -324,6 +331,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:إدارة الحضور والانصراف')->group(function () {
         Route::get('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'index'])->name('hr.attendance');
         Route::get('/hr/attendance/report', [\App\Http\Controllers\HR\AttendanceController::class, 'report'])->name('hr.attendance.report');
+        Route::get('/hr/attendance/employee-report/{employeeId}', [\App\Http\Controllers\Api\AttendanceApiController::class, 'employeeReport'])->name('hr.attendance.employee-report');
         Route::post('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'store'])->name('hr.attendance.store');
         Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
         Route::put('/hr/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceController::class, 'update'])->name('hr.attendance.update');

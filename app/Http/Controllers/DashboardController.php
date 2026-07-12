@@ -19,6 +19,18 @@ class DashboardController extends Controller
         $isSystemAdmin = $roleName === 'مدير النظام';
         $branchId = $isSystemAdmin ? null : $user->branch_id;
 
+        $quickTasks = \App\Models\Task::where('assigned_to', $user->id)
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'text' => $task->title,
+                    'completed' => $task->status === 'completed',
+                ];
+            });
+
         if ($isSystemAdmin) {
             $totalBranches = \App\Models\Branch::count();
             $activeBranches = \App\Models\Branch::where('is_active', true)->count();
@@ -96,7 +108,8 @@ class DashboardController extends Controller
                     'divisions' => $totalDivisions,
                     'subjects' => $totalSubjects,
                 ],
-                'leaderboard' => $leaderboard
+                'leaderboard' => $leaderboard,
+                'quickTasks' => $quickTasks
             ]);
         }
 
@@ -164,7 +177,8 @@ class DashboardController extends Controller
                     'absent_today' => number_format($absentToday)
                 ],
                 'recentActivities' => $recentActivities,
-                'weeklyData' => $weeklyData
+                'weeklyData' => array_reverse($weeklyData),
+                'quickTasks' => $quickTasks
             ]);
         }
 
@@ -204,7 +218,36 @@ class DashboardController extends Controller
             'attendanceStatus' => $todayAttendance,
             'upcomingMeetings' => $upcomingMeetings,
             'pendingViolations' => $pendingViolations,
-            'leaderboard' => $leaderboard
+            'leaderboard' => $leaderboard,
+            'quickTasks' => $quickTasks
         ]);
+    }
+
+    public function storeQuickTask(Request $request)
+    {
+        $request->validate(['text' => 'required|string|max:255']);
+        \App\Models\Task::create([
+            'branch_id' => auth()->user()->branch_id ?? 1,
+            'title' => $request->text,
+            'status' => 'todo',
+            'priority' => 'medium',
+            'assigned_to' => auth()->id(),
+            'assigned_by' => auth()->id(),
+        ]);
+        return back();
+    }
+
+    public function toggleQuickTask(\App\Models\Task $task)
+    {
+        if ($task->assigned_to !== auth()->id()) abort(403);
+        $task->update(['status' => $task->status === 'completed' ? 'todo' : 'completed']);
+        return back();
+    }
+
+    public function destroyQuickTask(\App\Models\Task $task)
+    {
+        if ($task->assigned_to !== auth()->id()) abort(403);
+        $task->delete();
+        return back();
     }
 }

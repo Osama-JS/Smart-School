@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import { FileText, Calendar, CheckCircle2, Clock, UserX, UserCheck, AlertTriangle, Printer, Loader2, Download } from 'lucide-react';
+import axios from 'axios';
 
 export default function AttendanceReport({ employees, academicYears = [], isAdmin }) {
     const defaultYear = academicYears.find(y => y.is_active) || academicYears[0];
@@ -34,18 +35,11 @@ export default function AttendanceReport({ employees, academicYears = [], isAdmi
             let params = { month: selectedMonth, year: selectedYear };
             if (selectedSemester) params.semester_id = selectedSemester;
             
-            let url = route('api.attendance.employee-report', { employeeId: selectedEmployee, ...params });
+            let url = route('hr.attendance.employee-report', { employeeId: selectedEmployee, ...params });
 
-            const res = await fetch(url, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-                }
-            });
-            const data = await res.json();
-            if (data.success) {
-                setReportData(data.data);
+            const res = await axios.get(url);
+            if (res.data.success) {
+                setReportData(res.data.data);
             }
         } catch (error) {
             console.error('Error fetching report:', error);

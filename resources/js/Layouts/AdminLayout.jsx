@@ -264,7 +264,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             
             {/* Logo & Close button for mobile */}
             <div className="p-5 flex items-center gap-3 border-b border-white/10">
-                <img src={logo_url || '/images/logo.png'} alt="مدارس القيم" className="h-11 w-11 rounded-xl object-contain bg-white/10 p-1 shrink-0" />
+                <img src={logo_url || '/images/school_logo.png'} alt="مدارس القيم" className="h-11 w-11 rounded-xl object-contain bg-white/10 p-1 shrink-0" />
                 <div className="leading-tight overflow-hidden flex-1 min-w-0">
                     <h1 className="font-bold text-white text-[15px] truncate">مدارس القيم</h1>
                     <p className="text-[11px] text-gray-500 truncate">نظام القيم ERP</p>
