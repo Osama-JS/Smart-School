@@ -15,6 +15,7 @@ class PermissionsSeeder extends Seeder
             ['name' => 'إدارة الصلاحيات',       'module' => 'admin'],
             ['name' => 'إعدادات النظام',         'module' => 'admin'],
             ['name' => 'إدارة الفروع',           'module' => 'admin'],
+            ['name' => 'إدارة المهام',           'module' => 'admin'],
 
             // ── وحدة الموارد البشرية ──
             ['name' => 'إدارة الأقسام',              'module' => 'hr'],

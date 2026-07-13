@@ -45,6 +45,10 @@ class DatabaseSeeder extends Seeder
         $this->command->info('── المرحلة 7: الهيكل الأكاديمي ──');
         $this->call(AcademicStructureSeeder::class);
 
+        // المرحلة 8: المهام
+        $this->command->info('── المرحلة 8: المهام ──');
+        $this->call(TaskSeeder::class);
+
         $this->command->newLine();
         $this->command->info('🎉 Database seeding completed successfully!');
     }

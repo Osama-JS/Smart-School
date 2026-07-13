@@ -46,6 +46,17 @@ class NewFeaturesPermissionsSeeder extends Seeder
             ],
         ],
 
+        // ── المهام ──
+        'إدارة المهام' => [
+            'module'   => 'admin',
+            'children' => [
+                'عرض المهام',
+                'إضافة مهمة',
+                'تعديل مهمة',
+                'حذف مهمة',
+            ],
+        ],
+
         // ── 2. دفاتر التحضير ──
         'إدارة دفاتر التحضير' => [
             'module'   => 'supervision',
