@@ -393,6 +393,160 @@ class MobileFeaturesController extends Controller
         ]);
     }
 
+    public function getMyReportTemplates(Request $request)
+    {
+        $user = $request->user();
+        
+        $templates = \App\Models\ReportTemplate::with('jobGrade')
+            ->where(function($q) use ($user) {
+                if ($user->employee && $user->employee->job_grade_id) {
+                    $q->where('job_grade_id', $user->employee->job_grade_id);
+                } else {
+                    $q->where('id', 0);
+                }
+            })
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $templates
+        ]);
+    }
+
+    public function getReportTemplateDetails(Request $request, $id)
+    {
+        $template = \App\Models\ReportTemplate::with('fields')->findOrFail($id);
+        $user = $request->user();
+
+        $templateArray = $template->toArray();
+
+        $activeYear = \App\Models\AcademicYear::currentForBranch($user->branch_id);
+        $workingDays = $activeYear && $activeYear->working_days ? $activeYear->working_days : ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday'];
+        
+        $daysAr = [
+            'Saturday' => 'السبت',
+            'Sunday' => 'الأحد',
+            'Monday' => 'الإثنين',
+            'Tuesday' => 'الثلاثاء',
+            'Wednesday' => 'الأربعاء',
+            'Thursday' => 'الخميس',
+            'Friday' => 'الجمعة',
+        ];
+        
+        $templateArray['working_days'] = array_map(function($day) use ($daysAr) {
+            return $daysAr[$day] ?? $day;
+        }, $workingDays);
+
+        $fieldsArray = $template->fields->map(function ($field) use ($user, $template, $request) {
+            $fieldArr = $field->toArray();
+
+            if ($field->type === 'data_source') {
+                $options = is_array($field->options) ? $field->options : json_decode($field->options, true) ?? [];
+                $source = $options['source'] ?? null;
+
+                if ($source === 'classroom_visits') {
+                    $startDate = $request->has('start_date') ? \Carbon\Carbon::parse($request->get('start_date')) : now()->startOfWeek();
+                    $endDate   = $request->has('end_date') ? \Carbon\Carbon::parse($request->get('end_date')) : now()->endOfWeek();
+
+                    if (!$request->has('start_date') && !$request->has('end_date')) {
+                        if ($template->period_type === 'monthly') {
+                            $startDate = now()->startOfMonth();
+                            $endDate   = now()->endOfMonth();
+                        } elseif ($template->period_type === 'daily') {
+                            $startDate = now()->startOfDay();
+                            $endDate   = now()->endOfDay();
+                        }
+                    }
+
+                    $visits = \App\Models\ClassroomVisit::with('teacher')
+                        ->where('supervisor_id', $user->id)
+                        ->whereBetween('visit_date', [$startDate->startOfDay(), $endDate->endOfDay()])
+                        ->get()
+                        ->map(function ($visit) {
+                            return [
+                                'id'               => $visit->id,
+                                'day'              => $visit->visit_date->locale('ar')->isoFormat('dddd'),
+                                'date'             => $visit->visit_date->format('Y-m-d'),
+                                'teacher_name'     => $visit->teacher ? $visit->teacher->name : '',
+                                'visit_type'       => $visit->visit_type,
+                                'notes'            => $visit->notes,
+                                'evaluation'       => $visit->score,
+                                'discussed_points' => $visit->discussed_points,
+                            ];
+                        });
+
+                    $fieldArr['prefilled_data'] = $visits;
+                }
+            }
+
+            return $fieldArr;
+        })->toArray();
+
+        $templateArray['fields'] = $fieldsArray;
+
+        return response()->json([
+            'success' => true,
+            'data' => $templateArray
+        ]);
+    }
+
+    public function submitReport(Request $request, $id)
+    {
+        $template = \App\Models\ReportTemplate::with('fields')->findOrFail($id);
+        
+        $inputData = $request->input('data');
+        if (is_string($inputData)) {
+            $inputData = json_decode($inputData, true) ?? [];
+        }
+
+        $user = $request->user();
+        $activeYear = \App\Models\AcademicYear::currentForBranch($user->branch_id);
+        $activeSemester = $activeYear ? $activeYear->activeSemester : null;
+
+        $finalData = [];
+        foreach ($template->fields as $field) {
+            $key = 'field_' . $field->id;
+            
+            if ($request->hasFile($key)) {
+                $path = $request->file($key)->store('reports/files', 'public');
+                $finalData[$field->id] = $path;
+            } else {
+                $finalData[$field->id] = $inputData[$field->id] ?? null;
+            }
+        }
+
+        \App\Models\Report::create([
+            'branch_id' => $user->branch_id,
+            'report_template_id' => $template->id,
+            'submitter_id' => $user->id,
+            'status' => 'pending',
+            'data' => $finalData,
+            'period_type' => $template->period_type,
+            'period_start_date' => $request->period_start_date ?? null,
+            'period_end_date' => $request->period_end_date ?? null,
+            'period_label' => $request->period_label ?? null,
+            'academic_year_id' => $activeYear ? $activeYear->id : null,
+            'semester_id' => $activeSemester ? $activeSemester->id : null,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'تم الإرسال بنجاح']);
+    }
+
+    public function getMyReports(Request $request)
+    {
+        $user = $request->user();
+        
+        $myReports = \App\Models\Report::with(['template.fields', 'reviewer'])
+            ->where('submitter_id', $user->id)
+            ->latest()
+            ->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'data' => $myReports
+        ]);
+    }
+
     private function saveBase64Signature(string $base64String, string $prefix): ?string
     {
         if (!preg_match('/^data:image\/(\w+);base64,/', $base64String, $type)) {

@@ -60,14 +60,40 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
     const [expandedModules, setExpandedModules] = useState({});
 
     // قائمة الصلاحيات المرتبطة بتطبيق الجوال
-    const appPermissions = [
+    const appPermissions = React.useMemo(() => [
         'إضافة حضور وانصراف', 'تسجيل حضور', 'عرض الحضور والانصراف',
         'عرض الجداول الدراسية', 'إدارة تحضيري للدروس', 'إدارة دفاتر التحضير',
         'عرض دفاتر التحضير', 'إدارة الطلبات الإدارية', 'عرض الطلبات الإدارية',
         'إضافة طلب إداري', 'مراجعة الحضور والانصراف', 'عرض الزيارات الصفية',
         'إدارة الزيارات الصفية', 'إضافة زيارة صفية', 'عرض زياراتي الصفية',
-        'عرض مخالفاتي', 'عرض إنجازاتي'
-    ];
+        'عرض مخالفاتي', 'عرض إنجازاتي', 'عرض التقارير', 'إضافة تقرير'
+    ], []);
+
+    // تجميع صلاحيات التطبيق في قسم منفصل
+    const groupedPermissions = React.useMemo(() => {
+        const result = [];
+        const mobileItems = [];
+
+        permissions.forEach(group => {
+            const moduleItems = [];
+            group.items.forEach(perm => {
+                if (appPermissions.includes(perm.name)) {
+                    mobileItems.push(perm);
+                } else {
+                    moduleItems.push(perm);
+                }
+            });
+            if (moduleItems.length > 0) {
+                result.push({ module: group.module, items: moduleItems });
+            }
+        });
+
+        if (mobileItems.length > 0) {
+            result.unshift({ module: 'mobile_app', items: mobileItems });
+        }
+
+        return result;
+    }, [permissions, appPermissions]);
 
     const selectRole = (role) => {
         setSelectedRole(role);
@@ -109,11 +135,11 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
         hr:       'الموارد البشرية',
         academic: 'الشؤون الأكاديمية',
         admin:    'الإدارة والنظام',
-        reports:  'التقارير',
+        mobile_app: 'صلاحيات تطبيق الجوال',
     };
 
     const allPermsInModule = (module) =>
-        permissions.find(p => p.module === module)?.items.map(i => i.name) ?? [];
+        groupedPermissions.find(p => p.module === module)?.items.map(i => i.name) ?? [];
 
     const allModuleSelected = (module) =>
         allPermsInModule(module).every(n => rolePerms.has(n));
@@ -237,17 +263,21 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
                                         <p className="text-sm">لا توجد صلاحيات معرَّفة في النظام بعد</p>
                                     </div>
                                 )}
-                                {permissions.map(({ module, items }) => {
+                                {groupedPermissions.map(({ module, items }) => {
                                     const isExpanded = expandedModules[module] !== false; // default open
                                     const allSelected = allModuleSelected(module);
                                     return (
-                                        <div key={module} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden">
+                                        <div key={module} className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden mb-4">
                                             <div
                                                 className="flex items-center justify-between px-4 py-3 bg-slate-50/60 dark:bg-slate-800/40 cursor-pointer select-none"
                                                 onClick={() => toggleModule(module)}
                                             >
                                                 <div className="flex items-center gap-2">
-                                                    <Shield size={15} className="text-primary-500" />
+                                                    {module === 'mobile_app' ? (
+                                                        <Smartphone size={15} className="text-primary-500" />
+                                                    ) : (
+                                                        <Shield size={15} className="text-primary-500" />
+                                                    )}
                                                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
                                                         {moduleLabels[module] ?? module}
                                                     </span>

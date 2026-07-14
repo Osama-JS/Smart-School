@@ -57,6 +57,24 @@ class MyReportController extends Controller
 
         $templateArray = $template->toArray();
 
+        // Get working days from active AcademicYear
+        $activeYear = AcademicYear::currentForBranch($user->branch_id);
+        $workingDays = $activeYear && $activeYear->working_days ? $activeYear->working_days : ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday'];
+        
+        $daysAr = [
+            'Saturday' => 'السبت',
+            'Sunday' => 'الأحد',
+            'Monday' => 'الإثنين',
+            'Tuesday' => 'الثلاثاء',
+            'Wednesday' => 'الأربعاء',
+            'Thursday' => 'الخميس',
+            'Friday' => 'الجمعة',
+        ];
+        
+        $templateArray['working_days'] = array_map(function($day) use ($daysAr) {
+            return $daysAr[$day] ?? $day;
+        }, $workingDays);
+
         $fieldsArray = $template->fields->map(function ($field) use ($user, $template) {
             $fieldArr = $field->toArray();
 

@@ -56,7 +56,45 @@ export default function ReviewReport({ auth, report }) {
                     </a>
                 );
             case 'matrix_text':
-                if (typeof value === 'object' && value !== null) {
+                if (Array.isArray(value) && value.length > 0) {
+                    let columns = [];
+                    try {
+                        if (typeof field.options === 'string') {
+                            columns = field.options.split('.').map(s => s.trim()).filter(Boolean);
+                        } else if (Array.isArray(field.options)) {
+                            columns = field.options.join('.').split('.').map(s => s.trim()).filter(Boolean);
+                        }
+                    } catch (e) {}
+
+                    return (
+                        <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 shadow-inner overflow-x-auto">
+                            <table className="w-full text-right text-sm min-w-[600px]">
+                                <thead className="bg-slate-100/50 dark:bg-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
+                                    <tr>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300 whitespace-nowrap">اليوم</th>
+                                        {columns.map((col, idx) => (
+                                            <th key={idx} className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">{col}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                    {value.map((row, rowIdx) => (
+                                        <tr key={rowIdx} className="hover:bg-white/80 dark:hover:bg-slate-800/30 transition-colors">
+                                            <td className="px-5 py-4 font-bold text-slate-800 dark:text-slate-200 border-l border-slate-100 dark:border-slate-800/60 whitespace-nowrap">
+                                                <span className="bg-slate-200/50 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg">{row.day}</span>
+                                            </td>
+                                            {columns.map((col, colIdx) => (
+                                                <td key={colIdx} className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-400">
+                                                    {row[col] || '-'}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                } else if (typeof value === 'object' && value !== null) {
                     return (
                         <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 shadow-inner">
                             <div className="grid grid-cols-[1fr_2fr] bg-slate-100/50 dark:bg-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">

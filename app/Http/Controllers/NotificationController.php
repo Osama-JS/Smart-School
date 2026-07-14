@@ -157,6 +157,14 @@ class NotificationController extends Controller
             'important' => $importantStatsQuery->count(),
         ];
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'data' => $notifications,
+                'stats' => $stats,
+            ]);
+        }
+
         return \Inertia\Inertia::render('User/Notifications/Index', [
             'notifications' => $notifications,
             'stats' => $stats,

@@ -34,6 +34,7 @@ Route::prefix('mobile')->group(function () {
     
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [MobileAuthController::class, 'logout']);
+        Route::post('/change-password', [MobileAuthController::class, 'changePassword']);
     });
 });
 
@@ -72,4 +73,16 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
 
     // Employee Achievements
     Route::get('/achievements', [MobileFeaturesController::class, 'getAchievements']);
+
+    // Notifications (reusing NotificationController JSON responses)
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
+    Route::get('/notifications/all', [\App\Http\Controllers\NotificationController::class, 'myNotifications']);
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+
+    // My Reports
+    Route::get('/my-reports/templates', [MobileFeaturesController::class, 'getMyReportTemplates']);
+    Route::get('/my-reports/templates/{id}', [MobileFeaturesController::class, 'getReportTemplateDetails']);
+    Route::post('/my-reports/submit/{id}', [MobileFeaturesController::class, 'submitReport']);
+    Route::get('/my-reports', [MobileFeaturesController::class, 'getMyReports']);
 });

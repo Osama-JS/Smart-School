@@ -88,4 +88,37 @@ class MobileAuthController extends Controller
             'message' => 'تم تسجيل الخروج بنجاح.'
         ]);
     }
+
+    /**
+     * Mobile change password
+     */
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ], [
+            'current_password.required' => 'كلمة المرور الحالية مطلوبة',
+            'new_password.required' => 'كلمة المرور الجديدة مطلوبة',
+            'new_password.min' => 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل',
+            'new_password.confirmed' => 'تأكيد كلمة المرور غير متطابق',
+        ]);
+
+        $user = $request->user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'كلمة المرور الحالية غير صحيحة.'
+            ], 422);
+        }
+
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تغيير كلمة المرور بنجاح.'
+        ]);
+    }
 }

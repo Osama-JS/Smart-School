@@ -24,10 +24,18 @@ export default function MyReportsCreate({ auth, template }) {
     const initialData = {};
     template.fields.forEach(field => {
         if (field.type === 'matrix_text') {
-            initialData[field.name] = {};
+            initialData[field.name] = [];
             const opts = parseMatrixOptions(field.options);
-            opts.forEach(opt => {
-                initialData[field.name][opt] = '';
+            const days = Array.isArray(template.working_days) && template.working_days.length > 0 
+                ? template.working_days 
+                : ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء'];
+            
+            days.forEach(day => {
+                const row = { day: day };
+                opts.forEach(opt => {
+                    row[opt] = '';
+                });
+                initialData[field.name].push(row);
             });
         } else if (field.type === 'tasks_matrix') {
             initialData[field.name] = {};
@@ -297,38 +305,58 @@ export default function MyReportsCreate({ auth, template }) {
                     </div>
                 );
             case 'matrix_text':
-                const parsedOptions = parseMatrixOptions(field.options);
+                const columnsText = parseMatrixOptions(field.options);
+                let rowsText = Array.isArray(val) ? val : [];
+                
+                if (rowsText.length === 0) {
+                    const days = Array.isArray(template.working_days) && template.working_days.length > 0 
+                        ? template.working_days 
+                        : ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء'];
+                    
+                    rowsText = days.map(day => {
+                        const row = { day: day };
+                        columnsText.forEach(col => {
+                            row[col] = '';
+                        });
+                        return row;
+                    });
+                }
+
                 return (
                     <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
                         <table className="w-full text-right text-sm">
                             <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
                                 <tr>
-                                    <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-1/3">البند / المجال</th>
-                                    <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">الملاحظات / الإفادة</th>
+                                    <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 whitespace-nowrap">اليوم</th>
+                                    {columnsText.map((col, idx) => (
+                                        <th key={idx} className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">{col}</th>
+                                    ))}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
-                                {parsedOptions.map((rowLabel, idx) => (
-                                    <tr key={idx}>
-                                        <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">
-                                            {rowLabel}
+                                {rowsText.map((row, rowIdx) => (
+                                    <tr key={rowIdx}>
+                                        <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                            <span className="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-md text-sm">{row.day}</span>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <input 
-                                                type="text"
-                                                value={(val && val[rowLabel]) || ''}
-                                                onChange={(e) => {
-                                                    const newMatrixData = { ...val };
-                                                    newMatrixData[rowLabel] = e.target.value;
-                                                    handleFieldChange(field.name, newMatrixData);
-                                                }}
-                                                className="w-full bg-transparent border-0 border-b border-slate-200 dark:border-slate-700 focus:ring-0 focus:border-primary-500 px-0 py-2 text-sm dark:text-white"
-                                                placeholder="اكتب ملاحظاتك هنا..."
-                                            />
-                                        </td>
+                                        {columnsText.map((col, colIdx) => (
+                                            <td key={colIdx} className="px-4 py-3">
+                                                <input 
+                                                    type="text"
+                                                    value={row[col] || ''}
+                                                    onChange={(e) => {
+                                                        const newMatrixData = [...rowsText];
+                                                        newMatrixData[rowIdx] = { ...newMatrixData[rowIdx], [col]: e.target.value };
+                                                        handleFieldChange(field.name, newMatrixData);
+                                                    }}
+                                                    className="w-full bg-transparent border-0 border-b border-slate-200 dark:border-slate-700 focus:ring-0 focus:border-primary-500 px-0 py-2 text-sm dark:text-white"
+                                                    placeholder="اكتب ملاحظاتك..."
+                                                />
+                                            </td>
+                                        ))}
                                     </tr>
                                 ))}
-                                {parsedOptions.length === 0 && (
+                                {columnsText.length === 0 && (
                                     <tr>
                                         <td colSpan="2" className="px-4 py-4 text-center text-slate-400">لم يتم تحديد بنود من قبل الإدارة</td>
                                     </tr>
