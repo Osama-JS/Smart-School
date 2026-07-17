@@ -5,7 +5,7 @@ import {
     Menu, X, BookOpen, Clock, ShieldCheck, Map, Activity, 
     Home, LogOut, ChevronDown, CheckSquare, Plus, CheckCircle, Store, Sun, Moon, PanelLeftClose, PanelLeftOpen, User,
     FileText, Sliders, Layers, BarChart, UserPlus, FileSignature, ShieldAlert,
-    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle
+    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import ToastNotification from '@/Components/ToastNotification';
@@ -147,6 +147,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             title: 'القائمة الرئيسية',
             items: [
                 { name: 'الرئيسية', icon: Home, url: route('dashboard') },
+                { name: 'الأخبار والإعلانات', icon: Megaphone, url: route('news.index') },
                 { name: 'المستخدمون', icon: Users, url: route('users.index'), permission: 'إدارة المستخدمين' },
             ]
         },
@@ -219,7 +220,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             title: 'المحتوى والتواصل',
             items: [
                 { name: 'الأخبار', icon: Newspaper },
-                { name: 'المكتبة', icon: Library },
+                { name: 'المكتبة الرقمية', icon: Library, url: route('academic.library.digital.index'), permission: 'عرض المكتبة الرقمية' },
+                { name: 'الكتب الورقية', icon: Book, url: route('academic.library.books.index'), permission: 'عرض الكتب الورقية' },
+                { name: 'استعارة الكتب', icon: BookOpen, url: route('academic.library.borrowings.index'), permission: 'عرض الاستعارات' },
                 { name: 'إرسال إشعارات', icon: Bell, url: route('admin.notifications.send'), permission: 'إدارة النظام' },
             ]
         },

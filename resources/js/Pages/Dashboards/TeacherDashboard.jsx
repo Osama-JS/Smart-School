@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import NewsWidget from '@/Components/NewsWidget';
 import { 
     Calendar, Clock, Users, BookOpen, 
     CheckCircle, XCircle, AlertCircle, MapPin,
@@ -9,7 +10,7 @@ import {
     Megaphone, Trophy, Star, BellRing, ArrowUpRight, Trash2, Plus, Loader2
 } from 'lucide-react';
 
-export default function TeacherDashboard({ auth, todayTimetable, attendanceStatus, upcomingMeetings, stats, leaderboard, quickTasks = [] }) {
+export default function TeacherDashboard({ auth, todayTimetable, attendanceStatus, upcomingMeetings, stats, leaderboard, quickTasks = [], latestNews }) {
     // 1. Dynamic Greeting
     const [greeting, setGreeting] = useState({ text: 'مرحباً', icon: Sun, color: 'text-amber-500' });
     const quotes = [
@@ -74,20 +75,6 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
     useEffect(() => {
         setTasks(quickTasks);
     }, [quickTasks]);
-
-    // 3. Announcements Carousel State
-    const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
-    const announcements = [
-        { id: 1, title: 'موعد تسليم الدرجات النهائية', tag: 'عاجل', color: 'bg-red-50 text-red-600', date: 'اليوم' },
-        { id: 2, title: 'دورة تدريبية للمعلمين في استخدام التقنية', tag: 'تطوير', color: 'bg-emerald-50 text-emerald-600', date: 'غداً' },
-        { id: 3, title: 'تغيير في جدول الحصص للأسبوع القادم', tag: 'عام', color: 'bg-blue-50 text-blue-600', date: 'الخميس' }
-    ];
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentAnnouncement(prev => (prev + 1) % announcements.length);
-        }, 5000);
-        return () => clearInterval(timer);
-    }, [announcements.length]);
 
     const formatTimeAr = (timeString) => {
         if (!timeString) return '';
@@ -346,33 +333,8 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
                     {/* Right Column: Carousel, ToDo, Meetings (Takes 5 columns) */}
                     <div className="lg:col-span-5 space-y-8">
                         
-                        {/* Proposal 5: Announcements Carousel */}
-                        <div className="bg-white/60 dark:bg-[#121820]/60 backdrop-blur-md border border-slate-100 dark:border-slate-800/80 rounded-[2rem] p-6 shadow-sm overflow-hidden relative group">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-black text-slate-800 dark:text-white flex items-center gap-2">
-                                    <Megaphone size={18} className="text-primary-500" /> التعاميم الحديثة
-                                </h3>
-                                <div className="flex items-center gap-1">
-                                    {announcements.map((_, idx) => (
-                                        <button key={idx} onClick={() => setCurrentAnnouncement(idx)} className={`w-2 h-2 rounded-full transition-all ${currentAnnouncement === idx ? 'bg-primary-500 w-4' : 'bg-slate-200 dark:bg-slate-700'}`}></button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="relative min-h-[100px]">
-                                {announcements.map((ann, idx) => (
-                                    <div key={ann.id} className={`absolute inset-0 transition-all duration-500 ease-in-out ${currentAnnouncement === idx ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-8 pointer-events-none'}`}>
-                                        <div className="flex gap-2 items-center mb-2">
-                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${ann.color}`}>{ann.tag}</span>
-                                            <span className="text-xs text-slate-400">{ann.date}</span>
-                                        </div>
-                                        <h4 className="font-bold text-slate-800 dark:text-white text-base leading-snug">{ann.title}</h4>
-                                        <Link href="#" className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-primary-600 hover:text-primary-700 transition-colors">
-                                            قراءة التفاصيل <ChevronLeft size={14} />
-                                        </Link>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        {/* News Widget */}
+                        <NewsWidget news={latestNews} />
 
                         {/* Proposal 4: To-Do List */}
                         <div className="bg-white/60 dark:bg-[#121820]/60 backdrop-blur-md border border-slate-100 dark:border-slate-800/80 rounded-[2.5rem] p-6 sm:p-8 shadow-sm flex flex-col">

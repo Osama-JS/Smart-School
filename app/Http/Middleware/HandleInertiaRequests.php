@@ -59,6 +59,15 @@ class HandleInertiaRequests extends Middleware
                 'warning' => fn () => $request->session()->get('warning'),
                 'info' => fn () => $request->session()->get('info'),
             ],
+            'urgent_news' => fn () => \App\Models\News::where('is_published', true)
+                ->where(function ($q) {
+                    $q->whereNull('published_at')->orWhere('published_at', '<=', now());
+                })
+                ->where('category', 'عاجل')
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(fn($n) => ['id' => $n->id, 'title' => $n->title, 'created_at' => $n->created_at]),
             'asset_url' => rtrim(asset(''), '/'),
         ];
     }

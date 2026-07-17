@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import NewsWidget from '@/Components/NewsWidget';
 import { 
     Calendar, Clock, Users, ShieldAlert,
     CheckCircle, XCircle, AlertCircle, FileText, ChevronLeft,
@@ -8,7 +9,7 @@ import {
     Megaphone, ChevronRight, Target, Activity, Trash2, Plus, Loader2
 } from 'lucide-react';
 
-export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeetings, pendingViolations, leaderboard, quickTasks = [] }) {
+export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeetings, pendingViolations, leaderboard, quickTasks = [], latestNews }) {
     // Dynamic Greeting Logic
     const [greeting, setGreeting] = useState({ text: 'مرحباً', icon: Sun, color: 'text-amber-500' });
     
@@ -59,14 +60,6 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
         setTasks(quickTasks);
     }, [quickTasks]);
 
-    // Announcements Carousel State
-    const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
-    const announcements = [
-        { id: 1, title: 'موعد إجازة منتصف الفصل الدراسي الثاني', type: 'عاجل', date: '2026-10-15', color: 'bg-red-50 text-red-600 border-red-200' },
-        { id: 2, title: 'دورة تدريبية: استخدام الذكاء الاصطناعي في التعليم', type: 'تطوير', date: '2026-07-01', color: 'bg-blue-50 text-blue-600 border-blue-200' },
-        { id: 3, title: 'تحديث نظام الحضور والانصراف الإلكتروني', type: 'عام', date: '2026-06-30', color: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    ];
-
     const quotes = [
         "التعليم هو السلاح الأقوى الذي يمكنك استخدامه لتغيير العالم.",
         "المعلم الناجح هو أهم عمود في بناء الجيل القادم.",
@@ -84,12 +77,7 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
         } else {
             setGreeting({ text: 'مساء الخير', icon: Moon, color: 'text-indigo-400' });
         }
-
-        const interval = setInterval(() => {
-            setCurrentAnnouncement(prev => (prev + 1) % announcements.length);
-        }, 5000);
-        return () => clearInterval(interval);
-    }, [announcements.length]);
+    }, []);
 
     const formatTimeAr = (timeString) => {
         if (!timeString) return '';
@@ -146,23 +134,8 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
                     {/* Left/Main Content Column (Takes 8 columns on large screens) */}
                     <div className="lg:col-span-8 space-y-8">
                         
-                        {/* 4. Announcements Carousel */}
-                        <div className="bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 rounded-[2rem] p-2 shadow-sm flex items-center overflow-hidden relative">
-                            <div className="bg-gradient-to-l from-amber-400 to-orange-500 text-white px-5 py-4 rounded-[1.5rem] flex items-center gap-2 font-bold shrink-0 z-10 shadow-lg shadow-amber-500/20">
-                                <Megaphone size={20} className="animate-bounce" /> إعلانات
-                            </div>
-                            <div className="flex-1 overflow-hidden relative h-12 ml-4">
-                                {announcements.map((ann, idx) => (
-                                    <div 
-                                        key={ann.id} 
-                                        className={`absolute inset-0 flex items-center justify-between transition-all duration-500 ease-in-out px-4 ${idx === currentAnnouncement ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}
-                                    >
-                                        <p className="font-bold text-slate-700 dark:text-slate-200 truncate pr-2">{ann.title}</p>
-                                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border ${ann.color} shrink-0 hidden sm:block`}>{ann.type}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        {/* News Widget */}
+                        <NewsWidget news={latestNews} />
 
                         {/* 1. Quick Actions Panel */}
                         <div>

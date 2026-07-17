@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import NewsWidget from '@/Components/NewsWidget';
 import { Head, usePage } from '@inertiajs/react';
 import { 
     Users, GraduationCap, BookOpen, CheckSquare, 
@@ -7,7 +8,7 @@ import {
     Clock, AlertCircle, Activity, Sparkles, BookCheck, ShieldAlert
 } from 'lucide-react';
 
-export default function Dashboard({ stats: backendStats, recentActivities, weeklyData }) {
+export default function Dashboard({ stats: backendStats, recentActivities, weeklyData, latestNews }) {
     const { auth, logo_url } = usePage().props;
 
     // Live digital clock state
@@ -137,6 +138,8 @@ export default function Dashboard({ stats: backendStats, recentActivities, weekl
                     </div>
                 </div>
 
+
+
                 {/* Refined Stats Cards Grid with custom colors & light mode optimizations */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
                     {stats.map((stat, index) => (
@@ -176,6 +179,10 @@ export default function Dashboard({ stats: backendStats, recentActivities, weekl
                             </div>
                         </div>
                     ))}
+                </div>
+
+                <div className="mb-2 mt-8">
+                    <NewsWidget news={latestNews} />
                 </div>
 
                 {/* Dashboard Main Content Grid */}

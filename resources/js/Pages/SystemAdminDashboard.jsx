@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, usePage } from '@inertiajs/react';
+import NewsTicker from '@/Components/NewsTicker';
 import { 
     Users, Store, Calendar, Activity, Clock, ShieldAlert, AlertCircle, Building2, UserCog, Database
 } from 'lucide-react';
@@ -77,9 +78,11 @@ export default function SystemAdminDashboard({ stats, recentActivities }) {
 
     return (
         <AdminLayout activeMenu="الرئيسية">
-            <Head title="لوحة التحكم | مدير النظام" />
+            <Head title="لوحة التحكم الإدارية" />
 
-            <div className="space-y-8 animate-fade-in">
+            <NewsTicker />
+
+            <div className="max-w-[100rem] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
                 
                 {/* Premium Welcome Header */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
@@ -122,6 +125,7 @@ export default function SystemAdminDashboard({ stats, recentActivities }) {
                         </div>
                     </div>
                 </div>
+
 
                 {/* Refined Stats Cards Grid */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">

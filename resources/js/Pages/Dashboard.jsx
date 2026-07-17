@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, usePage } from '@inertiajs/react';
+import NewsTicker from '@/Components/NewsTicker';
 import { 
     Users, GraduationCap, BookOpen, CheckSquare, 
     TrendingUp, ArrowUpRight, ArrowDownRight, Calendar,
@@ -93,7 +94,9 @@ export default function Dashboard({ stats: backendStats, recentActivities, weekl
         <AdminLayout activeMenu="الرئيسية">
             <Head title="لوحة التحكم | نظام القيم ERP" />
 
-            <div className="space-y-8 animate-fade-in">
+            <NewsTicker />
+
+            <div className="space-y-8 animate-fade-in p-4 sm:p-6 lg:p-8">
                 
                 {/* Premium Welcome Header with Animated SVGs & Clock (Styled like Staff Directory) */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">

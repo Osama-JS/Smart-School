@@ -34,6 +34,11 @@
   --color-dark-900: #0f1419;
 }
 
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(50%); }
+}
+
 /* ======================================
    القيم ERP - Premium Design System v2
    ألوان مستخرجة من الشعار: أخضر، أحمر، أسود

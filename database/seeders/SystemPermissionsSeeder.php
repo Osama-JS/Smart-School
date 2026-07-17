@@ -77,5 +77,8 @@ class SystemPermissionsSeeder extends Seeder
         
         $this->command->info('⚙️ Now adding new features permissions...');
         $this->call(NewFeaturesPermissionsSeeder::class);
+        
+        $this->command->info('⚙️ Now adding library permissions...');
+        $this->call(LibraryPermissionsSeeder::class);
     }
 }

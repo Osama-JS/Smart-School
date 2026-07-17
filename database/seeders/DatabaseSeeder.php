@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
         $this->call(PermissionsSeeder::class);
         $this->call(RolesSeeder::class);
         $this->call(NewFeaturesPermissionsSeeder::class);
+        $this->call(LibraryPermissionsSeeder::class);
+        $this->call(NewsPermissionsSeeder::class);
 
         // المرحلة 2: الفروع (تعتمد عليها باقي البيانات)
         $this->command->info('── المرحلة 2: الفروع ──');

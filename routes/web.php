@@ -24,6 +24,13 @@ Route::middleware('auth')->group(function () {
     // ── System Logs ──
     Route::get('/admin/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
 
+    // ── News & Announcements ──
+    Route::resource('/news', \App\Http\Controllers\NewsController::class)->except(['create', 'edit']);
+    Route::post('/news/{news}/view', [\App\Http\Controllers\NewsController::class, 'recordView'])->name('news.view');
+    Route::post('/news/{news}/like', [\App\Http\Controllers\NewsInteractionController::class, 'toggleLike'])->name('news.like');
+    Route::post('/news/{news}/comment', [\App\Http\Controllers\NewsInteractionController::class, 'storeComment'])->name('news.comment.store');
+    Route::delete('/news/comment/{comment}', [\App\Http\Controllers\NewsInteractionController::class, 'destroyComment'])->name('news.comment.destroy');
+
     // ── Notifications ──
     Route::prefix('notifications')->group(function () {
         Route::get('/my-notifications', [\App\Http\Controllers\NotificationController::class, 'myNotifications'])->name('notifications.my-notifications');
@@ -158,6 +165,32 @@ Route::middleware('auth')->group(function () {
             'index'   => 'academic.lesson-preparations',
             'destroy' => 'academic.lesson-preparations.destroy',
         ])->only(['index', 'destroy']);
+    });
+
+    // ── Library & Learning Resources ──
+    Route::prefix('academic/library')->name('academic.library.')->group(function () {
+        // Digital Library
+        Route::middleware('permission:عرض المكتبة الرقمية')->group(function () {
+            Route::get('/digital', [\App\Http\Controllers\Academic\LibraryItemController::class, 'index'])->name('digital.index');
+            Route::post('/digital', [\App\Http\Controllers\Academic\LibraryItemController::class, 'store'])->name('digital.store');
+            Route::delete('/digital/{libraryItem}', [\App\Http\Controllers\Academic\LibraryItemController::class, 'destroy'])->name('digital.destroy');
+        });
+
+        // Physical Books
+        Route::middleware('permission:عرض الكتب الورقية')->group(function () {
+            Route::get('/books', [\App\Http\Controllers\Academic\BookController::class, 'index'])->name('books.index');
+            Route::post('/books', [\App\Http\Controllers\Academic\BookController::class, 'store'])->name('books.store');
+            Route::post('/books/{book}', [\App\Http\Controllers\Academic\BookController::class, 'update'])->name('books.update');
+            Route::delete('/books/{book}', [\App\Http\Controllers\Academic\BookController::class, 'destroy'])->name('books.destroy');
+        });
+
+        // Borrowings
+        Route::middleware('permission:عرض الاستعارات')->group(function () {
+            Route::get('/borrowings', [\App\Http\Controllers\Academic\BorrowingController::class, 'index'])->name('borrowings.index');
+            Route::post('/borrowings', [\App\Http\Controllers\Academic\BorrowingController::class, 'store'])->name('borrowings.store');
+            Route::post('/borrowings/{borrowing}/return', [\App\Http\Controllers\Academic\BorrowingController::class, 'returnBook'])->name('borrowings.return');
+            Route::delete('/borrowings/{borrowing}', [\App\Http\Controllers\Academic\BorrowingController::class, 'destroy'])->name('borrowings.destroy');
+        });
     });
 
     // Teacher's Timetable and Classroom Visits (No specific permission needed, checking logic in controller or open to all teachers)

@@ -19,6 +19,28 @@ class DashboardController extends Controller
         $isSystemAdmin = $roleName === 'مدير النظام';
         $branchId = $isSystemAdmin ? null : $user->branch_id;
 
+        $latestNews = \App\Models\News::where('is_published', true)
+            ->where('published_at', '<=', now())
+            ->when(!$isSystemAdmin, function ($query) use ($user) {
+                return $query->whereHas('author', function($q) use ($user) {
+                    $q->whereNull('branch_id')
+                      ->orWhere('branch_id', $user->branch_id);
+                });
+            })
+            ->latest('published_at')
+            ->take(3)
+            ->get()
+            ->map(function($news) {
+                return [
+                    'id' => $news->id,
+                    'title' => $news->title,
+                    'category' => $news->category,
+                    'image_url' => $news->image_url,
+                    'published_at' => $news->published_at->diffForHumans(),
+                    'excerpt' => \Illuminate\Support\Str::limit(strip_tags($news->content), 80)
+                ];
+            });
+
         $quickTasks = \App\Models\Task::where('assigned_to', $user->id)
             ->latest()
             ->take(5)
@@ -109,7 +131,8 @@ class DashboardController extends Controller
                     'subjects' => $totalSubjects,
                 ],
                 'leaderboard' => $leaderboard,
-                'quickTasks' => $quickTasks
+                'quickTasks' => $quickTasks,
+                'latestNews' => $latestNews
             ]);
         }
 
@@ -178,7 +201,8 @@ class DashboardController extends Controller
                 ],
                 'recentActivities' => $recentActivities,
                 'weeklyData' => array_reverse($weeklyData),
-                'quickTasks' => $quickTasks
+                'quickTasks' => $quickTasks,
+                'latestNews' => $latestNews
             ]);
         }
 
@@ -219,7 +243,8 @@ class DashboardController extends Controller
             'upcomingMeetings' => $upcomingMeetings,
             'pendingViolations' => $pendingViolations,
             'leaderboard' => $leaderboard,
-            'quickTasks' => $quickTasks
+            'quickTasks' => $quickTasks,
+            'latestNews' => $latestNews
         ]);
     }
 
