@@ -43,6 +43,17 @@ class User extends Authenticatable
     public function lessonPreparations(): HasMany { return $this->hasMany(LessonPreparation::class, 'teacher_id'); }
     public function classroomVisits(): HasMany { return $this->hasMany(ClassroomVisit::class, 'teacher_id'); }
 
+    // المفضلة وتقييم المكتبة الرقمية
+    public function bookmarkedLibraryItems()
+    {
+        return $this->belongsToMany(LibraryItem::class, 'library_bookmarks')->withTimestamps();
+    }
+
+    public function libraryRatings()
+    {
+        return $this->belongsToMany(LibraryItem::class, 'library_ratings')->withPivot('rating')->withTimestamps();
+    }
+
     /**
      * دالة برمجية للتحقق من امتلاك المستخدم لصلاحية معينة
      */

@@ -6,7 +6,9 @@ import SelectInput from '@/Components/SelectInput';
 import { 
     Search, Plus, FileText, Download, Trash2, Filter, X, 
     BookOpen, Layers, Sparkles, FolderOpen, ChevronDown, 
-    RotateCcw, Activity, FileCheck2, LayoutGrid, Table2, User, Clock, Eye
+    RotateCcw, Activity, FileCheck2, LayoutGrid, Table2, User, Clock, Eye,
+    Video, Presentation, MousePointerClick, Headphones, Image as ImageIcon, Users, MonitorPlay, BarChart3,
+    Bookmark, Star, StarHalf
 } from 'lucide-react';
 
 function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-2xl' }) {
@@ -56,6 +58,8 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
     
     const [filterGrade, setFilterGrade] = useState(filters?.grade_id || 'all');
     const [filterSubject, setFilterSubject] = useState(filters?.subject_id || 'all');
+    const [filterType, setFilterType] = useState(filters?.item_type || 'all');
+    const [filterCategory, setFilterCategory] = useState(filters?.category || 'all');
     const [searchValue, setSearchValue] = useState(filters?.search || '');
     const [showFilters, setShowFilters] = useState(false);
 
@@ -64,15 +68,22 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
         grade_id: '',
         subject_id: '',
         file: null,
+        external_url: '',
+        item_type: 'pdf',
+        category: '',
+        target_audience: 'students',
+        thumbnail: null,
     });
 
-    const hasActiveFilters = filterGrade !== 'all' || filterSubject !== 'all' || searchValue !== '';
+    const hasActiveFilters = filterGrade !== 'all' || filterSubject !== 'all' || filterType !== 'all' || filterCategory !== 'all' || searchValue !== '';
 
     const applyFilters = (overrides = {}) => {
         router.get(route('academic.library.digital.index'), {
             search: overrides.search !== undefined ? overrides.search : searchValue,
             grade_id: overrides.grade_id !== undefined ? overrides.grade_id : filterGrade === 'all' ? '' : filterGrade,
             subject_id: overrides.subject_id !== undefined ? overrides.subject_id : filterSubject === 'all' ? '' : filterSubject,
+            item_type: overrides.item_type !== undefined ? overrides.item_type : filterType === 'all' ? '' : filterType,
+            category: overrides.category !== undefined ? overrides.category : filterCategory === 'all' ? '' : filterCategory,
         }, { preserveState: true, replace: true });
     };
 
@@ -80,6 +91,8 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
         setSearchValue('');
         setFilterGrade('all');
         setFilterSubject('all');
+        setFilterType('all');
+        setFilterCategory('all');
         router.get(route('academic.library.digital.index'), {}, { preserveState: true, replace: true });
     };
 
@@ -116,6 +129,48 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
 
     const itemsData = items?.data || [];
     const totalItems = items?.total || itemsData.length;
+
+    const getItemIcon = (type) => {
+        switch (type) {
+            case 'video': return <MonitorPlay size={24} strokeWidth={2} className="text-rose-500" />;
+            case 'audio': return <Headphones size={24} strokeWidth={2} className="text-purple-500" />;
+            case 'presentation': return <Presentation size={24} strokeWidth={2} className="text-amber-500" />;
+            case 'interactive': return <MousePointerClick size={24} strokeWidth={2} className="text-emerald-500" />;
+            case 'pdf':
+            default: return <FileText size={24} strokeWidth={2} className="text-primary-500" />;
+        }
+    };
+    
+    const getEmbedUrl = (url) => {
+        if (!url) return null;
+        try {
+            if (url.includes('youtube.com/watch?v=')) {
+                return url.replace('watch?v=', 'embed/').split('&')[0];
+            }
+            if (url.includes('youtu.be/')) {
+                return url.replace('youtu.be/', 'youtube.com/embed/').split('?')[0];
+            }
+        } catch(e) {}
+        return url;
+    };
+
+    const getCategoryLabel = (cat) => {
+        switch(cat) {
+            case 'review': return 'مراجعة نهائية';
+            case 'worksheet': return 'ورقة عمل';
+            case 'explanation': return 'شرح وملخص';
+            case 'enrichment': return 'إثراء';
+            default: return 'عام';
+        }
+    };
+    
+    const handleBookmark = (item) => {
+        router.post(route('digital.bookmark', item.id), {}, { preserveScroll: true });
+    };
+
+    const handleRate = (item, rating) => {
+        router.post(route('digital.rating', item.id), { rating }, { preserveScroll: true });
+    };
 
     return (
         <AdminLayout activeMenu="المكتبة الرقمية">
@@ -250,6 +305,39 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                 ]}
                             />
                         </div>
+                        
+                        {/* Type Filter */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">نوع المحتوى</label>
+                            <SelectInput 
+                                value={filterType} 
+                                onChange={val => { setFilterType(val); applyFilters({ item_type: val }); }}
+                                options={[
+                                    { value: 'all', label: 'الكل' },
+                                    { value: 'pdf', label: 'ملف PDF / ملزمة' },
+                                    { value: 'video', label: 'فيديو شرح' },
+                                    { value: 'presentation', label: 'عرض تقديمي' },
+                                    { value: 'interactive', label: 'تفاعلي' },
+                                    { value: 'audio', label: 'صوتي' },
+                                ]}
+                            />
+                        </div>
+
+                        {/* Category Filter */}
+                        <div className="space-y-2">
+                            <label className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">التصنيف</label>
+                            <SelectInput 
+                                value={filterCategory} 
+                                onChange={val => { setFilterCategory(val); applyFilters({ category: val }); }}
+                                options={[
+                                    { value: 'all', label: 'الكل' },
+                                    { value: 'review', label: 'مراجعات نهائية' },
+                                    { value: 'worksheet', label: 'أوراق عمل' },
+                                    { value: 'explanation', label: 'شروحات وملخصات' },
+                                    { value: 'enrichment', label: 'إثراء إضافي' },
+                                ]}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -307,20 +395,48 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                     <div key={item.id} className="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden flex flex-col">
                                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
                                         
-                                        <div className="flex justify-between items-start mb-4 relative z-10">
-                                            <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-100 dark:border-primary-500/20">
-                                                <FileText size={24} strokeWidth={2} />
+                                        {/* Thumbnail (Optional) */}
+                                        {item.thumbnail_url && (
+                                            <div className="w-full h-40 rounded-2xl mb-4 overflow-hidden relative">
+                                                <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
+                                                <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-white/20 backdrop-blur-md text-white text-xs font-bold border border-white/20 shadow-sm">
+                                                    {getCategoryLabel(item.category)}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-1">
+                                        )}
+
+                                        <div className={`flex justify-between items-start mb-4 relative z-10 ${item.thumbnail_url ? 'mt-0' : ''}`}>
+                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700 shadow-sm">
+                                                {getItemIcon(item.item_type)}
+                                            </div>
+                                            <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl p-1 shadow-sm border border-slate-100 dark:border-slate-800">
                                                 <button 
-                                                    onClick={() => handleDelete(item)}
-                                                    className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
-                                                    title="حذف"
+                                                    onClick={() => handleBookmark(item)}
+                                                    className={`p-2 rounded-lg transition-colors ${item.is_bookmarked_by_user ? 'text-amber-500 bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100' : 'text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10'}`}
+                                                    title={item.is_bookmarked_by_user ? "إزالة من المفضلة" : "أضف للمفضلة"}
                                                 >
-                                                    <Trash2 size={18} />
+                                                    <Bookmark size={16} fill={item.is_bookmarked_by_user ? "currentColor" : "none"} />
                                                 </button>
+                                                {auth?.user?.role?.name !== 'معلم' && (
+                                                    <button 
+                                                        onClick={() => handleDelete(item)}
+                                                        className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
+                                                        title="حذف"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
+
+                                        {!item.thumbnail_url && item.category && (
+                                            <div className="mb-3 relative z-10">
+                                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200/50 dark:border-slate-700/50">
+                                                    {getCategoryLabel(item.category)}
+                                                </span>
+                                            </div>
+                                        )}
 
                                         <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 leading-tight relative z-10 line-clamp-2">
                                             {item.title}
@@ -342,15 +458,25 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                 <Clock size={14} />
                                                 <span className="text-xs" dir="ltr">{new Date(item.created_at).toLocaleDateString()}</span>
                                             </div>
+                                            <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-medium pt-2">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center gap-1.5" title="المشاهدات"><Eye size={14} /> {item.views_count}</div>
+                                                    <div className="flex items-center gap-1.5" title="التحميلات"><Download size={14} /> {item.downloads_count}</div>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-amber-500" title="التقييم">
+                                                    <span className="font-bold">{item.average_rating || '0.0'}</span>
+                                                    <Star size={14} fill="currentColor" />
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div className="relative z-10 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                                            {item.file_path && item.file_path.toLowerCase().endsWith('.pdf') && (
+                                            {item.file_path && (item.item_type === 'video' || item.item_type === 'audio' || item.file_path.toLowerCase().endsWith('.pdf')) && (
                                                 <button 
                                                     onClick={() => setPreviewItem(item)}
                                                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-500/20 font-bold transition-colors border border-primary-100 dark:border-primary-500/20 shadow-sm"
                                                 >
-                                                    <Eye size={18} />
+                                                    {(item.item_type === 'video') ? <MonitorPlay size={18} /> : (item.item_type === 'audio' ? <Headphones size={18} /> : <Eye size={18} />)}
                                                     عرض
                                                 </button>
                                             )}
@@ -386,10 +512,13 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                 <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0">
-                                                                <FileText size={20} strokeWidth={2} />
+                                                            <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700">
+                                                                {React.cloneElement(getItemIcon(item.item_type), { size: 20 })}
                                                             </div>
-                                                            <span className="font-bold text-slate-800 dark:text-white">{item.title}</span>
+                                                            <div className="flex flex-col">
+                                                                <span className="font-bold text-slate-800 dark:text-white">{item.title}</span>
+                                                                <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{getCategoryLabel(item.category)}</span>
+                                                            </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4">
@@ -410,13 +539,24 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                     </td>
                                                     <td className="px-6 py-4 text-left">
                                                         <div className="flex items-center justify-end gap-2">
-                                                            {item.file_path && item.file_path.toLowerCase().endsWith('.pdf') && (
+                                                            <div className="flex items-center gap-1.5 text-amber-500 bg-amber-50 dark:bg-amber-500/10 px-2 py-1 rounded-lg">
+                                                                <span className="font-bold text-sm">{item.average_rating || '0.0'}</span>
+                                                                <Star size={14} fill="currentColor" />
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleBookmark(item)}
+                                                                className={`p-2 rounded-xl transition-all shadow-sm ${item.is_bookmarked_by_user ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 hover:bg-amber-200' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10'}`}
+                                                                title={item.is_bookmarked_by_user ? "إزالة من المفضلة" : "أضف للمفضلة"}
+                                                            >
+                                                                <Bookmark size={18} fill={item.is_bookmarked_by_user ? "currentColor" : "none"} />
+                                                            </button>
+                                                            {item.file_path && (item.item_type === 'video' || item.item_type === 'audio' || item.file_path.toLowerCase().endsWith('.pdf')) && (
                                                                 <button 
                                                                     onClick={() => setPreviewItem(item)}
                                                                     className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm"
-                                                                    title="عرض الملف"
+                                                                    title="عرض المحتوى"
                                                                 >
-                                                                    <Eye size={18} />
+                                                                    {(item.item_type === 'video') ? <MonitorPlay size={18} /> : (item.item_type === 'audio' ? <Headphones size={18} /> : <Eye size={18} />)}
                                                                 </button>
                                                             )}
                                                             <a 
@@ -429,13 +569,15 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                             >
                                                                 <Download size={18} />
                                                             </a>
-                                                            <button 
-                                                                onClick={() => handleDelete(item)}
-                                                                className="p-2 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all"
-                                                                title="حذف"
-                                                            >
-                                                                <Trash2 size={18} />
-                                                            </button>
+                                                            {auth?.user?.role?.name !== 'معلم' && (
+                                                                <button 
+                                                                    onClick={() => handleDelete(item)}
+                                                                    className="p-2 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all"
+                                                                    title="حذف"
+                                                                >
+                                                                    <Trash2 size={18} />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -499,29 +641,115 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الملف المرفق</label>
-                        <div className={`flex justify-center px-6 pt-6 pb-8 border-2 border-dashed rounded-2xl hover:border-primary-400 transition-colors bg-slate-50 dark:bg-slate-800/50 ${errors.file ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'}`}>
-                            <div className="space-y-3 text-center">
-                                <div className="mx-auto w-14 h-14 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <FileCheck2 className="h-7 w-7 text-primary-500" />
-                                </div>
-                                            <div className="flex text-sm text-slate-600 dark:text-slate-400 justify-center font-medium">
-                                    <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 transition-colors">
-                                        <span>اختر ملفاً</span>
-                                        <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={e => setData('file', e.target.files[0])} required />
-                                    </label>
-                                    <p className="pr-2">أو اسحب الملف هنا</p>
-                                </div>
-                                <p className="text-xs text-slate-500 font-bold">الحد الأقصى 20 ميجابايت (PDF, Word, الصور)</p>
-                                {data.file && (
-                                    <div className="mt-4 px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-bold border border-emerald-100 dark:border-emerald-500/20 inline-block">
-                                        تم اختيار: {data.file.name}
-                                    </div>
-                                )}
-                            </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">نوع المحتوى</label>
+                            <SelectInput 
+                                value={data.item_type} 
+                                onChange={val => setData('item_type', val)}
+                                options={[
+                                    { value: 'pdf', label: 'ملف PDF / ملزمة' },
+                                    { value: 'video', label: 'فيديو شرح' },
+                                    { value: 'presentation', label: 'عرض تقديمي' },
+                                    { value: 'interactive', label: 'تفاعلي' },
+                                    { value: 'audio', label: 'صوتي' },
+                                ]}
+                            />
+                            {errors.item_type && <p className="text-rose-500 text-xs mt-1.5 font-bold">{errors.item_type}</p>}
                         </div>
-                        {errors.file && <p className="text-rose-500 text-xs mt-1.5 font-bold">{errors.file}</p>}
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">التصنيف</label>
+                            <SelectInput 
+                                value={data.category} 
+                                onChange={val => setData('category', val)}
+                                options={[
+                                    { value: '', label: 'اختر التصنيف...' },
+                                    { value: 'review', label: 'مراجعة نهائية' },
+                                    { value: 'worksheet', label: 'ورقة عمل' },
+                                    { value: 'explanation', label: 'شرح وملخص' },
+                                    { value: 'enrichment', label: 'إثراء' },
+                                ]}
+                            />
+                            {errors.category && <p className="text-rose-500 text-xs mt-1.5 font-bold">{errors.category}</p>}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الجمهور المستهدف</label>
+                            <SelectInput 
+                                value={data.target_audience} 
+                                onChange={val => setData('target_audience', val)}
+                                options={[
+                                    { value: 'students', label: 'الطلاب' },
+                                    { value: 'teachers', label: 'المعلمين' },
+                                    { value: 'parents', label: 'أولياء الأمور' },
+                                ]}
+                            />
+                            {errors.target_audience && <p className="text-rose-500 text-xs mt-1.5 font-bold">{errors.target_audience}</p>}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">رابط خارجي (يوتيوب وغيرها) - اختياري</label>
+                            <input 
+                                type="url"
+                                className={`w-full bg-slate-50 dark:bg-slate-950/50 border ${errors.external_url ? 'border-rose-500' : 'border-slate-200 dark:border-slate-800'} rounded-2xl px-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 dark:text-white font-bold transition-all`}
+                                value={data.external_url}
+                                onChange={e => setData('external_url', e.target.value)}
+                                placeholder="مثال: https://www.youtube.com/watch?v=..."
+                            />
+                            {errors.external_url && <p className="text-rose-500 text-xs mt-1.5 font-bold">{errors.external_url}</p>}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الملف المرفق (إذا لم يتم توفير رابط)</label>
+                            <div className={`flex justify-center px-6 pt-3 pb-4 border-2 border-dashed rounded-2xl hover:border-primary-400 transition-colors bg-slate-50 dark:bg-slate-800/50 ${errors.file ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'}`}>
+                                <div className="space-y-2 text-center">
+                                    <div className="mx-auto w-10 h-10 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <FileCheck2 className="h-5 w-5 text-primary-500" />
+                                    </div>
+                                    <div className="flex text-sm text-slate-600 dark:text-slate-400 justify-center font-medium">
+                                        <label htmlFor="file-upload" className="relative cursor-pointer rounded-md font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 transition-colors">
+                                            <span>اختر ملفاً</span>
+                                            <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={e => setData('file', e.target.files[0])} />
+                                        </label>
+                                    </div>
+                                    <p className="text-xs text-slate-500 font-bold">PDF, MP4, MP3 (حتى 20 ميجا)</p>
+                                    {data.file && (
+                                        <div className="mt-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-bold border border-emerald-100 dark:border-emerald-500/20 inline-block truncate max-w-full">
+                                            {data.file.name}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            {errors.file && <p className="text-rose-500 text-xs mt-1.5 font-bold">{errors.file}</p>}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الصورة المصغرة (اختياري)</label>
+                            <div className={`flex justify-center px-6 pt-6 pb-8 border-2 border-dashed rounded-2xl hover:border-primary-400 transition-colors bg-slate-50 dark:bg-slate-800/50 ${errors.thumbnail ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700'}`}>
+                                <div className="space-y-3 text-center">
+                                    <div className="mx-auto w-14 h-14 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center border border-slate-200 dark:border-slate-700 shadow-sm">
+                                        <ImageIcon className="h-7 w-7 text-primary-500" />
+                                    </div>
+                                    <div className="flex text-sm text-slate-600 dark:text-slate-400 justify-center font-medium">
+                                        <label htmlFor="thumbnail-upload" className="relative cursor-pointer rounded-md font-bold text-primary-600 dark:text-primary-400 hover:text-primary-700 transition-colors">
+                                            <span>اختر صورة</span>
+                                            <input id="thumbnail-upload" name="thumbnail-upload" type="file" accept="image/*" className="sr-only" onChange={e => setData('thumbnail', e.target.files[0])} />
+                                        </label>
+                                        <p className="pr-2">أو اسحبها هنا</p>
+                                    </div>
+                                    <p className="text-xs text-slate-500 font-bold">JPG, PNG (حتى 2 ميجا)</p>
+                                    {data.thumbnail && (
+                                        <div className="mt-4 px-4 py-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-bold border border-emerald-100 dark:border-emerald-500/20 inline-block truncate max-w-full">
+                                            {data.thumbnail.name}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            {errors.thumbnail && <p className="text-rose-500 text-xs mt-1.5 font-bold">{errors.thumbnail}</p>}
+                        </div>
                     </div>
 
                     <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
@@ -584,13 +812,62 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                 </button>
                             </div>
                         </div>
-                        {/* PDF Content */}
-                        <div className="flex-1 w-full bg-slate-200 dark:bg-slate-950/50 p-2 sm:p-4 md:p-6 overflow-hidden">
-                            <iframe 
-                                src={`${previewItem.file_url}#toolbar=0&navpanes=0&scrollbar=0`} 
-                                className="w-full h-full rounded-xl border border-slate-300 dark:border-slate-800 shadow-sm bg-white"
-                                title={previewItem.title}
-                            />
+                        {/* Media Content */}
+                        <div className="flex-1 w-full bg-slate-200 dark:bg-slate-950/50 p-2 sm:p-4 md:p-6 overflow-hidden flex flex-col">
+                            {previewItem.external_url ? (
+                                <iframe 
+                                    src={getEmbedUrl(previewItem.external_url)} 
+                                    className="w-full h-full rounded-xl border border-slate-300 dark:border-slate-800 shadow-sm bg-black"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    title={previewItem.title}
+                                />
+                            ) : previewItem.item_type === 'video' ? (
+                                <video 
+                                    src={previewItem.file_url} 
+                                    controls 
+                                    controlsList="nodownload"
+                                    className="w-full h-full rounded-xl shadow-lg bg-black object-contain"
+                                />
+                            ) : previewItem.item_type === 'audio' ? (
+                                <div className="w-full h-full flex flex-col items-center justify-center bg-white dark:bg-slate-900 rounded-xl border border-slate-300 dark:border-slate-800 shadow-sm p-6">
+                                    <div className="w-32 h-32 bg-primary-50 dark:bg-primary-500/10 rounded-full flex items-center justify-center mb-8">
+                                        <Headphones size={48} className="text-primary-500" />
+                                    </div>
+                                    <audio src={previewItem.file_url} controls controlsList="nodownload" className="w-full max-w-md" />
+                                </div>
+                            ) : (
+                                <iframe 
+                                    src={`${previewItem.file_url}#toolbar=0&navpanes=0&scrollbar=0`} 
+                                    className="w-full h-full rounded-xl border border-slate-300 dark:border-slate-800 shadow-sm bg-white"
+                                    title={previewItem.title}
+                                />
+                            )}
+
+                            {/* Star Rating UI inside Modal */}
+                            <div className="mt-4 p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between shrink-0">
+                                <div>
+                                    <h4 className="font-bold text-slate-800 dark:text-white">ما رأيك بهذا المورد؟</h4>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                        متوسط التقييم: <span className="font-bold text-amber-500 px-1">{previewItem.average_rating || '0.0'}</span> نجمة
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1" dir="ltr">
+                                    {[1, 2, 3, 4, 5].map(star => (
+                                        <button 
+                                            key={star}
+                                            onClick={() => {
+                                                handleRate(previewItem, star);
+                                                setPreviewItem({...previewItem, user_rating: star});
+                                            }}
+                                            className={`p-1 transition-transform hover:scale-110 active:scale-95 ${previewItem.user_rating >= star ? 'text-amber-500' : 'text-slate-300 dark:text-slate-700 hover:text-amber-400'}`}
+                                            title={`تقييم ${star} نجوم`}
+                                        >
+                                            <Star size={28} fill={previewItem.user_rating >= star ? "currentColor" : "none"} strokeWidth={1.5} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

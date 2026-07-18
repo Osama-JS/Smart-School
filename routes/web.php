@@ -167,13 +167,25 @@ Route::middleware('auth')->group(function () {
         ])->only(['index', 'destroy']);
     });
 
+    Route::middleware('permission:إدارة الخطط الدراسية')->group(function () {
+        Route::get('/academic/study-plans', [\App\Http\Controllers\Academic\StudyPlanController::class, 'index'])->name('academic.study-plans.index');
+        Route::post('/academic/study-plans/{studyPlan}/review', [\App\Http\Controllers\Academic\StudyPlanController::class, 'review'])->name('academic.study-plans.review');
+        Route::delete('/academic/study-plans/{studyPlan}', [\App\Http\Controllers\Academic\StudyPlanController::class, 'destroy'])->name('academic.study-plans.destroy');
+        Route::get('/academic/study-plans/{studyPlan}/download', [\App\Http\Controllers\Academic\StudyPlanController::class, 'download'])->name('academic.study-plans.download');
+    });
+
     // ── Library & Learning Resources ──
     Route::prefix('academic/library')->name('academic.library.')->group(function () {
         // Digital Library
         Route::middleware('permission:عرض المكتبة الرقمية')->group(function () {
             Route::get('/digital', [\App\Http\Controllers\Academic\LibraryItemController::class, 'index'])->name('digital.index');
             Route::post('/digital', [\App\Http\Controllers\Academic\LibraryItemController::class, 'store'])->name('digital.store');
+            Route::post('/digital/{libraryItem}', [\App\Http\Controllers\Academic\LibraryItemController::class, 'update'])->name('digital.update');
             Route::delete('/digital/{libraryItem}', [\App\Http\Controllers\Academic\LibraryItemController::class, 'destroy'])->name('digital.destroy');
+            Route::post('/digital/{libraryItem}/increment-views', [\App\Http\Controllers\Academic\LibraryItemController::class, 'incrementViews'])->name('digital.increment-views');
+            Route::post('/digital/{libraryItem}/increment-downloads', [\App\Http\Controllers\Academic\LibraryItemController::class, 'incrementDownloads'])->name('digital.increment-downloads');
+            Route::post('/digital/{libraryItem}/bookmark', [\App\Http\Controllers\Academic\LibraryItemController::class, 'toggleBookmark'])->name('digital.bookmark');
+            Route::post('/digital/{libraryItem}/rating', [\App\Http\Controllers\Academic\LibraryItemController::class, 'submitRating'])->name('digital.rating');
         });
 
         // Physical Books
@@ -207,6 +219,15 @@ Route::middleware('auth')->group(function () {
         'update'  => 'teacher.lesson-preparations.update',
         'destroy' => 'teacher.lesson-preparations.destroy',
     ])->except(['create', 'show', 'edit']);
+
+    // Teacher's Study Plans
+    Route::resource('/teacher/study-plans', \App\Http\Controllers\Teacher\StudyPlanController::class)->names([
+        'index'   => 'teacher.study-plans.index',
+        'store'   => 'teacher.study-plans.store',
+        'update'  => 'teacher.study-plans.update',
+        'destroy' => 'teacher.study-plans.destroy',
+    ])->except(['create', 'show', 'edit']);
+    Route::get('/teacher/study-plans/{studyPlan}/download', [\App\Http\Controllers\Teacher\StudyPlanController::class, 'download'])->name('teacher.study-plans.download');
 
     Route::middleware('permission:إدارة الطلاب')->group(function () {
         // Parents

@@ -80,5 +80,11 @@ class SystemPermissionsSeeder extends Seeder
         
         $this->command->info('⚙️ Now adding library permissions...');
         $this->call(LibraryPermissionsSeeder::class);
+
+        $this->command->info('⚙️ Now adding news permissions...');
+        $this->call(NewsPermissionsSeeder::class);
+
+        $this->command->info('⚙️ Now adding study plan permissions...');
+        $this->call(StudyPlanPermissionsSeeder::class);
     }
 }

@@ -6,67 +6,64 @@ use Illuminate\Database\Seeder;
 use App\Models\Permission;
 use App\Models\Role;
 
-class LibraryPermissionsSeeder extends Seeder
+/**
+ * StudyPlanPermissionsSeeder
+ * ─────────────────────────────────────────────────────────────────────────────
+ * يُنشئ ويُسند الصلاحيات الخاصة بوحدة الخطط الدراسية.
+ *
+ * الخوارزمية:
+ *  أ) إنشاء الصلاحية العامة (Parent) إذا لم تكن موجودة.
+ *  ب) إنشاء الصلاحيات التفصيلية (Granular) إذا لم تكن موجودة.
+ *  ج) منح جميع الصلاحيات لـ "مدير النظام" و"مدير الفرع" فقط.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+class StudyPlanPermissionsSeeder extends Seeder
 {
+    /**
+     * خريطة الصلاحيات:
+     * المفتاح = اسم الصلاحية العامة (Parent Permission)
+     * القيمة  = الوحدة + قائمة الصلاحيات التفصيلية المرتبطة بها
+     */
     private array $permissionsMap = [
-        // ── 1. المكتبة الرقمية ومصادر التعلم ──
-        'إدارة المكتبة الرقمية' => [
+        // ── الخطط الدراسية ──
+        'إدارة الخطط الدراسية' => [
             'module'   => 'academic',
             'children' => [
-                'عرض المكتبة الرقمية',
-                'إضافة للمكتبة الرقمية',
-                'حذف من المكتبة الرقمية',
-            ],
-        ],
-
-        // ── 2. الكتب الورقية ──
-        'إدارة الكتب الورقية' => [
-            'module'   => 'academic',
-            'children' => [
-                'عرض الكتب الورقية',
-                'إضافة كتاب',
-                'تعديل كتاب',
-                'حذف كتاب',
-            ],
-        ],
-
-        // ── 3. الاستعارات ──
-        'إدارة الاستعارات' => [
-            'module'   => 'academic',
-            'children' => [
-                'عرض الاستعارات',
-                'إضافة استعارة',
-                'إرجاع استعارة',
-                'حذف استعارة',
+                'عرض الخطط الدراسية',
+                'تحميل الخطط الدراسية',
+                'حذف الخطط الدراسية',
             ],
         ],
     ];
 
+    /**
+     * الأدوار الوحيدة التي تحصل على جميع الصلاحيات تلقائياً.
+     * لا يتم إسناد أي صلاحيات لأدوار أخرى — تُدار يدوياً من واجهة الصلاحيات.
+     */
     private array $fullAccessRoles = [
         'مدير النظام',
         'مدير الفرع',
     ];
 
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function run(): void
     {
         $this->command->info('');
         $this->command->info('╔══════════════════════════════════════════════════════╗');
-        $this->command->info('║   LibraryPermissionsSeeder                           ║');
+        $this->command->info('║   StudyPlanPermissionsSeeder                         ║');
         $this->command->info('╚══════════════════════════════════════════════════════╝');
         $this->command->info('');
 
         // ── الخطوة 1: إنشاء الصلاحيات العامة (Parents) ──
         $this->command->info('🔧 [1/3] إنشاء الصلاحيات العامة (Parent Permissions)...');
         $createdParents = 0;
-        $permissionIdsToAssign = [];
 
         foreach ($this->permissionsMap as $parentName => $config) {
             $perm = Permission::firstOrCreate(
                 ['name'   => $parentName],
                 ['module' => $config['module']]
             );
-            $permissionIdsToAssign[] = $perm->id;
-
             if ($perm->wasRecentlyCreated) {
                 $this->command->line("   ✅ تم إنشاء: {$parentName}");
                 $createdParents++;
@@ -88,8 +85,6 @@ class LibraryPermissionsSeeder extends Seeder
                     ['name'   => $childName],
                     ['module' => $config['module']]
                 );
-                $permissionIdsToAssign[] = $perm->id;
-
                 if ($perm->wasRecentlyCreated) {
                     $this->command->line("   ✅ [{$config['module']}] {$childName}");
                     $createdChildren++;
@@ -100,36 +95,17 @@ class LibraryPermissionsSeeder extends Seeder
         $this->command->info("   → تم إنشاء {$createdChildren} صلاحية تفصيلية جديدة.");
         $this->command->info('');
 
-        // ── الخطوة 3: منح جميع الصلاحيات للأدوار المحددة ──
+        // ── الخطوة 3: منح جميع الصلاحيات لمدير النظام ومدير الفرع فقط ──
         $this->command->info('🔧 [3/3] منح جميع الصلاحيات لـ "مدير النظام" و"مدير الفرع"...');
+
+        $allPermissionIds = Permission::pluck('id')->toArray();
+        $totalPerms       = count($allPermissionIds);
 
         foreach ($this->fullAccessRoles as $roleName) {
             $role = Role::where('name', $roleName)->first();
             if ($role) {
-                $role->permissions()->syncWithoutDetaching($permissionIdsToAssign);
-                $this->command->line("   ✅ [{$roleName}]: تم منحه صلاحيات المكتبة بنجاح.");
-            } else {
-                $this->command->warn("   ⚠  الدور [{$roleName}] غير موجود في قاعدة البيانات.");
-            }
-        }
-
-        // ── الخطوة 4: منح صلاحيات مخصصة للمعلمين، الطلاب، وأولياء الأمور ──
-        $this->command->info('🔧 [4/4] منح صلاحيات مخصصة للمقروئية والإضافة للأدوار الأخرى...');
-        
-        $customRolesMap = [
-            'معلم' => ['عرض المكتبة الرقمية', 'إضافة للمكتبة الرقمية'],
-            'طالب' => ['عرض المكتبة الرقمية'],
-            'ولي أمر' => ['عرض المكتبة الرقمية'],
-        ];
-
-        foreach ($customRolesMap as $roleName => $permsToAssign) {
-            $role = Role::where('name', $roleName)->first();
-            if ($role) {
-                $permIds = Permission::whereIn('name', $permsToAssign)->pluck('id')->toArray();
-                if (!empty($permIds)) {
-                    $role->permissions()->syncWithoutDetaching($permIds);
-                    $this->command->line("   ✅ [{$roleName}]: تم منحه صلاحيات القراءة والإضافة حسب المطلوب.");
-                }
+                $role->permissions()->sync($allPermissionIds);
+                $this->command->line("   ✅ [{$roleName}]: تم منحه جميع الصلاحيات ({$totalPerms} صلاحية).");
             } else {
                 $this->command->warn("   ⚠  الدور [{$roleName}] غير موجود في قاعدة البيانات.");
             }
@@ -137,7 +113,8 @@ class LibraryPermissionsSeeder extends Seeder
 
         $this->command->info('');
         $this->command->info('╔══════════════════════════════════════════════════════╗');
-        $this->command->info('║   ✅ تم الانتهاء من LibraryPermissionsSeeder         ║');
+        $this->command->info('║   ✅ تم الانتهاء من StudyPlanPermissionsSeeder       ║');
+        $this->command->info('║   إجمالي الصلاحيات في النظام: ' . str_pad(Permission::count(), 4) . '                 ║');
         $this->command->info('╚══════════════════════════════════════════════════════╝');
         $this->command->info('');
     }
