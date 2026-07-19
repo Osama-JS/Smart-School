@@ -146,6 +146,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/academic/coverage/teacher-periods', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'getTeacherPeriods'])->name('academic.coverage.teacher-periods');
         Route::post('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'store'])->name('academic.coverage.store');
         Route::delete('/academic/coverage/{coverage}', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'destroy'])->name('academic.coverage.destroy');
+        
+        // Exam Schedules
+        Route::resource('/academic/exam-schedules', \App\Http\Controllers\Academic\ExamScheduleController::class)->names([
+            'index'   => 'academic.exam-schedules.index',
+            'store'   => 'academic.exam-schedules.store',
+            'show'    => 'academic.exam-schedules.show',
+            'destroy' => 'academic.exam-schedules.destroy',
+        ])->except(['create', 'edit', 'update']);
+        Route::post('/academic/exam-schedules/{examSchedule}/items', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'updateItems'])->name('academic.exam-schedules.items.update');
+        Route::get('/academic/exam-schedules/{examSchedule}/print', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'printSchedule'])->name('academic.exam-schedules.print');
     });
 
     Route::middleware('permission:إدارة الزيارات الصفية')->group(function () {
@@ -207,6 +217,11 @@ Route::middleware('auth')->group(function () {
 
     // Teacher's Timetable and Classroom Visits (No specific permission needed, checking logic in controller or open to all teachers)
     Route::get('/academic/my-timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'myTimetable'])->name('academic.my-timetable');
+    
+    // Student's Exam Schedule
+    Route::get('/student/my-exam-schedule', [\App\Http\Controllers\Student\ExamScheduleController::class, 'index'])->name('student.exam-schedule');
+    Route::get('/student/my-exam-schedule/{examSchedule}/ics', [\App\Http\Controllers\Student\ExamScheduleController::class, 'exportIcs'])->name('student.exam-schedule.ics');
+    Route::get('/student/my-exam-schedule/{examSchedule}/print', [\App\Http\Controllers\Student\ExamScheduleController::class, 'printSchedule'])->name('student.exam-schedule.print');
     
     // Teacher's Classroom Visits
     Route::get('/teacher/my-classroom-visits', [\App\Http\Controllers\Teacher\ClassroomVisitController::class, 'index'])->name('teacher.my-classroom-visits');

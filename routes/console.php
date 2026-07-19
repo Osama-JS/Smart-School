@@ -13,3 +13,4 @@ Schedule::command('news:publish-scheduled')->everyMinute();
 Schedule::command('followup:generate-expected')->dailyAt('00:01');
 Schedule::command('followup:daily-reminders')->everyMinute();
 Schedule::command('followup:weekly-reports')->thursdays()->at('15:00');
+Schedule::command('exams:send-reminders')->dailyAt('13:00');

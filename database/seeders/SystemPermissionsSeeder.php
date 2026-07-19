@@ -89,5 +89,8 @@ class SystemPermissionsSeeder extends Seeder
 
         $this->command->info('⚙️ Now adding follow-up books permissions...');
         $this->call(FollowupBooksPermissionsSeeder::class);
+
+        $this->command->info('⚙️ Now adding advanced modules permissions...');
+        $this->call(AdvancedModulesPermissionsSeeder::class);
     }
 }

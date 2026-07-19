@@ -42,6 +42,7 @@ class User extends Authenticatable
     public function employee(): HasOne { return $this->hasOne(Employee::class); }
     public function lessonPreparations(): HasMany { return $this->hasMany(LessonPreparation::class, 'teacher_id'); }
     public function classroomVisits(): HasMany { return $this->hasMany(ClassroomVisit::class, 'teacher_id'); }
+    public function proctoringExams(): \Illuminate\Database\Eloquent\Relations\BelongsToMany { return $this->belongsToMany(ExamScheduleItem::class, 'exam_schedule_item_user'); }
 
     // المفضلة وتقييم المكتبة الرقمية
     public function bookmarkedLibraryItems()
