@@ -1,0 +1,8 @@
+- [x] التحقق من بنية جدول `followup_books` (إن كانت الحقول تقبل Null أو نضع لها قيم افتراضية).
+- [x] إنشاء `app/Console/Commands/GenerateExpectedFollowups.php`.
+- [x] إنشاء أمر الباكفيل `app/Console/Commands/BackfillFollowups.php`.
+- [x] إضافة الأمر المجدول `generate-expected-followups` في `routes/console.php`.
+- [x] تعديل `Admin/FollowupBookController.php` ليعتمد على السجلات المنشأة مسبقاً بدلاً من `MasterTimetable`.
+- [x] تعديل `FollowupWeeklyReports` و `FollowupDailyReminders` لتعمل بشكل مثالي مع النظام الجديد.
+- [x] تشغيل أمر تعبئة السجلات السابقة (Backfill) لتجهيز النظام فوراً.
+- [x] التحقق من واجهة المعلم `Teacher/FollowupBookController.php` لضمان توافقها التام مع التحديث.

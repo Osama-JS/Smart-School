@@ -229,6 +229,19 @@ Route::middleware('auth')->group(function () {
     ])->except(['create', 'show', 'edit']);
     Route::get('/teacher/study-plans/{studyPlan}/download', [\App\Http\Controllers\Teacher\StudyPlanController::class, 'download'])->name('teacher.study-plans.download');
 
+    // Teacher's Follow-up Books
+    Route::get('/teacher/followup-books', [\App\Http\Controllers\Teacher\FollowupBookController::class, 'index'])->name('teacher.followup-books.index');
+    Route::get('/teacher/followup-books/show', [\App\Http\Controllers\Teacher\FollowupBookController::class, 'show'])->name('teacher.followup-books.show');
+    Route::post('/teacher/followup-books', [\App\Http\Controllers\Teacher\FollowupBookController::class, 'store'])->name('teacher.followup-books.store');
+
+    // Admin's Follow-up Books
+    Route::middleware('permission:إدارة دفاتر المتابعة')->group(function () {
+        Route::get('/admin/followup-books/export', [\App\Http\Controllers\Admin\FollowupBookController::class, 'export'])->name('admin.followup-books.export');
+        Route::get('/admin/followup-books', [\App\Http\Controllers\Admin\FollowupBookController::class, 'index'])->name('admin.followup-books.index');
+        Route::get('/admin/followup-books/{teacher}', [\App\Http\Controllers\Admin\FollowupBookController::class, 'show'])->name('admin.followup-books.show');
+        Route::post('/admin/followup-books/settings', [\App\Http\Controllers\Admin\FollowupBookController::class, 'updateSettings'])->name('admin.followup-books.settings');
+    });
+
     Route::middleware('permission:إدارة الطلاب')->group(function () {
         // Parents
         Route::post('/academic/parents/quick-store', [\App\Http\Controllers\Academic\ParentController::class, 'quickStore'])->name('academic.parents.quick-store');
