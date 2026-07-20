@@ -7,14 +7,19 @@ import {
     Plus, Edit, Trash2, X, PlusCircle, AlignLeft, List, Hash, 
     CheckSquare, Image as ImageIcon, Search, FileText, Settings, 
     ShieldCheck, Calendar, Sparkles, ChevronDown, FileSpreadsheet, 
-    AlertCircle, Type, Clock, Paperclip, Star, Table2, ListTodo, CalendarRange, Database 
+    AlertCircle, Type, Clock, Paperclip, Star, Table2, ListTodo, CalendarRange, Database, Eye 
 } from 'lucide-react';
+import Dropdown from '@/Components/Dropdown';
+import PreviewFormModal from './PreviewFormModal';
+import PreviewReportModal from './PreviewReportModal';
 
 export default function TemplatesIndex({ auth, templates, jobGrades, stats, filters }) {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isFieldsModalOpen, setIsFieldsModalOpen] = useState(false);
     const [editingTemplate, setEditingTemplate] = useState(null);
+    const [previewFormTemplate, setPreviewFormTemplate] = useState(null);
+    const [previewReportTemplate, setPreviewReportTemplate] = useState(null);
 
     const form = useForm({
         name: '',
@@ -290,7 +295,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             updateField(index, 'options', { ...currentOptions, source: val });
                                         }}
                                         options={[
-                                            { value: 'classroom_visits', label: 'جدول الزيارات الصفية (للمشرف/الوكيل)' }
+                                            { value: 'classroom_visits', label: 'جدول الزيارات الصفية (للمشرف/الوكيل)' },
+                                            { value: 'employee_violations', label: 'جدول مخالفات الموظفين' }
                                         ]}
                                         placeholder="اختر مصدر البيانات..."
                                         className="mb-4"
@@ -333,7 +339,50 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                 })}
                                             </div>
                                             <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block font-semibold">
-                                                ملاحظة: سيتم عرض جدول تلقائي يحتوي على زيارات המوظف للفترة المحددة في هذا القالب.
+                                                ملاحظة: سيتم عرض جدول تلقائي يحتوي على زيارات الموظف للفترة المحددة في هذا القالب.
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {field.options?.source === 'employee_violations' && (
+                                        <div className="mt-4 animate-fade-in">
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الأعمدة المطلوب عرضها في الجدول</label>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                {[
+                                                    { id: 'employee_name', label: 'اسم الموظف' },
+                                                    { id: 'violation_type', label: 'نوع المخالفة' },
+                                                    { id: 'violation_date', label: 'التاريخ' },
+                                                    { id: 'repetition_level', label: 'مستوى التكرار' },
+                                                    { id: 'action_taken', label: 'الإجراء المتخذ' },
+                                                    { id: 'status', label: 'الحالة' },
+                                                    { id: 'details', label: 'التفاصيل' }
+                                                ].map(col => {
+                                                    const columns = Array.isArray(field.options?.columns) ? field.options.columns : [];
+                                                    const isChecked = columns.includes(col.id);
+                                                    return (
+                                                        <label key={col.id} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900/40 p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-400 transition-all">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={isChecked}
+                                                                onChange={(e) => {
+                                                                    const currentOptions = Array.isArray(field.options) ? {} : (field.options || {});
+                                                                    let newColumns = [...(currentOptions.columns || [])];
+                                                                    if (e.target.checked) {
+                                                                        newColumns.push(col.id);
+                                                                    } else {
+                                                                        newColumns = newColumns.filter(c => c !== col.id);
+                                                                    }
+                                                                    updateField(index, 'options', { ...currentOptions, columns: newColumns });
+                                                                }}
+                                                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                                            />
+                                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{col.label}</span>
+                                                        </label>
+                                                    );
+                                                })}
+                                            </div>
+                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block font-semibold">
+                                                ملاحظة: سيتم عرض جدول تلقائي يوضح جميع المخالفات خلال الفترة المحددة في هذا القالب.
                                             </span>
                                         </div>
                                     )}
@@ -476,8 +525,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 </div>
 
                 {/* Templates List */}
-                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl shadow-sm overflow-hidden animate-fade-in mb-8">
-                    <div className="overflow-x-auto">
+                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl shadow-sm animate-fade-in mb-8">
+                    <div className="overflow-visible">
                         <table className="w-full text-right border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
@@ -548,6 +597,40 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             </td>
                                             <td className="px-6 py-4.5 text-center whitespace-nowrap">
                                                 <div className="flex items-center justify-center gap-2">
+                                                    <Dropdown>
+                                                        <Dropdown.Trigger>
+                                                            <button 
+                                                                type="button"
+                                                                className="flex items-center gap-1.5 bg-indigo-50 text-indigo-655 hover:bg-indigo-500 hover:text-white dark:bg-indigo-500/10 dark:text-indigo-450 dark:hover:bg-indigo-500 dark:hover:text-white px-3 py-1.5 rounded-xl text-xs font-black transition-all border border-indigo-100 dark:border-indigo-500/20 shadow-sm active:scale-95"
+                                                                title="خيارات المعاينة"
+                                                            >
+                                                                <Eye size={14} />
+                                                                <span>معاينة</span>
+                                                                <ChevronDown size={14} />
+                                                            </button>
+                                                        </Dropdown.Trigger>
+
+                                                        <Dropdown.Content align="left" width="48">
+                                                            <div className="py-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setPreviewFormTemplate(template)}
+                                                                    className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                                                                >
+                                                                    <FileText size={16} className="text-indigo-500" />
+                                                                    معاينة التعبئة
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setPreviewReportTemplate(template)}
+                                                                    className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                                                                >
+                                                                    <FileSpreadsheet size={16} className="text-sky-500" />
+                                                                    معاينة التقرير
+                                                                </button>
+                                                            </div>
+                                                        </Dropdown.Content>
+                                                    </Dropdown>
                                                     <button 
                                                         onClick={() => openFieldsModal(template)}
                                                         className="flex items-center gap-1.5 bg-emerald-50 text-emerald-655 hover:bg-emerald-500 hover:text-white dark:bg-emerald-500/10 dark:text-emerald-450 dark:hover:bg-emerald-500 dark:hover:text-white px-3 py-1.5 rounded-xl text-xs font-black transition-all border border-emerald-100 dark:border-emerald-500/20 active:scale-95 shadow-sm"
@@ -894,6 +977,20 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             </div>
                         </div>
                     </div>
+                )}
+
+                {/* Preview Modals */}
+                {previewFormTemplate && (
+                    <PreviewFormModal 
+                        template={previewFormTemplate} 
+                        onClose={() => setPreviewFormTemplate(null)} 
+                    />
+                )}
+                {previewReportTemplate && (
+                    <PreviewReportModal 
+                        template={previewReportTemplate} 
+                        onClose={() => setPreviewReportTemplate(null)} 
+                    />
                 )}
 
             </div>

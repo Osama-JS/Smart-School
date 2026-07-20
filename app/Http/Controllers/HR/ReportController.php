@@ -130,6 +130,35 @@ class ReportController extends Controller implements \Illuminate\Routing\Control
                         });
                         
                     $fieldArr['prefilled_data'] = $visits;
+                } elseif ($source === 'employee_violations') {
+                    $startDate = now()->startOfWeek();
+                    $endDate = now()->endOfWeek();
+                    
+                    if ($template->period_type === 'monthly') {
+                        $startDate = now()->startOfMonth();
+                        $endDate = now()->endOfMonth();
+                    } elseif ($template->period_type === 'daily') {
+                        $startDate = now()->startOfDay();
+                        $endDate = now()->endOfDay();
+                    }
+                    
+                    $violations = \App\Models\EmployeeViolation::with(['user', 'violationType'])
+                        ->whereBetween('violation_date', [$startDate->startOfDay(), $endDate->endOfDay()])
+                        ->get()
+                        ->map(function ($violation) {
+                            return [
+                                'id'               => $violation->id,
+                                'employee_name'    => $violation->user ? $violation->user->name : '',
+                                'violation_type'   => $violation->violationType ? $violation->violationType->name : '',
+                                'violation_date'   => \Carbon\Carbon::parse($violation->violation_date)->format('Y-m-d'),
+                                'repetition_level' => $violation->repetition_level ?? '',
+                                'action_taken'     => $violation->action_taken ?? '',
+                                'status'           => $violation->status ?? '',
+                                'details'          => $violation->details ?? '',
+                            ];
+                        });
+                        
+                    $fieldArr['prefilled_data'] = $violations;
                 }
             }
             return $fieldArr;
