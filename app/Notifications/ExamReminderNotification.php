@@ -8,6 +8,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Carbon\Carbon;
+use App\Channels\WhatsAppChannel;
 
 class ExamReminderNotification extends Notification implements ShouldQueue
 {
@@ -35,9 +36,7 @@ class ExamReminderNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        // TODO: SMS Service integration can be added here in the future
-        // return ['database', 'sms'];
-        return ['database'];
+        return ['database', WhatsAppChannel::class];
     }
 
     /**
@@ -66,5 +65,26 @@ class ExamReminderNotification extends Notification implements ShouldQueue
             'icon' => 'BellRing',
             'link' => '/student/exam-schedules'
         ];
+    }
+
+    /**
+     * Get the WhatsApp representation of the notification.
+     *
+     * @param object $notifiable
+     * @return string
+     */
+    public function toWhatsApp(object $notifiable): string
+    {
+        $subjectName = $this->examItem->subject->name ?? 'مادة غير محددة';
+        $startTime = $this->examItem->start_time ? Carbon::parse($this->examItem->start_time)->format('h:i A') : '';
+        $syllabus = $this->examItem->syllabus ? "لا تنسَ مراجعة [{$this->examItem->syllabus}]" : "نتمنى لك التوفيق";
+
+        if ($this->isParent) {
+            $message = "🌟 *تذكير بموعد اختبار*\n\nعزيزي ولي الأمر،\nلدى ابنك/ابنتك غداً اختبار في مادة *{$subjectName}* يبدأ الساعة {$startTime}.\n\n💡 {$syllabus}";
+        } else {
+            $message = "🌟 *تذكير بموعد اختبار*\n\nعزيزي الطالب،\nلديك غداً اختبار في مادة *{$subjectName}* يبدأ الساعة {$startTime}.\n\n💡 {$syllabus}";
+        }
+
+        return $message;
     }
 }

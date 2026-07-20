@@ -151,9 +151,10 @@ Route::middleware('auth')->group(function () {
         Route::resource('/academic/exam-schedules', \App\Http\Controllers\Academic\ExamScheduleController::class)->names([
             'index'   => 'academic.exam-schedules.index',
             'store'   => 'academic.exam-schedules.store',
+            'update'  => 'academic.exam-schedules.update',
             'show'    => 'academic.exam-schedules.show',
             'destroy' => 'academic.exam-schedules.destroy',
-        ])->except(['create', 'edit', 'update']);
+        ])->except(['create', 'edit']);
         Route::post('/academic/exam-schedules/{examSchedule}/items', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'updateItems'])->name('academic.exam-schedules.items.update');
         Route::get('/academic/exam-schedules/{examSchedule}/print', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'printSchedule'])->name('academic.exam-schedules.print');
     });

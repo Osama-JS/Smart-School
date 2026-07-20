@@ -3,18 +3,21 @@ import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Calendar, Plus, Trash2, X, ChevronLeft, CalendarClock, Settings, Layers, CalendarDays, Search } from 'lucide-react';
 import ToastNotification from '@/Components/ToastNotification';
+import RichTextEditor from '@/Components/RichTextEditor';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ar';
 
 dayjs.locale('ar');
 
 export default function Index({ schedules, periods }) {
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingSchedule, setEditingSchedule] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         title: '',
-        period_id: ''
+        period_id: '',
+        details: ''
     });
 
     const filteredSchedules = schedules.filter(s => 
@@ -24,15 +27,45 @@ export default function Index({ schedules, periods }) {
 
     const [toast, setToast] = useState(null);
 
-    const submitCreate = (e) => {
-        e.preventDefault();
-        post(route('academic.exam-schedules.store'), {
-            onSuccess: () => {
-                setIsCreateModalOpen(false);
-                reset();
-            },
-            onError: (err) => console.error(err)
+    const openCreateModal = () => {
+        setEditingSchedule(null);
+        reset();
+        clearErrors();
+        setIsModalOpen(true);
+    };
+
+    const openEditModal = (schedule) => {
+        setEditingSchedule(schedule);
+        setData({
+            title: schedule.title,
+            period_id: schedule.period_id,
+            details: schedule.details || ''
         });
+        clearErrors();
+        setIsModalOpen(true);
+    };
+
+    const submitModal = (e) => {
+        e.preventDefault();
+        
+        if (editingSchedule) {
+            put(route('academic.exam-schedules.update', editingSchedule.id), {
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    setToast({ message: 'تم التعديل بنجاح', type: 'success' });
+                    reset();
+                },
+                onError: (err) => console.error(err)
+            });
+        } else {
+            post(route('academic.exam-schedules.store'), {
+                onSuccess: () => {
+                    setIsModalOpen(false);
+                    reset();
+                },
+                onError: (err) => console.error(err)
+            });
+        }
     };
 
     const confirmDelete = (id) => {
@@ -84,7 +117,7 @@ export default function Index({ schedules, periods }) {
                             </div>
 
                             <button 
-                                onClick={() => setIsCreateModalOpen(true)}
+                                onClick={openCreateModal}
                                 className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 font-bold text-white bg-primary-600 rounded-xl overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-lg shadow-primary-600/30 w-full md:w-auto z-10"
                             >
                                 <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -108,13 +141,22 @@ export default function Index({ schedules, periods }) {
                                     <div className="bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 p-4 rounded-2xl ring-1 ring-primary-100 dark:ring-primary-800/50 group-hover:bg-primary-500 group-hover:text-white group-hover:ring-primary-500 group-hover:shadow-lg group-hover:shadow-primary-500/30 transition-all duration-300">
                                         <CalendarClock size={28} />
                                     </div>
-                                    <button 
-                                        onClick={() => confirmDelete(schedule.id)}
-                                        className="text-slate-400 hover:text-red-500 p-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors opacity-0 group-hover:opacity-100 z-20"
-                                        title="حذف الجدول"
-                                    >
-                                        <Trash2 size={20} />
-                                    </button>
+                                    <div className="flex gap-2 z-20">
+                                        <button 
+                                            onClick={() => openEditModal(schedule)}
+                                            className="text-slate-400 hover:text-primary-500 p-2.5 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                                            title="تعديل بيانات الجدول"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                        </button>
+                                        <button 
+                                            onClick={() => confirmDelete(schedule.id)}
+                                            className="text-slate-400 hover:text-red-500 p-2.5 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors opacity-0 group-hover:opacity-100"
+                                            title="حذف الجدول"
+                                        >
+                                            <Trash2 size={20} />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <h3 className="text-xl font-black text-slate-800 dark:text-white mb-4 line-clamp-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors tracking-tight">
@@ -162,7 +204,7 @@ export default function Index({ schedules, periods }) {
                                 </p>
                                 {!searchQuery && (
                                     <button 
-                                        onClick={() => setIsCreateModalOpen(true)}
+                                        onClick={openCreateModal}
                                         className="group relative inline-flex items-center justify-center gap-2 px-8 py-3.5 font-bold text-white bg-primary-600 rounded-xl overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-xl shadow-primary-600/30"
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -175,27 +217,31 @@ export default function Index({ schedules, periods }) {
                     )}
                 </div>
 
-                {/* Create Modal */}
-                {isCreateModalOpen && (
+                {/* Create/Edit Modal */}
+                {isModalOpen && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setIsCreateModalOpen(false)}></div>
-                        <div className="relative bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl animate-scale-in overflow-hidden ring-1 ring-slate-100 dark:ring-slate-700">
+                        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={() => setIsModalOpen(false)}></div>
+                        <div className="relative bg-white dark:bg-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl animate-scale-in overflow-hidden ring-1 ring-slate-100 dark:ring-slate-700">
                             {/* Modal Header */}
                             <div className="bg-slate-50 dark:bg-slate-800/80 p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
                                 <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-3 relative z-10">
                                     <div className="bg-primary-100 dark:bg-primary-900/50 text-primary-600 p-2 rounded-lg">
-                                        <Plus size={20} />
+                                        {editingSchedule ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                        ) : (
+                                            <Plus size={20} />
+                                        )}
                                     </div>
-                                    بناء جدول جديد
+                                    {editingSchedule ? 'تعديل جدول الاختبارات' : 'بناء جدول جديد'}
                                 </h3>
-                                <button onClick={() => setIsCreateModalOpen(false)} className="relative z-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-white dark:bg-slate-700 rounded-full p-1.5 shadow-sm hover:shadow-md transition-all">
+                                <button onClick={() => setIsModalOpen(false)} className="relative z-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-white dark:bg-slate-700 rounded-full p-1.5 shadow-sm hover:shadow-md transition-all">
                                     <X size={18} />
                                 </button>
                             </div>
 
                             {/* Modal Body */}
-                            <form onSubmit={submitCreate} className="p-6 space-y-6">
+                            <form onSubmit={submitModal} className="p-6 space-y-6">
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">عنوان الجدول</label>
                                     <input 
@@ -229,11 +275,21 @@ export default function Index({ schedules, periods }) {
                                     <p className="text-xs text-slate-500 mt-2">ملاحظة: درجات هذا الاختبار سترصد تحت الفترة المحددة.</p>
                                     {errors.period_id && <p className="text-red-500 text-xs mt-1 font-medium">{errors.period_id}</p>}
                                 </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">تفاصيل وتعليمات الاختبار (اختياري)</label>
+                                    <RichTextEditor 
+                                        value={data.details} 
+                                        onChange={(content) => setData('details', content)} 
+                                        placeholder="اكتب هنا تعليمات الاختبارات، مثل: يمنع استخدام الجوال، إحضار الأدوات المدرسية..."
+                                    />
+                                    {errors.details && <p className="text-red-500 text-xs mt-1 font-medium">{errors.details}</p>}
+                                </div>
                                 
                                 <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-slate-100 dark:border-slate-700/50">
                                     <button 
                                         type="button" 
-                                        onClick={() => setIsCreateModalOpen(false)}
+                                        onClick={() => setIsModalOpen(false)}
                                         className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl transition-colors"
                                     >
                                         إلغاء
@@ -248,7 +304,7 @@ export default function Index({ schedules, periods }) {
                                                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                                                 جاري المعالجة...
                                             </span>
-                                        ) : 'إنشاء وانتقال للبناء'}
+                                        ) : editingSchedule ? 'حفظ التعديلات' : 'إنشاء وانتقال للبناء'}
                                     </button>
                                 </div>
                             </form>

@@ -9,8 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ExamSchedule extends Model
 {
     use \App\Traits\LogsActivity;
-
-    protected $fillable = ['period_id', 'title'];
+    protected $fillable = ['period_id', 'title', 'details'];
 
     public function period(): BelongsTo { return $this->belongsTo(ResultPeriod::class, 'period_id'); }
     public function items(): HasMany { return $this->hasMany(ExamScheduleItem::class, 'schedule_id'); }

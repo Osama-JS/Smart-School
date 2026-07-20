@@ -41,26 +41,36 @@ export default function TimelineView({ dates, grades, getGroupedItemsForCell, ge
     return (
         <div className="space-y-12 pb-8">
             {dates.length === 0 ? (
-                <div className="mt-8 text-center">
-                    <div className="inline-flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-slate-50/50 dark:bg-slate-800/50">
-                        <h3 className="text-xl font-black text-slate-700 dark:text-slate-300 mb-2">لا توجد أيام مجدولة بعد</h3>
+                <div className="mt-8 relative rounded-[2rem] bg-white dark:bg-slate-900 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)] border border-slate-200/80 dark:border-slate-700/80 overflow-hidden p-20 flex flex-col items-center text-center">
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 to-white dark:from-slate-800/30 dark:to-slate-900/80 pointer-events-none"></div>
+                    <div className="relative w-32 h-32 flex items-center justify-center mb-8">
+                        <div className="absolute inset-0 bg-primary-100 dark:bg-primary-900/30 rounded-full blur-2xl opacity-60"></div>
+                        <div className="relative w-28 h-28 bg-gradient-to-br from-white to-primary-50 dark:from-slate-800 dark:to-slate-900 rounded-[2rem] rotate-3 flex items-center justify-center border border-white dark:border-slate-700 shadow-2xl shadow-primary-500/10 transition-transform hover:rotate-6 hover:scale-105 duration-500">
+                            <Clock size={48} className="text-primary-400 dark:text-primary-500 -rotate-3" />
+                        </div>
                     </div>
+                    <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-slate-800 to-slate-500 dark:from-white dark:to-slate-400 mb-3 tracking-tight relative z-10">المخطط الزمني فارغ</h3>
+                    <p className="text-slate-500 dark:text-slate-400 max-w-md text-base font-medium leading-relaxed relative z-10">قم بإضافة الأيام والمواد للبدء في عرض المخطط الزمني وتتبع فترات الاختبارات بدقة واحترافية.</p>
                 </div>
             ) : (
                 dates.map(date => {
                     const dateObj = dayjs(date);
                     
                     return (
-                        <div key={date} className="bg-white dark:bg-slate-800 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] border border-slate-200/60 dark:border-slate-700/60 overflow-hidden relative">
+                        <div key={date} className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)] border border-slate-200/80 dark:border-slate-700/80 overflow-hidden relative mb-4">
                             {/* Header: Date */}
-                            <div className="bg-slate-50/80 dark:bg-slate-900/50 px-8 py-5 border-b border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between shadow-sm backdrop-blur-md relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-primary-100/50 dark:bg-primary-900/20 rounded-full blur-3xl -mt-10 -mr-10"></div>
-                                <div className="relative z-10">
-                                    <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
-                                        <Calendar size={24} className="text-primary-500" />
-                                        {dateObj.format('dddd')}
-                                    </h2>
-                                    <p className="text-slate-500 dark:text-slate-400 font-bold mt-1 text-sm bg-white dark:bg-slate-800 w-fit px-3 py-1 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">{dateObj.format('YYYY/MM/DD')}</p>
+                            <div className="bg-slate-50/80 dark:bg-slate-800/50 px-8 py-6 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center justify-between shadow-sm backdrop-blur-2xl relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-primary-100/40 dark:bg-primary-900/20 rounded-full blur-3xl -mt-20 -mr-20 pointer-events-none"></div>
+                                <div className="relative z-10 flex items-center gap-5">
+                                    <div className="p-3 bg-gradient-to-br from-primary-600 to-primary-500 dark:from-primary-500 dark:to-primary-400 rounded-2xl text-white shadow-lg shadow-primary-500/25">
+                                        <Calendar size={28} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+                                            {dateObj.locale('ar').format('dddd')}
+                                        </h2>
+                                        <p className="text-primary-600 dark:text-primary-400 font-bold mt-1.5 text-sm bg-primary-50 dark:bg-primary-900/30 px-3 py-1 rounded-lg border border-primary-100 dark:border-primary-800/30 shadow-sm inline-block">{dateObj.format('YYYY/MM/DD')}</p>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -99,7 +109,7 @@ export default function TimelineView({ dates, grades, getGroupedItemsForCell, ge
                                             return (
                                                 <div key={grade.id} className="flex items-stretch gap-4 min-h-[80px]">
                                                     {/* Grade Label */}
-                                                    <div className="absolute right-0 w-[134px] flex-shrink-0 flex items-center justify-center p-3 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border-2 border-slate-200 dark:border-slate-700/60 font-black text-slate-700 dark:text-slate-300 text-center shadow-sm z-20">
+                                                    <div className="absolute right-0 w-[140px] flex-shrink-0 flex items-center justify-center p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl border border-slate-200/80 dark:border-slate-700/80 font-black text-slate-800 dark:text-white text-lg text-center shadow-[4px_0_20px_-5px_rgba(0,0,0,0.05)] z-20">
                                                         {grade.name}
                                                     </div>
                                                     

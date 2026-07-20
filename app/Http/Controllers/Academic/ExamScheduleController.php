@@ -47,11 +47,25 @@ class ExamScheduleController extends Controller
         $validated = $request->validate([
             'period_id' => 'required|exists:result_periods,id',
             'title' => 'required|string|max:255',
+            'details' => 'nullable|string',
         ]);
 
         $schedule = ExamSchedule::create($validated);
 
         return redirect()->route('academic.exam-schedules.show', $schedule->id)->with('success', 'تم إنشاء جدول الاختبار بنجاح. يمكنك الآن بناء الجدول.');
+    }
+
+    public function update(Request $request, ExamSchedule $examSchedule)
+    {
+        $validated = $request->validate([
+            'period_id' => 'required|exists:result_periods,id',
+            'title' => 'required|string|max:255',
+            'details' => 'nullable|string',
+        ]);
+
+        $examSchedule->update($validated);
+
+        return redirect()->back()->with('success', 'تم تحديث بيانات الجدول بنجاح.');
     }
 
     public function show(ExamSchedule $examSchedule)
@@ -65,7 +79,7 @@ class ExamScheduleController extends Controller
 
         $examSchedule->load(['period.semester.academicYear', 'items.division.grade', 'items.subject', 'items.proctors']);
 
-        $gradesQuery = Grade::with(['divisions', 'subjects']);
+        $gradesQuery = Grade::with(['divisions', 'subjects', 'section']);
         if ($branchId) {
             $gradesQuery->where('branch_id', $branchId);
         }
@@ -163,9 +177,9 @@ class ExamScheduleController extends Controller
         foreach ($items as $i => $item1) {
             $start1 = $item1['start_time'] ?? null;
             $end1 = $item1['end_time'] ?? null;
-            $date1 = $item1['exam_date'] ?? null;
             $room1 = $item1['room'] ?? null;
             $proctors1 = $item1['proctor_ids'] ?? [];
+            $date1 = $item1['exam_date'] ?? null;
 
             if (!$start1 || !$end1 || !$date1) continue;
 
@@ -216,9 +230,6 @@ class ExamScheduleController extends Controller
         if ($existingItems->isEmpty()) return;
 
         foreach ($items as $item1) {
-            $start1 = $item1['start_time'] ?? null;
-            $end1 = $item1['end_time'] ?? null;
-            $date1 = $item1['exam_date'] ?? null;
             $room1 = $item1['room'] ?? null;
             $proctors1 = $item1['proctor_ids'] ?? [];
 
@@ -267,9 +278,12 @@ class ExamScheduleController extends Controller
 
         $examSchedule->load(['period.semester.academicYear', 'items.division.grade', 'items.subject', 'items.proctors']);
 
-        $gradesQuery = Grade::with('divisions');
+        $gradesQuery = Grade::with(['divisions', 'section']);
         if ($branchId) {
             $gradesQuery->where('branch_id', $branchId);
+        }
+        if (request()->has('section_id')) {
+            $gradesQuery->where('section_id', request('section_id'));
         }
         $grades = $gradesQuery->get();
 

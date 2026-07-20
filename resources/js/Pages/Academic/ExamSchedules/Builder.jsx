@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Save, Plus, X, Calendar as CalendarIcon, ChevronRight, Trash2, Edit3, BookOpen, Clock, AlertCircle, MapPin, Users, Download, Wand, FileText, Printer, ToggleLeft, ToggleRight, Search } from 'lucide-react';
+import { Save, Plus, X, Calendar as CalendarIcon, ChevronRight, Trash2, Edit3, BookOpen, Clock, AlertCircle, MapPin, Users, Download, Wand, FileText, Printer, ToggleLeft, ToggleRight, Search, Loader2 } from 'lucide-react';
 import ToastNotification from '@/Components/ToastNotification';
 import { Transition, Dialog } from '@headlessui/react';
 import dayjs from 'dayjs';
+import 'dayjs/locale/ar';
 import Swal from 'sweetalert2';
 import TimelineView from './TimelineView';
 
@@ -45,6 +46,31 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
     const [localItems, setLocalItems] = useState([]);
     const [viewMode, setViewMode] = useState('grid');
     const [searchQuery, setSearchQuery] = useState('');
+    const [autoSave, setAutoSave] = useState(false);
+    const [activeSection, setActiveSection] = useState('all');
+    const skipAutoSave = useRef(true);
+
+    const sections = React.useMemo(() => {
+        const uniqueSections = {};
+        grades.forEach(grade => {
+            if (grade.section) {
+                uniqueSections[grade.section.id] = grade.section;
+            }
+        });
+        return Object.values(uniqueSections).sort((a, b) => a.id - b.id);
+    }, [grades]);
+
+    useEffect(() => {
+        if (sections.length > 0 && activeSection === 'all') {
+            // Keep 'all' as default if preferred, or change to sections[0].id
+            setActiveSection('all');
+        }
+    }, [sections]);
+
+    const filteredGrades = grades.filter(g => {
+        if (activeSection === 'all') return true;
+        return g.section?.id === activeSection;
+    });
     
     // Slide-over state
     const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
@@ -62,7 +88,10 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
     });
     
     const handleExport = () => {
-        const query = `?proctors=${exportSettings.showProctors?1:0}&rooms=${exportSettings.showRooms?1:0}&syllabus=${exportSettings.showSyllabus?1:0}&times=${exportSettings.showTimes?1:0}`;
+        let query = `?proctors=${exportSettings.showProctors?1:0}&rooms=${exportSettings.showRooms?1:0}&syllabus=${exportSettings.showSyllabus?1:0}&times=${exportSettings.showTimes?1:0}`;
+        if (activeSection && activeSection !== 'all') {
+            query += `&section_id=${activeSection}`;
+        }
         window.open(route('academic.exam-schedules.print', examSchedule.id) + query, '_blank');
         setIsExportModalOpen(false);
     };
@@ -85,7 +114,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                 id: item.id || Math.random().toString(36).substr(2, 9),
                 division_id: item.division_id,
                 subject_id: item.subject_id,
-                exam_date: item.exam_date,
+                exam_date: dayjs(item.exam_date).format('YYYY-MM-DD'),
                 start_time: item.start_time ? item.start_time.substring(0, 5) : '',
                 end_time: item.end_time ? item.end_time.substring(0, 5) : '',
                 room: item.room || '',
@@ -97,11 +126,44 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                 grade_id: item.division?.grade_id
             }));
             
+            skipAutoSave.current = true;
             setLocalItems(initialItems);
             const uniqueDates = [...new Set(initialItems.map(i => dayjs(i.exam_date).format('YYYY-MM-DD')))].sort();
             setDates(uniqueDates);
         }
     }, [examSchedule]);
+
+    // Auto-save logic
+    useEffect(() => {
+        if (skipAutoSave.current) {
+            skipAutoSave.current = false;
+            return;
+        }
+        
+        if (autoSave) {
+            const timer = setTimeout(() => {
+                router.post(route('academic.exam-schedules.items.update', examSchedule.id), {
+                    items: localItems.map(i => ({
+                        division_id: i.division_id,
+                        subject_id: i.subject_id,
+                        exam_date: i.exam_date,
+                        start_time: i.start_time,
+                        end_time: i.end_time,
+                        room: i.room,
+                        proctor_ids: i.proctor_ids,
+                        syllabus: i.syllabus
+                    }))
+                }, {
+                    preserveScroll: true,
+                    preserveState: true,
+                    onSuccess: () => {
+                        // Silent background save successful
+                    }
+                });
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [localItems, autoSave]);
 
     const handleDateInput = (e) => {
         const selectedDate = e.target.value;
@@ -184,33 +246,17 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
             shuffle(highWeightSubjects);
             shuffle(normalSubjects);
             
-            // Map subjects to dates
+            // Map subjects to dates (strictly max 1 per day as requested)
             const dateAssignments = dates.map(() => []);
             
-            // Assign high weight subjects trying to skip days (gap)
-            let currentDateIndex = 0;
-            highWeightSubjects.forEach(subject => {
-                dateAssignments[currentDateIndex].push(subject);
-                currentDateIndex += 2; // skip a day
-                if (currentDateIndex >= dates.length) {
-                    currentDateIndex = 1; // start filling gaps
-                    if (currentDateIndex >= dates.length) currentDateIndex = 0; // fallback
-                }
-            });
+            const allSubjects = [...highWeightSubjects, ...normalSubjects];
+            let dateIdx = 0;
             
-            // Fill remaining with normal subjects
-            // Find days with fewest subjects
-            normalSubjects.forEach(subject => {
-                // Find index with minimum subjects
-                let minIdx = 0;
-                let minCount = dateAssignments[0].length;
-                for (let i = 1; i < dates.length; i++) {
-                    if (dateAssignments[i].length < minCount) {
-                        minCount = dateAssignments[i].length;
-                        minIdx = i;
-                    }
+            allSubjects.forEach(subject => {
+                if (dateIdx < dates.length) {
+                    dateAssignments[dateIdx].push(subject);
+                    dateIdx++;
                 }
-                dateAssignments[minIdx].push(subject);
             });
             
             // Create items for each division
@@ -398,13 +444,20 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
         });
     };
 
-    const getGroupedItemsForCell = (date, gradeId) => {
-        const itemsInCell = localItems.filter(i => i.exam_date === date && i.grade_id === gradeId);
-        const groups = {};
-        itemsInCell.forEach(item => {
-            const key = `${item.subject_id}_${item.start_time}_${item.end_time}_${item.room}_${item.proctor_ids?.join(',')}_${item.syllabus}`;
-            if (!groups[key]) {
-                groups[key] = {
+    const groupedItemsCache = React.useMemo(() => {
+        const cache = {};
+        
+        localItems.forEach(item => {
+            const date = item.exam_date;
+            const gradeId = item.grade_id;
+            
+            if (!cache[date]) cache[date] = {};
+            if (!cache[date][gradeId]) cache[date][gradeId] = {};
+            
+            const groupKey = `${item.subject_id}_${item.start_time}_${item.end_time}_${item.room}_${item.proctor_ids?.join(',')}_${item.syllabus}`;
+            
+            if (!cache[date][gradeId][groupKey]) {
+                cache[date][gradeId][groupKey] = {
                     subject_id: item.subject_id,
                     subject_name: item.subject_name,
                     start_time: item.start_time,
@@ -416,10 +469,16 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                     items: []
                 };
             }
-            groups[key].items.push(item);
+            cache[date][gradeId][groupKey].items.push(item);
         });
-        return Object.values(groups);
-    };
+        
+        return cache;
+    }, [localItems]);
+
+    const getGroupedItemsForCell = React.useCallback((date, gradeId) => {
+        if (!groupedItemsCache[date] || !groupedItemsCache[date][gradeId]) return [];
+        return Object.values(groupedItemsCache[date][gradeId]);
+    }, [groupedItemsCache]);
 
     const toggleDivisionSelection = (divId) => {
         setFormData(prev => {
@@ -463,110 +522,179 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
             {toast && <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
             {/* Premium Top Bar */}
-            <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-700/50 shadow-sm py-4 px-6 mb-8 transition-all">
-                <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link href={route('academic.exam-schedules.index')} className="group flex items-center justify-center w-11 h-11 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-200 dark:hover:border-primary-800 transition-all">
-                            <ChevronRight size={22} className="text-slate-500 group-hover:text-primary-600 dark:text-slate-400 dark:group-hover:text-primary-400" />
+            <div className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-700/80 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.08)] py-4 px-6 mb-8 transition-all">
+                <div className="max-w-[1600px] mx-auto flex flex-col xl:flex-row justify-between items-center gap-5">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto text-center sm:text-right">
+                        <Link href={route('academic.exam-schedules.index')} className="group flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 dark:bg-slate-800 shadow-inner border border-slate-200/60 dark:border-slate-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-200 dark:hover:border-primary-800 transition-all duration-300">
+                            <ChevronRight size={24} className="text-slate-400 group-hover:text-primary-600 dark:text-slate-500 dark:group-hover:text-primary-400 transition-colors" />
                         </Link>
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary-600 to-indigo-600 dark:from-primary-400 dark:to-indigo-400 tracking-tight">
+                            <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary-700 to-primary-500 dark:from-primary-400 dark:to-primary-300 tracking-tight">
                                 {examSchedule.title}
                             </h1>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
-                                    <Clock size={12} className="text-primary-500" /> حفظ تلقائي
-                                </span>
+                            <div className="flex items-center justify-center sm:justify-start gap-2 mt-1.5">
+                                <label className="inline-flex items-center gap-2 cursor-pointer bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 shadow-sm mt-1">
+                                    <div className="relative flex items-center">
+                                        <input type="checkbox" className="sr-only" checked={autoSave} onChange={(e) => setAutoSave(e.target.checked)} />
+                                        <div className={`block w-8 h-4.5 rounded-full transition-colors duration-300 ease-in-out ${autoSave ? 'bg-primary-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
+                                        <div className={`absolute left-0.5 top-0.5 bg-white w-3.5 h-3.5 rounded-full transition-transform duration-300 ease-in-out shadow-sm ${autoSave ? 'translate-x-3.5' : 'translate-x-0'}`}></div>
+                                    </div>
+                                    <span className={`text-xs font-bold flex items-center gap-1 transition-colors ${autoSave ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                        <Clock size={12} className={autoSave ? 'animate-pulse' : ''} /> حفظ تلقائي
+                                    </span>
+                                </label>
                             </div>
                         </div>
                     </div>
                     
-                    <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 md:flex-none flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl font-bold hover:border-primary-400 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 shadow-sm transition-all">
-                            <Plus size={18} className="text-primary-500" />
-                            <span className="text-sm">إضافة يوم:</span>
+                    <div className="flex flex-wrap items-center justify-center xl:justify-end gap-3 w-full xl:w-auto">
+                        <div className="relative flex items-center justify-center gap-2 bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 px-5 py-2.5 rounded-xl font-bold hover:border-primary-400 hover:shadow-md focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-500/20 shadow-sm transition-all duration-300 group overflow-hidden cursor-pointer">
+                            <Plus size={18} className="text-primary-500 group-hover:rotate-90 transition-transform duration-300" />
+                            <span className="text-sm text-slate-700 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">إضافة يوم جديد</span>
                             <input 
                                 type="date" 
-                                className="border-none bg-transparent focus:ring-0 text-sm font-bold w-36 p-0 cursor-pointer dark:text-white" 
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer" 
                                 value={newDateValue} 
                                 onChange={handleDateInput} 
+                                title="إضافة يوم للاختبارات"
                             />
                         </div>
                         <button 
                             onClick={handleAutoSchedule}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-purple-500/20 transition-all active:scale-95 group"
+                            className="flex items-center justify-center gap-2 bg-primary-50 hover:bg-primary-100 text-primary-700 border border-primary-200 dark:bg-primary-900/30 dark:hover:bg-primary-900/50 dark:border-primary-800/50 dark:text-primary-300 px-5 py-2.5 rounded-xl font-bold shadow-sm transition-all active:scale-95 group"
                             title="التوزيع التلقائي العادل للمواد"
                         >
-                            <Wand size={18} className="animate-pulse group-hover:rotate-12 transition-transform" />
+                            <Wand size={18} className="text-primary-500 dark:text-primary-400 group-hover:rotate-12 transition-transform" />
                             توزيع تلقائي
                         </button>
                         <button 
                             type="button"
                             onClick={() => setIsExportModalOpen(true)}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white border border-slate-700 px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-slate-800/20 transition-all active:scale-95"
+                            className="flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl font-bold shadow-sm transition-all active:scale-95"
                         >
-                            <Printer size={18} />
+                            <Printer size={18} className="text-slate-500 dark:text-slate-400" />
                             تصدير ذكي
+                        </button>
+                        <button 
+                            type="button"
+                            onClick={saveScheduleToDatabase}
+                            disabled={isSaving || autoSave}
+                            className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-black transition-all duration-300 active:scale-95 ${
+                                autoSave
+                                    ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700 shadow-none'
+                                    : 'bg-primary-600 hover:bg-primary-700 text-white border border-primary-700 shadow-[0_4px_15px_rgba(var(--color-primary-600),0.3)] hover:shadow-[0_6px_20px_rgba(var(--color-primary-600),0.4)]'
+                            }`}
+                            title={autoSave ? "تم تعطيل الزر لأن الحفظ التلقائي يعمل" : ""}
+                        >
+                            {isSaving ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} className={autoSave ? 'opacity-50' : ''} />}
+                            {isSaving ? 'جاري الاعتماد...' : 'الاعتماد والنشر'}
                         </button>
                     </div>
                 </div>
-                
-                {/* View Mode Toggle and Search Bar */}
-                <div className="max-w-[1600px] mx-auto mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="relative w-full md:w-96">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                            <Search size={18} className="text-slate-400" />
-                        </div>
-                        <input
-                            type="search"
-                            className="block w-full p-3 pr-11 text-sm font-bold text-slate-800 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:bg-slate-800/50 dark:border-slate-700 dark:placeholder-slate-400 dark:text-white dark:focus:bg-slate-800 dark:focus:ring-primary-500/20 dark:focus:border-primary-500 transition-all shadow-sm"
-                            placeholder="ابحث عن مادة، قاعة، أو مراقب بلمح البصر..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+
+                {examSchedule.details && (
+                    <div className="max-w-[1600px] mx-auto mt-4 mb-2 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                            <span className="text-primary-500">📌</span> تعليمات وتفاصيل الاختبار
+                        </h2>
+                        <div 
+                            className="prose prose-sm dark:prose-invert max-w-none prose-slate"
+                            dangerouslySetInnerHTML={{ __html: examSchedule.details }}
                         />
                     </div>
+                )}
+                
+                {/* View Mode Toggle and Search Bar */}
+                <div className="max-w-[1600px] mx-auto mt-6 mb-6 flex flex-col xl:flex-row items-center justify-between gap-6">
                     
-                    <div className="bg-slate-100/80 dark:bg-slate-800/80 p-1.5 rounded-2xl flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50 shadow-inner backdrop-blur-sm">
-                        <button 
-                            onClick={() => setViewMode('grid')}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-[0_2px_10px_rgba(0,0,0,0.05)]' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
-                        >
-                            <CalendarIcon size={18} />
-                            عرض شبكي
-                        </button>
-                        <button 
-                            onClick={() => setViewMode('timeline')}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${viewMode === 'timeline' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-[0_2px_10px_rgba(0,0,0,0.05)]' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
-                        >
-                            <Clock size={18} />
-                            المخطط الزمني
-                        </button>
+                    {/* Floating Stage Tabs (Glassmorphism) */}
+                    {sections.length > 0 && (
+                        <div className="flex bg-white/60 dark:bg-slate-800/60 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-sm backdrop-blur-md overflow-x-auto custom-scrollbar w-full xl:w-auto">
+                            <button
+                                onClick={() => setActiveSection('all')}
+                                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${
+                                    activeSection === 'all'
+                                        ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-[0_2px_10px_rgba(0,0,0,0.05)]'
+                                        : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                                }`}
+                            >
+                                🏫 كل المراحل
+                            </button>
+                            {sections.map(section => (
+                                <button
+                                    key={section.id}
+                                    onClick={() => setActiveSection(section.id)}
+                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all whitespace-nowrap ${
+                                        activeSection === section.id
+                                            ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-[0_2px_10px_rgba(0,0,0,0.05)]'
+                                            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                                    }`}
+                                >
+                                    🏫 {section.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full xl:w-auto ml-auto">
+                        <div className="relative w-full sm:w-80">
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                <Search size={18} className="text-slate-400" />
+                            </div>
+                            <input
+                                type="search"
+                                className="block w-full p-3 pr-11 text-sm font-bold text-slate-800 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:bg-slate-800/50 dark:border-slate-700 dark:placeholder-slate-400 dark:text-white dark:focus:bg-slate-800 dark:focus:ring-primary-500/20 dark:focus:border-primary-500 transition-all shadow-sm"
+                                placeholder="ابحث عن مادة، قاعة، أو مراقب..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="bg-slate-100/80 dark:bg-slate-800/80 p-1.5 rounded-2xl flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50 shadow-inner backdrop-blur-sm shrink-0">
+                            <button 
+                                onClick={() => setViewMode('grid')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-[0_2px_10px_rgba(0,0,0,0.05)]' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
+                            >
+                                <CalendarIcon size={18} />
+                                شبكي
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('timeline')}
+                                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all ${viewMode === 'timeline' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-[0_2px_10px_rgba(0,0,0,0.05)]' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
+                            >
+                                <Clock size={18} />
+                                زمني
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             {viewMode === 'grid' ? (
-                <div className="relative rounded-3xl bg-white dark:bg-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] border border-slate-200/60 dark:border-slate-700/60 overflow-hidden bg-[radial-gradient(#f1f5f9_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px]">
-                    <div className="overflow-x-auto custom-scrollbar">
+                <div className="relative rounded-[2rem] bg-white dark:bg-slate-900 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.1)] dark:shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)] border border-slate-200/80 dark:border-slate-700/80 overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-50/50 to-white dark:from-slate-800/30 dark:to-slate-900/80 pointer-events-none"></div>
+                    <div className="relative overflow-x-auto custom-scrollbar">
                         <table className="w-full text-sm text-right border-collapse min-w-max bg-transparent">
                             <thead>
                                 <tr>
-                                    <th className="p-6 font-black text-slate-500 dark:text-slate-400 border-b-2 border-l border-slate-200 dark:border-slate-700/50 w-[180px] sticky right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl z-20 shadow-[4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+                                    <th className="p-6 font-black text-slate-500 dark:text-slate-400 border-b-2 border-l border-slate-200/80 dark:border-slate-700/80 w-[180px] sticky right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl z-20 shadow-[8px_0_20px_-5px_rgba(0,0,0,0.05)]">
                                         <div className="flex flex-col items-start gap-1">
-                                            <CalendarIcon size={24} className="text-primary-500 dark:text-primary-400 mb-1" />
-                                            <span className="text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">التاريخ / الصف</span>
+                                            <div className="p-2.5 bg-primary-50 dark:bg-primary-900/30 rounded-xl text-primary-600 dark:text-primary-400 mb-1">
+                                                <CalendarIcon size={22} />
+                                            </div>
+                                            <span className="text-[11px] uppercase tracking-widest text-slate-400 dark:text-slate-500 mt-2 font-bold">التاريخ / الصف</span>
                                         </div>
                                     </th>
-                                    {grades.map(grade => (
-                                        <th key={grade.id} className="p-6 border-b-2 border-l border-slate-200 dark:border-slate-700/50 align-top bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm min-w-[320px]">
+                                    {filteredGrades.map(grade => (
+                                        <th key={grade.id} className="p-6 border-b-2 border-l border-slate-200/80 dark:border-slate-700/80 align-top bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm min-w-[320px]">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-indigo-600 border border-white/20 dark:border-slate-700/50 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-primary-500/20">
+                                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-600 to-primary-500 dark:from-primary-500 dark:to-primary-400 border border-white/20 dark:border-slate-700/50 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-primary-500/25">
                                                     {grade.name.charAt(0)}
                                                 </div>
                                                 <div>
-                                                    <div className="font-black text-slate-800 dark:text-white text-xl">{grade.name}</div>
-                                                    <div className="text-xs text-slate-500 font-bold mt-1.5 bg-white dark:bg-slate-700 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm inline-flex items-center gap-1.5">
-                                                        <Users size={12} className="text-primary-500" /> {grade.divisions.length} شعب
+                                                    <div className="font-black text-slate-800 dark:text-white text-xl tracking-tight">{grade.name}</div>
+                                                    <div className="text-xs text-slate-500 dark:text-slate-300 font-bold mt-1.5 bg-white dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 shadow-sm inline-flex items-center gap-1.5">
+                                                        <Users size={12} className="text-primary-500 dark:text-primary-400" /> {grade.divisions.length} شعب
                                                     </div>
                                                 </div>
                                             </div>
@@ -577,19 +705,23 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                             <tbody>
                                 {dates.length === 0 ? (
                                     <tr>
-                                        <td colSpan={grades.length + 1} className="p-20 relative overflow-hidden">
+                                        <td colSpan={filteredGrades.length + 1} className="p-20 relative overflow-hidden">
                                             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40"></div>
                                             <div className="relative z-10 flex flex-col items-center justify-center text-center">
-                                                <div className="w-28 h-28 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-full flex items-center justify-center mb-6 border-[10px] border-white dark:border-slate-800 shadow-xl">
-                                                    <CalendarIcon size={40} className="text-slate-300 dark:text-slate-500" />
+                                                <div className="relative w-32 h-32 flex items-center justify-center mb-8">
+                                                    <div className="absolute inset-0 bg-primary-100 dark:bg-primary-900/30 rounded-full blur-2xl opacity-60"></div>
+                                                    <div className="relative w-28 h-28 bg-gradient-to-br from-white to-primary-50 dark:from-slate-800 dark:to-slate-900 rounded-[2rem] rotate-3 flex items-center justify-center border border-white dark:border-slate-700 shadow-2xl shadow-primary-500/10 transition-transform hover:rotate-6 hover:scale-105 duration-500">
+                                                        <CalendarIcon size={48} className="text-primary-400 dark:text-primary-500 -rotate-3" />
+                                                    </div>
                                                 </div>
-                                                <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-3">الجدول فارغ تماماً</h3>
-                                                <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8 text-base">قم بإضافة اليوم الأول للبدء في توزيع المواد الدراسية على الفصول وإدارة اللجان بكل سهولة واحترافية.</p>
-                                                <div className="relative bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-5 py-3 rounded-2xl font-bold flex items-center gap-3 hover:border-primary-500 hover:shadow-lg transition-all mx-auto focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-500/20">
-                                                    <span className="text-sm">اختر اليوم للبدء:</span>
+                                                <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-br from-slate-800 to-slate-500 dark:from-white dark:to-slate-400 mb-3 tracking-tight">الجدول فارغ تماماً</h3>
+                                                <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8 text-base font-medium leading-relaxed">ابدأ بإضافة اليوم الأول لتوزيع المواد الدراسية على الفصول وإدارة اللجان بكل احترافية وسهولة.</p>
+                                                <div className="relative bg-gradient-to-l from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-3 shadow-[0_4px_15px_rgba(var(--color-primary-600),0.3)] hover:shadow-[0_6px_25px_rgba(var(--color-primary-600),0.4)] hover:-translate-y-1 transition-all duration-300 mx-auto group cursor-pointer overflow-hidden">
+                                                    <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+                                                    <span className="text-lg tracking-tight">إضافة اليوم الأول للجدول</span>
                                                     <input 
                                                         type="date" 
-                                                        className="border-none bg-transparent focus:ring-0 text-base font-bold w-40 p-1 cursor-pointer dark:text-white" 
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer z-10" 
                                                         value={newDateValue} 
                                                         onChange={handleDateInput} 
                                                     />
@@ -598,8 +730,8 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                         </td>
                                     </tr>
                                 ) : dates.map((date) => (
-                                    <tr key={date} className="group/row border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                                        <td className="p-6 border-l border-slate-100 dark:border-slate-700/50 sticky right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl z-10 align-top shadow-[4px_0_15px_-3px_rgba(0,0,0,0.02)]">
+                                    <tr key={date} className="group/row border-b border-slate-200/50 dark:border-slate-700/50 hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors">
+                                        <td className="p-6 border-l border-slate-200/80 dark:border-slate-700/80 sticky right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl z-10 align-top shadow-[8px_0_20px_-5px_rgba(0,0,0,0.03)]">
                                             <div className="flex flex-col gap-1.5">
                                                 <span className="font-black text-slate-800 dark:text-white text-2xl tracking-tight">{dayjs(date).locale('ar').format('dddd')}</span>
                                                 <span className="text-primary-600 dark:text-primary-400 font-bold text-sm bg-primary-50 dark:bg-primary-900/30 px-3 py-1.5 rounded-lg w-fit mt-1 border border-primary-100 dark:border-primary-800/30 shadow-sm">{date}</span>
@@ -609,8 +741,14 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                             </div>
                                         </td>
                                         
-                                        {grades.map(grade => {
+                                        {filteredGrades.map(grade => {
                                             const groups = getGroupedItemsForCell(date, grade.id);
+                                            
+                                            const scheduledDivisions = new Set();
+                                            groups.forEach(g => {
+                                                g.items.forEach(item => scheduledDivisions.add(item.division_id));
+                                            });
+                                            const allDivisionsScheduled = grade.divisions && scheduledDivisions.size >= grade.divisions.length;
                                             
                                             return (
                                                 <td key={grade.id} className="p-5 border-l border-slate-100 dark:border-slate-700/50 align-top">
@@ -681,16 +819,17 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                                 </div>
                                                             );
                                                         })}
-                                                        
-                                                        <button 
-                                                            onClick={() => openDrawer(date, grade)}
-                                                            className="flex-1 min-h-[120px] flex flex-col items-center justify-center gap-3 text-sm font-bold text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 rounded-3xl p-4 transition-all duration-300 hover:shadow-inner group/addbtn"
-                                                        >
-                                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover/addbtn:bg-primary-100 dark:group-hover/addbtn:bg-primary-900/50 group-hover/addbtn:scale-110 transition-transform">
-                                                                <Plus size={20} />
-                                                            </div>
-                                                            إضافة مادة
-                                                        </button>
+                                                        {!allDivisionsScheduled && (
+                                                            <button 
+                                                                onClick={() => openDrawer(date, grade)}
+                                                                className="flex-1 min-h-[120px] flex flex-col items-center justify-center gap-3 text-sm font-bold text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 rounded-3xl p-4 transition-all duration-300 hover:shadow-inner group/addbtn"
+                                                            >
+                                                                <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover/addbtn:bg-primary-100 dark:group-hover/addbtn:bg-primary-900/50 group-hover/addbtn:scale-110 transition-transform">
+                                                                    <Plus size={20} />
+                                                                </div>
+                                                                إضافة مادة
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             );
@@ -704,7 +843,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
             ) : (
                 <TimelineView 
                     dates={dates} 
-                    grades={grades} 
+                    grades={filteredGrades} 
                     getGroupedItemsForCell={getGroupedItemsForCell}
                     getSubjectLightColor={getSubjectLightColor}
                     searchQuery={searchQuery}
