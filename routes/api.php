@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\MobileAuthController;
 use App\Http\Controllers\Api\MobileFeaturesController;
 use App\Http\Controllers\Api\V1\BranchManagerController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\ClassAttendanceController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,10 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::put('/preparations/{lessonPreparation}', [MobileFeaturesController::class, 'updatePreparation']);
     Route::delete('/preparations/{lessonPreparation}', [MobileFeaturesController::class, 'deletePreparation']);
     
+    // Teacher Class Attendance
+    Route::get('/class-attendance/students', [ClassAttendanceController::class, 'getStudents']);
+    Route::post('/class-attendance', [ClassAttendanceController::class, 'store']);
+
     // HR / Employee Requests
     Route::get('/requests', [MobileFeaturesController::class, 'getEmployeeRequests']);
     Route::post('/requests', [MobileFeaturesController::class, 'storeEmployeeRequest']);
@@ -73,6 +78,15 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
 
     // Employee Achievements
     Route::get('/achievements', [MobileFeaturesController::class, 'getAchievements']);
+
+    // Student App Routes
+    Route::get('/student/grades', [\App\Http\Controllers\Api\StudentAppController::class, 'getMonthlyGrades']);
+    Route::get('/student/attendance', [\App\Http\Controllers\Api\StudentAppController::class, 'getAttendance']);
+
+    // Parent App Routes
+    Route::get('/parent/children', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildren']);
+    Route::get('/parent/children/{student_id}/grades', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildGrades']);
+    Route::get('/parent/children/{student_id}/attendance', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildAttendance']);
 
     // Notifications (reusing NotificationController JSON responses)
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);

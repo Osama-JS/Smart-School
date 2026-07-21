@@ -11,8 +11,11 @@ class MonthlyGrade extends Model
     use \App\Traits\LogsActivity;
 
     protected $fillable = [
-        'enrollment_id', 'semester_id', 'period_id', 'subject_id',
-        'written_score', 'homework_score', 'oral_score', 'attendance_score'
+        'enrollment_id', 'semester_id', 'period_id', 'subject_id', 'scores'
+    ];
+
+    protected $casts = [
+        'scores' => 'array',
     ];
 
     public function enrollment(): BelongsTo { return $this->belongsTo(Enrollment::class); }
@@ -26,7 +29,10 @@ class MonthlyGrade extends Model
     protected function totalScore(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->written_score + $this->homework_score + $this->oral_score + $this->attendance_score,
+            get: function () {
+                if (!$this->scores || !is_array($this->scores)) return 0;
+                return array_sum($this->scores);
+            },
         );
     }
 

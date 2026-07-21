@@ -5,7 +5,7 @@ import {
     Menu, X, BookOpen, Clock, ShieldCheck, Map, Activity, 
     Home, LogOut, ChevronDown, CheckSquare, Plus, CheckCircle, Store, Sun, Moon, PanelLeftClose, PanelLeftOpen, User,
     FileText, Sliders, Layers, BarChart, UserPlus, FileSignature, ShieldAlert,
-    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone
+    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ArrowUp, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import ToastNotification from '@/Components/ToastNotification';
@@ -147,7 +147,6 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             title: 'القائمة الرئيسية',
             items: [
                 { name: 'الرئيسية', icon: Home, url: route('dashboard') },
-                { name: 'الأخبار والإعلانات', icon: Megaphone, url: route('news.index') },
                 { name: 'المستخدمون', icon: Users, url: route('users.index'), permission: 'إدارة المستخدمين' },
             ]
         },
@@ -200,9 +199,18 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'جدول اختباراتي', icon: Calendar, url: route('student.exam-schedule') },
                 { name: 'التغطية والاحتياط', icon: ShieldCheck, url: route('academic.coverage.index'), permission: 'إدارة الجداول الدراسية' },
                 { name: 'جداول الاختبارات', icon: FileText, url: route('academic.exam-schedules.index'), permission: 'إدارة الجداول الدراسية' },
-                { name: 'النتائج الشهرية', icon: BarChart, permission: 'إدارة الدرجات' },
-                { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
-                { name: 'أولياء الأمور', icon: Users, url: route('academic.parents'), permission: 'إدارة الطلاب' },
+                { name: 'فترات الرصد', icon: Calendar, url: route('academic.result-periods.index'), permission: 'إدارة الدرجات' },
+                { name: 'توزيع الدرجات', icon: Settings, url: route('academic.subject-grade-settings.index'), permission: 'إدارة المواد الدراسية' },
+                { name: 'سجل الدرجات', icon: BarChart, url: route('academic.monthly-grades.index'), permission: 'عرض درجات الطلاب' },
+                {
+                    name: 'الطلاب', icon: GraduationCap, subItems: [
+                        { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
+                        { name: 'الترفيع الجماعي', icon: ArrowUp, url: route('academic.promotions'), permission: 'إدارة الطلاب' },
+                        { name: 'أولياء الأمور', icon: Users, url: route('academic.parents'), permission: 'إدارة أولياء الأمور' },
+                    ]
+                },
+                { name: 'الغياب المدرسي', icon: AlertTriangle, url: route('academic.attendances.index'), permission: 'إدارة الطلاب' },
+                { name: 'غياب الحصص', icon: Clock, url: route('academic.attendances.classes'), permission: 'إدارة الطلاب' },
             ]
         },
         {
@@ -223,7 +231,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'المحتوى والتواصل',
             items: [
-                { name: 'الأخبار', icon: Newspaper },
+                { name: 'الأخبار والإعلانات', icon: Megaphone, url: route('news.index') },
                 { name: 'المكتبة الرقمية', icon: Library, url: route('academic.library.digital.index'), permission: 'عرض المكتبة الرقمية' },
                 { name: 'الكتب الورقية', icon: Book, url: route('academic.library.books.index'), permission: 'عرض الكتب الورقية' },
                 { name: 'استعارة الكتب', icon: BookOpen, url: route('academic.library.borrowings.index'), permission: 'عرض الاستعارات' },

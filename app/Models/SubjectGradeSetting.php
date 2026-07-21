@@ -10,7 +10,11 @@ class SubjectGradeSetting extends Model
     use \App\Traits\LogsActivity;
 
     protected $fillable = [
-        'subject_id', 'written_weight', 'homework_weight', 'oral_weight', 'attendance_weight'
+        'subject_id', 'criteria_weights'
+    ];
+
+    protected $casts = [
+        'criteria_weights' => 'array',
     ];
 
     public function subject(): BelongsTo {

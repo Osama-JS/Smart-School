@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تقرير تحليل مشروع Smart School - نظام الإدارة المدرسية</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --purple: #8b5cf6;
+      --teal: #14b8a6;
+      --dark: #0f172a;
+      --darker: #020617;
+      --gray: #1e293b;
+      --gray-light: #334155;
+      --border: rgba(255,255,255,0.08);
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: var(--darker);
+      color: var(--text);
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    /* ── Cover Page ── */
+    .cover {
+      height: 100vh;
+      background: linear-gradient(135deg, #020617 0%, #0f172a 40%, #1e1b4b 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+    }
+    .cover::before {
+      content: '';
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(99,102,241,0.25) 0%, transparent 70%);
+      top: -200px; right: -100px;
+    }
+    .cover::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%);
+      bottom: -100px; left: -100px;
+    }
+    .cover-content {
+      text-align: center;
+      z-index: 1;
+      padding: 40px;
+    }
+    .cover-badge {
+      display: inline-block;
+      background: rgba(99,102,241,0.2);
+      border: 1px solid rgba(99,102,241,0.5);
+      color: #a5b4fc;
+      padding: 8px 24px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      margin-bottom: 28px;
+    }
+    .cover h1 {
+      font-size: 64px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 50%, #60fdfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .cover-subtitle {
+      font-size: 22px;
+      color: #94a3b8;
+      margin-bottom: 48px;
+      font-weight: 400;
+    }
+    .cover-meta {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .cover-meta-item {
+      text-align: center;
+    }
+    .cover-meta-item .num {
+      font-size: 42px;
+      font-weight: 900;
+      color: #6366f1;
+    }
+    .cover-meta-item .label {
+      font-size: 13px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+    .cover-date {
+      position: absolute;
+      bottom: 30px;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* ── Section Headers ── */
+    .section-header {
+      padding: 80px 0 40px;
+      position: relative;
+    }
+    .section-number {
+      font-size: 100px;
+      font-weight: 900;
+      color: rgba(99,102,241,0.08);
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      line-height: 1;
+      user-select: none;
+    }
+    .section-label {
+      display: inline-block;
+      background: rgba(99,102,241,0.15);
+      border: 1px solid rgba(99,102,241,0.3);
+      color: #a5b4fc;
+      padding: 4px 16px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 40px;
+      font-weight: 900;
+      color: #f1f5f9;
+    }
+    .section-title span { color: #6366f1; }
+    .section-desc {
+      color: #64748b;
+      font-size: 16px;
+      margin-top: 12px;
+      max-width: 600px;
+      line-height: 1.7;
+    }
+
+    /* ── Summary Cards ── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 60px;
+    }
+    .summary-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+    .summary-card:hover { transform: translateY(-4px); border-color: rgba(99,102,241,0.4); }
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 100%; height: 3px;
+    }
+    .summary-card.primary::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .summary-card.success::before { background: linear-gradient(90deg, #10b981, #34d399); }
+    .summary-card.warning::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .summary-card.danger::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .summary-card.info::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .summary-card.teal::before { background: linear-gradient(90deg, #14b8a6, #2dd4bf); }
+
+    .summary-num {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .summary-card.primary .summary-num { color: #818cf8; }
+    .summary-card.success .summary-num { color: #34d399; }
+    .summary-card.warning .summary-num { color: #fbbf24; }
+    .summary-card.danger .summary-num { color: #f87171; }
+    .summary-card.info .summary-num { color: #60a5fa; }
+    .summary-card.teal .summary-num { color: #2dd4bf; }
+
+    .summary-label {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    /* ── Module Cards ── */
+    .modules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+      margin-bottom: 40px;
+    }
+    .module-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .module-header {
+      padding: 24px 24px 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .module-icon {
+      width: 52px; height: 52px;
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .module-title { font-size: 18px; font-weight: 800; color: #f1f5f9; }
+    .module-subtitle { font-size: 13px; color: #64748b; margin-top: 3px; }
+    .module-status {
+      margin-right: auto;
+      padding: 4px 12px;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .status-done { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .status-partial { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .status-pending { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+
+    .module-body { padding: 20px 24px; }
+    .feature-list { list-style: none; }
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 13.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+    }
+    .feature-item:last-child { border-bottom: none; }
+    .fi-done::before { content: '✓'; color: #10b981; font-weight: 900; flex-shrink: 0; }
+    .fi-partial::before { content: '◐'; color: #f59e0b; font-weight: 900; flex-shrink: 0; }
+    .fi-pending::before { content: '○'; color: #ef4444; font-weight: 900; flex-shrink: 0; }
+
+    .progress-bar-container {
+      margin: 16px 0 8px;
+    }
+    .progress-bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 6px;
+    }
+    .progress-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 1s ease;
+    }
+    .pf-success { background: linear-gradient(90deg, #059669, #10b981); }
+    .pf-warning { background: linear-gradient(90deg, #b45309, #f59e0b); }
+    .pf-danger { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+
+    /* ── Table ── */
+    .table-container {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: rgba(99,102,241,0.1); }
+    th {
+      padding: 16px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #a5b4fc;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 14px 20px;
+      font-size: 13.5px;
+      color: #cbd5e1;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    .td-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      margin: 2px;
+    }
+    .badge-web { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    .badge-mobile { background: rgba(139,92,246,0.2); color: #c4b5fd; }
+    .badge-api { background: rgba(16,185,129,0.2); color: #34d399; }
+
+    /* ── Priority Section ── */
+    .priority-list { list-style: none; }
+    .priority-item {
+      display: flex;
+      gap: 20px;
+      padding: 20px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .priority-item:last-child { border-bottom: none; }
+    .priority-number {
+      width: 40px; height: 40px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .pn-1 { background: rgba(239,68,68,0.2); color: #f87171; }
+    .pn-2 { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .pn-3 { background: rgba(99,102,241,0.2); color: #818cf8; }
+    .pn-4 { background: rgba(16,185,129,0.2); color: #34d399; }
+    .priority-content { flex: 1; }
+    .priority-title { font-size: 17px; font-weight: 800; color: #f1f5f9; margin-bottom: 6px; }
+    .priority-desc { font-size: 14px; color: #64748b; line-height: 1.6; }
+
+    /* ── Architecture Diagram ── */
+    .arch-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 16px 0;
+    }
+    .arch-title { font-size: 16px; font-weight: 700; color: #a5b4fc; margin-bottom: 12px; }
+    .arch-items { display: flex; flex-wrap: wrap; gap: 8px; }
+    .arch-item {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    /* ── Overall Score ── */
+    .score-section {
+      background: linear-gradient(135deg, rgba(99,102,241,0.1) 0%, rgba(16,185,129,0.05) 100%);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 28px;
+      padding: 48px;
+      text-align: center;
+      margin: 40px 0;
+    }
+    .score-circle {
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: conic-gradient(#6366f1 0deg, #6366f1 230deg, rgba(255,255,255,0.05) 230deg);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 24px;
+      position: relative;
+    }
+    .score-circle-inner {
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      background: #0f172a;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column;
+    }
+    .score-number { font-size: 42px; font-weight: 900; color: #a5b4fc; }
+    .score-unit { font-size: 14px; color: #64748b; }
+    .score-label { font-size: 24px; font-weight: 800; color: #f1f5f9; }
+
+    /* ── Timeline ── */
+    .timeline { padding: 20px 0; position: relative; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      right: 20px; top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #6366f1, transparent);
+    }
+    .timeline-item {
+      padding: 16px 56px 16px 0;
+      position: relative;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      right: 12px; top: 22px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      border: 3px solid #6366f1;
+      background: #0f172a;
+    }
+    .timeline-phase { font-size: 12px; color: #6366f1; font-weight: 700; margin-bottom: 4px; }
+    .timeline-title { font-size: 17px; font-weight: 800; color: #f1f5f9; margin-bottom: 6px; }
+    .timeline-desc { font-size: 14px; color: #64748b; line-height: 1.6; }
+
+    /* ── Footer ── */
+    footer {
+      background: rgba(255,255,255,0.02);
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+      margin-top: 80px;
+      text-align: center;
+    }
+    footer p { color: #334155; font-size: 14px; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--border); margin: 60px 0; }
+
+    /* ── Alert Box ── */
+    .alert {
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin: 20px 0;
+      border-right: 4px solid;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .alert-warning {
+      background: rgba(245,158,11,0.08);
+      border-color: #f59e0b;
+      color: #fde68a;
+    }
+    .alert-info {
+      background: rgba(59,130,246,0.08);
+      border-color: #3b82f6;
+      color: #bfdbfe;
+    }
+    .alert-success {
+      background: rgba(16,185,129,0.08);
+      border-color: #10b981;
+      color: #a7f3d0;
+    }
+
+    /* Two-column layout */
+    .two-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    @media (max-width: 768px) { .two-cols { grid-template-columns: 1fr; } .cover h1 { font-size: 36px; } }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- COVER PAGE -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-content">
+    <div class="cover-badge">📊 تقرير تحليل شامل</div>
+    <h1>Smart School</h1>
+    <div class="cover-subtitle">نظام الإدارة المدرسية الأكاديمي والإداري المتكامل</div>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><div class="num">67</div><div class="label">نموذج بيانات (Model)</div></div>
+      <div class="cover-meta-item"><div class="num">43</div><div class="label">وحدة تحكم (Controller)</div></div>
+      <div class="cover-meta-item"><div class="num">20+</div><div class="label">شاشة Flutter</div></div>
+      <div class="cover-meta-item"><div class="num">480+</div><div class="label">مسار ويب (Route)</div></div>
+    </div>
+  </div>
+  <div class="cover-date">تاريخ التقرير: يوليو 2026 — تحليل احترافي ودقيق</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 1: Executive Summary -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="section-header">
+    <div class="section-number">01</div>
+    <div class="section-label">الملخص التنفيذي</div>
+    <div class="section-title">نظرة عامة على <span>المشروع</span></div>
+    <p class="section-desc">تحليل شامل لنظام Smart School — نظام إدارة مدرسي متكامل يضم واجهة ويب (Laravel + React/Inertia) وتطبيق موبايل (Flutter). يعمل المشروع على خدمة الموظفين والمعلمين والطلاب وأولياء الأمور.</p>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card success">
+      <div class="summary-num">72%</div>
+      <div class="summary-label">نسبة الاكتمال الإجمالية</div>
+    </div>
+    <div class="summary-card primary">
+      <div class="summary-num">14</div>
+      <div class="summary-label">وحدة تشغيلية مكتملة</div>
+    </div>
+    <div class="summary-card warning">
+      <div class="summary-num">8</div>
+      <div class="summary-label">وحدة تحتاج تطوير</div>
+    </div>
+    <div class="summary-card danger">
+      <div class="summary-num">6</div>
+      <div class="summary-label">وحدة غير منجزة بعد</div>
+    </div>
+    <div class="summary-card info">
+      <div class="summary-num">Laravel</div>
+      <div class="summary-label">الواجهة الخلفية + API</div>
+    </div>
+    <div class="summary-card teal">
+      <div class="summary-num">Flutter</div>
+      <div class="summary-label">تطبيق الجوال</div>
+    </div>
+  </div>
+
+  <div class="alert alert-success">
+    <strong>✅ المنهجية التقنية:</strong> المشروع يستخدم Laravel (PHP) كواجهة خلفية مع Inertia.js + React لواجهة الويب، وFlutter لتطبيق الجوال. البنية التقنية سليمة وقابلة للتوسع بشكل ممتاز مع نظام أذونات متقدم (Role + Permission Based).
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 2: Architecture -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">02</div>
+    <div class="section-label">البنية التقنية</div>
+    <div class="section-title">هيكل <span>النظام</span></div>
+  </div>
+
+  <div class="two-cols">
+    <div>
+      <div class="arch-box">
+        <div class="arch-title">🌐 الواجهة الخلفية (Backend)</div>
+        <div class="arch-items">
+          <span class="arch-item">Laravel 11</span>
+          <span class="arch-item">Inertia.js</span>
+          <span class="arch-item">MySQL</span>
+          <span class="arch-item">Laravel Sanctum (API Auth)</span>
+          <span class="arch-item">FCM Notifications</span>
+          <span class="arch-item">67 Eloquent Models</span>
+          <span class="arch-item">Role-Permission System</span>
+          <span class="arch-item">Activity Logging</span>
+        </div>
+      </div>
+      <div class="arch-box">
+        <div class="arch-title">💻 واجهة الويب (Frontend)</div>
+        <div class="arch-items">
+          <span class="arch-item">React + Vite</span>
+          <span class="arch-item">Tailwind CSS</span>
+          <span class="arch-item">Inertia.js</span>
+          <span class="arch-item">Lucide Icons</span>
+          <span class="arch-item">Dark/Light Mode</span>
+          <span class="arch-item">RTL Arabic Support</span>
+          <span class="arch-item">Responsive Design</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="arch-box">
+        <div class="arch-title">📱 تطبيق الجوال (Flutter)</div>
+        <div class="arch-items">
+          <span class="arch-item">Flutter 3.x</span>
+          <span class="arch-item">Provider (State Management)</span>
+          <span class="arch-item">Sanctum Token Auth</span>
+          <span class="arch-item">Flutter Secure Storage</span>
+          <span class="arch-item">Geolocator (GPS)</span>
+          <span class="arch-item">HTTP API Integration</span>
+          <span class="arch-item">20+ Screens</span>
+          <span class="arch-item">Dark Mode Support</span>
+        </div>
+      </div>
+      <div class="arch-box">
+        <div class="arch-title">📦 البنية التنظيمية للمشروع</div>
+        <div class="arch-items">
+          <span class="arch-item">HR Module</span>
+          <span class="arch-item">Academic Module</span>
+          <span class="arch-item">Admin Module</span>
+          <span class="arch-item">Teacher Module</span>
+          <span class="arch-item">Student Module</span>
+          <span class="arch-item">Reports Module</span>
+          <span class="arch-item">News Module</span>
+          <span class="arch-item">Notification System</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 3: HR Module -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">03</div>
+    <div class="section-label">وحدة الموارد البشرية</div>
+    <div class="section-title">HR <span>Module</span></div>
+    <p class="section-desc">الوحدة الأقوى والأكثر اكتمالاً في المشروع. تشمل كافة عمليات إدارة الموظفين من توظيف وحضور وإجازات ومخالفات وإنجازات.</p>
+  </div>
+
+  <div class="modules-grid">
+    <!-- Employees -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(99,102,241,0.15);">👤</div>
+        <div>
+          <div class="module-title">إدارة الموظفين</div>
+          <div class="module-subtitle">HR / Employees</div>
+        </div>
+        <div class="module-status status-done">مكتمل 95%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:95%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">إضافة وتعديل وحذف الموظفين</li>
+          <li class="feature-item fi-done">رفع صورة شخصية والوثائق</li>
+          <li class="feature-item fi-done">استيراد الموظفين عبر Excel (Template)</li>
+          <li class="feature-item fi-done">إدارة المسمى الوظيفي والأقسام والدرجات</li>
+          <li class="feature-item fi-done">تخصيص الفرع والمسار</li>
+          <li class="feature-item fi-partial">عرض تفصيلي لملف الموظف (Profile)</li>
+          <li class="feature-item fi-pending">تقييم الموظف الدوري (Performance Appraisal)</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(16,185,129,0.15);">📍</div>
+        <div>
+          <div class="module-title">الحضور والانصراف</div>
+          <div class="module-subtitle">Attendance (GPS-based)</div>
+        </div>
+        <div class="module-status status-done">مكتمل 90%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:90%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">تسجيل الحضور بالـ GPS (Geofencing)</li>
+          <li class="feature-item fi-done">تسجيل الانصراف</li>
+          <li class="feature-item fi-done">إدارة الشفتات (Shifts)</li>
+          <li class="feature-item fi-done">كشف الحضور الشهري مع الفلاتر</li>
+          <li class="feature-item fi-done">تعديل الحضور يدوياً (Admin)</li>
+          <li class="feature-item fi-done">تقرير الحضور الشامل</li>
+          <li class="feature-item fi-done">تطبيق موبايل لتسجيل الحضور بصمة جغرافية</li>
+          <li class="feature-item fi-partial">إشعار تأخر الحضور تلقائياً</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaves -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(245,158,11,0.15);">📅</div>
+        <div>
+          <div class="module-title">الإجازات</div>
+          <div class="module-subtitle">Leaves & Balances</div>
+        </div>
+        <div class="module-status status-done">مكتمل 90%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:90%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">أنواع الإجازات القابلة للتخصيص</li>
+          <li class="feature-item fi-done">رصيد الإجازات لكل موظف</li>
+          <li class="feature-item fi-done">توليد أرصدة تلقائية</li>
+          <li class="feature-item fi-done">تسجيل وتعديل وحذف الإجازات</li>
+          <li class="feature-item fi-partial">طلب إجازة من قبل الموظف (Self Service)</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Violations -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(239,68,68,0.15);">⚖️</div>
+        <div>
+          <div class="module-title">المخالفات التأديبية</div>
+          <div class="module-subtitle">Employee Violations</div>
+        </div>
+        <div class="module-status status-done">مكتمل 88%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:88%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">تسجيل المخالفات مع التصنيف والتفاصيل</li>
+          <li class="feature-item fi-done">أنواع المخالفات القابلة للتخصيص</li>
+          <li class="feature-item fi-done">تتبع مستوى التكرار تلقائياً</li>
+          <li class="feature-item fi-done">توقيع الموظف والمسؤول (Signature)</li>
+          <li class="feature-item fi-done">تغيير الحالة (مفتوحة/مغلقة)</li>
+          <li class="feature-item fi-done">إشعار الموظف للتوقيع</li>
+          <li class="feature-item fi-done">عرض "مخالفاتي" في الموبايل</li>
+          <li class="feature-item fi-partial">تقرير احصائي للمخالفات</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(234,179,8,0.15);">🏆</div>
+        <div>
+          <div class="module-title">الإنجازات والتكريم</div>
+          <div class="module-subtitle">Employee Achievements</div>
+        </div>
+        <div class="module-status status-done">مكتمل 85%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:85%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">تسجيل الإنجازات بأنواع مخصصة</li>
+          <li class="feature-item fi-done">إصدار شهادات تكريم احترافية (PDF)</li>
+          <li class="feature-item fi-done">نشر الإنجاز كخبر (Broadcast)</li>
+          <li class="feature-item fi-done">توقيع الموظف والمسؤول</li>
+          <li class="feature-item fi-done">عرض "إنجازاتي" في الموبايل</li>
+          <li class="feature-item fi-partial">إشعار الموظف بالإنجاز</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meetings -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(59,130,246,0.15);">🤝</div>
+        <div>
+          <div class="module-title">الاجتماعات</div>
+          <div class="module-subtitle">Meetings</div>
+        </div>
+        <div class="module-status status-done">مكتمل 90%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:90%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">إنشاء اجتماعات وتحديد المشاركين</li>
+          <li class="feature-item fi-done">إدارة الحضور داخل الاجتماع</li>
+          <li class="feature-item fi-done">محاضر الاجتماع ورفع المرفقات</li>
+          <li class="feature-item fi-done">تغيير حالة الاجتماع (منتهي/قيد الانتظار)</li>
+          <li class="feature-item fi-done">إرسال تذكيرات للمشاركين</li>
+          <li class="feature-item fi-done">صفحة تفصيلية لكل اجتماع</li>
+          <li class="feature-item fi-partial">دمج مع تقويم Google/Outlook</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(20,184,166,0.15);">📋</div>
+        <div>
+          <div class="module-title">نظام التقارير الديناميكية</div>
+          <div class="module-subtitle">Dynamic Reports Builder</div>
+        </div>
+        <div class="module-status status-done">مكتمل 82%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:82%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">منشئ قوالب متقدم (Field Builder)</li>
+          <li class="feature-item fi-done">12+ نوع حقل (نص، تاريخ، تقييم، مصفوفة...)</li>
+          <li class="feature-item fi-done">ربط بمصادر بيانات آلية (Classroom Visits, Employee Violations)</li>
+          <li class="feature-item fi-done">معاينة القالب (تعبئة + عرض نهائي)</li>
+          <li class="feature-item fi-done">تعبئة التقارير عبر الويب والموبايل</li>
+          <li class="feature-item fi-done">مراجعة وقبول/رد التقارير</li>
+          <li class="feature-item fi-partial">تصدير التقارير PDF</li>
+          <li class="feature-item fi-pending">جدولة التقارير الدورية</li>
+          <li class="feature-item fi-pending">إشعار بموعد تسليم التقرير</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employee Requests -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(239,68,68,0.15);">📝</div>
+        <div>
+          <div class="module-title">الطلبات الإدارية</div>
+          <div class="module-subtitle">Employee Requests</div>
+        </div>
+        <div class="module-status status-partial">جزئي 75%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-warning" style="width:75%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">تقديم طلبات متنوعة (إجازة، عذر، شهادة...)</li>
+          <li class="feature-item fi-done">متابعة حالة الطلب</li>
+          <li class="feature-item fi-done">مراجعة وقبول/رد الطلبات (Admin)</li>
+          <li class="feature-item fi-done">دعم المرفقات في الطلبات</li>
+          <li class="feature-item fi-done">تطبيق موبايل للطلبات</li>
+          <li class="feature-item fi-partial">تدفق الموافقة المتعدد المستويات</li>
+          <li class="feature-item fi-pending">أنواع طلبات مخصصة (Custom Types)</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 4: Academic Module -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">04</div>
+    <div class="section-label">الوحدة الأكاديمية</div>
+    <div class="section-title">Academic <span>Module</span></div>
+    <p class="section-desc">تشمل الجانب التعليمي والأكاديمي للمدرسة — من الهيكل الدراسي والجداول إلى إدارة الطلاب والمكتبة.</p>
+  </div>
+
+  <div class="modules-grid">
+    <!-- Academic Structure -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(99,102,241,0.15);">🏫</div>
+        <div>
+          <div class="module-title">الهيكل الأكاديمي</div>
+          <div class="module-subtitle">Sections / Grades / Divisions</div>
+        </div>
+        <div class="module-status status-done">مكتمل 95%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:95%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">إدارة المراحل (Sections)</li>
+          <li class="feature-item fi-done">إدارة الصفوف (Grades)</li>
+          <li class="feature-item fi-done">إدارة الفصول (Divisions)</li>
+          <li class="feature-item fi-done">نسخ الفصول بين السنوات</li>
+          <li class="feature-item fi-done">ربط المعلمين بالمواد والفصول</li>
+          <li class="feature-item fi-done">السنوات الدراسية والفصول الدراسية</li>
+          <li class="feature-item fi-done">تفعيل/تعطيل السنة أو الفصل</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Timetable -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(59,130,246,0.15);">📆</div>
+        <div>
+          <div class="module-title">الجدول الدراسي</div>
+          <div class="module-subtitle">Master Timetable</div>
+        </div>
+        <div class="module-status status-done">مكتمل 88%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:88%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">منشئ جدول تفاعلي (Drag & Assign)</li>
+          <li class="feature-item fi-done">إدارة الحصص اليومية والأوقات</li>
+          <li class="feature-item fi-done">جدول المعلم (My Timetable)</li>
+          <li class="feature-item fi-done">استبدال الحصص (Class Coverage)</li>
+          <li class="feature-item fi-done">عرض الجدول في الموبايل</li>
+          <li class="feature-item fi-partial">تعارض الجدول (Conflict Detection)</li>
+          <li class="feature-item fi-pending">توليد الجدول تلقائياً (Auto-Generator)</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Classroom Visits -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(139,92,246,0.15);">👁️</div>
+        <div>
+          <div class="module-title">الزيارات الصفية</div>
+          <div class="module-subtitle">Classroom Visits</div>
+        </div>
+        <div class="module-status status-partial">جزئي 70%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-warning" style="width:70%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">إنشاء زيارة صفية شاملة (Web)</li>
+          <li class="feature-item fi-done">تقييم المعلم وإضافة الملاحظات</li>
+          <li class="feature-item fi-done">نقاط النقاش والتوصيات</li>
+          <li class="feature-item fi-done">الموافقة على الزيارة</li>
+          <li class="feature-item fi-done">توقيع المعلم</li>
+          <li class="feature-item fi-done">عرض "زياراتي الصفية" للمعلم في الموبايل</li>
+          <li class="feature-item fi-pending">إنشاء زيارة صفية من الموبايل (للمشرف)</li>
+          <li class="feature-item fi-pending">تقارير تحليلية للزيارات</li>
+          <li class="feature-item fi-pending">رسم بياني لأداء المعلمين</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب ✅</span>
+          <span class="badge badge-mobile">موبايل (عرض فقط)</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Exam Schedules -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(16,185,129,0.15);">📜</div>
+        <div>
+          <div class="module-title">جداول الاختبارات</div>
+          <div class="module-subtitle">Exam Schedules</div>
+        </div>
+        <div class="module-status status-done">مكتمل 90%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:90%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">إنشاء جدول اختبارات لكل صف</li>
+          <li class="feature-item fi-done">منشئ الجدول التفاعلي (Drag & Drop)</li>
+          <li class="feature-item fi-done">عرض Timeline للاختبارات</li>
+          <li class="feature-item fi-done">طباعة جدول الاختبارات</li>
+          <li class="feature-item fi-done">تصدير ICS (تقويم)</li>
+          <li class="feature-item fi-done">عرض جدول الطالب (My Exam Schedule)</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lesson Preparations -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(245,158,11,0.15);">📖</div>
+        <div>
+          <div class="module-title">دفتر تحضير الدروس</div>
+          <div class="module-subtitle">Lesson Preparations</div>
+        </div>
+        <div class="module-status status-done">مكتمل 88%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:88%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">رفع تحضير الدروس (المعلم)</li>
+          <li class="feature-item fi-done">مراجعة وقبول التحضير (الإدارة)</li>
+          <li class="feature-item fi-done">دعم الصور والمرفقات</li>
+          <li class="feature-item fi-done">تصفية حسب المعلم والمادة</li>
+          <li class="feature-item fi-done">دفتر المتابعة (Followup Books)</li>
+          <li class="feature-item fi-done">تسجيل الدروس في الموبايل</li>
+          <li class="feature-item fi-partial">إشعار بالتحضير المرفوض</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Students -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(99,102,241,0.15);">🎒</div>
+        <div>
+          <div class="module-title">إدارة الطلاب</div>
+          <div class="module-subtitle">Students & Parents</div>
+        </div>
+        <div class="module-status status-partial">جزئي 60%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-warning" style="width:60%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">إضافة وتعديل بيانات الطلاب</li>
+          <li class="feature-item fi-done">تسجيل الطالب في فصل (Enrollment)</li>
+          <li class="feature-item fi-done">إدارة أولياء الأمور</li>
+          <li class="feature-item fi-done">صورة شخصية للطالب</li>
+          <li class="feature-item fi-partial">استيراد الطلاب عبر Excel</li>
+          <li class="feature-item fi-pending">غياب الطلاب وتتبع الحضور</li>
+          <li class="feature-item fi-pending">درجات الطلاب والنتائج</li>
+          <li class="feature-item fi-pending">رسائل أولياء الأمور</li>
+          <li class="feature-item fi-pending">بوابة الطالب/ولي الأمر (Portal)</li>
+          <li class="feature-item fi-pending">الرسوم المدرسية والمدفوعات</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Library -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(20,184,166,0.15);">📚</div>
+        <div>
+          <div class="module-title">المكتبة</div>
+          <div class="module-subtitle">Digital & Physical Library</div>
+        </div>
+        <div class="module-status status-done">مكتمل 85%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:85%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">المكتبة الرقمية (رفع ملفات/روابط)</li>
+          <li class="feature-item fi-done">الكتب الورقية (الكتالوج)</li>
+          <li class="feature-item fi-done">نظام الإعارة والإرجاع</li>
+          <li class="feature-item fi-done">تصنيف المواد وبحث متقدم</li>
+          <li class="feature-item fi-done">إحصاءات التحميل والمشاهدة</li>
+          <li class="feature-item fi-done">التقييم والمفضلة (Bookmark)</li>
+          <li class="feature-item fi-pending">واجهة بحث في الموبايل</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Study Plans -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(59,130,246,0.15);">🗺️</div>
+        <div>
+          <div class="module-title">الخطط الدراسية</div>
+          <div class="module-subtitle">Study Plans</div>
+        </div>
+        <div class="module-status status-done">مكتمل 85%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:85%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">رفع خطة دراسية (Teacher)</li>
+          <li class="feature-item fi-done">مراجعة الخطط (Admin)</li>
+          <li class="feature-item fi-done">تحميل الخطة</li>
+          <li class="feature-item fi-done">دعم من الموبايل</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 5: Admin & Shared Modules -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">05</div>
+    <div class="section-label">وحدات الإدارة والمشتركة</div>
+    <div class="section-title">Administration <span>&amp; Shared</span></div>
+  </div>
+
+  <div class="modules-grid">
+    <!-- News -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(59,130,246,0.15);">📰</div>
+        <div>
+          <div class="module-title">الأخبار والإعلانات</div>
+          <div class="module-subtitle">News & Announcements</div>
+        </div>
+        <div class="module-status status-done">مكتمل 92%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:92%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">نشر الأخبار مع التصنيفات والصور</li>
+          <li class="feature-item fi-done">التعليقات والإعجاب والمشاركة</li>
+          <li class="feature-item fi-done">نظام وجهة الأخبار (Branch-based)</li>
+          <li class="feature-item fi-done">شريط أخبار متحرك (News Ticker)</li>
+          <li class="feature-item fi-done">عداد المشاهدات</li>
+          <li class="feature-item fi-partial">إشعار عند نشر خبر جديد</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(245,158,11,0.15);">🔔</div>
+        <div>
+          <div class="module-title">نظام الإشعارات</div>
+          <div class="module-subtitle">Push Notifications (FCM)</div>
+        </div>
+        <div class="module-status status-done">مكتمل 85%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:85%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">إرسال إشعارات يدوية (Admin)</li>
+          <li class="feature-item fi-done">إشعارات للمستخدمين المحددين/الجميع</li>
+          <li class="feature-item fi-done">مركز الإشعارات في الموبايل</li>
+          <li class="feature-item fi-done">تمييز المقروء وغير المقروء</li>
+          <li class="feature-item fi-done">FCM Push Notifications</li>
+          <li class="feature-item fi-partial">قوالب الإشعارات التلقائية</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل</span>
+          <span class="badge badge-api">API</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Permissions -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(239,68,68,0.15);">🔐</div>
+        <div>
+          <div class="module-title">الأدوار والصلاحيات</div>
+          <div class="module-subtitle">Roles & Permissions</div>
+        </div>
+        <div class="module-status status-done">مكتمل 90%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:90%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">أدوار مخصصة (Roles)</li>
+          <li class="feature-item fi-done">صلاحيات دقيقة على مستوى الوظيفة</li>
+          <li class="feature-item fi-done">واجهة إدارة الصلاحيات</li>
+          <li class="feature-item fi-done">حماية جميع المسارات بـ Permission Middleware</li>
+          <li class="feature-item fi-done">تطبيق الصلاحيات في الموبايل أيضاً</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(99,102,241,0.15);">📊</div>
+        <div>
+          <div class="module-title">لوحة التحكم الرئيسية</div>
+          <div class="module-subtitle">Multi-Role Dashboard</div>
+        </div>
+        <div class="module-status status-done">مكتمل 85%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:85%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">لوحة مختلفة لكل دور (Admin/Teacher/Student)</li>
+          <li class="feature-item fi-done">إحصاءات الطلاب والمعلمين والحضور</li>
+          <li class="feature-item fi-done">رسم بياني للحضور الأسبوعي</li>
+          <li class="feature-item fi-done">المهام السريعة (Quick Tasks)</li>
+          <li class="feature-item fi-done">شريط الأخبار</li>
+          <li class="feature-item fi-partial">إحصاءات أعمق ورسوم بيانية متقدمة</li>
+          <li class="feature-item fi-pending">تقارير فورية (Real-time Analytics)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(16,185,129,0.15);">⚙️</div>
+        <div>
+          <div class="module-title">إعدادات النظام</div>
+          <div class="module-subtitle">System Settings</div>
+        </div>
+        <div class="module-status status-partial">جزئي 65%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-warning" style="width:65%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">إعدادات الفروع والمعلومات الأساسية</li>
+          <li class="feature-item fi-done">رفع شعار المدرسة</li>
+          <li class="feature-item fi-done">إعدادات الأقسام والوظائف</li>
+          <li class="feature-item fi-partial">إعدادات الواجهة في التطبيق (محدود)</li>
+          <li class="feature-item fi-pending">إعدادات الإشعارات في التطبيق</li>
+          <li class="feature-item fi-pending">إعدادات الهوية البصرية للتطبيق</li>
+          <li class="feature-item fi-pending">إعدادات النسخ الاحتياطي</li>
+          <li class="feature-item fi-pending">ترويسة الإعدادات مثل شاشة الملف الشخصي (كما طُلب)</li>
+        </ul>
+        <div style="margin-top:12px; display:flex; gap:6px; flex-wrap:wrap">
+          <span class="badge badge-web">ويب</span>
+          <span class="badge badge-mobile">موبايل (محدود)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="module-card">
+      <div class="module-header">
+        <div class="module-icon" style="background:rgba(59,130,246,0.15);">🗃️</div>
+        <div>
+          <div class="module-title">سجل النشاط</div>
+          <div class="module-subtitle">Activity Logs</div>
+        </div>
+        <div class="module-status status-done">مكتمل 80%</div>
+      </div>
+      <div class="module-body">
+        <div class="progress-bar-container">
+          <div class="progress-bar"><div class="progress-fill pf-success" style="width:80%"></div></div>
+        </div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">تسجيل جميع الأنشطة الحساسة</li>
+          <li class="feature-item fi-done">عرض سجل النشاط مع الفلاتر</li>
+          <li class="feature-item fi-done">معلومات المستخدم والوقت والإجراء</li>
+          <li class="feature-item fi-partial">البحث والتصدير</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 6: Flutter Mobile App -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">06</div>
+    <div class="section-label">تطبيق الجوال</div>
+    <div class="section-title">Flutter <span>Mobile App</span></div>
+    <p class="section-desc">تطبيق Flutter متكامل يخدم موظفي المدرسة بالدرجة الأولى — يتصل بـ API وينعكس بنفس منطق الصلاحيات.</p>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>الشاشة</th>
+          <th>الوصف</th>
+          <th>جودة التنفيذ</th>
+          <th>الحالة</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>login_screen.dart</strong></td>
+          <td>تسجيل دخول بـ Token (Sanctum) مع دعم الخادم المخصص</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>home_screen.dart</strong></td>
+          <td>شاشة رئيسية ديناميكية بكروت قابلة للتخصيص والإخفاء والترتيب وتغيير الحجم</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>attendance_screen.dart</strong></td>
+          <td>تسجيل حضور GPS مع كشف الفرع التلقائي وعرض الشفتات</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>attendance_report_screen.dart</strong></td>
+          <td>كشف الحضور الشهري مع فلاتر ومخططات بيانية</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>attendance_review_screen.dart</strong></td>
+          <td>مراجعة حضور الموظفين (للمشرف والإدارة)</td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>timetable_screen.dart</strong></td>
+          <td>عرض الجدول الدراسي الأسبوعي بواجهة احترافية</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>lesson_preparations_screen.dart</strong></td>
+          <td>دفتر التحضير الإلكتروني مع دعم الصور</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>requests_screen.dart</strong></td>
+          <td>تقديم ومتابعة الطلبات الإدارية مع المرفقات</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>notifications_screen.dart</strong></td>
+          <td>مركز الإشعارات مع التمييز بين المقروء وغير المقروء</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>profile_screen.dart</strong></td>
+          <td>صفحة الملف الشخصي مع Tabs احترافية وتفاصيل الموظف</td>
+          <td>⭐⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>my_reports_screen.dart</strong></td>
+          <td>تقاريري — عرض وإنشاء التقارير من القوالب</td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>create_report_screen.dart</strong></td>
+          <td>تعبئة التقرير — كافة أنواع الحقول بما فيها DataTable الديناميكي</td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+        <tr>
+          <td><strong>infractions_screen.dart</strong></td>
+          <td>عرض مخالفاتي — قائمة أساسية فقط</td>
+          <td>⭐⭐</td>
+          <td><span class="td-status status-partial">أساسي فقط</span></td>
+        </tr>
+        <tr>
+          <td><strong>achievements_screen.dart</strong></td>
+          <td>عرض إنجازاتي — قائمة أساسية فقط</td>
+          <td>⭐⭐</td>
+          <td><span class="td-status status-partial">أساسي فقط</span></td>
+        </tr>
+        <tr>
+          <td><strong>my_classroom_visits_screen.dart</strong></td>
+          <td>زياراتي الصفية — قائمة أساسية للمعلم</td>
+          <td>⭐⭐</td>
+          <td><span class="td-status status-partial">أساسي فقط</span></td>
+        </tr>
+        <tr>
+          <td><strong>manage_classroom_visits_screen.dart</strong></td>
+          <td>إدارة الزيارات الصفية للمشرف — غير منجزة!</td>
+          <td>⭐</td>
+          <td><span class="td-status status-pending">غير منجز</span></td>
+        </tr>
+        <tr>
+          <td><strong>settings_screen.dart</strong></td>
+          <td>إعدادات التطبيق — محدودة جداً (مساعدة + من نحن فقط)</td>
+          <td>⭐⭐</td>
+          <td><span class="td-status status-partial">محدود</span></td>
+        </tr>
+        <tr>
+          <td><strong>server_config_screen.dart</strong></td>
+          <td>إعداد عنوان الخادم يدوياً</td>
+          <td>⭐⭐⭐⭐</td>
+          <td><span class="td-status status-done">مكتمل</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="alert alert-warning">
+    <strong>⚠️ ملاحظة مهمة للموبايل:</strong> شاشة "إدارة الزيارات الصفية" تحتوي على رسالة placeholder فقط "جاري برمجة شاشة إدارة الزيارات الصفية وإضافتها..." ولا تحتوي على أي وظائف حقيقية. تطبيق الطالب وولي الأمر يعرض كروتاً في الـ Home screen لكن صفحاته تعيد إلى TimetableScreen كـ placeholder.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 7: MISSING CRITICAL FEATURES -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">07</div>
+    <div class="section-label">الميزات الغائبة</div>
+    <div class="section-title">ما <span>يجب إضافته</span> لاكتمال النظام</div>
+    <p class="section-desc">الميزات الحيوية التي يحتاجها النظام المدرسي الأكاديمي والإداري لأن يكون مكتملاً حقاً.</p>
+  </div>
+
+  <div class="alert alert-info">
+    <strong>📌 معيار التقييم:</strong> تم تقييم كل ميزة بناءً على احتياجات النظام المدرسي الشامل. الميزات المصنفة بـ "حرج" هي ضرورية لأي نظام مدرسي وظيفي.
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>الميزة / الوحدة</th>
+          <th>الأهمية</th>
+          <th>التأثير</th>
+          <th>الوضع الحالي</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>🎓 درجات الطلاب ونتائجهم</strong><br><small>Grade Book — نظام متكامل للدرجات الشهرية والفصلية والسنوية</small></td>
+          <td><span class="td-status" style="background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.3)">🔴 حرج</span></td>
+          <td>يؤثر على الطلاب وأولياء الأمور والمعلمين</td>
+          <td>يوجد Model <code>MonthlyGrade</code> لكن بدون واجهة</td>
+        </tr>
+        <tr>
+          <td><strong>📊 غياب الطلاب</strong><br><small>Student Attendance — تتبع حضور وغياب الطالب يومياً</small></td>
+          <td><span class="td-status" style="background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.3)">🔴 حرج</span></td>
+          <td>أساسي في كل مدرسة</td>
+          <td>غير موجود بالكامل</td>
+        </tr>
+        <tr>
+          <td><strong>💰 الرسوم المدرسية والمالية</strong><br><small>Fees & Payments — نظام محاسبي لرسوم الطلاب</small></td>
+          <td><span class="td-status" style="background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.3)">🔴 حرج</span></td>
+          <td>مطلوب لكل مؤسسة تعليمية</td>
+          <td>غير موجود</td>
+        </tr>
+        <tr>
+          <td><strong>👨‍👩‍👧 بوابة ولي الأمر</strong><br><small>Parent Portal — متابعة أبنائه، نتائجهم، الغياب، التواصل</small></td>
+          <td><span class="td-status" style="background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.3)">🔴 حرج</span></td>
+          <td>يؤثر على رضا أولياء الأمور</td>
+          <td>كروت في Home فقط (لا تفتح شيئاً)</td>
+        </tr>
+        <tr>
+          <td><strong>💬 التواصل (Messaging/Chat)</strong><br><small>Internal Messaging — رسائل بين المعلمين وأولياء الأمور والإدارة</small></td>
+          <td><span class="td-status" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)">🟡 مهم</span></td>
+          <td>يوجد Model ChatRoom/ChatMessage لكن بلا واجهة</td>
+          <td>غير مكتمل</td>
+        </tr>
+        <tr>
+          <td><strong>📱 إنشاء الزيارة الصفية من الموبايل</strong><br><small>Mobile Visit Creation — لمشرف الفرع يسجل الزيارة ميدانياً</small></td>
+          <td><span class="td-status" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)">🟡 مهم</span></td>
+          <td>الشاشة موجودة لكنها فارغة</td>
+          <td>Placeholder فقط</td>
+        </tr>
+        <tr>
+          <td><strong>📤 تصدير PDF للتقارير</strong><br><small>Report PDF Export — طباعة التقارير المرفوعة</small></td>
+          <td><span class="td-status" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)">🟡 مهم</span></td>
+          <td>ضروري للأرشفة الرسمية</td>
+          <td>غير موجود</td>
+        </tr>
+        <tr>
+          <td><strong>⏰ جدولة التقارير الدورية</strong><br><small>Report Scheduling — إرسال تذكيرات بالتقارير المستحقة</small></td>
+          <td><span class="td-status" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)">🟡 مهم</span></td>
+          <td>يتيح التتبع الدوري للتقارير</td>
+          <td>غير موجود</td>
+        </tr>
+        <tr>
+          <td><strong>📈 تحليلات وإحصاءات متقدمة</strong><br><small>Advanced Analytics — رسوم بيانية للأداء والحضور والنتائج</small></td>
+          <td><span class="td-status" style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.3)">🟡 مهم</span></td>
+          <td>يساعد الإدارة على اتخاذ القرار</td>
+          <td>إحصاءات أساسية فقط</td>
+        </tr>
+        <tr>
+          <td><strong>🔧 إعدادات التطبيق للموبايل</strong><br><small>App Settings — إشعارات، لغة، تفضيلات شخصية</small></td>
+          <td><span class="td-status" style="background:rgba(99,102,241,0.2);color:#818cf8;border:1px solid rgba(99,102,241,0.3)">🔵 تحسين</span></td>
+          <td>تجربة مستخدم أفضل</td>
+          <td>ترويسة مختلفة، محتوى محدود</td>
+        </tr>
+        <tr>
+          <td><strong>🖨️ تقييم الأداء الوظيفي</strong><br><small>Performance Appraisal — تقييم دوري للموظفين</small></td>
+          <td><span class="td-status" style="background:rgba(99,102,241,0.2);color:#818cf8;border:1px solid rgba(99,102,241,0.3)">🔵 تحسين</span></td>
+          <td>يكمل منظومة HR</td>
+          <td>غير موجود</td>
+        </tr>
+        <tr>
+          <td><strong>🤖 توليد الجدول تلقائياً</strong><br><small>Auto Timetable Generator — بناءً على قيود المعلمين</small></td>
+          <td><span class="td-status" style="background:rgba(99,102,241,0.2);color:#818cf8;border:1px solid rgba(99,102,241,0.3)">🔵 تحسين</span></td>
+          <td>يوفر وقتاً كبيراً</td>
+          <td>غير موجود</td>
+        </tr>
+        <tr>
+          <td><strong>🛡️ النسخ الاحتياطي</strong><br><small>Backup & Restore — نسخ احتياطية تلقائية للبيانات</small></td>
+          <td><span class="td-status" style="background:rgba(99,102,241,0.2);color:#818cf8;border:1px solid rgba(99,102,241,0.3)">🔵 تحسين</span></td>
+          <td>أمان البيانات</td>
+          <td>غير موجود</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 8: Completion Score -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">08</div>
+    <div class="section-label">نسب الاكتمال</div>
+    <div class="section-title">درجة <span>الجاهزية</span></div>
+  </div>
+
+  <div class="score-section">
+    <div class="score-circle">
+      <div class="score-circle-inner">
+        <div class="score-number">72</div>
+        <div class="score-unit">من 100</div>
+      </div>
+    </div>
+    <div class="score-label">نسبة الاكتمال الإجمالية</div>
+    <p style="color:#64748b; margin-top:12px; font-size:15px;">النظام يمتلك قاعدة تقنية قوية جداً ويعمل بكفاءة كنظام HR. الجانب الأكاديمي (الطلاب والدرجات) هو الثغرة الكبرى.</p>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card success">
+      <div class="summary-num">88%</div>
+      <div class="summary-label">وحدة HR (الموارد البشرية)</div>
+    </div>
+    <div class="summary-card warning">
+      <div class="summary-num">78%</div>
+      <div class="summary-label">الوحدة الأكاديمية (التعليمية)</div>
+    </div>
+    <div class="summary-card info">
+      <div class="summary-num">82%</div>
+      <div class="summary-label">واجهة الويب</div>
+    </div>
+    <div class="summary-card primary">
+      <div class="summary-num">68%</div>
+      <div class="summary-label">تطبيق الجوال</div>
+    </div>
+    <div class="summary-card teal">
+      <div class="summary-num">85%</div>
+      <div class="summary-label">الواجهة البرمجية (API)</div>
+    </div>
+    <div class="summary-card danger">
+      <div class="summary-num">30%</div>
+      <div class="summary-label">وحدة الطلاب (الجانب الأكاديمي)</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 9: Priority Roadmap -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">09</div>
+    <div class="section-label">خطة التطوير</div>
+    <div class="section-title">خارطة طريق <span>الأولويات</span></div>
+    <p class="section-desc">ترتيب المهام المقترحة حسب الأهمية والتأثير على اكتمال النظام.</p>
+  </div>
+
+  <ul class="priority-list">
+    <li class="priority-item">
+      <div class="priority-number pn-1">1</div>
+      <div class="priority-content">
+        <div class="priority-title">🎓 نظام درجات الطلاب (Grade Book)</div>
+        <div class="priority-desc">
+          النظام يمتلك بالفعل Models كـ <code>MonthlyGrade</code>، <code>ResultPeriod</code>، <code>EvaluationCriteria</code>، <code>SubjectGradeSetting</code>. المطلوب بناء واجهات إدارة الدرجات وإدخال نتائج المعلمين وعرض كشف النتائج للطلاب وأولياء الأمور. هذه الوحدة غائبة تماماً بالرغم من وجود البنية التحتية لها.
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-1">2</div>
+      <div class="priority-content">
+        <div class="priority-title">📊 نظام حضور وغياب الطلاب</div>
+        <div class="priority-desc">
+          تسجيل حضور الطلاب يومياً بواسطة المعلم أو إدارة الفصل. إشعار ولي الأمر بالغياب. إحصاءات الغياب الشهرية. هذا البُعد مكوّن مركزي في أي نظام مدرسي حقيقي.
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-2">3</div>
+      <div class="priority-content">
+        <div class="priority-title">📱 شاشة إدارة الزيارات الصفية في الموبايل</div>
+        <div class="priority-desc">
+          الشاشة موجودة (<code>manage_classroom_visits_screen.dart</code>) لكنها تحتوي على placeholder فقط. يجب برمجتها بالكامل لتتيح للمشرف إنشاء زيارات من الهاتف ومشاهدة الزيارات السابقة. API الخاص بها متاح بالفعل (<code>/mobile/features/classroom-visits</code>).
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-2">4</div>
+      <div class="priority-content">
+        <div class="priority-title">👨‍👩‍👧 بوابة ولي الأمر والطالب</div>
+        <div class="priority-desc">
+          الكروت في الـ Home Screen للطالب وولي الأمر تعيد إلى <code>TimetableScreen</code> كـ fallback. يجب بناء واجهات حقيقية: عرض النتائج، الغياب، الرسوم، التواصل مع المدرسة. هذا سيفتح النظام لشريحة كبيرة من المستخدمين.
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-2">5</div>
+      <div class="priority-content">
+        <div class="priority-title">🔧 إعدادات التطبيق في الموبايل</div>
+        <div class="priority-desc">
+          شاشة الإعدادات تحتوي على "مساعدة" و"من نحن" فقط. يجب إضافة: إعدادات الإشعارات، تغيير كلمة المرور، خيارات اللغة والمظهر. كما يجب توحيد ترويسة الإعدادات مع ترويسة الملف الشخصي (التي تستخدم Radios).
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-3">6</div>
+      <div class="priority-content">
+        <div class="priority-title">📤 تصدير التقارير كـ PDF</div>
+        <div class="priority-desc">
+          نظام التقارير قوي جداً لكنه يفتقر إلى خاصية التصدير إلى PDF أو الطباعة. هذا مهم جداً للتقارير الرسمية والأرشفة الورقية التي تشترطها كثير من المؤسسات التعليمية.
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-3">7</div>
+      <div class="priority-content">
+        <div class="priority-title">💬 نظام المراسلات الداخلية (Chat)</div>
+        <div class="priority-desc">
+          توجد Models جاهزة (<code>ChatRoom</code>، <code>ChatMessage</code>) لكن بدون واجهة. يمكن بناء واجهة تواصل داخلية بين المعلمين والإدارة وأولياء الأمور.
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-3">8</div>
+      <div class="priority-content">
+        <div class="priority-title">💰 نظام الرسوم المدرسية</div>
+        <div class="priority-desc">
+          إضافة وحدة مالية لإدارة رسوم الطلاب (رسوم التسجيل، الدراسة، الأنشطة)، مع إشعارات للمتأخرين في السداد وتقارير مالية للإدارة.
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-4">9</div>
+      <div class="priority-content">
+        <div class="priority-title">📈 لوحة تحليلات متقدمة</div>
+        <div class="priority-desc">
+          رسوم بيانية متعمقة لأداء المعلمين (نتائج الزيارات)، توزيع درجات الطلاب، معدلات الغياب، إحصاءات الإجازات. مؤشرات الأداء الرئيسية (KPIs) لمديري الفروع.
+        </div>
+      </div>
+    </li>
+    <li class="priority-item">
+      <div class="priority-number pn-4">10</div>
+      <div class="priority-content">
+        <div class="priority-title">🤖 مولّد الجدول الدراسي التلقائي</div>
+        <div class="priority-desc">
+          أداة خوارزمية لتوليد الجداول تلقائياً بناءً على: عدد الحصص لكل مادة، تفضيلات المعلمين، عدد الفصول، القيود الزمنية. ستوفر ساعات من العمل اليدوي.
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 10: Technical Strengths & Weaknesses -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">10</div>
+    <div class="section-label">التقييم التقني</div>
+    <div class="section-title">نقاط القوة <span>والضعف</span></div>
+  </div>
+
+  <div class="two-cols">
+    <div>
+      <div class="arch-box" style="border-color:rgba(16,185,129,0.3);">
+        <div class="arch-title" style="color:#34d399;">✅ نقاط القوة</div>
+        <ul class="feature-list">
+          <li class="feature-item fi-done">بنية كود منظمة بشكل استثنائي (Modules المنفصلة)</li>
+          <li class="feature-item fi-done">نظام صلاحيات متقدم ومرن جداً (Role+Permission)</li>
+          <li class="feature-item fi-done">67 نموذج Eloquent يغطي معظم الكيانات</li>
+          <li class="feature-item fi-done">واجهة Inertia.js توفر SPA بدون API منفصل للويب</li>
+          <li class="feature-item fi-done">دعم كامل للـ RTL والعربية</li>
+          <li class="feature-item fi-done">دعم الوضع الليلي في كل الواجهات</li>
+          <li class="feature-item fi-done">نظام التقارير الديناميكي فريد ومتقدم جداً</li>
+          <li class="feature-item fi-done">نظام حضور GPS متكامل مع Geofencing</li>
+          <li class="feature-item fi-done">تطبيق Flutter احترافي بـ animations وتصميم عالي</li>
+          <li class="feature-item fi-done">سجل النشاط لجميع العمليات الحساسة</li>
+          <li class="feature-item fi-done">نظام الإشعارات الفورية عبر FCM</li>
+          <li class="feature-item fi-done">قابلية التوسع والإضافة بسهولة</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="arch-box" style="border-color:rgba(239,68,68,0.3);">
+        <div class="arch-title" style="color:#f87171;">⚠️ نقاط الضعف</div>
+        <ul class="feature-list">
+          <li class="feature-item fi-pending">الجانب الأكاديمي (الطلاب/الدرجات) غائب تقريباً</li>
+          <li class="feature-item fi-pending">تطبيق الطالب وولي الأمر في الموبايل فارغ</li>
+          <li class="feature-item fi-pending">شاشات Flutter الأساسية (مخالفات، إنجازات) بدون تصميم</li>
+          <li class="feature-item fi-pending">شاشة إدارة الزيارات الصفية placeholder</li>
+          <li class="feature-item fi-pending">لا يوجد تصدير PDF للتقارير</li>
+          <li class="feature-item fi-pending">إعدادات الموبايل شبه فارغة</li>
+          <li class="feature-item fi-pending">نظام المراسلات غير مطبق (Models موجودة)</li>
+          <li class="feature-item fi-pending">لا يوجد نظام رسوم أو مدفوعات</li>
+          <li class="feature-item fi-pending">لا يوجد مخطط للجدول (Conflict Detection)</li>
+          <li class="feature-item fi-pending">لا يوجد تقييم أداء دوري للموظفين</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 11: Timeline -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+  <div class="section-header">
+    <div class="section-number">11</div>
+    <div class="section-label">التطوير المقترح</div>
+    <div class="section-title">خطة <span>زمنية</span> مقترحة</div>
+  </div>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-phase">المرحلة الأولى — الأسابيع 1-3</div>
+      <div class="timeline-title">🚀 إنجاز الشاشات الناقصة في الموبايل</div>
+      <div class="timeline-desc">إنجاز شاشة إنشاء الزيارة الصفية للمشرف. تطوير شاشات المخالفات والإنجازات والزيارات بتصميم احترافي مطابق للشاشات الأخرى. تحديث شاشة الإعدادات بترويسة موحدة وإعدادات الإشعارات.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-phase">المرحلة الثانية — الأسابيع 4-7</div>
+      <div class="timeline-title">🎓 نظام حضور وغياب الطلاب + Grades</div>
+      <div class="timeline-desc">بناء وحدة تسجيل حضور الطلاب يومياً. إنشاء Grade Book للمعلمين (إدخال الدرجات). عرض النتائج وكشف الدرجات. ربط مع إشعارات الغياب لولي الأمر.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-phase">المرحلة الثالثة — الأسابيع 8-11</div>
+      <div class="timeline-title">👨‍👩‍👧 بوابة الطالب وولي الأمر</div>
+      <div class="timeline-desc">بناء واجهات حقيقية للطالب (نتائج، غياب، جدول) وولي الأمر (متابعة أبنائه، رسائل المدرسة، الغياب). دعم الموبايل بالكامل.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-phase">المرحلة الرابعة — الأسابيع 12-15</div>
+      <div class="timeline-title">💰 الرسوم المدرسية + التصدير والتحليلات</div>
+      <div class="timeline-desc">وحدة الرسوم المدرسية. تصدير التقارير PDF. تحليلات متقدمة للأداء. نظام المراسلات الداخلية. جدولة التقارير الدورية.</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-phase">المرحلة الخامسة — الأسابيع 16-20</div>
+      <div class="timeline-title">🤖 أتمتة وذكاء اصطناعي</div>
+      <div class="timeline-desc">مولّد الجدول التلقائي. تقييم الأداء الوظيفي. التنبيه المبكر للغياب المتكرر. إحصاءات ذكية على مستوى الفرع والمدرسة.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- SECTION 12: Final Verdict -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="container">
+  <div class="divider"></div>
+
+  <div class="alert alert-success" style="font-size:15px; line-height:1.9;">
+    <strong>🏆 الحكم النهائي:</strong><br>
+    مشروع Smart School يمتلك أساساً تقنياً استثنائياً وبنية قوية تُحسد عليها. وحدة الموارد البشرية فريدة في نوعها وتفوق كثيراً من الأنظمة التجارية. نظام التقارير الديناميكي مبتكر ومتقدم جداً. تطبيق Flutter احترافي مع تصميم راقٍ.<br><br>
+    لكن ليكون النظام "مدرسياً أكاديمياً وإدارياً كاملاً" — يحتاج إلى إكمال الجانب الأكاديمي: درجات الطلاب، حضور الطلاب، بوابة ولي الأمر. هذا هو الفارق بين نظام HR ممتاز ونظام مدرسي متكامل حقاً.
+  </div>
+
+  <div class="summary-grid" style="margin-top:40px;">
+    <div class="summary-card primary">
+      <div class="summary-num">🌟</div>
+      <div class="summary-label">جودة الكود: ممتازة</div>
+    </div>
+    <div class="summary-card success">
+      <div class="summary-num">💼</div>
+      <div class="summary-label">وحدة HR: شبه مكتملة</div>
+    </div>
+    <div class="summary-card warning">
+      <div class="summary-num">📚</div>
+      <div class="summary-label">الجانب الأكاديمي: يحتاج تطوير</div>
+    </div>
+    <div class="summary-card info">
+      <div class="summary-num">📱</div>
+      <div class="summary-label">الموبايل: جيد مع ثغرات</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <p style="color:#475569; font-size:16px; margin-bottom:8px;">📊 تقرير تحليل مشروع Smart School</p>
+    <p>تاريخ الإصدار: يوليو 2026 — إعداد بواسطة Antigravity AI</p>
+    <p style="margin-top:8px;">جميع البيانات مبنية على تحليل مباشر لكود المشروع</p>
+  </div>
+</footer>
+
+</body>
+</html>

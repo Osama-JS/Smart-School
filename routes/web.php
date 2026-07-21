@@ -275,9 +275,35 @@ Route::middleware('auth')->group(function () {
             'create'  => 'academic.students.create',
             'store'   => 'academic.students.store',
             'edit'    => 'academic.students.edit',
-            'update'  => 'academic.students.update',
             'destroy' => 'academic.students.destroy',
         ]);
+
+        // Bulk Promotion
+        Route::get('/academic/promotions', [\App\Http\Controllers\Academic\PromotionController::class, 'index'])->name('academic.promotions');
+        Route::post('/academic/promotions/students', [\App\Http\Controllers\Academic\PromotionController::class, 'students'])->name('academic.promotions.students');
+        Route::post('/academic/promotions', [\App\Http\Controllers\Academic\PromotionController::class, 'promote'])->name('academic.promotions.promote');
+
+
+        // Student Attendance Reports
+        Route::get('/academic/attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'index'])->name('academic.attendances.index');
+        Route::get('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'classReports'])->name('academic.attendances.classes');
+        
+        // Result Periods
+        Route::resource('/academic/result-periods', \App\Http\Controllers\Academic\ResultPeriodController::class)->names([
+            'index'   => 'academic.result-periods.index',
+            'store'   => 'academic.result-periods.store',
+            'update'  => 'academic.result-periods.update',
+            'destroy' => 'academic.result-periods.destroy',
+        ])->except(['create', 'edit', 'show']);
+
+        // Subject Grade Settings
+        Route::get('/academic/subject-grade-settings', [\App\Http\Controllers\Academic\SubjectGradeSettingController::class, 'index'])->name('academic.subject-grade-settings.index');
+        Route::post('/academic/subject-grade-settings', [\App\Http\Controllers\Academic\SubjectGradeSettingController::class, 'store'])->name('academic.subject-grade-settings.store');
+        
+        // Monthly Grades for Teachers & Admin
+        Route::get('/academic/monthly-grades', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'index'])->name('academic.monthly-grades.index');
+        Route::get('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'gradeEntry'])->name('academic.monthly-grades.entry');
+        Route::post('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'storeGrades'])->name('academic.monthly-grades.store');
     });
 
     // ── HR Routes ──

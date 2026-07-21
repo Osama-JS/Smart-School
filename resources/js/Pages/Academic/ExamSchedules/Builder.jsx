@@ -7,6 +7,8 @@ import { Transition, Dialog } from '@headlessui/react';
 import dayjs from 'dayjs';
 import Swal from 'sweetalert2';
 import TimelineView from './TimelineView';
+import SelectInput from '@/Components/SelectInput';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 
 // Dynamic color generator based on subject ID for a premium, brand-aligned look
 const getSubjectColor = (id) => {
@@ -103,8 +105,8 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
         }
     }, [examSchedule]);
 
-    const handleDateInput = (e) => {
-        const selectedDate = e.target.value;
+    const handleDateInput = (val) => {
+        const selectedDate = val;
         if (selectedDate) {
             // Check holidays
             const isHoliday = holidays.find(h => {
@@ -132,7 +134,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                 addSelectedDate(selectedDate);
             }
         }
-        e.target.value = ''; // Reset for next time
+        setNewDateValue(''); // Reset state for next time
     };
 
     const handleAutoSchedule = () => {
@@ -484,12 +486,17 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                     <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
                         <div className="relative flex-1 md:flex-none flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl font-bold hover:border-primary-400 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 shadow-sm transition-all">
                             <Plus size={18} className="text-primary-500" />
-                            <span className="text-sm">إضافة يوم:</span>
-                            <input 
+                            <span className="text-sm shrink-0">إضافة يوم:</span>
+                            <FlatpickrInput 
                                 type="date" 
-                                className="border-none bg-transparent focus:ring-0 text-sm font-bold w-36 p-0 cursor-pointer dark:text-white" 
+                                className="!border-none !bg-transparent !focus:ring-0 !text-sm !font-bold !w-32 !p-0 !cursor-pointer dark:!text-white !shadow-none min-h-[auto]" 
                                 value={newDateValue} 
                                 onChange={handleDateInput} 
+                                placeholder="اختر..."
+                                options={{
+                                    minDate: examSchedule.period?.fill_start_date ? examSchedule.period.fill_start_date.split(' ')[0] : null,
+                                    maxDate: examSchedule.period?.fill_end_date ? examSchedule.period.fill_end_date.split(' ')[0] : null,
+                                }}
                             />
                         </div>
                         <button 
@@ -587,11 +594,16 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                 <p className="text-slate-500 dark:text-slate-400 max-w-md mb-8 text-base">قم بإضافة اليوم الأول للبدء في توزيع المواد الدراسية على الفصول وإدارة اللجان بكل سهولة واحترافية.</p>
                                                 <div className="relative bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-5 py-3 rounded-2xl font-bold flex items-center gap-3 hover:border-primary-500 hover:shadow-lg transition-all mx-auto focus-within:border-primary-500 focus-within:ring-4 focus-within:ring-primary-500/20">
                                                     <span className="text-sm">اختر اليوم للبدء:</span>
-                                                    <input 
+                                                    <FlatpickrInput 
                                                         type="date" 
-                                                        className="border-none bg-transparent focus:ring-0 text-base font-bold w-40 p-1 cursor-pointer dark:text-white" 
+                                                        className="!border-none !bg-transparent !focus:ring-0 !text-base !font-bold !w-40 !p-1 !cursor-pointer dark:!text-white !shadow-none min-h-[auto]" 
                                                         value={newDateValue} 
                                                         onChange={handleDateInput} 
+                                                        placeholder="حدد التاريخ..."
+                                                        options={{
+                                                            minDate: examSchedule.period?.fill_start_date ? examSchedule.period.fill_start_date.split(' ')[0] : null,
+                                                            maxDate: examSchedule.period?.fill_end_date ? examSchedule.period.fill_end_date.split(' ')[0] : null,
+                                                        }}
                                                     />
                                                 </div>
                                             </div>
@@ -813,11 +825,12 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                                     <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 shadow-inner"><Clock size={16} /></div> 
                                                                     وقت البدء
                                                                 </label>
-                                                                <input 
-                                                                    type="time" 
-                                                                    className="w-full bg-white dark:bg-slate-900/50 border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-3.5 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-slate-800 dark:text-slate-200 font-bold transition-all shadow-sm text-lg text-center"
+                                                                <FlatpickrInput 
+                                                                    options={{ enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true }}
+                                                                    className="w-full bg-white dark:bg-slate-900/50 border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-3.5 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-slate-800 dark:text-slate-200 font-bold transition-all shadow-sm text-center"
                                                                     value={formData.start_time}
-                                                                    onChange={e => setFormData({...formData, start_time: e.target.value})}
+                                                                    onChange={val => setFormData({...formData, start_time: val})}
+                                                                    placeholder="00:00"
                                                                 />
                                                             </div>
                                                             <div>
@@ -825,11 +838,12 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                                     <div className="p-2 rounded-xl bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400 shadow-inner"><Clock size={16} /></div>
                                                                     وقت الانتهاء
                                                                 </label>
-                                                                <input 
-                                                                    type="time" 
-                                                                    className="w-full bg-white dark:bg-slate-900/50 border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-3.5 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 text-slate-800 dark:text-slate-200 font-bold transition-all shadow-sm text-lg text-center"
+                                                                <FlatpickrInput 
+                                                                    options={{ enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true }}
+                                                                    className="w-full bg-white dark:bg-slate-900/50 border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-3.5 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 text-slate-800 dark:text-slate-200 font-bold transition-all shadow-sm text-center"
                                                                     value={formData.end_time}
-                                                                    onChange={e => setFormData({...formData, end_time: e.target.value})}
+                                                                    onChange={val => setFormData({...formData, end_time: val})}
+                                                                    placeholder="00:00"
                                                                 />
                                                             </div>
                                                         </div>
@@ -891,23 +905,15 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                                 <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400 shadow-inner"><Users size={20} /></div>
                                                                 المعلمون المراقبون (اختياري)
                                                             </label>
-                                                            <div className="border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl bg-white dark:bg-slate-900/30 p-4 max-h-40 overflow-y-auto flex flex-wrap gap-2.5 shadow-inner custom-scrollbar">
-                                                                {teachers.map(t => {
-                                                                    const isSelected = formData.proctor_ids.includes(t.id);
-                                                                    return (
-                                                                        <label key={t.id} className={`flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-xl border-2 text-sm transition-all duration-200 hover:-translate-y-0.5 ${isSelected ? 'border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-900/40 dark:border-amber-500/70 dark:text-amber-200 font-black shadow-sm' : 'border-slate-100 dark:border-slate-700/80 hover:border-amber-200 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold'}`}>
-                                                                            <input 
-                                                                                type="checkbox" 
-                                                                                className="hidden"
-                                                                                checked={isSelected}
-                                                                                onChange={() => toggleProctorSelection(t.id)}
-                                                                            />
-                                                                            {t.name}
-                                                                        </label>
-                                                                    );
-                                                                })}
-                                                                {teachers.length === 0 && <div className="text-base text-slate-500 p-2 font-bold w-full text-center">لا يوجد معلمون في هذا الفرع</div>}
-                                                            </div>
+                                                            <SelectInput
+                                                                isMulti={true}
+                                                                options={teachers.map(t => ({ value: t.id, label: t.name }))}
+                                                                value={formData.proctor_ids}
+                                                                onChange={val => setFormData({...formData, proctor_ids: val})}
+                                                                placeholder="اختر المراقبين..."
+                                                                className="w-full"
+                                                            />
+                                                            {teachers.length === 0 && <div className="text-sm text-slate-500 font-bold mt-2">لا يوجد معلمون في هذا الفرع</div>}
                                                         </div>
                                                     </div>
                                                 </div>

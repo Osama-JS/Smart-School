@@ -331,9 +331,24 @@ class MobileFeaturesController extends Controller
             ->latest('visit_date')
             ->get();
 
+        $teachers = \App\Models\User::whereHas('role', function($q) {
+            $q->where('name', 'معلم');
+        })->when($request->user()->branch_id, function($q) use ($request) {
+            $q->where('branch_id', $request->user()->branch_id);
+        })->get(['id', 'name']);
+
+        $grades = \App\Models\Grade::with('divisions')
+            ->when($request->user()->branch_id, function($q) use ($request) {
+                $q->where('branch_id', $request->user()->branch_id);
+            })->get();
+
         return response()->json([
             'success' => true,
-            'data' => $visits
+            'data' => $visits,
+            'form_data' => [
+                'teachers' => $teachers,
+                'grades' => $grades
+            ]
         ]);
     }
 

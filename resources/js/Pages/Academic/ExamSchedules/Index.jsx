@@ -48,23 +48,33 @@ export default function Index({ schedules, periods }) {
             <Head title="جداول الاختبارات" />
             {toast && <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-            <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-fade-in">
-                {/* Modern Hero Section */}
-                <div className="relative bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgb(0,0,0,0.06)] overflow-hidden">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary-600/10 rounded-full blur-[60px] translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+            <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-12">
+                {/* Header */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
+                    {/* Fine abstract geometric background lines */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                        <svg className="absolute left-0 top-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <path d="M0 100 C 20 0 50 0 100 100 Z" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-500" />
+                            <path d="M0 50 C 50 100 80 0 100 50 Z" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-primary-400" />
+                        </svg>
+                    </div>
+
                     <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="flex items-center gap-5">
-                            <div className="bg-gradient-to-br from-primary-500 to-primary-700 text-white p-4 rounded-2xl shadow-lg shadow-primary-500/30">
-                                <CalendarDays size={32} />
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-primary-500 blur-xl opacity-20 rounded-full"></div>
+                                <div className="bg-gradient-to-br from-primary-500 to-primary-600 text-white p-4 rounded-2xl shadow-md relative ring-4 ring-white dark:ring-[#121820]">
+                                    <CalendarDays size={28} strokeWidth={2.5} />
+                                </div>
                             </div>
                             <div>
-                                <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">
+                                <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
                                     جداول الاختبارات
                                 </h1>
-                                <p className="text-slate-500 dark:text-slate-400 mt-2 font-bold flex items-center gap-2">
-                                    <Settings size={16} /> إدارة الجداول الزمنية واللجان لجميع الفترات
+                                <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium flex items-center gap-2">
+                                    <Settings size={16} className="text-primary-500" /> إدارة الجداول الزمنية واللجان لجميع الفترات
                                 </p>
                             </div>
                         </div>
