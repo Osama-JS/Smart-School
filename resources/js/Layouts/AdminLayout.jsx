@@ -224,6 +224,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'دفاتري للتحضير', icon: BookOpen, url: route('teacher.lesson-preparations.index') },
                 { name: 'دفاتري للمتابعة', icon: BookOpen, url: route('teacher.followup-books.index') },
                 { name: 'خططي الدراسية', icon: Map, url: route('teacher.study-plans.index') },
+                { name: 'جدول المراقبة والاختبارات', icon: Calendar, url: route('teacher.my-exam-schedules') },
                 { name: 'متابعة الخطط الدراسية', icon: BookOpen, url: route('academic.study-plans.index'), permission: 'إدارة الخطط الدراسية' },
                 { name: 'دفاتر تحضير المعلمين', icon: Book, url: route('academic.lesson-preparations'), permission: 'عرض دفاتر التحضير' },
             ]

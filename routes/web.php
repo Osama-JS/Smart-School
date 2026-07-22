@@ -224,6 +224,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/student/my-exam-schedule/{examSchedule}/ics', [\App\Http\Controllers\Student\ExamScheduleController::class, 'exportIcs'])->name('student.exam-schedule.ics');
     Route::get('/student/my-exam-schedule/{examSchedule}/print', [\App\Http\Controllers\Student\ExamScheduleController::class, 'printSchedule'])->name('student.exam-schedule.print');
     
+    // Teacher's Exam Schedule
+    Route::get('/teacher/my-exam-schedules', [\App\Http\Controllers\Teacher\ExamScheduleController::class, 'index'])->name('teacher.my-exam-schedules');
+    Route::get('/teacher/my-exam-schedules/{examSchedule}/print', [\App\Http\Controllers\Teacher\ExamScheduleController::class, 'print'])->name('teacher.my-exam-schedules.print');
+
     // Teacher's Classroom Visits
     Route::get('/teacher/my-classroom-visits', [\App\Http\Controllers\Teacher\ClassroomVisitController::class, 'index'])->name('teacher.my-classroom-visits');
     Route::post('/teacher/my-classroom-visits/{classroomVisit}/sign', [\App\Http\Controllers\Teacher\ClassroomVisitController::class, 'sign'])->name('teacher.my-classroom-visits.sign');

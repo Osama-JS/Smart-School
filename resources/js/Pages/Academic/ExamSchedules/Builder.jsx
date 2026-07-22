@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Save, Plus, X, Calendar as CalendarIcon, ChevronRight, Trash2, Edit3, BookOpen, Clock, AlertCircle, MapPin, Users, Download, Wand, FileText, Printer, ToggleLeft, ToggleRight, Search } from 'lucide-react';
+import { Save, Plus, X, Calendar as CalendarIcon, ChevronRight, Trash2, Edit3, BookOpen, Clock, AlertCircle, MapPin, Users, Download, Wand, FileText, Printer, ToggleLeft, ToggleRight, Search, Layers, GraduationCap, School } from 'lucide-react';
 import ToastNotification from '@/Components/ToastNotification';
 import { Transition, Dialog } from '@headlessui/react';
 import dayjs from 'dayjs';
+import 'dayjs/locale/ar';
 import Swal from 'sweetalert2';
 import TimelineView from './TimelineView';
 import SelectInput from '@/Components/SelectInput';
@@ -14,10 +15,10 @@ import FlatpickrInput from '@/Components/FlatpickrInput';
 const getSubjectColor = (id) => {
     const colors = [
         'bg-primary-500 text-white', 
-        'bg-indigo-500 text-white', 
-        'bg-purple-500 text-white',
-        'bg-violet-500 text-white',
-        'bg-sky-500 text-white',
+        'bg-accent-500 text-white', 
+        'bg-dark-700 text-white',
+        'bg-emerald-600 text-white',
+        'bg-amber-500 text-white',
         'bg-slate-600 text-white'
     ];
     return colors[id % colors.length];
@@ -27,14 +28,14 @@ const getSubjectLightColor = (id) => {
     const colors = [
         // Primary
         'bg-primary-50/80 border-primary-200 text-primary-700 dark:bg-primary-900/30 dark:border-primary-700/50 dark:text-primary-300',
-        // Indigo
-        'bg-indigo-50/80 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-700/50 dark:text-indigo-300',
-        // Violet
-        'bg-violet-50/80 border-violet-200 text-violet-700 dark:bg-violet-900/30 dark:border-violet-700/50 dark:text-violet-300',
-        // Sky
-        'bg-sky-50/80 border-sky-200 text-sky-700 dark:bg-sky-900/30 dark:border-sky-700/50 dark:text-sky-300',
-        // Purple
-        'bg-purple-50/80 border-purple-200 text-purple-700 dark:bg-purple-900/30 dark:border-purple-700/50 dark:text-purple-300',
+        // Accent
+        'bg-accent-50/80 border-accent-200 text-accent-700 dark:bg-accent-900/30 dark:border-accent-700/50 dark:text-accent-300',
+        // Dark
+        'bg-dark-100/80 border-dark-300 text-dark-700 dark:bg-dark-900/50 dark:border-dark-700/50 dark:text-dark-300',
+        // Emerald
+        'bg-emerald-50/80 border-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:border-emerald-700/50 dark:text-emerald-300',
+        // Amber
+        'bg-amber-50/80 border-amber-200 text-amber-700 dark:bg-amber-900/30 dark:border-amber-700/50 dark:text-amber-300',
         // Slate
         'bg-slate-100/80 border-slate-200 text-slate-700 dark:bg-slate-800/50 dark:border-slate-700/50 dark:text-slate-300'
     ];
@@ -48,6 +49,13 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
     const [viewMode, setViewMode] = useState('grid');
     const [searchQuery, setSearchQuery] = useState('');
     
+    // Stage Tabs Logic
+    const [activeStage, setActiveStage] = useState('كل المراحل');
+    const uniqueStages = [...new Set(grades.map(g => g.section?.name).filter(Boolean))];
+    const filteredGrades = activeStage === 'كل المراحل' 
+        ? grades 
+        : grades.filter(g => g.section?.name === activeStage);
+
     // Slide-over state
     const [isSlideOverOpen, setIsSlideOverOpen] = useState(false);
     const [activeCell, setActiveCell] = useState(null); 
@@ -64,7 +72,8 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
     });
     
     const handleExport = () => {
-        const query = `?proctors=${exportSettings.showProctors?1:0}&rooms=${exportSettings.showRooms?1:0}&syllabus=${exportSettings.showSyllabus?1:0}&times=${exportSettings.showTimes?1:0}`;
+        const stageQuery = activeStage === 'كل المراحل' ? '' : `&stage=${encodeURIComponent(activeStage)}`;
+        const query = `?proctors=${exportSettings.showProctors?1:0}&rooms=${exportSettings.showRooms?1:0}&syllabus=${exportSettings.showSyllabus?1:0}&times=${exportSettings.showTimes?1:0}${stageQuery}`;
         window.open(route('academic.exam-schedules.print', examSchedule.id) + query, '_blank');
         setIsExportModalOpen(false);
     };
@@ -80,6 +89,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
     });
 
     const [newDateValue, setNewDateValue] = useState('');
+    const [autoSave, setAutoSave] = useState(false);
 
     useEffect(() => {
         if (examSchedule.items?.length > 0) {
@@ -87,7 +97,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                 id: item.id || Math.random().toString(36).substr(2, 9),
                 division_id: item.division_id,
                 subject_id: item.subject_id,
-                exam_date: item.exam_date,
+                exam_date: dayjs(item.exam_date).format('YYYY-MM-DD'),
                 start_time: item.start_time ? item.start_time.substring(0, 5) : '',
                 end_time: item.end_time ? item.end_time.substring(0, 5) : '',
                 room: item.room || '',
@@ -285,6 +295,11 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                 division_ids: existingGroup.items.map(i => i.division_id)
             });
         } else {
+            const groups = getGroupedItemsForCell(date, grade.id);
+            const scheduledDivisions = new Set();
+            groups.forEach(g => g.items.forEach(i => scheduledDivisions.add(i.division_id)));
+            const availableDivisions = grade.divisions.filter(d => !scheduledDivisions.has(d.id)).map(d => d.id);
+
             setEditingItemGroup(null);
             setFormData({
                 subject_id: '',
@@ -293,7 +308,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                 room: '',
                 proctor_ids: [],
                 syllabus: '',
-                division_ids: grade.divisions.map(d => d.id)
+                division_ids: availableDivisions
             });
         }
         setIsSlideOverOpen(true);
@@ -306,37 +321,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
             return;
         }
 
-        // Check overload
-        const divisionsOverload = [];
-        formData.division_ids.forEach(divId => {
-            const examsForDivOnDate = localItems.filter(i => 
-                i.exam_date === activeCell.date && 
-                i.division_id === divId && 
-                (!editingItemGroup || !editingItemGroup.items.map(ei => ei.id).includes(i.id))
-            );
-            if (examsForDivOnDate.length >= 2) {
-                const divName = activeCell.grade.divisions.find(d => d.id == divId)?.name;
-                divisionsOverload.push(divName);
-            }
-        });
-
-        if (divisionsOverload.length > 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'تنبيه: ضغط اختبارات',
-                text: `الشعب التالية لديها بالفعل اختبارين أو أكثر في هذا اليوم: ${divisionsOverload.join('، ')}. هل أنت متأكد من إضافة اختبار إضافي؟`,
-                showCancelButton: true,
-                confirmButtonText: 'نعم، أضف الاختبار',
-                cancelButtonText: 'تراجع',
-                confirmButtonColor: '#ef4444'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    processSaveCell();
-                }
-            });
-        } else {
-            processSaveCell();
-        }
+        processSaveCell();
     };
 
     const processSaveCell = () => {
@@ -367,21 +352,32 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
             };
         });
 
-        setLocalItems([...newItems, ...itemsToAdd]);
+        const newlyUpdatedItems = [...newItems, ...itemsToAdd];
+        setLocalItems(newlyUpdatedItems);
         setIsSlideOverOpen(false);
+
+        if (autoSave) {
+            saveScheduleToDatabase(newlyUpdatedItems);
+        }
     };
 
     const deleteGroup = (group) => {
         if(confirm('حذف هذا الاختبار؟')) {
             const idsToRemove = group.items.map(i => i.id);
-            setLocalItems(localItems.filter(i => !idsToRemove.includes(i.id)));
+            const newlyUpdatedItems = localItems.filter(i => !idsToRemove.includes(i.id));
+            setLocalItems(newlyUpdatedItems);
+            
+            if (autoSave) {
+                saveScheduleToDatabase(newlyUpdatedItems);
+            }
         }
     };
 
-    const saveScheduleToDatabase = () => {
+    const saveScheduleToDatabase = (itemsToSave = null) => {
+        const items = Array.isArray(itemsToSave) ? itemsToSave : localItems;
         setIsSaving(true);
         router.post(route('academic.exam-schedules.items.update', examSchedule.id), {
-            items: localItems.map(i => ({
+            items: items.map(i => ({
                 division_id: i.division_id,
                 subject_id: i.subject_id,
                 exam_date: i.exam_date,
@@ -392,16 +388,17 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                 syllabus: i.syllabus
             }))
         }, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
                 setToast({ message: 'تم حفظ وتحديث الجدول بنجاح!', type: 'success' });
-                setIsSaving(false);
             },
-            onError: () => setIsSaving(false)
+            onFinish: () => setIsSaving(false)
         });
     };
 
     const getGroupedItemsForCell = (date, gradeId) => {
-        const itemsInCell = localItems.filter(i => i.exam_date === date && i.grade_id === gradeId);
+        const itemsInCell = localItems.filter(i => i.exam_date === date && i.grade_id == gradeId);
         const groups = {};
         itemsInCell.forEach(item => {
             const key = `${item.subject_id}_${item.start_time}_${item.end_time}_${item.room}_${item.proctor_ids?.join(',')}_${item.syllabus}`;
@@ -458,96 +455,201 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
         
         return subjectMatch || roomMatch || proctorsMatch;
     };
+    // Smart Conflict Indicators Logic
+    const getConflicts = (group, date) => {
+        if (!group.start_time || !group.end_time) return [];
+        
+        const conflicts = [];
+        const groupItemIds = group.items.map(i => i.id);
+        const otherItemsOnDate = localItems.filter(i => i.exam_date === date && !groupItemIds.includes(i.id));
+        
+        const conflictedRooms = new Set();
+        const conflictedProctors = new Set();
+
+        otherItemsOnDate.forEach(item => {
+            if (!item.start_time || !item.end_time) return;
+            
+            // Check time overlap
+            if (group.start_time < item.end_time && item.start_time < group.end_time) {
+                // Check room
+                if (group.room && item.room && group.room === item.room) {
+                    conflictedRooms.add(group.room);
+                }
+                
+                // Check proctors
+                if (group.proctor_ids && item.proctor_ids) {
+                    group.proctors?.forEach(p => {
+                        if (item.proctor_ids.includes(p.id)) {
+                            conflictedProctors.add(p.name);
+                        }
+                    });
+                }
+            }
+        });
+
+        if (conflictedRooms.size > 0) {
+            conflicts.push(`القاعة (${[...conflictedRooms].join('، ')}) محجوزة.`);
+        }
+        if (conflictedProctors.size > 0) {
+            conflicts.push(`المعلم (${[...conflictedProctors].map(n => n.split(' ')[0]).join('، ')}) مكلف بمراقبة صف آخر.`);
+        }
+
+        return conflicts;
+    };
+    const getStageIcon = (stageName) => {
+        if (!stageName || typeof stageName !== 'string') return <Layers size={16} />;
+        if (stageName.includes('ابتدائي')) return <School size={16} />;
+        if (stageName.includes('متوسط')) return <BookOpen size={16} />;
+        if (stageName.includes('ثانوي')) return <GraduationCap size={16} />;
+        return <Layers size={16} />;
+    };
 
     return (
         <AdminLayout activeMenu="جداول الاختبارات">
             <Head title={`بناء الجدول - ${examSchedule.title}`} />
             {toast && <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-            {/* Premium Top Bar */}
-            <div className="sticky top-0 z-10 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-700/50 shadow-sm py-4 px-6 mb-8 transition-all">
-                <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                    <div className="flex items-center gap-4">
-                        <Link href={route('academic.exam-schedules.index')} className="group flex items-center justify-center w-11 h-11 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-200 dark:hover:border-primary-800 transition-all">
-                            <ChevronRight size={22} className="text-slate-500 group-hover:text-primary-600 dark:text-slate-400 dark:group-hover:text-primary-400" />
-                        </Link>
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary-600 to-indigo-600 dark:from-primary-400 dark:to-indigo-400 tracking-tight">
-                                {examSchedule.title}
-                            </h1>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
-                                    <Clock size={12} className="text-primary-500" /> حفظ تلقائي
-                                </span>
+            {/* Premium Unified Control Panel */}
+            <div className="sticky top-0 z-20 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 pb-4 shadow-sm mb-6">
+                {/* Top Row: Title & Primary Actions */}
+                <div className="bg-white/80 dark:bg-slate-800/80 px-6 py-4 border-b border-slate-100 dark:border-slate-700/50">
+                    <div className="max-w-[1600px] mx-auto flex flex-col xl:flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-4 w-full xl:w-auto">
+                            <Link href={route('academic.exam-schedules.index')} className="shrink-0 group flex items-center justify-center w-11 h-11 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-200 dark:hover:border-primary-800 transition-all">
+                                <ChevronRight size={22} className="text-slate-500 group-hover:text-primary-600 dark:text-slate-400 dark:group-hover:text-primary-400" />
+                            </Link>
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary-700 to-primary-500 dark:from-primary-400 dark:to-primary-300 tracking-tight">
+                                    {examSchedule.title}
+                                </h1>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 font-bold mt-1 flex items-center gap-2">
+                                    <CalendarIcon size={14} className="text-primary-500" />
+                                    <span>{examSchedule.period?.name} ({examSchedule.academic_year})</span>
+                                </p>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 md:flex-none flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl font-bold hover:border-primary-400 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 shadow-sm transition-all">
-                            <Plus size={18} className="text-primary-500" />
-                            <span className="text-sm shrink-0">إضافة يوم:</span>
-                            <FlatpickrInput 
-                                type="date" 
-                                className="!border-none !bg-transparent !focus:ring-0 !text-sm !font-bold !w-32 !p-0 !cursor-pointer dark:!text-white !shadow-none min-h-[auto]" 
-                                value={newDateValue} 
-                                onChange={handleDateInput} 
-                                placeholder="اختر..."
-                                options={{
-                                    minDate: examSchedule.period?.fill_start_date,
-                                    maxDate: examSchedule.period?.fill_end_date
-                                }}
-                            />
+
+                        <div className="flex flex-wrap items-center justify-center xl:justify-end gap-3 w-full xl:w-auto">
+                            {/* Auto Save Toggle */}
+                            <div className="flex items-center gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-xl shadow-sm transition-all hover:border-primary-200 dark:hover:border-primary-800/50">
+                                <span className="text-sm font-bold text-slate-600 dark:text-slate-300">الحفظ التلقائي:</span>
+                                <div 
+                                    onClick={() => setAutoSave(!autoSave)} 
+                                    className={`cursor-pointer transition-all duration-300 ${autoSave ? 'text-primary-500 hover:text-primary-600 scale-105 drop-shadow-md' : 'text-slate-400 hover:text-slate-500'}`}
+                                    title={autoSave ? "الحفظ التلقائي مفعل" : "الحفظ التلقائي متوقف"}
+                                >
+                                    {autoSave ? (
+                                        <div className="relative">
+                                            <ToggleRight size={32} className="fill-primary-50/50" />
+                                            <span className="absolute top-1 right-1 w-2 h-2 bg-primary-500 rounded-full animate-ping opacity-75"></span>
+                                        </div>
+                                    ) : (
+                                        <ToggleLeft size={32} />
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="relative flex-1 md:flex-none flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-3 py-2 rounded-xl font-bold hover:border-primary-400 focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20 shadow-sm transition-all">
+                                <Plus size={18} className="text-primary-500" />
+                                <span className="text-sm shrink-0">إضافة يوم:</span>
+                                <FlatpickrInput 
+                                    type="date" 
+                                    className="!border-none !bg-transparent !focus:ring-0 !text-sm !font-bold !w-32 !p-0 !cursor-pointer dark:!text-white !shadow-none min-h-[auto]" 
+                                    value={newDateValue} 
+                                    onChange={handleDateInput} 
+                                    placeholder="اختر..."
+                                    options={{
+                                        minDate: examSchedule.period?.fill_start_date,
+                                        maxDate: examSchedule.period?.fill_end_date
+                                    }}
+                                />
+                            </div>
+                            <button 
+                                onClick={handleAutoSchedule}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-accent-500/20 transition-all active:scale-95 group"
+                                title="التوزيع التلقائي العادل للمواد"
+                            >
+                                <Wand size={18} className="animate-pulse group-hover:rotate-12 transition-transform" />
+                                توزيع تلقائي
+                            </button>
+                            <button 
+                                onClick={saveScheduleToDatabase}
+                                disabled={isSaving}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-primary-500/20 transition-all active:scale-95 disabled:opacity-70"
+                            >
+                                <Save size={18} className={isSaving ? "animate-pulse" : ""} />
+                                {isSaving ? 'جاري الاعتماد...' : 'اعتماد ونشر'}
+                            </button>
+                            <button 
+                                type="button"
+                                onClick={() => setIsExportModalOpen(true)}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-dark-800 hover:bg-dark-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white border border-dark-900 px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-dark-800/20 transition-all active:scale-95"
+                            >
+                                <Printer size={18} />
+                                تصدير ذكي
+                            </button>
                         </div>
-                        <button 
-                            onClick={handleAutoSchedule}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-purple-500/20 transition-all active:scale-95 group"
-                            title="التوزيع التلقائي العادل للمواد"
-                        >
-                            <Wand size={18} className="animate-pulse group-hover:rotate-12 transition-transform" />
-                            توزيع تلقائي
-                        </button>
-                        <button 
-                            type="button"
-                            onClick={() => setIsExportModalOpen(true)}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white border border-slate-700 px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-slate-800/20 transition-all active:scale-95"
-                        >
-                            <Printer size={18} />
-                            تصدير ذكي
-                        </button>
                     </div>
                 </div>
-                
-                {/* View Mode Toggle and Search Bar */}
-                <div className="max-w-[1600px] mx-auto mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="relative w-full md:w-96">
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
-                            <Search size={18} className="text-slate-400" />
+
+                {/* Bottom Row: Controls */}
+                <div className="max-w-[1600px] mx-auto px-6 pt-4 flex flex-col gap-5">
+                    {/* Search and View Mode */}
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+                        {/* Search Bar */}
+                        <div className="relative w-full lg:w-96">
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                <Search size={18} className="text-slate-400" />
+                            </div>
+                            <input
+                                type="search"
+                                className="block w-full p-2.5 pr-11 text-sm font-bold text-slate-800 border border-slate-200 rounded-xl bg-white focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:bg-slate-800 dark:border-slate-700 dark:placeholder-slate-400 dark:text-white dark:focus:ring-primary-500/20 dark:focus:border-primary-500 transition-all shadow-sm"
+                                placeholder="ابحث عن مادة، قاعة، أو مراقب..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
-                        <input
-                            type="search"
-                            className="block w-full p-3 pr-11 text-sm font-bold text-slate-800 border border-slate-200 rounded-2xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 dark:bg-slate-800/50 dark:border-slate-700 dark:placeholder-slate-400 dark:text-white dark:focus:bg-slate-800 dark:focus:ring-primary-500/20 dark:focus:border-primary-500 transition-all shadow-sm"
-                            placeholder="ابحث عن مادة، قاعة، أو مراقب بلمح البصر..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+
+                        {/* View Mode Toggle */}
+                        <div className="bg-white/80 dark:bg-slate-800/80 p-1.5 rounded-xl flex items-center gap-1 border border-slate-200/80 dark:border-slate-700/80 shadow-sm w-full lg:w-auto shrink-0 justify-center backdrop-blur-md">
+                            <button 
+                                onClick={() => setViewMode('grid')}
+                                className={`flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50 scale-105' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                            >
+                                <CalendarIcon size={16} />
+                                عرض شبكي
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('timeline')}
+                                className={`flex items-center justify-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'timeline' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200/50 dark:border-slate-600/50 scale-105' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                            >
+                                <Clock size={16} />
+                                المخطط الزمني
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div className="bg-slate-100/80 dark:bg-slate-800/80 p-1.5 rounded-2xl flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50 shadow-inner backdrop-blur-sm">
-                        <button 
-                            onClick={() => setViewMode('grid')}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-[0_2px_10px_rgba(0,0,0,0.05)]' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
-                        >
-                            <CalendarIcon size={18} />
-                            عرض شبكي
-                        </button>
-                        <button 
-                            onClick={() => setViewMode('timeline')}
-                            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all ${viewMode === 'timeline' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-[0_2px_10px_rgba(0,0,0,0.05)]' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
-                        >
-                            <Clock size={18} />
-                            المخطط الزمني
-                        </button>
+
+                    {/* Premium Floating Stage Tabs */}
+                    <div className="flex justify-center w-full overflow-x-auto pb-2 hide-scrollbar">
+                        <div className="bg-white/80 dark:bg-slate-800/80 p-1.5 rounded-2xl flex items-center flex-nowrap gap-2 border border-slate-200/80 dark:border-slate-700/80 shadow-sm backdrop-blur-md min-w-max mx-auto">
+                            <button 
+                                onClick={() => setActiveStage('كل المراحل')}
+                                className={`flex items-center justify-center gap-2 whitespace-nowrap px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${activeStage === 'كل المراحل' ? 'bg-gradient-to-l from-primary-500 to-primary-600 text-white shadow-[0_4px_15px_-3px_rgba(107,155,55,0.4)] scale-105' : 'text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-105'}`}
+                            >
+                                <Layers size={18} />
+                                كل المراحل
+                            </button>
+                            {uniqueStages.map(stage => (
+                                <button 
+                                    key={stage}
+                                    onClick={() => setActiveStage(stage)}
+                                    className={`flex items-center justify-center gap-2 whitespace-nowrap px-6 py-2.5 rounded-xl text-sm font-black transition-all duration-300 ${activeStage === stage ? 'bg-gradient-to-l from-primary-500 to-primary-600 text-white shadow-[0_4px_15px_-3px_rgba(107,155,55,0.4)] scale-105' : 'text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:scale-105'}`}
+                                >
+                                    {getStageIcon(stage)}
+                                    {stage}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -564,7 +666,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                             <span className="text-xs uppercase tracking-wider text-slate-400 dark:text-slate-500">التاريخ / الصف</span>
                                         </div>
                                     </th>
-                                    {grades.map(grade => (
+                                    {filteredGrades.map(grade => (
                                         <th key={grade.id} className="p-6 border-b-2 border-l border-slate-200 dark:border-slate-700/50 align-top bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm min-w-[320px]">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-indigo-600 border border-white/20 dark:border-slate-700/50 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-primary-500/20">
@@ -584,7 +686,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                             <tbody>
                                 {dates.length === 0 ? (
                                     <tr>
-                                        <td colSpan={grades.length + 1} className="p-20 relative overflow-hidden">
+                                        <td colSpan={filteredGrades.length + 1} className="p-20 relative overflow-hidden">
                                             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40"></div>
                                             <div className="relative z-10 flex flex-col items-center justify-center text-center">
                                                 <div className="w-28 h-28 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 rounded-full flex items-center justify-center mb-6 border-[10px] border-white dark:border-slate-800 shadow-xl">
@@ -621,8 +723,11 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                             </div>
                                         </td>
                                         
-                                        {grades.map(grade => {
+                                        {filteredGrades.map(grade => {
                                             const groups = getGroupedItemsForCell(date, grade.id);
+                                            const scheduledDivisions = new Set();
+                                            groups.forEach(g => g.items.forEach(i => scheduledDivisions.add(i.division_id)));
+                                            const hasAvailableDivisions = scheduledDivisions.size < grade.divisions.length;
                                             
                                             return (
                                                 <td key={grade.id} className="p-5 border-l border-slate-100 dark:border-slate-700/50 align-top">
@@ -631,10 +736,28 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                             const colorClass = getSubjectLightColor(group.subject_id);
                                                             const badgeColor = getSubjectColor(group.subject_id);
                                                             const isMatch = checkMatch(group);
+                                                            const conflicts = getConflicts(group, date);
+                                                            const hasConflict = conflicts.length > 0;
                                                             const dimmingClasses = !isMatch && searchQuery ? 'opacity-20 grayscale scale-95 z-0' : (searchQuery ? 'ring-2 ring-primary-500 shadow-lg scale-105 z-10 bg-white dark:bg-slate-800' : '');
+                                                            const conflictClasses = hasConflict ? 'ring-4 ring-red-400/60 dark:ring-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)] !border-red-400 dark:!border-red-500 !bg-red-50/90 dark:!bg-red-900/30' : '';
                                                             
                                                             return (
-                                                                <div key={idx} className={`relative group/card rounded-3xl p-5 border-2 transition-all duration-500 ${searchQuery && !isMatch ? '' : 'hover:-translate-y-1.5 hover:shadow-xl'} ${colorClass} ${dimmingClasses}`}>
+                                                                <div key={idx} className={`relative group/card rounded-3xl p-5 border-2 transition-all duration-500 ${searchQuery && !isMatch ? '' : 'hover:-translate-y-1.5 hover:shadow-xl'} ${hasConflict ? conflictClasses : colorClass} ${dimmingClasses}`}>
+                                                                    
+                                                                    {hasConflict && (
+                                                                        <div className="absolute -top-3 -right-3 z-30 flex items-center justify-center w-8 h-8 bg-red-500 text-white rounded-full shadow-lg shadow-red-500/40 group/tooltip cursor-help animate-pulse">
+                                                                            <AlertCircle size={18} />
+                                                                            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 w-64 p-3.5 bg-slate-800 dark:bg-slate-900 text-white text-xs font-bold rounded-2xl opacity-0 scale-95 group-hover/tooltip:opacity-100 group-hover/tooltip:scale-100 pointer-events-none transition-all duration-300 shadow-xl shadow-slate-900/20 border border-slate-700 before:content-[''] before:absolute before:left-full before:top-1/2 before:-translate-y-1/2 before:-ml-1 before:border-[6px] before:border-transparent before:border-l-slate-800 dark:before:border-l-slate-900 z-50 text-right">
+                                                                                <div className="flex items-center gap-2 mb-2 text-red-400 border-b border-slate-700 pb-2">
+                                                                                    <AlertCircle size={14} /> <span className="text-sm">تعارض في الجدول!</span>
+                                                                                </div>
+                                                                                <ul className="list-disc pr-4 space-y-1.5 text-slate-200">
+                                                                                    {conflicts.map((c, i) => <li key={i}>{c}</li>)}
+                                                                                </ul>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
+
                                                                     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                                                                         <div className="flex items-center gap-3">
                                                                             <div className={`w-3.5 h-3.5 rounded-full shadow-[0_0_10px_rgba(0,0,0,0.2)] ${badgeColor.split(' ')[0]}`}></div>
@@ -694,15 +817,17 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                             );
                                                         })}
                                                         
-                                                        <button 
-                                                            onClick={() => openDrawer(date, grade)}
-                                                            className="flex-1 min-h-[120px] flex flex-col items-center justify-center gap-3 text-sm font-bold text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 rounded-3xl p-4 transition-all duration-300 hover:shadow-inner group/addbtn"
-                                                        >
-                                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover/addbtn:bg-primary-100 dark:group-hover/addbtn:bg-primary-900/50 group-hover/addbtn:scale-110 transition-transform">
-                                                                <Plus size={20} />
-                                                            </div>
-                                                            إضافة مادة
-                                                        </button>
+                                                        {hasAvailableDivisions && (
+                                                            <button 
+                                                                onClick={() => openDrawer(date, grade)}
+                                                                className="flex-1 min-h-[120px] flex flex-col items-center justify-center gap-3 text-sm font-bold text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-primary-400 dark:hover:border-primary-600 hover:bg-primary-50/50 dark:hover:bg-primary-900/10 rounded-3xl p-4 transition-all duration-300 hover:shadow-inner group/addbtn"
+                                                            >
+                                                                <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover/addbtn:bg-primary-100 dark:group-hover/addbtn:bg-primary-900/50 group-hover/addbtn:scale-110 transition-transform">
+                                                                    <Plus size={20} />
+                                                                </div>
+                                                                إضافة مادة
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             );
@@ -716,11 +841,12 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
             ) : (
                 <TimelineView 
                     dates={dates} 
-                    grades={grades} 
+                    grades={filteredGrades} 
                     getGroupedItemsForCell={getGroupedItemsForCell}
                     getSubjectLightColor={getSubjectLightColor}
                     searchQuery={searchQuery}
                     checkMatch={checkMatch}
+                    getConflicts={getConflicts}
                 />
             )}
 

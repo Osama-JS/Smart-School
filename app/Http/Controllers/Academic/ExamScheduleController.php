@@ -194,19 +194,20 @@ class ExamScheduleController extends Controller
 
                 if ($start1 < $end2 && $start2 < $end1) {
                     $room2 = $item2['room'] ?? null;
-                    if ($room1 && $room2 && $room1 === $room2) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'items' => ["القاعة ({$room1}) محجوزة لاختبارين متداخلين في نفس الوقت يوم {$date1}."]
-                        ]);
-                    }
+                    
+                    // We removed the strict 'same room' validation here 
+                    // because schools often combine multiple classes in large halls.
 
                     $proctors2 = $item2['proctor_ids'] ?? [];
                     $sharedProctors = array_intersect($proctors1, $proctors2);
-                    if (count($sharedProctors) > 0) {
+                    
+                    // If they share a proctor, it's only an error if they are in DIFFERENT specified rooms.
+                    // If they are in the SAME room, or room is not specified yet, we allow it.
+                    if (count($sharedProctors) > 0 && $room1 && $room2 && $room1 !== $room2) {
                         $user = \App\Models\User::find(reset($sharedProctors));
                         $userName = $user ? $user->name : 'مراقب';
                         throw \Illuminate\Validation\ValidationException::withMessages([
-                            'items' => ["المعلم ({$userName}) مكلف بمراقبة اختبارين متداخلين في نفس الوقت يوم {$date1}."]
+                            'items' => ["المعلم ({$userName}) مكلف بمراقبة اختبارين في قاعتين مختلفتين ({$room1} و {$room2}) في نفس الوقت يوم {$date1}."]
                         ]);
                     }
                 }
@@ -248,19 +249,20 @@ class ExamScheduleController extends Controller
 
                 if ($start1 < $end2 && $start2 < $end1) {
                     $room2 = $existingItem->room;
-                    if ($room1 && $room2 && $room1 === $room2) {
-                        throw \Illuminate\Validation\ValidationException::withMessages([
-                            'items' => ["القاعة ({$room1}) محجوزة لاختبار آخر متداخل في نفس الوقت يوم {$date1} في جدول مختلف."]
-                        ]);
-                    }
+                    
+                    // We removed the strict 'same room' validation here 
+                    // because schools often combine multiple classes in large halls.
 
                     $existingProctorIds = $existingItem->proctors->pluck('id')->toArray();
                     $sharedProctors = array_intersect($proctors1, $existingProctorIds);
-                    if (count($sharedProctors) > 0) {
+                    
+                    // If they share a proctor, it's only an error if they are in DIFFERENT specified rooms.
+                    // If they are in the SAME room, or room is not specified yet, we allow it.
+                    if (count($sharedProctors) > 0 && $room1 && $room2 && $room1 !== $room2) {
                         $user = \App\Models\User::find(reset($sharedProctors));
                         $userName = $user ? $user->name : 'مراقب';
                         throw \Illuminate\Validation\ValidationException::withMessages([
-                            'items' => ["المعلم ({$userName}) مكلف بمراقبة اختبار آخر متداخل في نفس الوقت يوم {$date1} في جدول مختلف."]
+                            'items' => ["المعلم ({$userName}) مكلف بمراقبة اختبار آخر في قاعة مختلفة ({$room2}) في نفس الوقت يوم {$date1} في جدول مختلف."]
                         ]);
                     }
                 }
@@ -284,6 +286,11 @@ class ExamScheduleController extends Controller
         }
         if (request()->has('section_id')) {
             $gradesQuery->where('section_id', request('section_id'));
+        }
+        if (request()->has('stage') && request('stage') !== 'كل المراحل') {
+            $gradesQuery->whereHas('section', function ($q) {
+                $q->where('name', request('stage'));
+            });
         }
         $grades = $gradesQuery->get();
 

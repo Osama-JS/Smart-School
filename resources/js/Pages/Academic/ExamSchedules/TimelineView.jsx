@@ -1,8 +1,9 @@
 import React from 'react';
 import dayjs from 'dayjs';
+import 'dayjs/locale/ar';
 import { Clock, MapPin, AlertCircle, Calendar } from 'lucide-react';
 
-export default function TimelineView({ dates, grades, getGroupedItemsForCell, getSubjectLightColor, searchQuery, checkMatch }) {
+export default function TimelineView({ dates, grades, getGroupedItemsForCell, getSubjectLightColor, searchQuery, checkMatch, getConflicts }) {
     // Timeline config
     const startHour = 7;
     const endHour = 14;
@@ -121,18 +122,34 @@ export default function TimelineView({ dates, grades, getGroupedItemsForCell, ge
                                                             
                                                             const bgColor = getSubjectLightColor(exam.subject_id);
                                                             const isMatch = checkMatch ? checkMatch(exam) : true;
+                                                            const conflicts = getConflicts ? getConflicts(exam, date) : [];
+                                                            const hasConflict = conflicts.length > 0;
                                                             const dimmingClasses = !isMatch && searchQuery ? 'opacity-20 grayscale scale-95 z-0' : (searchQuery ? 'ring-2 ring-primary-500 shadow-lg scale-[1.02] z-30 bg-white dark:bg-slate-800' : '');
+                                                            const conflictClasses = hasConflict ? 'ring-4 ring-red-400/60 dark:ring-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)] !border-red-400 dark:!border-red-500 !bg-red-50/90 dark:!bg-red-900/30' : '';
                                                             
                                                             return (
                                                                 <div 
                                                                     key={idx}
-                                                                    className={`absolute top-2 bottom-2 rounded-2xl border-2 p-3 flex flex-col justify-center overflow-hidden transition-all duration-500 hover:-translate-y-1.5 hover:shadow-xl hover:z-40 cursor-default ${bgColor} ${dimmingClasses} backdrop-blur-sm`}
+                                                                    className={`absolute top-2 bottom-2 rounded-2xl border-2 p-3 flex flex-col justify-center overflow-visible transition-all duration-500 hover:-translate-y-1.5 hover:shadow-xl hover:z-40 group/timeline cursor-default ${hasConflict ? conflictClasses : bgColor} ${dimmingClasses} backdrop-blur-sm`}
                                                                     style={{ 
                                                                         right: pos.left, // Because RTL
                                                                         width: pos.width,
                                                                         minWidth: '90px'
                                                                     }}
                                                                 >
+                                                                    {hasConflict && (
+                                                                        <div className="absolute -top-3 -right-3 z-30 flex items-center justify-center w-6 h-6 bg-red-500 text-white rounded-full shadow-lg shadow-red-500/40 cursor-help animate-pulse">
+                                                                            <AlertCircle size={14} />
+                                                                            <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 w-56 p-3 bg-slate-800 dark:bg-slate-900 text-white text-xs font-bold rounded-2xl opacity-0 scale-95 group-hover/timeline:opacity-100 group-hover/timeline:scale-100 pointer-events-none transition-all duration-300 shadow-xl shadow-slate-900/20 border border-slate-700 before:content-[''] before:absolute before:left-full before:top-1/2 before:-translate-y-1/2 before:-ml-1 before:border-[6px] before:border-transparent before:border-l-slate-800 dark:before:border-l-slate-900 z-50 text-right">
+                                                                                <div className="flex items-center gap-2 mb-2 text-red-400 border-b border-slate-700 pb-2">
+                                                                                    <AlertCircle size={14} /> <span className="text-xs">تعارض في الجدول!</span>
+                                                                                </div>
+                                                                                <ul className="list-disc pr-4 space-y-1 text-slate-200">
+                                                                                    {conflicts.map((c, i) => <li key={i}>{c}</li>)}
+                                                                                </ul>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                     <div className="font-black text-sm md:text-base truncate drop-shadow-sm" title={exam.subject_name}>{exam.subject_name}</div>
                                                                     <div className="flex items-center gap-3 mt-1 text-[10px] font-bold opacity-80 flex-wrap">
                                                                         <div className="flex items-center gap-1">
