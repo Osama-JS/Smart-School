@@ -3,7 +3,7 @@ import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import {
     Shield, Plus, Trash2, Check, X, AlertTriangle, Users,
-    ChevronDown, ChevronUp, Lock, Unlock, MoreVertical, Edit2, Smartphone
+    ChevronDown, ChevronUp, Lock, Unlock, MoreVertical, Edit2, Smartphone, Search
 } from 'lucide-react';
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
@@ -58,6 +58,7 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
     const [newRoleName, setNewRoleName] = useState('');
     const [newRoleAccessType, setNewRoleAccessType] = useState('dashboard');
     const [expandedModules, setExpandedModules] = useState({});
+    const [searchQuery, setSearchQuery] = useState('');
 
     // قائمة الصلاحيات المرتبطة بتطبيق الجوال
     const appPermissions = React.useMemo(() => [
@@ -94,6 +95,17 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
 
         return result;
     }, [permissions, appPermissions]);
+
+    const filteredGroupedPermissions = React.useMemo(() => {
+        if (!searchQuery) return groupedPermissions;
+        
+        return groupedPermissions.map(group => {
+            return {
+                ...group,
+                items: group.items.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            };
+        }).filter(group => group.items.length > 0);
+    }, [groupedPermissions, searchQuery]);
 
     const selectRole = (role) => {
         setSelectedRole(role);
@@ -242,28 +254,40 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
                 <div className="lg:col-span-3">
                     {selectedRole ? (
                         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
-                            <div className="px-6 py-5 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between bg-gradient-to-b from-white to-slate-50/20 dark:from-slate-900 dark:to-slate-800/20">
+                            <div className="px-6 py-5 border-b border-slate-50 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-b from-white to-slate-50/20 dark:from-slate-900 dark:to-slate-800/20">
                                 <div>
                                     <h2 className="text-base font-bold text-dark-900 dark:text-white">
                                         صلاحيات دور: <span className="text-primary-600 dark:text-primary-400">{selectedRole.name}</span>
                                     </h2>
                                     <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-semibold">{rolePerms.size} صلاحية مفعّلة</p>
                                 </div>
-                                <button onClick={savePermissions} disabled={saving}
-                                    className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all disabled:opacity-60">
-                                    <Check size={16} />
-                                    {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
-                                </button>
+                                <div className="flex items-center gap-3 w-full md:w-auto">
+                                    <div className="relative flex-1 md:w-64">
+                                        <Search className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="بحث عن صلاحية..." 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl pr-10 pl-4 py-2 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white"
+                                        />
+                                    </div>
+                                    <button onClick={savePermissions} disabled={saving}
+                                        className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-2xl shadow-md shadow-primary-500/10 transition-all disabled:opacity-60 shrink-0">
+                                        <Check size={16} />
+                                        <span className="hidden sm:inline">{saving ? 'جاري الحفظ...' : 'حفظ'}</span>
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="p-5 space-y-4">
-                                {permissions.length === 0 && (
+                                {filteredGroupedPermissions.length === 0 && (
                                     <div className="text-center py-12 text-slate-400 dark:text-slate-600">
                                         <Lock size={32} className="mx-auto mb-2 opacity-30" />
-                                        <p className="text-sm">لا توجد صلاحيات معرَّفة في النظام بعد</p>
+                                        <p className="text-sm">{searchQuery ? 'لا توجد صلاحيات مطابقة للبحث' : 'لا توجد صلاحيات معرَّفة في النظام بعد'}</p>
                                     </div>
                                 )}
-                                {groupedPermissions.map(({ module, items }) => {
+                                {filteredGroupedPermissions.map(({ module, items }) => {
                                     const isExpanded = expandedModules[module] !== false; // default open
                                     const allSelected = allModuleSelected(module);
                                     return (

@@ -106,7 +106,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
     }, [examSchedule]);
 
     const handleDateInput = (val) => {
-        const selectedDate = val;
+        const selectedDate = typeof val === 'string' ? val : val?.target?.value;
         if (selectedDate) {
             // Check holidays
             const isHoliday = holidays.find(h => {
@@ -134,7 +134,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                 addSelectedDate(selectedDate);
             }
         }
-        setNewDateValue(''); // Reset state for next time
+        setNewDateValue(''); // Reset for next time
     };
 
     const handleAutoSchedule = () => {
@@ -465,7 +465,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
             {toast && <ToastNotification message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
             {/* Premium Top Bar */}
-            <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-700/50 shadow-sm py-4 px-6 mb-8 transition-all">
+            <div className="sticky top-0 z-10 backdrop-blur-xl bg-white/70 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-700/50 shadow-sm py-4 px-6 mb-8 transition-all">
                 <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                     <div className="flex items-center gap-4">
                         <Link href={route('academic.exam-schedules.index')} className="group flex items-center justify-center w-11 h-11 rounded-full bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:border-primary-200 dark:hover:border-primary-800 transition-all">
@@ -494,8 +494,8 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                 onChange={handleDateInput} 
                                 placeholder="اختر..."
                                 options={{
-                                    minDate: examSchedule.period?.fill_start_date ? examSchedule.period.fill_start_date.split(' ')[0] : null,
-                                    maxDate: examSchedule.period?.fill_end_date ? examSchedule.period.fill_end_date.split(' ')[0] : null,
+                                    minDate: examSchedule.period?.fill_start_date,
+                                    maxDate: examSchedule.period?.fill_end_date
                                 }}
                             />
                         </div>
@@ -601,8 +601,8 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                         onChange={handleDateInput} 
                                                         placeholder="حدد التاريخ..."
                                                         options={{
-                                                            minDate: examSchedule.period?.fill_start_date ? examSchedule.period.fill_start_date.split(' ')[0] : null,
-                                                            maxDate: examSchedule.period?.fill_end_date ? examSchedule.period.fill_end_date.split(' ')[0] : null,
+                                                            minDate: examSchedule.period?.fill_start_date,
+                                                            maxDate: examSchedule.period?.fill_end_date
                                                         }}
                                                     />
                                                 </div>
@@ -826,6 +826,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                                     وقت البدء
                                                                 </label>
                                                                 <FlatpickrInput 
+                                                                    type="time"
                                                                     options={{ enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true }}
                                                                     className="w-full bg-white dark:bg-slate-900/50 border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-3.5 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 text-slate-800 dark:text-slate-200 font-bold transition-all shadow-sm text-center"
                                                                     value={formData.start_time}
@@ -839,6 +840,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                                                     وقت الانتهاء
                                                                 </label>
                                                                 <FlatpickrInput 
+                                                                    type="time"
                                                                     options={{ enableTime: true, noCalendar: true, dateFormat: "H:i", time_24hr: true }}
                                                                     className="w-full bg-white dark:bg-slate-900/50 border-2 border-slate-200/60 dark:border-slate-700/60 rounded-2xl p-3.5 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 text-slate-800 dark:text-slate-200 font-bold transition-all shadow-sm text-center"
                                                                     value={formData.end_time}

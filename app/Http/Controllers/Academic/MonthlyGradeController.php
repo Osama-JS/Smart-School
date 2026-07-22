@@ -42,9 +42,21 @@ class MonthlyGradeController extends Controller implements \Illuminate\Routing\C
             
             $assignedSubjects = $assignments->groupBy('division_id');
             $divisionsQuery->whereIn('id', $assignments->pluck('division_id')->unique());
+            $divisions = $divisionsQuery->get();
+        } else {
+            $divisions = $divisionsQuery->with('grade.subjects')->get();
+            foreach ($divisions as $division) {
+                if ($division->grade && $division->grade->subjects) {
+                    $assignedSubjects[$division->id] = $division->grade->subjects->map(function($subject) {
+                        return (object)[
+                            'id' => 'admin_' . $subject->id,
+                            'subject_id' => $subject->id,
+                            'subject' => $subject
+                        ];
+                    });
+                }
+            }
         }
-
-        $divisions = $divisionsQuery->get();
 
         return Inertia::render('Teacher/MonthlyGrades/Index', [
             'periods' => $periods,

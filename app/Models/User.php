@@ -78,4 +78,24 @@ class User extends Authenticatable
     {
         return "branches/{$this->branch_id}/" . ltrim($subPath, '/');
     }
+
+    /**
+     * توجيه إشعارات الواتساب إلى رقم جوال المستخدم
+     */
+    public function routeNotificationForWhatsApp()
+    {
+        if (!$this->phone) {
+            return null;
+        }
+
+        // إزالة أي رموز أو مسافات من الرقم
+        $phone = preg_replace('/[^0-9]/', '', $this->phone);
+
+        // إذا كان الرقم يبدأ بـ 05 (رقم سعودي محلي)، نقوم بتحويله للصيغة الدولية
+        if (str_starts_with($phone, '05')) {
+            $phone = '966' . substr($phone, 1);
+        }
+
+        return $phone;
+    }
 }
