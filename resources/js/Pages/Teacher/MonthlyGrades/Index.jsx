@@ -62,7 +62,7 @@ export default function MonthlyGradesIndex({ periods, divisions, assignedSubject
                                 placeholder="-- يرجى اختيار فترة الرصد --"
                                 options={periods.map(period => ({
                                     value: period.id,
-                                    label: `${period.month_name} (${period.fill_start_date} إلى ${period.fill_end_date})`
+                                    label: `${period.month_name} (${String(period.fill_start_date).split('T')[0]} إلى ${String(period.fill_end_date).split('T')[0]})`
                                 }))}
                             />
                         </div>

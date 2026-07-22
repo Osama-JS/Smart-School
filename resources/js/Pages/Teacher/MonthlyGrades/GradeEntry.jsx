@@ -57,7 +57,9 @@ export default function GradeEntry({ division, subject, period, gradeSetting, en
 
     const isClosed = (() => {
         const now = new Date().toISOString().split('T')[0];
-        return now < period.fill_start_date || now > period.fill_end_date;
+        const startDate = String(period.fill_start_date).split('T')[0];
+        const endDate = String(period.fill_end_date).split('T')[0];
+        return now < startDate || now > endDate;
     })();
 
     // Calculate maximum possible score
@@ -92,7 +94,7 @@ export default function GradeEntry({ division, subject, period, gradeSetting, en
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300">
                                 {period.month_name}
                             </span>
-                            الفترة من {period.fill_start_date} إلى {period.fill_end_date}
+                            الفترة من {String(period.fill_start_date).split('T')[0]} إلى {String(period.fill_end_date).split('T')[0]}
                         </p>
                     </div>
 

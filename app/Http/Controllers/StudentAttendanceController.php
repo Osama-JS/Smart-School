@@ -16,8 +16,8 @@ class StudentAttendanceController extends Controller
     public function index(Request $request)
     {
         $query = AttendanceLog::with('user')
-            ->whereHas('user', function($q) {
-                $q->where('role_name', 'طالب');
+            ->whereHas('user.role', function($q) {
+                $q->where('name', 'طالب');
             });
 
         if ($request->filled('date')) {
