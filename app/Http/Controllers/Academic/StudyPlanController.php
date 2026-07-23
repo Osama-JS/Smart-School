@@ -17,7 +17,7 @@ class StudyPlanController extends Controller
     {
         $branchId = \Illuminate\Support\Facades\Auth::user()->branch_id ?? null;
 
-        $query = StudyPlan::with(['grade', 'subject', 'teacher']);
+        $query = StudyPlan::with(['grade', 'subject', 'teacher', 'template']);
 
         if ($branchId) {
             $query->whereHas('teacher', function($q) use ($branchId) {

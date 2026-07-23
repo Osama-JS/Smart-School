@@ -43,4 +43,14 @@ class Student extends Model
     public function currentEnrollment(): HasOne {
         return $this->hasOne(Enrollment::class)->latestOfMany();
     }
+
+    // السجل الطبي للطالب في العيادة
+    public function medicalRecord(): HasOne {
+        return $this->hasOne(StudentMedicalRecord::class);
+    }
+
+    // زيارات الطالب للعيادة
+    public function clinicVisits(): HasMany {
+        return $this->hasMany(ClinicVisit::class);
+    }
 }

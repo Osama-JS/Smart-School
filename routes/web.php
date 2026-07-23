@@ -10,6 +10,9 @@ use Inertia\Inertia;
 Route::get('/install', [\App\Http\Controllers\InstallController::class, 'index'])->name('install');
 Route::post('/install/step', [\App\Http\Controllers\InstallController::class, 'runStep'])->name('install.step');
 
+// ── Public Verification ──
+Route::get('/verify/study-plan/{id}', [\App\Http\Controllers\StudyPlanVerificationController::class, 'show'])->name('verify.study-plan');
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -179,10 +182,17 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:إدارة الخطط الدراسية')->group(function () {
+        Route::get('/academic/study-plans/analytics', [\App\Http\Controllers\Academic\StudyPlanAnalyticsController::class, 'index'])->name('academic.study-plans.analytics');
         Route::get('/academic/study-plans', [\App\Http\Controllers\Academic\StudyPlanController::class, 'index'])->name('academic.study-plans.index');
         Route::post('/academic/study-plans/{studyPlan}/review', [\App\Http\Controllers\Academic\StudyPlanController::class, 'review'])->name('academic.study-plans.review');
         Route::delete('/academic/study-plans/{studyPlan}', [\App\Http\Controllers\Academic\StudyPlanController::class, 'destroy'])->name('academic.study-plans.destroy');
         Route::get('/academic/study-plans/{studyPlan}/download', [\App\Http\Controllers\Academic\StudyPlanController::class, 'download'])->name('academic.study-plans.download');
+
+        // Study Plan Templates
+        Route::get('/academic/study-plan-templates', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'index'])->name('academic.study-plan-templates.index');
+        Route::post('/academic/study-plan-templates', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'store'])->name('academic.study-plan-templates.store');
+        Route::put('/academic/study-plan-templates/{studyPlanTemplate}', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'update'])->name('academic.study-plan-templates.update');
+        Route::delete('/academic/study-plan-templates/{studyPlanTemplate}', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'destroy'])->name('academic.study-plan-templates.destroy');
     });
 
     // ── Library & Learning Resources ──
@@ -243,11 +253,23 @@ Route::middleware('auth')->group(function () {
     // Teacher's Study Plans
     Route::resource('/teacher/study-plans', \App\Http\Controllers\Teacher\StudyPlanController::class)->names([
         'index'   => 'teacher.study-plans.index',
+        'create'  => 'teacher.study-plans.create',
         'store'   => 'teacher.study-plans.store',
+        'edit'    => 'teacher.study-plans.edit',
         'update'  => 'teacher.study-plans.update',
         'destroy' => 'teacher.study-plans.destroy',
-    ])->except(['create', 'show', 'edit']);
+    ])->except(['show']);
     Route::get('/teacher/study-plans/{studyPlan}/download', [\App\Http\Controllers\Teacher\StudyPlanController::class, 'download'])->name('teacher.study-plans.download');
+
+    // Teacher's Calendar (Smart Sync)
+    Route::get('/teacher/study-plans-calendar', [\App\Http\Controllers\Teacher\StudyPlanCalendarController::class, 'index'])->name('teacher.study-plans.calendar');
+    // Using simple token parameter for external apps like Google Calendar to fetch without session auth
+    Route::get('/teacher/study-plans-calendar/export.ics', [\App\Http\Controllers\Teacher\StudyPlanCalendarController::class, 'exportIcs'])->name('teacher.study-plans.calendar.export')->withoutMiddleware(['auth']);
+
+    // Study Plan Comments (Accessible by both teacher and academic supervisor)
+    Route::get('/study-plans/{studyPlan}/comments', [\App\Http\Controllers\StudyPlanCommentController::class, 'index'])->name('study-plan-comments.index');
+    Route::post('/study-plans/{studyPlan}/comments', [\App\Http\Controllers\StudyPlanCommentController::class, 'store'])->name('study-plan-comments.store');
+    Route::patch('/study-plan-comments/{studyPlanComment}/resolve', [\App\Http\Controllers\StudyPlanCommentController::class, 'resolve'])->name('study-plan-comments.resolve');
 
     // Teacher's Follow-up Books
     Route::get('/teacher/followup-books', [\App\Http\Controllers\Teacher\FollowupBookController::class, 'index'])->name('teacher.followup-books.index');
@@ -504,6 +526,20 @@ Route::middleware('auth')->group(function () {
     // Employee side - accessible to all authenticated users with an employee record
     Route::get('/hr/my-requests', [\App\Http\Controllers\HR\EmployeeRequestController::class, 'myRequests'])->name('hr.my-requests.index');
     Route::post('/hr/my-requests', [\App\Http\Controllers\HR\EmployeeRequestController::class, 'store'])->name('hr.my-requests.store');
+    // ── Clinic Routes ──
+    Route::middleware('permission:إدارة العيادة')->prefix('clinic')->name('clinic.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Clinic\ClinicController::class, 'index'])->name('index');
+        Route::get('/search-students', [\App\Http\Controllers\Clinic\ClinicController::class, 'searchStudents'])->name('search-students');
+        
+        // Medical Records
+        Route::get('/students/{student}/medical-record', [\App\Http\Controllers\Clinic\MedicalRecordController::class, 'show'])->name('records.show');
+        Route::post('/students/{student}/medical-record', [\App\Http\Controllers\Clinic\MedicalRecordController::class, 'update'])->name('records.update');
+        
+        // Visits
+        Route::get('/visits/create', [\App\Http\Controllers\Clinic\VisitController::class, 'create'])->name('visits.create');
+        Route::post('/visits', [\App\Http\Controllers\Clinic\VisitController::class, 'store'])->name('visits.store');
+    });
+
 });
 
 require __DIR__.'/auth.php';

@@ -19,7 +19,7 @@ class StudyPlanController extends Controller
         $user = Auth::user();
         $branchId = $user->branch_id;
 
-        $query = StudyPlan::with(['grade', 'subject'])
+        $query = StudyPlan::with(['grade', 'subject', 'template'])
             ->where('teacher_id', $user->id)
             ->latest();
 
@@ -32,6 +32,20 @@ class StudyPlanController extends Controller
         }
 
         $studyPlans = $query->paginate(15)->withQueryString();
+
+        $formData = $this->getFormData();
+
+        return Inertia::render('Teacher/StudyPlans/Index', [
+            'studyPlans' => $studyPlans,
+            'filters' => $request->only(['grade_id', 'subject_id']),
+            ...$formData
+        ]);
+    }
+
+    private function getFormData()
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $branchId = $user->branch_id;
 
         $gradesQuery = Grade::query();
         if ($branchId) {
@@ -82,13 +96,55 @@ class StudyPlanController extends Controller
         $subjects = $subjectsQuery->get(['id', 'name']);
         $divisions = $divisionsQuery->get(['id', 'name', 'grade_id']);
 
-        return Inertia::render('Teacher/StudyPlans/Index', [
-            'studyPlans' => $studyPlans,
+        $currentYear = \App\Models\AcademicYear::currentForBranch($branchId);
+        $currentSemester = $currentYear ? $currentYear->activeSemester : null;
+
+        $templates = \App\Models\StudyPlanTemplate::where('is_active', true)
+            ->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            })
+            ->where(function($q) use ($currentYear, $currentSemester) {
+                if ($currentYear) {
+                    $q->where('academic_year_id', $currentYear->id)
+                      ->where(function($sq) use ($currentSemester) {
+                          $sq->whereNull('semester_id');
+                          if ($currentSemester) {
+                              $sq->orWhere('semester_id', $currentSemester->id);
+                          }
+                      });
+                } else {
+                    $q->whereRaw('1 = 0');
+                }
+            })
+            ->with('semester')
+            ->get(['id', 'name', 'month', 'columns', 'semester_id']);
+
+        return [
             'grades' => $grades,
             'subjects' => $subjects,
             'divisions' => $divisions,
-            'filters' => $request->only(['grade_id', 'subject_id'])
-        ]);
+            'templates' => $templates,
+        ];
+    }
+
+    public function create()
+    {
+        $formData = $this->getFormData();
+        return Inertia::render('Teacher/StudyPlans/Form', $formData);
+    }
+
+    public function edit(StudyPlan $studyPlan)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        if ($studyPlan->teacher_id !== $user->id) {
+            abort(403);
+        }
+
+        $formData = $this->getFormData();
+        
+        return Inertia::render('Teacher/StudyPlans/Form', array_merge($formData, [
+            'studyPlan' => $studyPlan,
+        ]));
     }
 
     public function store(Request $request)
@@ -100,11 +156,36 @@ class StudyPlanController extends Controller
             'division_ids' => 'nullable|array',
             'division_ids.*' => 'exists:divisions,id',
             'notes' => 'nullable|string',
-            'attachment' => 'required|file|mimes:pdf,doc,docx|max:10240', // Max 10MB
+            'template_id' => 'nullable|exists:study_plan_templates,id',
+            'content' => 'nullable|array',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx|max:10240', // Max 10MB
             'action' => 'required|in:draft,pending',
         ]);
 
-        $path = $request->file('attachment')->store('study_plans', 'public');
+        if (empty($validated['content']) && !$request->hasFile('attachment')) {
+            return redirect()->back()->withErrors(['error' => 'يجب إما تعبئة الجدول الإلكتروني أو إرفاق ملف الخطة.']);
+        }
+
+        $path = null;
+        if ($request->hasFile('attachment')) {
+            $path = $request->file('attachment')->store('study_plans', 'public');
+        }
+
+        $month = null;
+        if (!empty($validated['template_id'])) {
+            $template = \App\Models\StudyPlanTemplate::find($validated['template_id']);
+            if ($template && $template->month) {
+                $month = $template->month;
+            }
+        }
+
+        $structuredContent = null;
+        if (isset($validated['content']) || $month) {
+            $structuredContent = [
+                'month' => $month,
+                'rows' => $validated['content'] ?? []
+            ];
+        }
 
         StudyPlan::create([
             'teacher_id' => Auth::id(),
@@ -112,7 +193,10 @@ class StudyPlanController extends Controller
             'subject_id' => $validated['subject_id'],
             'division_ids' => $validated['division_ids'] ?? [],
             'title' => $validated['title'],
+            'month' => $month,
             'notes' => $validated['notes'] ?? null,
+            'template_id' => $validated['template_id'] ?? null,
+            'content' => $structuredContent,
             'attachment_path' => $path,
             'status' => $validated['action'],
         ]);
@@ -138,16 +222,41 @@ class StudyPlanController extends Controller
             'division_ids' => 'nullable|array',
             'division_ids.*' => 'exists:divisions,id',
             'notes' => 'nullable|string',
+            'template_id' => 'nullable|exists:study_plan_templates,id',
+            'content' => 'nullable|array',
             'attachment' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'action' => 'required|in:draft,pending',
         ]);
 
+        if (empty($validated['content']) && !$studyPlan->attachment_path && !$request->hasFile('attachment')) {
+            return redirect()->back()->withErrors(['error' => 'يجب إما تعبئة الجدول الإلكتروني أو إرفاق ملف الخطة.']);
+        }
+
+        $month = null;
+        if (!empty($validated['template_id'])) {
+            $template = \App\Models\StudyPlanTemplate::find($validated['template_id']);
+            if ($template && $template->month) {
+                $month = $template->month;
+            }
+        }
+
+        $structuredContent = null;
+        if (isset($validated['content']) || $month) {
+            $structuredContent = [
+                'month' => $month,
+                'rows' => $validated['content'] ?? []
+            ];
+        }
+
         $updateData = [
             'title' => $validated['title'],
+            'month' => $month,
             'subject_id' => $validated['subject_id'],
             'grade_id' => $validated['grade_id'],
             'division_ids' => $validated['division_ids'] ?? [],
             'notes' => $validated['notes'] ?? null,
+            'template_id' => $validated['template_id'] ?? null,
+            'content' => $structuredContent,
             'status' => $validated['action'],
             'admin_feedback' => null,
         ];

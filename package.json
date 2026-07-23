@@ -29,11 +29,18 @@
         "flatpickr": "^4.6.13",
         "html2pdf.js": "^0.14.0",
         "lucide-react": "^1.14.0",
+        "@fullcalendar/core": "^6.1.11",
+        "@fullcalendar/daygrid": "^6.1.11",
+        "@fullcalendar/interaction": "^6.1.11",
+        "@fullcalendar/react": "^6.1.11",
+        "@fullcalendar/timegrid": "^6.1.11",
         "react-flatpickr": "^4.0.11",
         "react-hot-toast": "^2.6.0",
+        "react-qr-code": "^2.0.12",
         "react-quill": "^2.0.0",
         "react-select": "^5.10.2",
         "react-signature-canvas": "^1.1.0-alpha.2",
+        "recharts": "^2.15.0",
         "sweetalert2": "^11.26.25"
     }
 }

@@ -7,17 +7,17 @@ use App\Models\Permission;
 use App\Models\Role;
 
 /**
- * StudyPlanPermissionsSeeder
+ * ClinicPermissionsSeeder
  * ─────────────────────────────────────────────────────────────────────────────
- * يُنشئ ويُسند الصلاحيات الخاصة بوحدة الخطط الدراسية.
+ * يُنشئ ويُسند جميع الصلاحيات التفصيلية الخاصة بمديول العيادة المدرسية:
  *
- * الخوارزمية:
- *  أ) إنشاء الصلاحية العامة (Parent) إذا لم تكن موجودة.
- *  ب) إنشاء الصلاحيات التفصيلية (Granular) إذا لم تكن موجودة.
- *  ج) منح جميع الصلاحيات لـ "مدير النظام" و"مدير الفرع" فقط.
+ * الخوارزمية مطابقة لـ AdvancedModulesPermissionsSeeder:
+ *  أ) إنشاء الصلاحية العامة (Parent).
+ *  ب) إنشاء الصلاحيات التفصيلية (Granular).
+ *  ج) مزامنة ومنح جميع الصلاحيات لـ "مدير النظام" و"مدير الفرع".
  * ─────────────────────────────────────────────────────────────────────────────
  */
-class StudyPlanPermissionsSeeder extends Seeder
+class ClinicPermissionsSeeder extends Seeder
 {
     /**
      * خريطة الصلاحيات:
@@ -25,33 +25,20 @@ class StudyPlanPermissionsSeeder extends Seeder
      * القيمة  = الوحدة + قائمة الصلاحيات التفصيلية المرتبطة بها
      */
     private array $permissionsMap = [
-        // ── الخطط الدراسية ──
-        'إدارة الخطط الدراسية' => [
-            'module'   => 'academic',
+
+        // ── العيادة المدرسية (School Clinic) ──
+        'إدارة العيادة' => [
+            'module'   => 'clinic',
             'children' => [
-                'عرض الخطط الدراسية',
-                'إضافة خطة دراسية',
-                'تعديل خطة دراسية',
-                'تحميل الخطط الدراسية',
-                'حذف الخطط الدراسية',
-            ],
-        ],
-        
-        // ── قوالب الخطط الدراسية ──
-        'إدارة قوالب الخطط الدراسية' => [
-            'module'   => 'academic',
-            'children' => [
-                'عرض قوالب الخطط الدراسية',
-                'إضافة قوالب خطط دراسية',
-                'تعديل قوالب خطط دراسية',
-                'حذف قوالب خطط دراسية',
+                'عرض الملفات الطبية',
+                'تعديل الملفات الطبية',
+                'تسجيل الزيارات',
             ],
         ],
     ];
 
     /**
      * الأدوار الوحيدة التي تحصل على جميع الصلاحيات تلقائياً.
-     * لا يتم إسناد أي صلاحيات لأدوار أخرى — تُدار يدوياً من واجهة الصلاحيات.
      */
     private array $fullAccessRoles = [
         'مدير النظام',
@@ -64,7 +51,7 @@ class StudyPlanPermissionsSeeder extends Seeder
     {
         $this->command->info('');
         $this->command->info('╔══════════════════════════════════════════════════════╗');
-        $this->command->info('║   StudyPlanPermissionsSeeder                         ║');
+        $this->command->info('║   ClinicPermissionsSeeder                            ║');
         $this->command->info('╚══════════════════════════════════════════════════════╝');
         $this->command->info('');
 
@@ -101,6 +88,8 @@ class StudyPlanPermissionsSeeder extends Seeder
                 if ($perm->wasRecentlyCreated) {
                     $this->command->line("   ✅ [{$config['module']}] {$childName}");
                     $createdChildren++;
+                } else {
+                    $this->command->line("   ✔  موجودة بالفعل: {$childName}");
                 }
             }
         }
@@ -108,17 +97,23 @@ class StudyPlanPermissionsSeeder extends Seeder
         $this->command->info("   → تم إنشاء {$createdChildren} صلاحية تفصيلية جديدة.");
         $this->command->info('');
 
-        // ── الخطوة 3: منح جميع الصلاحيات لمدير النظام ومدير الفرع فقط ──
-        $this->command->info('🔧 [3/3] منح جميع الصلاحيات لـ "مدير النظام" و"مدير الفرع"...');
+        // ── الخطوة 3: منح الصلاحيات لمدير النظام ومدير الفرع ──
+        $this->command->info('🔧 [3/3] منح الصلاحيات للأدوار الإدارية العليا...');
 
-        $allPermissionIds = Permission::pluck('id')->toArray();
-        $totalPerms       = count($allPermissionIds);
+        // جمع كافة الصلاحيات المذكورة في هذا الـ Seeder
+        $allNames = array_keys($this->permissionsMap);
+        foreach ($this->permissionsMap as $config) {
+            $allNames = array_merge($allNames, $config['children']);
+        }
+        
+        $permissionIds = Permission::whereIn('name', $allNames)->pluck('id')->toArray();
+        $totalPerms = count($permissionIds);
 
         foreach ($this->fullAccessRoles as $roleName) {
             $role = Role::where('name', $roleName)->first();
             if ($role) {
-                $role->permissions()->sync($allPermissionIds);
-                $this->command->line("   ✅ [{$roleName}]: تم منحه جميع الصلاحيات ({$totalPerms} صلاحية).");
+                $role->permissions()->syncWithoutDetaching($permissionIds);
+                $this->command->line("   ✅ [{$roleName}]: تم منحه صلاحيات العيادة ({$totalPerms} صلاحية).");
             } else {
                 $this->command->warn("   ⚠  الدور [{$roleName}] غير موجود في قاعدة البيانات.");
             }
@@ -126,8 +121,7 @@ class StudyPlanPermissionsSeeder extends Seeder
 
         $this->command->info('');
         $this->command->info('╔══════════════════════════════════════════════════════╗');
-        $this->command->info('║   ✅ تم الانتهاء من StudyPlanPermissionsSeeder       ║');
-        $this->command->info('║   إجمالي الصلاحيات في النظام: ' . str_pad(Permission::count(), 4) . '                 ║');
+        $this->command->info('║   ✅ تم الانتهاء من ClinicPermissionsSeeder          ║');
         $this->command->info('╚══════════════════════════════════════════════════════╝');
         $this->command->info('');
     }

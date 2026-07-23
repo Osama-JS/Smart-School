@@ -92,5 +92,8 @@ class SystemPermissionsSeeder extends Seeder
 
         $this->command->info('⚙️ Now adding advanced modules permissions...');
         $this->call(AdvancedModulesPermissionsSeeder::class);
+
+        $this->command->info('⚙️ Now adding clinic permissions...');
+        $this->call(ClinicPermissionsSeeder::class);
     }
 }

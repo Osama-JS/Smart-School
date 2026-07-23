@@ -1,94 +1,39 @@
 import React, { useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, Link } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import { 
     Book, Plus, Edit2, Trash2, Search, X, Layers, FileText, Download,
-    BookOpen, Sparkles, AlertCircle, Check, FileDown, Clock, Filter, Calendar, LayoutGrid, List
+    BookOpen, Sparkles, AlertCircle, Check, FileDown, Clock, Filter, Calendar, LayoutGrid, List, MessageSquare, Send, User, Printer, CalendarDays
 } from 'lucide-react';
+import axios from 'axios';
+import html2pdf from 'html2pdf.js';
+import { StudyPlanPdfTemplate } from '@/Components/StudyPlanPdfTemplate';
 
-function Modal({ isOpen, onClose, title, children }) {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden border border-slate-100 dark:border-slate-800">
-                <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 to-indigo-500" />
-                <div className="flex items-center justify-between p-6 border-b border-slate-100/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-900/30">
-                    <h3 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-primary-500" />
-                        {title}
-                    </h3>
-                    <button onClick={onClose} className="p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
-                        <X size={20} />
-                    </button>
-                </div>
-                <div className="p-6 md:p-8 max-h-[75vh] overflow-y-auto">{children}</div>
-            </div>
-        </div>
-    );
-}
-
-function MultiSelectDivisions({ options, selected, onChange }) {
-    const [isOpen, setIsOpen] = React.useState(false);
-    const dropdownRef = React.useRef(null);
-
-    React.useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const toggle = (id) => {
-        if (selected.includes(id)) {
-            onChange(selected.filter(x => x !== id));
-        } else {
-            onChange([...selected, id]);
-        }
-    };
-
-    return (
-        <div className="relative" ref={dropdownRef}>
-            <div 
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 flex items-center justify-between cursor-pointer focus:border-primary-500 transition-all"
-            >
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate pl-4">
-                    {selected.length === 0 ? 'جميع الشعب' : options.filter(opt => selected.includes(opt.id)).map(opt => opt.name).join('، ')}
-                </span>
-                <span className={`text-slate-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
-            </div>
-            {isOpen && (
-                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl max-h-60 overflow-y-auto overflow-hidden">
-                    {options.map(opt => (
-                        <label key={opt.id} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer border-b border-slate-100 dark:border-slate-800/50 last:border-0">
-                            <input 
-                                type="checkbox" 
-                                checked={selected.includes(opt.id)} 
-                                onChange={() => toggle(opt.id)}
-                                className="w-4 h-4 text-primary-600 rounded border-slate-300 focus:ring-primary-500"
-                            />
-                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{opt.name}</span>
-                        </label>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
-export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, divisions, filters }) {
+export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, divisions, templates = [], filters }) {
     const { flash, errors } = usePage().props;
     
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState(null);
-    const [form, setForm] = useState({ title: '', subject_id: '', grade_id: '', division_ids: [], notes: '', attachment: null });
-    const [processing, setProcessing] = useState(false);
+    // PDF Export State
+    const [pdfPlan, setPdfPlan] = useState(null);
+
+    React.useEffect(() => {
+        if (pdfPlan) {
+            const element = document.getElementById(`pdf-export-plan-${pdfPlan.id}`);
+            if (element) {
+                const opt = {
+                    margin:       0,
+                    filename:     `الخطة_الدراسية_${pdfPlan.title}.pdf`,
+                    image:        { type: 'jpeg', quality: 0.98 },
+                    html2canvas:  { scale: 2, useCORS: true },
+                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(element).save().then(() => {
+                    setPdfPlan(null); // Reset after download
+                });
+            }
+        }
+    }, [pdfPlan]);
 
     // Check localStorage for view mode preference
     const [viewMode, setViewMode] = useState(() => {
@@ -112,53 +57,12 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
         router.get(route('teacher.study-plans.index'), { grade_id: filterGrade, subject_id: filterSubject }, { preserveState: true });
     };
 
-    const openModal = (plan = null) => {
-        setEditingItem(plan);
-        if (plan) {
-            setForm({ title: plan.title, subject_id: plan.subject_id, grade_id: plan.grade_id, division_ids: plan.division_ids || [], notes: plan.notes || '', attachment: null });
-        } else {
-            setForm({ title: '', subject_id: '', grade_id: '', division_ids: [], notes: '', attachment: null });
-        }
-        setIsModalOpen(true);
-    };
-
     const getStatusBadge = (status) => {
         switch (status) {
             case 'approved': return <span className="bg-emerald-100 text-emerald-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><Check size={14}/> معتمدة</span>;
             case 'pending': return <span className="bg-amber-100 text-amber-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><Clock size={14}/> قيد المراجعة</span>;
             case 'rejected': return <span className="bg-rose-100 text-rose-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><AlertCircle size={14}/> مرفوضة</span>;
             default: return <span className="bg-slate-100 text-slate-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><FileText size={14}/> مسودة</span>;
-        }
-    };
-
-    const submitForm = (e, action = 'draft') => {
-        if(e) e.preventDefault();
-        setProcessing(true);
-
-        const formData = new FormData();
-        formData.append('title', form.title);
-        formData.append('subject_id', form.subject_id);
-        formData.append('grade_id', form.grade_id);
-        if (form.division_ids && form.division_ids.length > 0) {
-            form.division_ids.forEach((id, index) => {
-                formData.append(`division_ids[${index}]`, id);
-            });
-        }
-        if (form.notes) formData.append('notes', form.notes);
-        formData.append('action', action);
-        if (form.attachment) formData.append('attachment', form.attachment);
-
-        if (editingItem) {
-            formData.append('_method', 'put');
-            router.post(route('teacher.study-plans.update', editingItem.id), formData, {
-                onSuccess: () => setIsModalOpen(false),
-                onFinish: () => setProcessing(false)
-            });
-        } else {
-            router.post(route('teacher.study-plans.store'), formData, {
-                onSuccess: () => setIsModalOpen(false),
-                onFinish: () => setProcessing(false)
-            });
         }
     };
 
@@ -178,7 +82,6 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
             }
         });
     };
-
     return (
         <AdminLayout activeMenu="الخطط الدراسية">
             <Head title="خططي الدراسية | النظام الأكاديمي" />
@@ -213,9 +116,15 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                 قم برفع وتنظيم خططك الدراسية ومقرراتك هنا
                             </p>
                         </div>
-                        <button onClick={() => openModal()} className="flex items-center gap-2 px-5 py-3 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 font-bold transition-all shadow-lg shadow-primary-500/20">
-                            <Plus size={18} /> <span>رفع خطة جديدة</span>
-                        </button>
+                        <div className="flex gap-3">
+                            <Link href={route('teacher.study-plans.calendar')} className="bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 backdrop-blur-md text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-500/20 px-4 py-3 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-sm hover:shadow-md">
+                                <Calendar size={18} />
+                                <span className="hidden sm:inline">التقويم الذكي</span>
+                            </Link>
+                            <Link href={route('teacher.study-plans.create')} className="flex items-center gap-2 px-5 py-3 bg-primary-600 text-white rounded-2xl hover:bg-primary-700 font-bold transition-all shadow-lg shadow-primary-500/20">
+                                <Plus size={18} /> <span>رفع خطة جديدة</span>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
@@ -305,11 +214,18 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                                         <FileText className="w-4 h-4 text-primary-500 shrink-0" />
                                                         <span className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">{plan.title}</span>
                                                     </div>
-                                                    {plan.notes && (
-                                                        <div className="text-xs text-gray-500 dark:text-slate-400 mt-1 line-clamp-1">
-                                                            ملاحظة: {plan.notes}
-                                                        </div>
-                                                    )}
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                        {plan.month && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400 text-[10px] font-bold border border-teal-100 dark:border-teal-800/50">
+                                                                <CalendarDays size={10} /> {plan.month}
+                                                            </span>
+                                                        )}
+                                                        {plan.notes && (
+                                                            <div className="text-xs text-gray-500 dark:text-slate-400 line-clamp-1">
+                                                                ملاحظة: {plan.notes}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm text-gray-900 dark:text-white font-bold mb-1.5 flex items-center gap-1.5"><Book size={14} className="text-primary-500"/>{plan.subject?.name}</div>
@@ -337,17 +253,27 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                                     <div className="flex items-center justify-center gap-2">
-                                                        <a 
-                                                            href={route('teacher.study-plans.download', plan.id)}
-                                                            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary-50 hover:text-primary-600 transition-colors" title="تحميل الخطة"
-                                                        >
-                                                            <Download className="w-4 h-4" />
-                                                        </a>
+                                                        {plan.attachment_path && (
+                                                            <a 
+                                                                href={route('teacher.study-plans.download', plan.id)}
+                                                                className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary-50 hover:text-primary-600 transition-colors" title="تحميل الخطة المرفقة"
+                                                            >
+                                                                <Download className="w-4 h-4" />
+                                                            </a>
+                                                        )}
+                                                        {plan.status === 'approved' && plan.content && (
+                                                            <button 
+                                                                onClick={() => setPdfPlan(plan)}
+                                                                className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 transition-colors" title="تصدير كملف PDF معتمد"
+                                                            >
+                                                                <Printer className="w-4 h-4" />
+                                                            </button>
+                                                        )}
                                                         {!['pending', 'approved'].includes(plan.status) && (
                                                             <>
-                                                                <button onClick={() => openModal(plan)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 transition-colors" title="تعديل">
+                                                                <Link href={route('teacher.study-plans.edit', plan.id)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 transition-colors" title="تعديل">
                                                                     <Edit2 size={16} />
-                                                                </button>
+                                                                </Link>
                                                                 <button onClick={() => deletePlan(plan)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-red-500 hover:bg-red-50 transition-colors" title="حذف">
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>
@@ -394,9 +320,16 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                                 </div>
                                                 <div>
                                                     <h3 className="font-black text-slate-800 dark:text-white truncate max-w-[180px]" title={plan.title}>{plan.title}</h3>
-                                                    <div className="mt-2 inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-bold">
-                                                        <Calendar size={12}/> 
-                                                        <span>{new Date(plan.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                                                        <div className="inline-flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-xs font-bold">
+                                                            <Calendar size={12}/> 
+                                                            <span>{new Date(plan.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                                        </div>
+                                                        {plan.month && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400 text-[10px] font-bold border border-teal-100 dark:border-teal-800/50">
+                                                                <CalendarDays size={10} /> {plan.month}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -404,7 +337,7 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                                 {getStatusBadge(plan.status)}
                                                 {(!['pending', 'approved'].includes(plan.status)) && (
                                                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                                        <button onClick={() => openModal(plan)} className="p-2 text-slate-400 hover:text-primary-600 bg-slate-50 dark:bg-slate-800 rounded-xl"><Edit2 size={16} /></button>
+                                                        <Link href={route('teacher.study-plans.edit', plan.id)} className="p-2 text-slate-400 hover:text-primary-600 bg-slate-50 dark:bg-slate-800 rounded-xl"><Edit2 size={16} /></Link>
                                                         <button onClick={() => deletePlan(plan)} className="p-2 text-slate-400 hover:text-rose-600 bg-slate-50 dark:bg-slate-800 rounded-xl"><Trash2 size={16} /></button>
                                                     </div>
                                                 )}
@@ -434,6 +367,11 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                             <span className="text-xs font-bold bg-primary-50 dark:bg-primary-900/20 text-primary-600 px-3 py-1.5 rounded-lg flex items-center gap-1">
                                                 <Book size={14} /> {plan.subject?.name}
                                             </span>
+                                            {plan.month && (
+                                                <span className="text-xs font-bold bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-3 py-1.5 rounded-lg flex items-center gap-1">
+                                                    <Calendar size={14} /> {plan.month}
+                                                </span>
+                                            )}
                                         </div>
 
                                         {plan.notes && (
@@ -443,12 +381,30 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                             </div>
                                         )}
 
-                                        <a 
-                                            href={route('teacher.study-plans.download', plan.id)}
-                                            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-primary-50 hover:text-primary-600 rounded-xl font-bold text-sm transition mt-auto"
-                                        >
-                                            <Download size={16} /> تحميل الخطة المرفقة
-                                        </a>
+                                        {plan.attachment_path && (
+                                            <a 
+                                                href={route('teacher.study-plans.download', plan.id)}
+                                                className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-primary-50 hover:text-primary-600 rounded-xl font-bold text-sm transition mt-auto"
+                                            >
+                                                <Download size={16} /> تحميل الخطة المرفقة
+                                            </a>
+                                        )}
+                                        {plan.status === 'approved' && plan.content && (
+                                            <button 
+                                                onClick={() => setPdfPlan(plan)}
+                                                className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 rounded-xl font-bold text-sm transition mt-2 border border-emerald-100 dark:border-emerald-800"
+                                            >
+                                                <Printer size={16} /> تصدير كملف PDF معتمد
+                                            </button>
+                                        )}
+                                        {((Array.isArray(plan.content) && plan.content.length > 0) || (plan.content?.rows?.length > 0)) && (
+                                            <Link 
+                                                href={route('teacher.study-plans.edit', plan.id)}
+                                                className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 rounded-xl font-bold text-sm transition mt-2"
+                                            >
+                                                <LayoutGrid size={16} /> عرض الجدول الإلكتروني
+                                            </Link>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -457,67 +413,14 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                 )}
             </div>
 
-            {/* Modal */}
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingItem ? 'تعديل الخطة الدراسية' : 'رفع خطة جديدة'}>
-                <form onSubmit={submitForm} className="space-y-6">
-                    <div>
-                        <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">عنوان الخطة <span className="text-rose-500">*</span></label>
-                        <input type="text" value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="مثال: توزيع منهج الرياضيات الفصل الأول" className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 outline-none focus:border-primary-500 text-sm font-bold" required />
-                        {errors.title && <p className="text-rose-500 text-xs font-bold mt-1">{errors.title}</p>}
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="col-span-3 md:col-span-1">
-                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">الصف <span className="text-rose-500">*</span></label>
-                            <SelectInput value={form.grade_id} onChange={val => setForm({...form, grade_id: val, division_ids: []})} options={[{ value: '', label: 'اختر الصف...' }, ...grades.map(g => ({ value: g.id, label: g.name }))]} required />
-                            {errors.grade_id && <p className="text-rose-500 text-xs font-bold mt-1">{errors.grade_id}</p>}
-                        </div>
-                        <div className="col-span-3 md:col-span-1">
-                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">الشعبة (اختياري)</label>
-                            <MultiSelectDivisions 
-                                options={form.grade_id ? divisions.filter(d => d.grade_id == form.grade_id) : divisions} 
-                                selected={form.division_ids} 
-                                onChange={val => setForm({...form, division_ids: val})} 
-                            />
-                            {errors.division_ids && <p className="text-rose-500 text-xs font-bold mt-1">{errors.division_ids}</p>}
-                        </div>
-                        <div className="col-span-3 md:col-span-1">
-                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">المادة <span className="text-rose-500">*</span></label>
-                            <SelectInput value={form.subject_id} onChange={val => setForm({...form, subject_id: val})} options={[{ value: '', label: 'اختر المادة...' }, ...subjects.map(s => ({ value: s.id, label: s.name }))]} required />
-                            {errors.subject_id && <p className="text-rose-500 text-xs font-bold mt-1">{errors.subject_id}</p>}
-                        </div>
-                    </div>
 
-                    <div>
-                        <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">الملاحظات (اختياري)</label>
-                        <textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} placeholder="اكتب ملاحظات إضافية حول الخطة هنا..." className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 outline-none focus:border-primary-500 text-sm font-bold min-h-[80px]" />
-                        {errors.notes && <p className="text-rose-500 text-xs font-bold mt-1">{errors.notes}</p>}
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">الملف المرفق (PDF/Doc) {editingItem ? '' : <span className="text-rose-500">*</span>}</label>
-                        <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
-                            <input type="file" id="attachment" className="hidden" accept=".pdf,.doc,.docx" onChange={e => setForm({...form, attachment: e.target.files[0]})} />
-                            <label htmlFor="attachment" className="cursor-pointer flex flex-col items-center justify-center">
-                                <FileDown className="w-8 h-8 text-slate-400 mb-2" />
-                                <span className="text-sm font-bold text-slate-600 dark:text-slate-300">{form.attachment ? form.attachment.name : (editingItem ? 'اختر ملفاً جديداً لاستبدال الملف الحالي' : 'اضغط لاختيار ملف')}</span>
-                                <span className="text-xs text-slate-400 mt-1">الحد الأقصى 10 ميجابايت</span>
-                            </label>
-                        </div>
-                        {errors.attachment && <p className="text-rose-500 text-xs font-bold mt-1">{errors.attachment}</p>}
-                    </div>
-
-                    <div className="pt-4 flex justify-end gap-3">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-3 rounded-xl font-bold bg-slate-100 text-slate-600">إلغاء</button>
-                        <button type="button" onClick={() => submitForm(null, 'draft')} disabled={processing} className="px-6 py-3 rounded-xl font-bold bg-slate-200 text-slate-700 disabled:opacity-50">
-                            حفظ كمسودة
-                        </button>
-                        <button type="button" onClick={() => submitForm(null, 'pending')} disabled={processing} className="px-6 py-3 rounded-xl font-bold bg-primary-600 text-white disabled:opacity-50">
-                            إرسال للمراجعة
-                        </button>
-                    </div>
-                </form>
-            </Modal>
+            {/* Hidden container for PDF rendering */}
+            {pdfPlan && (
+                <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0 }}>
+                    <StudyPlanPdfTemplate plan={pdfPlan} />
+                </div>
+            )}
         </AdminLayout>
     );
 }

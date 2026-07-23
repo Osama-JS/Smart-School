@@ -202,13 +202,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'فترات الرصد', icon: Calendar, url: route('academic.result-periods.index'), permission: 'إدارة الدرجات' },
                 { name: 'توزيع الدرجات', icon: Settings, url: route('academic.subject-grade-settings.index'), permission: 'إدارة المواد الدراسية' },
                 { name: 'سجل الدرجات', icon: BarChart, url: route('academic.monthly-grades.index'), permission: 'عرض درجات الطلاب' },
-                {
-                    name: 'الطلاب', icon: GraduationCap, subItems: [
-                        { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
-                        { name: 'الترفيع الجماعي', icon: ArrowUp, url: route('academic.promotions'), permission: 'إدارة الطلاب' },
-                        { name: 'أولياء الأمور', icon: Users, url: route('academic.parents'), permission: 'إدارة أولياء الأمور' },
-                    ]
-                },
+                { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
+                { name: 'الترفيع الجماعي', icon: ArrowUp, url: route('academic.promotions'), permission: 'إدارة الطلاب' },
+                { name: 'أولياء الأمور', icon: Users, url: route('academic.parents'), permission: 'إدارة أولياء الأمور' },
                 { name: 'الغياب المدرسي', icon: AlertTriangle, url: route('academic.attendances.index'), permission: 'إدارة الطلاب' },
                 { name: 'غياب الحصص', icon: Clock, url: route('academic.attendances.classes'), permission: 'إدارة الطلاب' },
             ]
@@ -226,7 +222,14 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'خططي الدراسية', icon: Map, url: route('teacher.study-plans.index') },
                 { name: 'جدول المراقبة والاختبارات', icon: Calendar, url: route('teacher.my-exam-schedules') },
                 { name: 'متابعة الخطط الدراسية', icon: BookOpen, url: route('academic.study-plans.index'), permission: 'إدارة الخطط الدراسية' },
+                { name: 'قوالب الخطط الدراسية', icon: FileSignature, url: route('academic.study-plan-templates.index'), permission: 'إدارة قوالب الخطط الدراسية' },
                 { name: 'دفاتر تحضير المعلمين', icon: Book, url: route('academic.lesson-preparations'), permission: 'عرض دفاتر التحضير' },
+            ]
+        },
+        {
+            title: 'العيادة المدرسية',
+            items: [
+                { name: 'لوحة العيادة', icon: HeartPulse, url: route('clinic.index'), permission: 'إدارة العيادة' },
             ]
         },
         {
