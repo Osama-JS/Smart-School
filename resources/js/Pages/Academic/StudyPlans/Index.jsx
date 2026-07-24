@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, Link } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
@@ -43,7 +43,7 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
 
     const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const [reviewingPlan, setReviewingPlan] = useState(null);
-    const [reviewForm, setReviewForm] = useState({ admin_feedback: '' });
+    const [reviewForm, setReviewForm] = useState({ status: '', admin_feedback: '' });
     const [processing, setProcessing] = useState(false);
     
     // Comments State
@@ -57,19 +57,42 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
 
     React.useEffect(() => {
         if (pdfPlan) {
-            const element = document.getElementById(`pdf-export-plan-${pdfPlan.id}`);
-            if (element) {
-                const opt = {
-                    margin:       0,
-                    filename:     `الخطة_الدراسية_${pdfPlan.title}.pdf`,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, useCORS: true },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-                html2pdf().set(opt).from(element).save().then(() => {
-                    setPdfPlan(null); // Reset after download
-                });
-            }
+            Swal.fire({
+                title: 'جاري إنشاء ملف PDF...',
+                text: 'يرجى الانتظار بينما يتم تجهيز الخطة الدراسية.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            setTimeout(() => {
+                const element = document.getElementById(`pdf-export-plan-${pdfPlan.id}`);
+                if (element) {
+                    const opt = {
+                        margin:       0,
+                        filename:     `الخطة_الدراسية_${pdfPlan.title}.pdf`,
+                        image:        { type: 'jpeg', quality: 0.98 },
+                        html2canvas:  { scale: 2, useCORS: true, logging: false },
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+                    html2pdf().set(opt).from(element).save().then(() => {
+                        setPdfPlan(null); // Reset after download
+                        Swal.close();
+                    }).catch((err) => {
+                        console.error('PDF generation error:', err);
+                        setPdfPlan(null);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'خطأ',
+                            text: 'حدث خطأ أثناء تصدير الملف.'
+                        });
+                    });
+                } else {
+                    setPdfPlan(null);
+                    Swal.close();
+                }
+            }, 1000);
         }
     }, [pdfPlan]);
     
@@ -97,25 +120,25 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
         }, { preserveState: true });
     };
 
-    const fetchComments = async (id) => {
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'approved': return <span className="bg-emerald-100 text-emerald-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><Check size={14}/> معتمدة</span>;
+            case 'pending': return <span className="bg-amber-100 text-amber-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><Clock size={14}/> قيد المراجعة</span>;
+            case 'rejected': return <span className="bg-rose-100 text-rose-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><AlertCircle size={14}/> مرفوضة</span>;
+            default: return <span className="bg-slate-100 text-slate-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><FileText size={14}/> مسودة</span>;
+        }
+    };
+
+    const fetchComments = async (planId) => {
         setLoadingComments(true);
         try {
-            const res = await axios.get(route('study-plan-comments.index', id));
+            const res = await axios.get(route('study-plan-comments.index', planId));
             setComments(res.data);
         } catch (err) {
             console.error('Error fetching comments:', err);
         } finally {
             setLoadingComments(false);
         }
-    };
-
-    const openReviewModal = (plan) => {
-        setReviewingPlan(plan);
-        setReviewForm({ admin_feedback: plan.admin_feedback || '' });
-        setIsReviewModalOpen(true);
-        setActiveCellKey(null);
-        setComments([]);
-        fetchComments(plan.id);
     };
 
     const addComment = async () => {
@@ -141,25 +164,37 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
         }
     };
 
-    const submitReview = (e, status) => {
-        if(e) e.preventDefault();
-        setProcessing(true);
-        router.post(route('academic.study-plans.review', reviewingPlan.id), {
-            status: status,
-            admin_feedback: reviewForm.admin_feedback
-        }, {
-            onSuccess: () => setIsReviewModalOpen(false),
-            onFinish: () => setProcessing(false)
-        });
+    const openReviewModal = (plan) => {
+        setReviewingPlan(plan);
+        setReviewForm({ status: plan.status, admin_feedback: plan.admin_feedback || '' });
+        setActiveCellKey(null);
+        setComments([]);
+        setIsReviewModalOpen(true);
+        fetchComments(plan.id);
     };
 
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case 'approved': return <span className="bg-emerald-100 text-emerald-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><Check size={14}/> معتمدة</span>;
-            case 'pending': return <span className="bg-amber-100 text-amber-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><Clock size={14}/> قيد المراجعة</span>;
-            case 'rejected': return <span className="bg-rose-100 text-rose-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><AlertCircle size={14}/> مرفوضة</span>;
-            default: return <span className="bg-slate-100 text-slate-700 px-3 py-1 text-xs rounded-lg font-bold flex items-center gap-1"><FileText size={14}/> مسودة</span>;
+    const submitReview = (e, status) => {
+        e.preventDefault();
+        
+        if (status === 'rejected' && !reviewForm.admin_feedback) {
+            alert('يجب كتابة ملاحظات عند رفض الخطة');
+            return;
         }
+
+        setProcessing(true);
+        router.post(route('academic.study-plans.review', reviewingPlan.id), {
+            status,
+            admin_feedback: reviewForm.admin_feedback
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsReviewModalOpen(false);
+                setProcessing(false);
+            },
+            onError: () => {
+                setProcessing(false);
+            }
+        });
     };
 
     const deletePlan = (plan) => {
@@ -194,7 +229,6 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
-                    {/* Visual geometric lines */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                         <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
@@ -371,12 +405,14 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                             <div className="flex items-center justify-center gap-2">
-                                                <a 
-                                                    href={route('academic.study-plans.download', plan.id)}
-                                                    className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary-50 hover:text-primary-600 transition-colors" title="تحميل الخطة"
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </a>
+                                                {plan.attachment_path && (
+                                                    <a 
+                                                        href={route('academic.study-plans.download', plan.id)}
+                                                        className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary-50 hover:text-primary-600 transition-colors" title="تحميل الخطة"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </a>
+                                                )}
                                                 {plan.status === 'pending' ? (
                                                     <button onClick={() => openReviewModal(plan)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors" title="مراجعة واعتماد">
                                                         <Check size={18} />
@@ -521,6 +557,8 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
                     )
                 )}
             </div>
+
+
 
             {/* Review Modal */}
             <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title="مراجعة الخطة الدراسية">
@@ -683,6 +721,7 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
             </Modal>
 
             {/* Hidden container for PDF rendering */}
+
             {pdfPlan && (
                 <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0 }}>
                     <StudyPlanPdfTemplate plan={pdfPlan} />

@@ -48,27 +48,27 @@ export default function StudyPlanCalendar({ events }) {
 
             <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50/70 via-white to-white dark:from-indigo-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-indigo-100 dark:border-indigo-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-700" />
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-700" />
                     
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <Link href={route('teacher.study-plans.index')} className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm mb-3 hover:text-indigo-800 transition">
+                            <Link href={route('teacher.study-plans.index')} className="inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-bold text-sm mb-3 hover:text-primary-800 transition">
                                 <ArrowRight size={16} /> العودة للخطط الدراسية
                             </Link>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
-                                <CalendarIcon size={28} className="text-indigo-600" />
+                                <CalendarIcon size={28} className="text-primary-600" />
                                 تقويم الخطط الدراسية
                             </h1>
-                            <p className="text-indigo-700/80 dark:text-indigo-300/80 mt-2 text-sm font-semibold">
+                            <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">
                                 عرض مجدول وتفاعلي لجميع خططك المعتمدة.
                             </p>
                         </div>
 
                         {/* Sync Section */}
-                        <div className="bg-indigo-50 dark:bg-indigo-900/30 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-500/20 max-w-md w-full shrink-0">
+                        <div className="bg-primary-50 dark:bg-primary-900/30 p-4 rounded-2xl border border-primary-100 dark:border-primary-500/20 max-w-md w-full shrink-0">
                             <div className="flex items-center gap-2 mb-2">
-                                <Share2 size={18} className="text-indigo-600 dark:text-indigo-400" />
+                                <Share2 size={18} className="text-primary-600 dark:text-primary-400" />
                                 <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200">المزامنة مع التقويم الخارجي</h3>
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
@@ -79,11 +79,11 @@ export default function StudyPlanCalendar({ events }) {
                                     type="text" 
                                     readOnly 
                                     value={syncUrl}
-                                    className="w-full text-xs p-2 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 outline-none"
+                                    className="w-full text-xs p-2 rounded-xl border border-primary-200 dark:border-primary-800 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 outline-none"
                                 />
                                 <button 
                                     onClick={handleCopySyncUrl}
-                                    className={`shrink-0 p-2 rounded-xl transition-colors ${copied ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-indigo-600 hover:bg-indigo-700 text-white'}`}
+                                    className={`shrink-0 p-2 rounded-xl transition-colors ${copied ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-primary-600 hover:bg-primary-700 text-white shadow-sm'}`}
                                     title="نسخ الرابط"
                                 >
                                     {copied ? <CheckCircle size={18} /> : <Copy size={18} />}
@@ -105,14 +105,15 @@ export default function StudyPlanCalendar({ events }) {
                     <style dangerouslySetInnerHTML={{__html: `
                         .fc { direction: rtl; font-family: inherit; }
                         .fc-toolbar-title { font-size: 1.25rem !important; font-weight: 900 !important; }
-                        .fc-button-primary { background-color: #4f46e5 !important; border-color: #4338ca !important; text-transform: capitalize; border-radius: 0.75rem !important; }
-                        .fc-button-primary:hover { background-color: #4338ca !important; }
-                        .fc-day-today { background-color: rgba(79, 70, 229, 0.05) !important; }
-                        .dark .fc-day-today { background-color: rgba(79, 70, 229, 0.1) !important; }
+                        .fc-button-primary { background-color: var(--primary-600) !important; border-color: var(--primary-700) !important; text-transform: capitalize; border-radius: 0.75rem !important; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+                        .fc-button-primary:hover { background-color: var(--primary-700) !important; }
+                        .fc-day-today { background-color: var(--primary-50) !important; }
+                        .dark .fc-day-today { background-color: rgba(107, 155, 55, 0.1) !important; }
                         .fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid { border-color: #f1f5f9 !important; }
                         .dark .fc-theme-standard td, .dark .fc-theme-standard th, .dark .fc-theme-standard .fc-scrollgrid { border-color: #1e293b !important; }
-                        .fc-event { border-radius: 0.5rem !important; padding: 2px 4px; border: none !important; cursor: pointer; transition: transform 0.2s; }
-                        .fc-event:hover { transform: scale(1.02); z-index: 10; }
+                        .fc-event { border-radius: 0.5rem !important; padding: 2px 6px; border: none !important; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+                        .fc-event:hover { transform: translateY(-1px) scale(1.02); z-index: 10; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.15); }
+                        .fc-h-event .fc-event-main { color: #fff; font-weight: 600; font-size: 0.8rem; }
                     `}} />
 
                     <div className="min-h-[600px]">

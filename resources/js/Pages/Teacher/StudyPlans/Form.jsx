@@ -8,6 +8,31 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
+const weekNames = ['الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع', 'الأسبوع الخامس', 'الأسبوع السادس', 'الأسبوع السابع', 'الأسبوع الثامن', 'الأسبوع التاسع', 'الأسبوع العاشر', 'الأسبوع الحادي عشر', 'الأسبوع الثاني عشر', 'الأسبوع الثالث عشر', 'الأسبوع الرابع عشر', 'الأسبوع الخامس عشر', 'الأسبوع السادس عشر', 'الأسبوع السابع عشر', 'الأسبوع الثامن عشر'];
+const getWeekName = (index, template = null) => {
+    if (template && template.weeks && template.weeks[index]) {
+        return template.weeks[index].name;
+    }
+    return weekNames[index] || `الأسبوع ${index + 1}`;
+};
+const getWeekDate = (index, template = null) => {
+    if (template && template.weeks && template.weeks[index]) {
+        const w = template.weeks[index];
+        let parts = [];
+        
+        if (w.start_date_gregorian || w.end_date_gregorian) {
+            parts.push(`${w.start_date_gregorian || ''} إلى ${w.end_date_gregorian || ''} (م)`);
+        }
+        
+        if (w.start_date_hijri || w.end_date_hijri) {
+            parts.push(`${w.start_date_hijri || ''} إلى ${w.end_date_hijri || ''} (هـ)`);
+        }
+        
+        return parts.join(' | ');
+    }
+    return '';
+};
+
 function MultiSelectDivisions({ options, selected, onChange }) {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -141,9 +166,22 @@ export default function TeacherStudyPlanForm({ studyPlan, grades, subjects, divi
         if (form.template_id) formData.append('template_id', form.template_id);
         
         if (form.content && form.content.length > 0) {
+            const template = templates.find(t => t.id == form.template_id);
             form.content.forEach((row, rowIndex) => {
-                Object.keys(row).forEach(colKey => {
-                    formData.append(`content[${rowIndex}][${colKey}]`, row[colKey] || '');
+                let finalRow = { ...row };
+                if (template) {
+                    template.columns.forEach(col => {
+                        const isWeek = col.label.includes('أسبوع') || col.label.includes('الاسبوع') || col.label.toLowerCase().includes('week');
+                        const isDate = col.label.includes('تاريخ') || col.label.includes('فترة') || col.label.includes('زمني');
+                        if (isWeek) {
+                            finalRow[col.id] = getWeekName(rowIndex, template);
+                        } else if (isDate && getWeekDate(rowIndex, template)) {
+                            finalRow[col.id] = getWeekDate(rowIndex, template);
+                        }
+                    });
+                }
+                Object.keys(finalRow).forEach(colKey => {
+                    formData.append(`content[${rowIndex}][${colKey}]`, finalRow[colKey] || '');
                 });
             });
         }
@@ -237,7 +275,13 @@ export default function TeacherStudyPlanForm({ studyPlan, grades, subjects, divi
                                     </div>
                                 </div>
                                 <div className={`border rounded-2xl p-4 cursor-pointer transition ${form.template_id ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-slate-200 dark:border-slate-700 hover:border-primary-300'}`} onClick={() => {
-                                    if(templates.length > 0) setForm({...form, template_id: templates[0].id, content: [{}]});
+                                    if(templates.length > 0) {
+                                        const template = templates[0];
+                                        const initialContent = template.weeks?.length > 0 
+                                            ? Array.from({ length: template.weeks.length }, () => ({}))
+                                            : [{}];
+                                        setForm({...form, template_id: template.id, content: initialContent});
+                                    }
                                 }}>
                                     <div className="flex items-center gap-3">
                                         <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${form.template_id ? 'border-primary-500' : 'border-slate-300'}`}>
@@ -256,7 +300,13 @@ export default function TeacherStudyPlanForm({ studyPlan, grades, subjects, divi
                                     <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">اختر القالب</label>
                                     <SelectInput 
                                         value={form.template_id} 
-                                        onChange={val => setForm({...form, template_id: val, content: []})} 
+                                        onChange={val => {
+                                            const template = templates.find(t => t.id == val);
+                                            const initialContent = template?.weeks?.length > 0 
+                                                ? Array.from({ length: template.weeks.length }, () => ({}))
+                                                : [{}];
+                                            setForm({...form, template_id: val, content: initialContent});
+                                        }} 
                                         options={templates.map(t => ({ value: t.id, label: t.name }))} 
                                     />
                                 </div>
@@ -305,60 +355,93 @@ export default function TeacherStudyPlanForm({ studyPlan, grades, subjects, divi
                                                                             </span>
                                                                         </div>
                                                                     )}
-                                                                    {col.type === 'textarea' ? (
-                                                                        <textarea 
-                                                                            className={`w-full text-sm min-h-[80px] p-2 border-0 bg-transparent focus:ring-0 rounded resize-y ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''}`}
-                                                                            value={row[col.id] || ''} 
-                                                                            onChange={e => {
-                                                                                const newContent = [...form.content];
-                                                                                if(!newContent[rowIdx]) newContent[rowIdx] = {};
-                                                                                newContent[rowIdx][col.id] = e.target.value;
-                                                                                setForm({...form, content: newContent});
-                                                                            }}
-                                                                        />
-                                                                    ) : col.type === 'select' ? (
-                                                                        <select 
-                                                                            className={`w-full text-sm p-2 border-0 bg-transparent focus:ring-0 rounded ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''}`}
-                                                                            value={row[col.id] || ''} 
-                                                                            onChange={e => {
-                                                                                const newContent = [...form.content];
-                                                                                if(!newContent[rowIdx]) newContent[rowIdx] = {};
-                                                                                newContent[rowIdx][col.id] = e.target.value;
-                                                                                setForm({...form, content: newContent});
-                                                                            }}
-                                                                        >
-                                                                            <option value="">اختر...</option>
-                                                                            {col.options?.split(',').map(o => o.trim()).filter(Boolean).map(opt => (
-                                                                                <option key={opt} value={opt}>{opt}</option>
-                                                                            ))}
-                                                                        </select>
-                                                                    ) : col.type === 'checkbox' ? (
-                                                                        <div className="flex items-center justify-center p-2">
-                                                                            <input 
-                                                                                type="checkbox" 
-                                                                                className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                                                                                checked={row[col.id] === 'true' || row[col.id] === true} 
-                                                                                onChange={e => {
-                                                                                    const newContent = [...form.content];
-                                                                                    if(!newContent[rowIdx]) newContent[rowIdx] = {};
-                                                                                    newContent[rowIdx][col.id] = e.target.checked ? 'true' : 'false';
-                                                                                    setForm({...form, content: newContent});
-                                                                                }}
-                                                                            />
-                                                                        </div>
-                                                                    ) : (
-                                                                        <input 
-                                                                            type={col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'} 
-                                                                            className={`w-full text-sm p-2 border-0 bg-transparent focus:ring-0 rounded ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''}`}
-                                                                            value={row[col.id] || ''} 
-                                                                            onChange={e => {
-                                                                                const newContent = [...form.content];
-                                                                                if(!newContent[rowIdx]) newContent[rowIdx] = {};
-                                                                                newContent[rowIdx][col.id] = e.target.value;
-                                                                                setForm({...form, content: newContent});
-                                                                            }}
-                                                                        />
-                                                                    )}
+                                                                    {(() => {
+                                                                        const template = templates.find(t => t.id == form.template_id);
+                                                                        const isMonth = col.label.includes('شهر') || col.label.toLowerCase().includes('month');
+                                                                        const isWeek = col.label.includes('أسبوع') || col.label.includes('الاسبوع') || col.label.toLowerCase().includes('week');
+                                                                        const isDate = col.label.includes('تاريخ') || col.label.includes('فترة') || col.label.includes('زمني');
+                                                                        
+                                                                        let displayValue = row[col.id] || '';
+                                                                        let isReadOnlyCell = false;
+
+                                                                        if (isMonth && template?.month) {
+                                                                            displayValue = template.month;
+                                                                            isReadOnlyCell = true;
+                                                                        } else if (isWeek) {
+                                                                            displayValue = getWeekName(rowIdx, template);
+                                                                            isReadOnlyCell = true;
+                                                                        } else if (isDate && getWeekDate(rowIdx, template)) {
+                                                                            displayValue = getWeekDate(rowIdx, template);
+                                                                            isReadOnlyCell = true;
+                                                                        }
+                                                                        
+                                                                        if (col.type === 'textarea') {
+                                                                            return (
+                                                                                <textarea 
+                                                                                    className={`w-full text-sm min-h-[80px] p-2 border-0 bg-transparent focus:ring-0 rounded resize-y ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''} ${isReadOnlyCell ? 'text-slate-500 font-bold bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed' : ''}`}
+                                                                                    value={displayValue} 
+                                                                                    readOnly={isReadOnlyCell}
+                                                                                    onChange={e => {
+                                                                                        if (isReadOnlyCell) return;
+                                                                                        const newContent = [...form.content];
+                                                                                        if(!newContent[rowIdx]) newContent[rowIdx] = {};
+                                                                                        newContent[rowIdx][col.id] = e.target.value;
+                                                                                        setForm({...form, content: newContent});
+                                                                                    }}
+                                                                                />
+                                                                            );
+                                                                        } else if (col.type === 'select') {
+                                                                            return (
+                                                                                <select 
+                                                                                    className={`w-full text-sm p-2 border-0 bg-transparent focus:ring-0 rounded ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''}`}
+                                                                                    value={row[col.id] || ''} 
+                                                                                    onChange={e => {
+                                                                                        const newContent = [...form.content];
+                                                                                        if(!newContent[rowIdx]) newContent[rowIdx] = {};
+                                                                                        newContent[rowIdx][col.id] = e.target.value;
+                                                                                        setForm({...form, content: newContent});
+                                                                                    }}
+                                                                                >
+                                                                                    <option value="">اختر...</option>
+                                                                                    {col.options?.split(',').map(o => o.trim()).filter(Boolean).map(opt => (
+                                                                                        <option key={opt} value={opt}>{opt}</option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            );
+                                                                        } else if (col.type === 'checkbox') {
+                                                                            return (
+                                                                                <div className="flex items-center justify-center p-2">
+                                                                                    <input 
+                                                                                        type="checkbox" 
+                                                                                        className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                                                                        checked={row[col.id] === 'true' || row[col.id] === true} 
+                                                                                        onChange={e => {
+                                                                                            const newContent = [...form.content];
+                                                                                            if(!newContent[rowIdx]) newContent[rowIdx] = {};
+                                                                                            newContent[rowIdx][col.id] = e.target.checked ? 'true' : 'false';
+                                                                                            setForm({...form, content: newContent});
+                                                                                        }}
+                                                                                    />
+                                                                                </div>
+                                                                            );
+                                                                        } else {
+                                                                            return (
+                                                                                <input 
+                                                                                    type={col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'} 
+                                                                                    className={`w-full text-sm p-2 border-0 bg-transparent focus:ring-0 rounded ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''} ${isReadOnlyCell ? 'text-slate-500 font-bold bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed' : ''}`}
+                                                                                    value={displayValue} 
+                                                                                    readOnly={isReadOnlyCell}
+                                                                                    onChange={e => {
+                                                                                        if (isReadOnlyCell) return;
+                                                                                        const newContent = [...form.content];
+                                                                                        if(!newContent[rowIdx]) newContent[rowIdx] = {};
+                                                                                        newContent[rowIdx][col.id] = e.target.value;
+                                                                                        setForm({...form, content: newContent});
+                                                                                    }}
+                                                                                />
+                                                                            );
+                                                                        }
+                                                                    })()}
                                                                 </td>
                                                             );
                                                         })}

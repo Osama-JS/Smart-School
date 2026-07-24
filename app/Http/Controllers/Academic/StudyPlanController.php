@@ -141,7 +141,7 @@ class StudyPlanController extends Controller
 
     public function download(StudyPlan $studyPlan)
     {
-        if (!Storage::disk('public')->exists($studyPlan->attachment_path)) {
+        if (empty($studyPlan->attachment_path) || !Storage::disk('public')->exists($studyPlan->attachment_path)) {
             abort(404, 'الملف غير موجود');
         }
 

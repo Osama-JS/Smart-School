@@ -92,8 +92,8 @@ class StudyPlanCalendarController extends Controller
                         'description' => $description,
                         'plan_id' => $plan->id
                     ],
-                    'backgroundColor' => '#4f46e5', // Indigo
-                    'borderColor' => '#4338ca',
+                    'backgroundColor' => 'var(--primary-600)',
+                    'borderColor' => 'var(--primary-700)',
                 ];
             }
         }

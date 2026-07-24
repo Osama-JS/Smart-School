@@ -41,6 +41,12 @@ class StudyPlanTemplateController extends Controller
             'columns.*.id' => 'required|string',
             'columns.*.label' => 'required|string',
             'columns.*.type' => 'required|string',
+            'weeks' => 'nullable|array',
+            'weeks.*.name' => 'required|string',
+            'weeks.*.start_date_gregorian' => 'nullable|string|max:100',
+            'weeks.*.end_date_gregorian' => 'nullable|string|max:100',
+            'weeks.*.start_date_hijri' => 'nullable|string|max:100',
+            'weeks.*.end_date_hijri' => 'nullable|string|max:100',
             'is_active' => 'boolean',
         ]);
 
@@ -53,6 +59,7 @@ class StudyPlanTemplateController extends Controller
             'name' => $validated['name'],
             'month' => $validated['month'],
             'columns' => $validated['columns'],
+            'weeks' => $validated['weeks'] ?? [],
             'is_active' => $validated['is_active'] ?? true,
         ]);
 
@@ -70,6 +77,12 @@ class StudyPlanTemplateController extends Controller
             'columns.*.id' => 'required|string',
             'columns.*.label' => 'required|string',
             'columns.*.type' => 'required|string',
+            'weeks' => 'nullable|array',
+            'weeks.*.name' => 'required|string',
+            'weeks.*.start_date_gregorian' => 'nullable|string|max:100',
+            'weeks.*.end_date_gregorian' => 'nullable|string|max:100',
+            'weeks.*.start_date_hijri' => 'nullable|string|max:100',
+            'weeks.*.end_date_hijri' => 'nullable|string|max:100',
             'is_active' => 'boolean',
         ]);
 
@@ -79,6 +92,7 @@ class StudyPlanTemplateController extends Controller
             'academic_year_id' => $validated['academic_year_id'],
             'semester_id' => $validated['semester_id'] ?? null,
             'columns' => $validated['columns'],
+            'weeks' => $validated['weeks'] ?? [],
             'is_active' => $validated['is_active'] ?? true,
         ]);
 

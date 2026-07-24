@@ -17,11 +17,13 @@ class StudyPlanTemplate extends Model
         'name',
         'month',
         'columns',
+        'weeks',
         'is_active',
     ];
 
     protected $casts = [
         'columns' => 'array',
+        'weeks' => 'array',
         'is_active' => 'boolean',
     ];
 

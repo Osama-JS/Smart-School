@@ -49,19 +49,19 @@ export default function AnalyticsDashboard({ stats, statusDistribution, teacherP
 
             <div className="p-6 space-y-6 max-w-7xl mx-auto">
                 {/* Header Section */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50/70 via-white to-white dark:from-indigo-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-indigo-100 dark:border-indigo-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-700" />
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-700" />
                     
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <Link href={route('academic.study-plans.index')} className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold text-sm mb-3 hover:text-indigo-800 transition">
+                            <Link href={route('academic.study-plans.index')} className="inline-flex items-center gap-2 text-primary-600 dark:text-primary-400 font-bold text-sm mb-3 hover:text-primary-800 transition">
                                 <ArrowRight size={16} /> العودة للخطط الدراسية
                             </Link>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
-                                <TrendingUp size={28} className="text-indigo-600" />
+                                <TrendingUp size={28} className="text-primary-600" />
                                 لوحة مؤشرات أداء المشرفين
                             </h1>
-                            <p className="text-indigo-700/80 dark:text-indigo-300/80 mt-2 text-sm font-semibold">
+                            <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">
                                 إحصائيات بصرية لنسب الإنجاز، والتزام المعلمين بتسليم الخطط الدراسية.
                             </p>
                         </div>
@@ -72,10 +72,10 @@ export default function AnalyticsDashboard({ stats, statusDistribution, teacherP
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition">
-                            <BookOpen size={64} className="text-indigo-500" />
+                            <BookOpen size={64} className="text-primary-500" />
                         </div>
                         <div className="flex items-center gap-4 relative z-10">
-                            <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex items-center justify-center shadow-inner">
+                            <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center shadow-inner">
                                 <BookOpen size={24} />
                             </div>
                             <div>
@@ -135,8 +135,8 @@ export default function AnalyticsDashboard({ stats, statusDistribution, teacherP
                     {/* Status Distribution Donut Chart */}
                     <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
-                                <FileText className="w-5 h-5 text-indigo-500" />
+                            <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
+                                <FileText className="w-5 h-5 text-primary-500" />
                             </div>
                             <h3 className="text-lg font-black text-slate-800 dark:text-white">حالة الخطط المرفوعة</h3>
                         </div>
@@ -205,8 +205,8 @@ export default function AnalyticsDashboard({ stats, statusDistribution, teacherP
                 {/* Teacher Performance Bar Chart */}
                 <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm">
                     <div className="flex items-center gap-3 mb-8">
-                        <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
-                            <BarChart className="w-5 h-5 text-indigo-500" />
+                        <div className="p-2 bg-primary-50 dark:bg-primary-900/30 rounded-xl">
+                            <BarChart className="w-5 h-5 text-primary-500" />
                         </div>
                         <h3 className="text-lg font-black text-slate-800 dark:text-white">إنجاز المعلمين (أعلى 10)</h3>
                     </div>

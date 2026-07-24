@@ -117,7 +117,7 @@ class StudyPlanController extends Controller
                 }
             })
             ->with('semester')
-            ->get(['id', 'name', 'month', 'columns', 'semester_id']);
+            ->get(['id', 'name', 'month', 'columns', 'weeks', 'semester_id']);
 
         return [
             'grades' => $grades,
