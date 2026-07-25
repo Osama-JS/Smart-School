@@ -15,17 +15,52 @@ const getWeekName = (index, template = null) => {
     }
     return weekNames[index] || `الأسبوع ${index + 1}`;
 };
+
+const toArabicNumerals = (str) => {
+    if (!str) return '';
+    return str.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+};
+
+const formatGregorian = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return toArabicNumerals(dateStr);
+        return d.toLocaleDateString('ar-EG', { calendar: 'gregory', day: 'numeric', month: 'short' });
+    } catch {
+        return toArabicNumerals(dateStr);
+    }
+};
+
+const formatHijri = (dateStr) => {
+    if (!dateStr) return '';
+    // Split by dash, slash, or any non-digit
+    const parts = dateStr.split(/[-/.]/);
+    if (parts.length >= 3) {
+        // usually format is YYYY-MM-DD or YYYY/MM/DD
+        // parts[0] is year (length 4)
+        if (parts[0].length === 4) {
+            return toArabicNumerals(`${parts[2]}-${parts[1]}`);
+        }
+        // if format is DD-MM-YYYY
+        if (parts[2].length === 4) {
+            return toArabicNumerals(`${parts[0]}-${parts[1]}`);
+        }
+    }
+    return toArabicNumerals(dateStr);
+};
+
 const getWeekDate = (index, template = null) => {
     if (template && template.weeks && template.weeks[index]) {
         const w = template.weeks[index];
         let parts = [];
         
         if (w.start_date_gregorian || w.end_date_gregorian) {
-            parts.push(`${w.start_date_gregorian || ''} إلى ${w.end_date_gregorian || ''} (م)`);
+            parts.push(`${formatGregorian(w.start_date_gregorian)} إلى ${formatGregorian(w.end_date_gregorian)} (م)`);
         }
         
         if (w.start_date_hijri || w.end_date_hijri) {
-            parts.push(`${w.start_date_hijri || ''} إلى ${w.end_date_hijri || ''} (هـ)`);
+            parts.push(`${formatHijri(w.start_date_hijri)} إلى ${formatHijri(w.end_date_hijri)} (هـ)`);
         }
         
         return parts.join(' | ');
@@ -96,7 +131,7 @@ export default function TeacherStudyPlanForm({ studyPlan, grades, subjects, divi
         division_ids: studyPlan?.division_ids ? (typeof studyPlan.division_ids === 'string' ? JSON.parse(studyPlan.division_ids) : studyPlan.division_ids) : [], 
         notes: studyPlan?.notes || '', 
         template_id: studyPlan?.template_id || '', 
-        content: (studyPlan?.content && typeof studyPlan.content === 'object' && !Array.isArray(studyPlan.content) && studyPlan.content.rows) ? studyPlan.content.rows : (Array.isArray(studyPlan?.content) ? studyPlan.content : []), 
+        content: studyPlan?.rows ? studyPlan.rows.map(r => r.data) : ((studyPlan?.content && typeof studyPlan.content === 'object' && !Array.isArray(studyPlan.content) && studyPlan.content.rows) ? studyPlan.content.rows : (Array.isArray(studyPlan?.content) ? studyPlan.content : [])), 
         attachment: null 
     });
     
@@ -322,171 +357,252 @@ export default function TeacherStudyPlanForm({ studyPlan, grades, subjects, divi
                                     </div>
                                 )}
                                 
-                                <div className={`grid grid-cols-1 ${isEdit ? 'lg:grid-cols-3' : ''} gap-6 mt-4`}>
-                                    <div className={`${isEdit ? 'lg:col-span-2' : 'col-span-1'} overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl pb-2 bg-white dark:bg-slate-900`}>
-                                        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                                            <thead className="bg-slate-100 dark:bg-slate-800">
-                                                <tr>
-                                                    {templates.find(t => t.id == form.template_id).columns.map((col, idx) => (
-                                                        <th key={idx} className="px-3 py-3 text-right text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider border-l border-slate-200 dark:border-slate-700 last:border-0">{col.label}</th>
-                                                    ))}
-                                                    <th className="px-3 py-3 w-10 border-l border-slate-200 dark:border-slate-700 last:border-0"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700">
-                                                {form.content.map((row, rowIdx) => (
-                                                    <tr key={rowIdx}>
-                                                        {templates.find(t => t.id == form.template_id).columns.map((col, colIdx) => {
-                                                            const cellKey = `row_${rowIdx}_col_${col.id}`;
-                                                            const cellComments = comments.filter(c => c.cell_key === cellKey);
-                                                            const hasOpenComments = cellComments.some(c => !c.is_resolved);
-                                                            const isSelected = activeCellKey === cellKey;
+                                <div className="mt-4 space-y-6">
+                                    <div className="w-full overflow-hidden border border-slate-200/80 dark:border-slate-700/80 rounded-[28px] shadow-sm bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl relative">
+                                        <div className="overflow-x-auto custom-scrollbar">
+                                            <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                <thead className="bg-slate-50/80 dark:bg-slate-800/40 backdrop-blur-md">
+                                                    <tr>
+                                                        {templates.find(t => t.id == form.template_id).columns.map((col, idx) => {
+                                                            const isDateCol = col.label.includes('شهر') || col.label.includes('أسبوع') || col.label.includes('الاسبوع') || col.label.includes('تاريخ') || col.label.includes('فترة') || col.label.includes('زمني');
+                                                            const isNumberCol = col.label.includes('أيام') || col.label.includes('ايام') || col.label.includes('حصص') || col.label.includes('يوم');
+                                                            const widthClass = isDateCol ? 'w-16 min-w-[64px]' : isNumberCol ? 'w-16 min-w-[64px]' : 'min-w-[200px]';
                                                             return (
-                                                                <td 
-                                                                    key={colIdx} 
-                                                                    onClick={() => setActiveCellKey(cellKey)}
-                                                                    className={`p-1 border-l border-slate-200 dark:border-slate-700 last:border-0 align-top relative transition ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-inset ring-primary-500' : ''}`}
-                                                                >
-                                                                    {hasOpenComments && (
-                                                                        <div className="absolute top-0.5 right-0.5 flex items-center justify-center z-10 pointer-events-none">
-                                                                            <span className="flex h-2.5 w-2.5 relative">
-                                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                                                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                    {(() => {
-                                                                        const template = templates.find(t => t.id == form.template_id);
-                                                                        const isMonth = col.label.includes('شهر') || col.label.toLowerCase().includes('month');
-                                                                        const isWeek = col.label.includes('أسبوع') || col.label.includes('الاسبوع') || col.label.toLowerCase().includes('week');
-                                                                        const isDate = col.label.includes('تاريخ') || col.label.includes('فترة') || col.label.includes('زمني');
-                                                                        
-                                                                        let displayValue = row[col.id] || '';
-                                                                        let isReadOnlyCell = false;
+                                                                <th key={idx} className={`px-2 py-4 text-center text-[10px] md:text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider border-l border-slate-100 dark:border-slate-800/60 last:border-0 ${widthClass} ${isNumberCol ? 'whitespace-normal leading-tight' : 'whitespace-nowrap'}`}>
+                                                                    {col.label}
+                                                                </th>
+                                                            );
+                                                        })}
+                                                        {!(templates.find(t => t.id == form.template_id)?.weeks?.length > 0) && (
+                                                            <th className="px-4 py-4 w-12 border-l border-slate-100 dark:border-slate-800/60 last:border-0"></th>
+                                                        )}
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                    {form.content.map((row, rowIdx) => (
+                                                        <tr key={rowIdx} className="group/row hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors duration-200">
+                                                            {templates.find(t => t.id == form.template_id).columns.map((col, colIdx) => {
+                                                                const cellKey = `row_${rowIdx}_col_${col.id}`;
+                                                                const cellComments = comments.filter(c => c.cell_key === cellKey);
+                                                                const hasOpenComments = cellComments.some(c => !c.is_resolved);
+                                                                const isSelected = activeCellKey === cellKey;
+                                                                
+                                                                const isDateCol = col.label.includes('شهر') || col.label.includes('أسبوع') || col.label.includes('الاسبوع') || col.label.includes('تاريخ') || col.label.includes('فترة') || col.label.includes('زمني');
+                                                                const isNumberCol = col.label.includes('أيام') || col.label.includes('ايام') || col.label.includes('حصص') || col.label.includes('يوم');
+                                                                const widthClass = isDateCol ? 'w-16 min-w-[64px]' : isNumberCol ? 'w-16 min-w-[64px]' : 'min-w-[200px]';
+                                                                
+                                                                return (
+                                                                    <td 
+                                                                        key={colIdx} 
+                                                                        onClick={() => setActiveCellKey(cellKey)}
+                                                                        className={`p-0 border-l border-slate-100 dark:border-slate-800/60 last:border-0 align-top relative transition-all duration-300 ${widthClass} ${isSelected ? 'bg-primary-50/80 dark:bg-primary-900/20 ring-2 ring-inset ring-primary-500/50 shadow-inner' : ''}`}
+                                                                    >
+                                                                        {hasOpenComments && (
+                                                                            <div className="absolute top-2 right-2 flex items-center justify-center z-20 pointer-events-none">
+                                                                                <span className="flex h-3 w-3 relative">
+                                                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                                                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500 shadow-sm border border-white dark:border-slate-800"></span>
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                        {(() => {
+                                                                            const template = templates.find(t => t.id == form.template_id);
+                                                                            const isMonth = col.label.includes('شهر') || col.label.toLowerCase().includes('month');
+                                                                            const isWeek = col.label.includes('أسبوع') || col.label.includes('الاسبوع') || col.label.toLowerCase().includes('week');
+                                                                            const isDate = col.label.includes('تاريخ') || col.label.includes('فترة') || col.label.includes('زمني');
+                                                                            
+                                                                            let displayValue = row[col.id] || '';
+                                                                            let isReadOnlyCell = false;
 
-                                                                        if (isMonth && template?.month) {
-                                                                            displayValue = template.month;
-                                                                            isReadOnlyCell = true;
-                                                                        } else if (isWeek) {
-                                                                            displayValue = getWeekName(rowIdx, template);
-                                                                            isReadOnlyCell = true;
-                                                                        } else if (isDate && getWeekDate(rowIdx, template)) {
-                                                                            displayValue = getWeekDate(rowIdx, template);
-                                                                            isReadOnlyCell = true;
-                                                                        }
-                                                                        
-                                                                        if (col.type === 'textarea') {
-                                                                            return (
-                                                                                <textarea 
-                                                                                    className={`w-full text-sm min-h-[80px] p-2 border-0 bg-transparent focus:ring-0 rounded resize-y ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''} ${isReadOnlyCell ? 'text-slate-500 font-bold bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed' : ''}`}
-                                                                                    value={displayValue} 
-                                                                                    readOnly={isReadOnlyCell}
-                                                                                    onChange={e => {
-                                                                                        if (isReadOnlyCell) return;
-                                                                                        const newContent = [...form.content];
-                                                                                        if(!newContent[rowIdx]) newContent[rowIdx] = {};
-                                                                                        newContent[rowIdx][col.id] = e.target.value;
-                                                                                        setForm({...form, content: newContent});
-                                                                                    }}
-                                                                                />
-                                                                            );
-                                                                        } else if (col.type === 'select') {
-                                                                            return (
-                                                                                <select 
-                                                                                    className={`w-full text-sm p-2 border-0 bg-transparent focus:ring-0 rounded ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''}`}
-                                                                                    value={row[col.id] || ''} 
-                                                                                    onChange={e => {
-                                                                                        const newContent = [...form.content];
-                                                                                        if(!newContent[rowIdx]) newContent[rowIdx] = {};
-                                                                                        newContent[rowIdx][col.id] = e.target.value;
-                                                                                        setForm({...form, content: newContent});
-                                                                                    }}
-                                                                                >
-                                                                                    <option value="">اختر...</option>
-                                                                                    {col.options?.split(',').map(o => o.trim()).filter(Boolean).map(opt => (
-                                                                                        <option key={opt} value={opt}>{opt}</option>
-                                                                                    ))}
-                                                                                </select>
-                                                                            );
-                                                                        } else if (col.type === 'checkbox') {
-                                                                            return (
-                                                                                <div className="flex items-center justify-center p-2">
-                                                                                    <input 
-                                                                                        type="checkbox" 
-                                                                                        className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                                                                                        checked={row[col.id] === 'true' || row[col.id] === true} 
+                                                                            if (isMonth && template?.month) {
+                                                                                displayValue = template.month;
+                                                                                isReadOnlyCell = true;
+                                                                            } else if (isWeek) {
+                                                                                displayValue = getWeekName(rowIdx, template);
+                                                                                isReadOnlyCell = true;
+                                                                            } else if (isDate && getWeekDate(rowIdx, template)) {
+                                                                                displayValue = getWeekDate(rowIdx, template);
+                                                                                isReadOnlyCell = true;
+                                                                            }
+                                                                            
+                                                                            if (isReadOnlyCell) {
+                                                                                const lines = typeof displayValue === 'string' ? displayValue.split(' | ') : [displayValue];
+                                                                                return (
+                                                                                    <div className="w-full h-full min-h-[140px] flex items-center justify-center gap-3 py-4 bg-slate-50/80 dark:bg-slate-800/50 select-none">
+                                                                                        {lines.map((line, i) => (
+                                                                                            <span 
+                                                                                                key={i}
+                                                                                                className="text-slate-500 dark:text-slate-400 font-black text-xs md:text-sm tracking-widest whitespace-nowrap"
+                                                                                                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                                                                                            >
+                                                                                                {line}
+                                                                                            </span>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                            
+                                                                            const isNumberInput = col.type === 'number';
+                                                                            const baseInputStyles = `w-full h-full min-h-[60px] text-sm ${isNumberInput ? 'px-1 text-center' : 'px-4'} py-3 border-0 bg-transparent focus:ring-0 resize-none transition-colors duration-200 outline-none ${isSelected ? 'text-primary-900 dark:text-primary-100 font-semibold' : 'text-slate-700 dark:text-slate-300 font-medium'} hover:bg-slate-50/50 dark:hover:bg-slate-800/30`;
+                                                                            if (col.type === 'textarea') {
+                                                                                return (
+                                                                                    <textarea 
+                                                                                        className={`${baseInputStyles} custom-scrollbar`}
+                                                                                        value={displayValue} 
+                                                                                        readOnly={isReadOnlyCell}
+                                                                                        placeholder={isReadOnlyCell ? '' : 'اكتب هنا...'}
                                                                                         onChange={e => {
+                                                                                            if (isReadOnlyCell) return;
                                                                                             const newContent = [...form.content];
                                                                                             if(!newContent[rowIdx]) newContent[rowIdx] = {};
-                                                                                            newContent[rowIdx][col.id] = e.target.checked ? 'true' : 'false';
+                                                                                            newContent[rowIdx][col.id] = e.target.value;
                                                                                             setForm({...form, content: newContent});
                                                                                         }}
                                                                                     />
-                                                                                </div>
-                                                                            );
-                                                                        } else {
-                                                                            return (
-                                                                                <input 
-                                                                                    type={col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'} 
-                                                                                    className={`w-full text-sm p-2 border-0 bg-transparent focus:ring-0 rounded ${isSelected ? 'text-primary-900 dark:text-primary-100' : ''} ${isReadOnlyCell ? 'text-slate-500 font-bold bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed' : ''}`}
-                                                                                    value={displayValue} 
-                                                                                    readOnly={isReadOnlyCell}
-                                                                                    onChange={e => {
-                                                                                        if (isReadOnlyCell) return;
-                                                                                        const newContent = [...form.content];
-                                                                                        if(!newContent[rowIdx]) newContent[rowIdx] = {};
-                                                                                        newContent[rowIdx][col.id] = e.target.value;
-                                                                                        setForm({...form, content: newContent});
-                                                                                    }}
-                                                                                />
-                                                                            );
-                                                                        }
-                                                                    })()}
+                                                                                );
+                                                                            } else if (col.type === 'select') {
+                                                                                return (
+                                                                                    <select 
+                                                                                        className={`${baseInputStyles} cursor-pointer appearance-none bg-no-repeat bg-[right_1rem_center] bg-[length:1.2em_1.2em]`}
+                                                                                        style={{ backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")` }}
+                                                                                        value={row[col.id] || ''} 
+                                                                                        onChange={e => {
+                                                                                            const newContent = [...form.content];
+                                                                                            if(!newContent[rowIdx]) newContent[rowIdx] = {};
+                                                                                            newContent[rowIdx][col.id] = e.target.value;
+                                                                                            setForm({...form, content: newContent});
+                                                                                        }}
+                                                                                    >
+                                                                                        <option value="">اختر...</option>
+                                                                                        {col.options?.split(',').map(o => o.trim()).filter(Boolean).map(opt => (
+                                                                                            <option key={opt} value={opt}>{opt}</option>
+                                                                                        ))}
+                                                                                    </select>
+                                                                                );
+                                                                            } else if (col.type === 'checkbox') {
+                                                                                return (
+                                                                                    <div className={`w-full h-full min-h-[60px] flex items-center justify-center p-3 ${isReadOnlyCell ? 'bg-slate-50/80 dark:bg-slate-800/50' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/30'} transition-colors`}>
+                                                                                        <label className="relative flex items-center justify-center cursor-pointer p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
+                                                                                            <input 
+                                                                                                type="checkbox" 
+                                                                                                className="peer sr-only"
+                                                                                                checked={row[col.id] === 'true' || row[col.id] === true} 
+                                                                                                onChange={e => {
+                                                                                                    if (isReadOnlyCell) return;
+                                                                                                    const newContent = [...form.content];
+                                                                                                    if(!newContent[rowIdx]) newContent[rowIdx] = {};
+                                                                                                    newContent[rowIdx][col.id] = e.target.checked ? 'true' : 'false';
+                                                                                                    setForm({...form, content: newContent});
+                                                                                                }}
+                                                                                            />
+                                                                                            <div className="w-6 h-6 rounded-md border-2 border-slate-300 dark:border-slate-600 peer-checked:bg-primary-500 peer-checked:border-primary-500 transition-all flex items-center justify-center">
+                                                                                                <svg className="w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                                                                </svg>
+                                                                                            </div>
+                                                                                        </label>
+                                                                                    </div>
+                                                                                );
+                                                                            } else {
+                                                                                return (
+                                                                                    <input 
+                                                                                        type={col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'} 
+                                                                                        className={`${baseInputStyles}`}
+                                                                                        value={displayValue} 
+                                                                                        readOnly={isReadOnlyCell}
+                                                                                        placeholder={isReadOnlyCell ? '' : 'اكتب هنا...'}
+                                                                                        onChange={e => {
+                                                                                            if (isReadOnlyCell) return;
+                                                                                            const newContent = [...form.content];
+                                                                                            if(!newContent[rowIdx]) newContent[rowIdx] = {};
+                                                                                            newContent[rowIdx][col.id] = e.target.value;
+                                                                                            setForm({...form, content: newContent});
+                                                                                        }}
+                                                                                    />
+                                                                                );
+                                                                            }
+                                                                        })()}
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                            {!(templates.find(t => t.id == form.template_id)?.weeks?.length > 0) && (
+                                                                <td className="p-2 border-l border-slate-100 dark:border-slate-800/60 text-center align-middle">
+                                                                    <button 
+                                                                        type="button" 
+                                                                        onClick={() => setForm({...form, content: form.content.filter((_, i) => i !== rowIdx)})} 
+                                                                        className="w-8 h-8 mx-auto flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all opacity-0 group-hover/row:opacity-100"
+                                                                        title="حذف الصف"
+                                                                    >
+                                                                        <Trash2 size={16} />
+                                                                    </button>
                                                                 </td>
-                                                            );
-                                                        })}
-                                                        <td className="p-1 border-l border-slate-200 dark:border-slate-700 text-center align-middle">
-                                                            <button type="button" onClick={() => setForm({...form, content: form.content.filter((_, i) => i !== rowIdx)})} className="text-red-500 hover:text-red-700 p-1">
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                            )}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                     {isEdit && (
-                                        <div className="lg:col-span-1 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 flex flex-col max-h-[60vh]">
-                                            <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-t-xl font-bold flex items-center gap-2">
-                                                <MessageSquare size={18} className="text-primary-500" />
-                                                التعليقات الحية
+                                        <div className="w-full border border-slate-200/80 dark:border-slate-700/80 rounded-[28px] shadow-sm hover:shadow-md transition-shadow bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl flex flex-col h-[400px] relative overflow-hidden">
+                                            <div className="p-5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-800/30 flex items-center justify-between">
+                                                <div className="flex items-center gap-2 font-black text-slate-800 dark:text-white">
+                                                    <div className="p-1.5 bg-primary-100 dark:bg-primary-900/30 rounded-lg text-primary-600 dark:text-primary-400">
+                                                        <MessageSquare size={18} />
+                                                    </div>
+                                                    التعليقات الحية
+                                                </div>
+                                                {activeCellKey && (
+                                                    <span className="text-[10px] font-bold px-2 py-1 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 rounded-full">خلية محددة</span>
+                                                )}
                                             </div>
-                                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                            <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-slate-50/30 dark:bg-slate-900/30">
                                                 {!activeCellKey ? (
-                                                    <div className="text-center text-slate-400 text-sm py-10">
-                                                        انقر على أي خلية في الجدول لإضافة تعليق أو عرض المحادثة المرتبطة بها.
+                                                    <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 dark:text-slate-500 space-y-4 opacity-70 p-4">
+                                                        <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                                                            <MessageSquare size={28} className="text-slate-300 dark:text-slate-600" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-sm mb-1">لا يوجد تحديد</p>
+                                                            <p className="text-xs">انقر على أي خلية في الجدول لإضافة تعليق أو عرض المحادثة</p>
+                                                        </div>
                                                     </div>
                                                 ) : loadingComments ? (
-                                                    <div className="text-center text-slate-400 text-sm py-10">جاري التحميل...</div>
+                                                    <div className="h-full flex flex-col items-center justify-center text-center space-y-3">
+                                                        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-500 rounded-full animate-spin"></div>
+                                                        <p className="text-xs font-bold text-slate-400">جاري التحميل...</p>
+                                                    </div>
                                                 ) : (
                                                     <>
                                                         {comments.filter(c => c.cell_key === activeCellKey).length === 0 ? (
-                                                            <div className="text-center text-slate-400 text-sm py-10">لا توجد تعليقات على هذه الخلية بعد.</div>
+                                                            <div className="h-full flex flex-col items-center justify-center text-center text-slate-400 space-y-3 opacity-60">
+                                                                <MessageSquare size={32} className="text-slate-300 dark:text-slate-700" />
+                                                                <p className="text-xs font-bold">لا توجد تعليقات على هذه الخلية بعد</p>
+                                                            </div>
                                                         ) : (
                                                             comments.filter(c => c.cell_key === activeCellKey).map(comment => (
-                                                                <div key={comment.id} className={`p-3 rounded-xl text-sm ${comment.is_resolved ? 'bg-slate-100 dark:bg-slate-800 opacity-60' : 'bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700'}`}>
-                                                                    <div className="flex items-center justify-between mb-2">
-                                                                        <span className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                                                                            <User size={12} className="text-slate-400" />
-                                                                            {comment.user?.name}
-                                                                        </span>
-                                                                        {comment.is_resolved && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 rounded">محلول</span>}
+                                                                <div key={comment.id} className="flex gap-3 group/comment relative">
+                                                                    <div className="flex-shrink-0 mt-1">
+                                                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xs font-black shadow-md shadow-primary-500/20">
+                                                                            {comment.user?.name?.charAt(0)}
+                                                                        </div>
                                                                     </div>
-                                                                    <p className="text-slate-600 dark:text-slate-300 mb-2">{comment.comment}</p>
-                                                                    <div className="flex items-center justify-between text-[10px] text-slate-400">
-                                                                        <span>{new Date(comment.created_at).toLocaleString('ar-EG')}</span>
+                                                                    <div className="flex-1">
+                                                                        <div className={`p-3.5 rounded-2xl text-sm shadow-sm relative ${comment.is_resolved ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-100 rounded-tr-sm border border-emerald-100 dark:border-emerald-800/30' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tr-sm border border-slate-100 dark:border-slate-700'}`}>
+                                                                            <div className="flex justify-between items-center mb-1.5">
+                                                                                <span className="font-bold text-[11px] opacity-75">{comment.user?.name}</span>
+                                                                                <span className="text-[10px] opacity-50">{new Date(comment.created_at).toLocaleDateString('ar-EG')}</span>
+                                                                            </div>
+                                                                            <p className="leading-relaxed font-medium">{comment.comment}</p>
+                                                                        </div>
                                                                         {!comment.is_resolved && (
-                                                                            <button type="button" onClick={() => resolveComment(comment.id)} className="text-primary-500 hover:text-primary-700 font-bold">حل التعليق</button>
+                                                                            <button 
+                                                                                type="button"
+                                                                                onClick={() => resolveComment(comment.id)}
+                                                                                className="mt-2 text-[11px] text-primary-600 dark:text-primary-400 hover:text-primary-700 font-bold flex items-center gap-1 opacity-0 group-hover/comment:opacity-100 transition-opacity"
+                                                                            >
+                                                                                <Check size={14} /> حل التعليق
+                                                                            </button>
                                                                         )}
                                                                     </div>
                                                                 </div>
@@ -495,29 +611,36 @@ export default function TeacherStudyPlanForm({ studyPlan, grades, subjects, divi
                                                     </>
                                                 )}
                                             </div>
-                                            {activeCellKey && (
-                                                <div className="p-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 rounded-b-xl">
-                                                    <div className="relative flex items-center">
-                                                        <input 
-                                                            type="text" 
-                                                            value={newComment}
-                                                            onChange={e => setNewComment(e.target.value)}
-                                                            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addComment())}
-                                                            placeholder="اكتب تعليقك للرد..." 
-                                                            className="w-full bg-slate-100 dark:bg-slate-900 border-none rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary-500"
-                                                        />
-                                                        <button type="button" onClick={addComment} disabled={!newComment.trim()} className="absolute left-2 p-1.5 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-lg disabled:opacity-50 transition">
-                                                            <Send size={16} className="rotate-180" />
-                                                        </button>
-                                                    </div>
+                                            <div className="p-4 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 z-10">
+                                                <div className="relative">
+                                                    <textarea
+                                                        disabled={!activeCellKey}
+                                                        value={newComment}
+                                                        onChange={(e) => setNewComment(e.target.value)}
+                                                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addComment(); } }}
+                                                        placeholder={activeCellKey ? "اكتب تعليقك للرد هنا..." : "حدد خلية للتعليق"}
+                                                        className="w-full text-sm rounded-2xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 font-medium custom-scrollbar disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-800/80 resize-none pr-3 pl-3 py-3"
+                                                        rows="2"
+                                                    ></textarea>
                                                 </div>
-                                            )}
+                                                <button
+                                                    type="button"
+                                                    disabled={!activeCellKey || !newComment.trim()}
+                                                    onClick={addComment}
+                                                    className="mt-3 w-full py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary-500/20 active:scale-[0.98]"
+                                                >
+                                                    <Send size={16} className="rotate-180" />
+                                                    إرسال الرد
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
-                                <button type="button" onClick={() => setForm({...form, content: [...form.content, {}]})} className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-bold mt-2">
-                                    <Plus size={16} /> إضافة صف جديد
-                                </button>
+                                {!(templates.find(t => t.id == form.template_id)?.weeks?.length > 0) && (
+                                    <button type="button" onClick={() => setForm({...form, content: [...form.content, {}]})} className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-bold mt-2">
+                                        <Plus size={16} /> إضافة صف جديد
+                                    </button>
+                                )}
                                 {errors.content && <p className="text-rose-500 text-xs font-bold mt-1">{errors.content}</p>}
                             </div>
                         )}

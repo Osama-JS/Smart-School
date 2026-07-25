@@ -10,11 +10,10 @@ class StudyPlan extends Model
 {
     use \App\Traits\LogsActivity;
 
-    protected $fillable = ['teacher_id', 'grade_id', 'subject_id', 'division_ids', 'title', 'notes', 'attachment_path', 'status', 'admin_feedback', 'template_id', 'content', 'month'];
+    protected $fillable = ['teacher_id', 'grade_id', 'subject_id', 'division_ids', 'title', 'notes', 'attachment_path', 'status', 'admin_feedback', 'template_id', 'month'];
 
     protected $casts = [
         'division_ids' => 'array',
-        'content' => 'array',
     ];
 
     protected $appends = ['verification_url'];
@@ -36,5 +35,10 @@ class StudyPlan extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(StudyPlanComment::class);
+    }
+
+    public function rows(): HasMany
+    {
+        return $this->hasMany(StudyPlanRow::class);
     }
 }

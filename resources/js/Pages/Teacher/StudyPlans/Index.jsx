@@ -19,19 +19,52 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
 
     React.useEffect(() => {
         if (pdfPlan) {
-            const element = document.getElementById(`pdf-export-plan-${pdfPlan.id}`);
-            if (element) {
-                const opt = {
-                    margin:       0,
-                    filename:     `الخطة_الدراسية_${pdfPlan.title}.pdf`,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2, useCORS: true },
-                    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-                };
-                html2pdf().set(opt).from(element).save().then(() => {
-                    setPdfPlan(null); // Reset after download
-                });
-            }
+            Swal.fire({
+                title: 'جاري التصدير',
+                text: 'يرجى الانتظار بينما يتم تجهيز الخطة الدراسية.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            setTimeout(() => {
+                const element = document.getElementById(`pdf-export-plan-${pdfPlan.id}`);
+                if (element) {
+                    const opt = {
+                        margin:       0,
+                        filename:     `الخطة_الدراسية_${pdfPlan.title}.pdf`,
+                        image:        { type: 'jpeg', quality: 0.98 },
+                        html2canvas:  { scale: 2, useCORS: true, logging: false },
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                    };
+                    try {
+                        html2pdf().set(opt).from(element).save().then(() => {
+                            setPdfPlan(null);
+                            Swal.close();
+                        }).catch((err) => {
+                            console.error('PDF generation promise error:', err);
+                            setPdfPlan(null);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'خطأ',
+                                text: 'حدث خطأ أثناء تصدير الملف.'
+                            });
+                        });
+                    } catch (err) {
+                        console.error('PDF generation sync error:', err);
+                        setPdfPlan(null);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'خطأ',
+                            text: 'حدث خطأ أثناء تصدير الملف.'
+                        });
+                    }
+                } else {
+                    setPdfPlan(null);
+                    Swal.close();
+                }
+            }, 1000);
         }
     }, [pdfPlan]);
 
@@ -261,7 +294,7 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                                                 <Download className="w-4 h-4" />
                                                             </a>
                                                         )}
-                                                        {plan.status === 'approved' && plan.content && (
+                                                        {plan.status === 'approved' && (plan.rows?.length > 0 || plan.content) && (
                                                             <button 
                                                                 onClick={() => setPdfPlan(plan)}
                                                                 className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 transition-colors" title="تصدير كملف PDF معتمد"
@@ -389,7 +422,7 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                                 <Download size={16} /> تحميل الخطة المرفقة
                                             </a>
                                         )}
-                                        {plan.status === 'approved' && plan.content && (
+                                        {plan.status === 'approved' && (plan.rows?.length > 0 || plan.content) && (
                                             <button 
                                                 onClick={() => setPdfPlan(plan)}
                                                 className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 rounded-xl font-bold text-sm transition mt-2 border border-emerald-100 dark:border-emerald-800"
@@ -397,7 +430,7 @@ export default function TeacherStudyPlansIndex({ studyPlans, grades, subjects, d
                                                 <Printer size={16} /> تصدير كملف PDF معتمد
                                             </button>
                                         )}
-                                        {((Array.isArray(plan.content) && plan.content.length > 0) || (plan.content?.rows?.length > 0)) && (
+                                        {(plan.rows?.length > 0 || (Array.isArray(plan.content) && plan.content.length > 0) || (plan.content?.rows?.length > 0)) && (
                                             <Link 
                                                 href={route('teacher.study-plans.edit', plan.id)}
                                                 className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 rounded-xl font-bold text-sm transition mt-2"

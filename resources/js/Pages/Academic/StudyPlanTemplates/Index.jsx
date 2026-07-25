@@ -78,11 +78,13 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                     { id: 'month', label: 'الشهر', type: 'text' },
                     { id: 'week', label: 'الأسبوع', type: 'text' },
                     { id: 'date_period', label: 'الفترة الزمنية', type: 'text' },
-                    { id: 'lesson', label: 'الدرس/الموضوع', type: 'text' },
+                    { id: 'number_of_days', label: 'عدد الأيام', type: 'number' },
+                    { id: 'number_of_lessons', label: 'عدد الحصص', type: 'number' },
+                    { id: 'lesson', label: 'الدرس/الموضوع', type: 'textarea' },
                     { id: 'topics', label: 'المفردات الدراسية', type: 'textarea' },
                     { id: 'objectives', label: 'الأهداف', type: 'textarea' },
                     { id: 'strategies', label: 'استراتيجيات التدريس', type: 'textarea' },
-                    { id: 'aids', label: 'الوسائل', type: 'text' },
+                    { id: 'aids', label: 'الوسائل', type: 'textarea' },
                     { id: 'in_class_activities', label: 'الأنشطة الصفية', type: 'textarea' },
                     { id: 'out_class_activities', label: 'الأنشطة اللاصفية', type: 'textarea' },
                     { id: 'evaluation', label: 'أساليب القياس والتقويم', type: 'textarea' },
@@ -117,6 +119,12 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
         if (confirm('هل أنت متأكد من حذف هذا القالب؟ لا يمكن التراجع عن هذا الإجراء.')) {
             router.delete(route('academic.study-plan-templates.destroy', id));
         }
+    };
+
+    const toggleStatus = (id) => {
+        router.patch(route('academic.study-plan-templates.toggle-active', id), {}, {
+            preserveScroll: true,
+        });
     };
 
     const addColumn = () => {
@@ -269,20 +277,16 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                     
                                     <div className="space-y-4 mb-6 flex-1">
                                         <div className="flex flex-wrap gap-2">
-                                            {item.academic_year && (
-                                                <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-blue-50/80 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400 text-xs font-black border border-blue-100/50 dark:border-blue-800/50">
-                                                    {item.academic_year.name}
-                                                </span>
-                                            )}
+
                                             {item.semester ? (
                                                 <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-purple-50/80 text-purple-700 dark:bg-purple-500/10 dark:text-purple-400 text-xs font-black border border-purple-100/50 dark:border-purple-800/50">
                                                     {item.semester.name}
                                                 </span>
-                                            ) : item.academic_year ? (
+                                            ) : (
                                                 <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-xs font-black">
                                                     جميع الفصول
                                                 </span>
-                                            ) : null}
+                                            )}
                                             {item.month && (
                                                 <span className="inline-flex items-center px-3 py-1.5 rounded-xl bg-teal-50/80 text-teal-700 dark:bg-teal-500/10 dark:text-teal-400 text-xs font-black border border-teal-100/50 dark:border-teal-800/50 shadow-sm">
                                                     {item.month}
@@ -304,19 +308,22 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                     <div className="mt-auto pt-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-bold text-slate-500">حالة القالب:</span>
-                                            {item.is_active ? (
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black">
-                                                    <span className="relative flex h-2 w-2">
-                                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                                    </span>
-                                                    نشط ومتاح
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-black">
-                                                    <XCircle size={12} /> متوقف
-                                                </span>
-                                            )}
+                                            <button 
+                                                onClick={() => toggleStatus(item.id)}
+                                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 shadow-sm ${item.is_active ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500'}`}
+                                                role="switch"
+                                                aria-checked={item.is_active}
+                                                title={item.is_active ? 'إيقاف القالب' : 'تفعيل القالب'}
+                                            >
+                                                <span className="sr-only">تغيير حالة القالب</span>
+                                                <span 
+                                                    aria-hidden="true" 
+                                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-300 ease-in-out ${item.is_active ? '-translate-x-5' : 'translate-x-0'}`} 
+                                                />
+                                            </button>
+                                            <span className={`text-xs font-black ${item.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                {item.is_active ? 'نشط' : 'متوقف'}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -329,7 +336,7 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                     <thead>
                                         <tr className="bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
                                             <th className="px-6 py-5 text-sm font-black text-slate-700 dark:text-slate-300 w-1/3">اسم القالب</th>
-                                            <th className="px-6 py-5 text-sm font-black text-slate-700 dark:text-slate-300">السنة / الفصل الدراسي</th>
+                                            <th className="px-6 py-5 text-sm font-black text-slate-700 dark:text-slate-300">الفصل الدراسي</th>
                                             <th className="px-6 py-5 text-sm font-black text-slate-700 dark:text-slate-300">التفاصيل</th>
                                             <th className="px-6 py-5 text-sm font-black text-slate-700 dark:text-slate-300">الحالة</th>
                                             <th className="px-6 py-5 text-center text-sm font-black text-slate-700 dark:text-slate-300">الإجراءات</th>
@@ -354,22 +361,16 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                                 </td>
                                                 <td className="px-6 py-5 align-middle">
                                                     <div className="flex flex-col gap-1.5">
-                                                        {item.academic_year ? (
-                                                            <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 text-xs font-bold w-fit">
-                                                                {item.academic_year.name}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-xs text-slate-400">-</span>
-                                                        )}
+
                                                         {item.semester ? (
                                                             <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 text-xs font-bold w-fit">
                                                                 {item.semester.name}
                                                             </span>
-                                                        ) : item.academic_year ? (
+                                                        ) : (
                                                             <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-xs font-bold w-fit">
                                                                 جميع فصول السنة
                                                             </span>
-                                                        ) : null}
+                                                        )}
                                                         {item.month && (
                                                             <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400 text-xs font-bold w-fit mt-1 border border-teal-100 dark:border-teal-800/50">
                                                                 {item.month}
@@ -386,15 +387,24 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-5 align-middle">
-                                                    {item.is_active ? (
-                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm font-bold border border-emerald-100 dark:border-emerald-500/20">
-                                                            <CheckCircle2 size={16} /> فعال
+                                                    <div className="flex items-center gap-3">
+                                                        <button 
+                                                            onClick={() => toggleStatus(item.id)}
+                                                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 shadow-sm ${item.is_active ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600 hover:bg-slate-400 dark:hover:bg-slate-500'}`}
+                                                            role="switch"
+                                                            aria-checked={item.is_active}
+                                                            title={item.is_active ? 'إيقاف القالب' : 'تفعيل القالب'}
+                                                        >
+                                                            <span className="sr-only">تغيير حالة القالب</span>
+                                                            <span 
+                                                                aria-hidden="true" 
+                                                                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-300 ease-in-out ${item.is_active ? '-translate-x-5' : 'translate-x-0'}`} 
+                                                            />
+                                                        </button>
+                                                        <span className={`text-sm font-bold ${item.is_active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                            {item.is_active ? 'فعال' : 'غير فعال'}
                                                         </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold border border-slate-200 dark:border-slate-700">
-                                                            <XCircle size={16} /> غير فعال
-                                                        </span>
-                                                    )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-5 align-middle">
                                                     <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -588,95 +598,6 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                 <div className="text-xs text-slate-500 mt-0.5">سيكون هذا القالب متاحاً للمعلمين لاستخدامه فور تفعيله.</div>
                             </div>
                         </label>
-                    </div>
-
-                    {/* Columns Builder */}
-                    <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-3xl p-5 sm:p-6 relative">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                            <div>
-                                <h4 className="text-base font-black text-slate-800 dark:text-white mb-1">تصميم جدول الخطة</h4>
-                                <p className="text-xs text-slate-500 font-medium">قم بإضافة وتعديل الأعمدة التي سيتكون منها الجدول الإلكتروني الخاص بالخطة.</p>
-                            </div>
-                            <button type="button" onClick={addColumn} className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-primary-600 dark:text-primary-400 font-bold text-sm hover:border-primary-300 hover:shadow-sm transition-all">
-                                <PlusCircle size={18} /> إضافة حقل جديد
-                            </button>
-                        </div>
-
-                        <div className="space-y-3">
-                            {data.columns.map((col, index) => (
-                                <div key={index} className="flex flex-col sm:flex-row items-center gap-3 bg-white dark:bg-slate-800 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-sm group hover:border-primary-300 hover:shadow-md transition-all">
-                                    <div className="flex w-full sm:w-auto items-center gap-3">
-                                        <div className="cursor-grab active:cursor-grabbing p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
-                                            <GripVertical size={20} />
-                                        </div>
-                                        <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-black text-slate-500 shrink-0">
-                                            {index + 1}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                                        <div className="relative">
-                                            <input
-                                                type="text"
-                                                value={col.label}
-                                                onChange={(e) => updateColumn(index, 'label', e.target.value)}
-                                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all placeholder:font-normal"
-                                                placeholder="عنوان العمود (مثال: المفردات)"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="relative">
-                                            <select
-                                                value={col.type || 'text'}
-                                                onChange={(e) => updateColumn(index, 'type', e.target.value)}
-                                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all cursor-pointer"
-                                            >
-                                                <option value="text">نص قصير (سطر واحد)</option>
-                                                <option value="textarea">نص طويل (فقرات متعددة)</option>
-                                                <option value="date">تاريخ (Date)</option>
-                                                <option value="number">رقم (Number)</option>
-                                                <option value="checkbox">مربع اختيار (نعم/لا)</option>
-                                                <option value="select">قائمة منسدلة (خيارات متعددة)</option>
-                                            </select>
-                                        </div>
-                                        {col.type === 'select' && (
-                                            <div className="relative col-span-1 sm:col-span-2 lg:col-span-1">
-                                                <input
-                                                    type="text"
-                                                    value={col.options || ''}
-                                                    onChange={(e) => updateColumn(index, 'options', e.target.value)}
-                                                    className="w-full bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700/50 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all placeholder:font-normal"
-                                                    placeholder="أدخل الخيارات مفصولة بفاصلة (,)"
-                                                    required
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="w-full sm:w-auto flex justify-end">
-                                        <button 
-                                            type="button" 
-                                            onClick={() => removeColumn(index)} 
-                                            className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-colors shrink-0"
-                                            title="حذف العمود"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {data.columns.length === 0 && (
-                                <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-white/50 dark:bg-slate-800/50">
-                                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <LayoutTemplate className="w-8 h-8 text-slate-400" />
-                                    </div>
-                                    <p className="text-slate-500 font-bold mb-2">القالب فارغ حالياً</p>
-                                    <p className="text-sm text-slate-400">انقر على الزر أعلاه لإضافة أول حقل في الخطة</p>
-                                </div>
-                            )}
-                            {errors.columns && <p className="mt-2 text-sm text-red-500 font-bold flex items-center gap-1"><AlertCircle size={14}/> {errors.columns}</p>}
-                        </div>
                     </div>
 
                     {/* Weeks Builder */}
@@ -873,6 +794,95 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                 </div>
                             )}
                             {errors.weeks && <p className="mt-2 text-sm text-red-500 font-bold flex items-center gap-1"><AlertCircle size={14}/> {errors.weeks}</p>}
+                        </div>
+                    </div>
+
+                    {/* Columns Builder */}
+                    <div className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-3xl p-5 sm:p-6 relative mt-6 mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                            <div>
+                                <h4 className="text-base font-black text-slate-800 dark:text-white mb-1">تصميم جدول الخطة</h4>
+                                <p className="text-xs text-slate-500 font-medium">قم بإضافة وتعديل الأعمدة التي سيتكون منها الجدول الإلكتروني الخاص بالخطة.</p>
+                            </div>
+                            <button type="button" onClick={addColumn} className="shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-primary-600 dark:text-primary-400 font-bold text-sm hover:border-primary-300 hover:shadow-sm transition-all">
+                                <PlusCircle size={18} /> إضافة حقل جديد
+                            </button>
+                        </div>
+
+                        <div className="space-y-3">
+                            {data.columns.map((col, index) => (
+                                <div key={index} className="flex flex-col sm:flex-row items-center gap-3 bg-white dark:bg-slate-800 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700 shadow-sm group hover:border-primary-300 hover:shadow-md transition-all">
+                                    <div className="flex w-full sm:w-auto items-center gap-3">
+                                        <div className="cursor-grab active:cursor-grabbing p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                                            <GripVertical size={20} />
+                                        </div>
+                                        <span className="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-xs font-black text-slate-500 shrink-0">
+                                            {index + 1}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={col.label}
+                                                onChange={(e) => updateColumn(index, 'label', e.target.value)}
+                                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all placeholder:font-normal"
+                                                placeholder="عنوان العمود (مثال: المفردات)"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="relative">
+                                            <select
+                                                value={col.type || 'text'}
+                                                onChange={(e) => updateColumn(index, 'type', e.target.value)}
+                                                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all cursor-pointer"
+                                            >
+                                                <option value="text">نص قصير (سطر واحد)</option>
+                                                <option value="textarea">نص طويل (فقرات متعددة)</option>
+                                                <option value="date">تاريخ (Date)</option>
+                                                <option value="number">رقم (Number)</option>
+                                                <option value="checkbox">مربع اختيار (نعم/لا)</option>
+                                                <option value="select">قائمة منسدلة (خيارات متعددة)</option>
+                                            </select>
+                                        </div>
+                                        {col.type === 'select' && (
+                                            <div className="relative col-span-1 sm:col-span-2 lg:col-span-1">
+                                                <input
+                                                    type="text"
+                                                    value={col.options || ''}
+                                                    onChange={(e) => updateColumn(index, 'options', e.target.value)}
+                                                    className="w-full bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-700/50 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 dark:text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all placeholder:font-normal"
+                                                    placeholder="أدخل الخيارات مفصولة بفاصلة (,)"
+                                                    required
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="w-full sm:w-auto flex justify-end">
+                                        <button 
+                                            type="button" 
+                                            onClick={() => removeColumn(index)} 
+                                            className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-xl transition-colors shrink-0"
+                                            title="حذف العمود"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {data.columns.length === 0 && (
+                                <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-white/50 dark:bg-slate-800/50">
+                                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <LayoutTemplate className="w-8 h-8 text-slate-400" />
+                                    </div>
+                                    <p className="text-slate-500 font-bold mb-2">القالب فارغ حالياً</p>
+                                    <p className="text-sm text-slate-400">انقر على الزر أعلاه لإضافة أول حقل في الخطة</p>
+                                </div>
+                            )}
+                            {errors.columns && <p className="mt-2 text-sm text-red-500 font-bold flex items-center gap-1"><AlertCircle size={14}/> {errors.columns}</p>}
                         </div>
                     </div>
 

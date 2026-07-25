@@ -99,6 +99,15 @@ class StudyPlanTemplateController extends Controller
         return redirect()->back()->with('success', 'تم تحديث قالب الخطة الدراسية بنجاح.');
     }
 
+    public function toggleActive(StudyPlanTemplate $studyPlanTemplate)
+    {
+        $studyPlanTemplate->update([
+            'is_active' => !$studyPlanTemplate->is_active,
+        ]);
+
+        return redirect()->back()->with('success', 'تم تغيير حالة قالب الخطة الدراسية بنجاح.');
+    }
+
     public function destroy(StudyPlanTemplate $studyPlanTemplate)
     {
         if ($studyPlanTemplate->studyPlans()->exists()) {

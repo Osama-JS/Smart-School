@@ -19,7 +19,7 @@ class StudyPlanController extends Controller
         $user = Auth::user();
         $branchId = $user->branch_id;
 
-        $query = StudyPlan::with(['grade', 'subject', 'template'])
+        $query = StudyPlan::with(['grade', 'subject', 'template', 'rows'])
             ->where('teacher_id', $user->id)
             ->latest();
 
@@ -136,9 +136,11 @@ class StudyPlanController extends Controller
     public function edit(StudyPlan $studyPlan)
     {
         $user = \Illuminate\Support\Facades\Auth::user();
-        if ($studyPlan->teacher_id !== $user->id) {
-            abort(403);
+        if ($user->cannot('update', $studyPlan)) {
+            abort(403, 'لا تملك صلاحية تعديل هذه الخطة');
         }
+
+        $studyPlan->load('rows'); // Eager load rows
 
         $formData = $this->getFormData();
         
@@ -168,7 +170,7 @@ class StudyPlanController extends Controller
 
         $path = null;
         if ($request->hasFile('attachment')) {
-            $path = $request->file('attachment')->store('study_plans', 'public');
+            $path = $request->file('attachment')->store('study_plans', 'local');
         }
 
         $month = null;
@@ -179,15 +181,7 @@ class StudyPlanController extends Controller
             }
         }
 
-        $structuredContent = null;
-        if (isset($validated['content']) || $month) {
-            $structuredContent = [
-                'month' => $month,
-                'rows' => $validated['content'] ?? []
-            ];
-        }
-
-        StudyPlan::create([
+        $studyPlan = StudyPlan::create([
             'teacher_id' => Auth::id(),
             'grade_id' => $validated['grade_id'],
             'subject_id' => $validated['subject_id'],
@@ -196,10 +190,15 @@ class StudyPlanController extends Controller
             'month' => $month,
             'notes' => $validated['notes'] ?? null,
             'template_id' => $validated['template_id'] ?? null,
-            'content' => $structuredContent,
             'attachment_path' => $path,
             'status' => $validated['action'],
         ]);
+
+        if (isset($validated['content']) && is_array($validated['content'])) {
+            foreach ($validated['content'] as $row) {
+                $studyPlan->rows()->create(['data' => $row]);
+            }
+        }
 
         $msg = $validated['action'] === 'pending' ? 'تم رفع الخطة وإرسالها للمراجعة بنجاح.' : 'تم حفظ الخطة كمسودة بنجاح.';
         return redirect()->back()->with('success', $msg);
@@ -207,12 +206,8 @@ class StudyPlanController extends Controller
 
     public function update(Request $request, StudyPlan $studyPlan)
     {
-        if ($studyPlan->teacher_id !== Auth::id()) {
-            abort(403);
-        }
-
-        if (in_array($studyPlan->status, ['pending', 'approved'])) {
-            return redirect()->back()->withErrors(['error' => 'لا يمكن تعديل الخطة وهي قيد المراجعة أو معتمدة.']);
+        if (\Illuminate\Support\Facades\Auth::user()->cannot('update', $studyPlan)) {
+            abort(403, 'لا يمكنك تعديل هذه الخطة (قد تكون قيد المراجعة أو لا تملك صلاحية)');
         }
 
         $validated = $request->validate([
@@ -240,14 +235,6 @@ class StudyPlanController extends Controller
             }
         }
 
-        $structuredContent = null;
-        if (isset($validated['content']) || $month) {
-            $structuredContent = [
-                'month' => $month,
-                'rows' => $validated['content'] ?? []
-            ];
-        }
-
         $updateData = [
             'title' => $validated['title'],
             'month' => $month,
@@ -256,19 +243,25 @@ class StudyPlanController extends Controller
             'division_ids' => $validated['division_ids'] ?? [],
             'notes' => $validated['notes'] ?? null,
             'template_id' => $validated['template_id'] ?? null,
-            'content' => $structuredContent,
             'status' => $validated['action'],
             'admin_feedback' => null,
         ];
 
         if ($request->hasFile('attachment')) {
             if ($studyPlan->attachment_path) {
-                Storage::disk('public')->delete($studyPlan->attachment_path);
+                Storage::disk('local')->delete($studyPlan->attachment_path);
             }
-            $updateData['attachment_path'] = $request->file('attachment')->store('study_plans', 'public');
+            $updateData['attachment_path'] = $request->file('attachment')->store('study_plans', 'local');
         }
 
         $studyPlan->update($updateData);
+
+        if (isset($validated['content']) && is_array($validated['content'])) {
+            $studyPlan->rows()->delete();
+            foreach ($validated['content'] as $row) {
+                $studyPlan->rows()->create(['data' => $row]);
+            }
+        }
 
         $msg = $validated['action'] === 'pending' ? 'تم تحديث الخطة وإرسالها للمراجعة بنجاح.' : 'تم تحديث المسودة بنجاح.';
         return redirect()->back()->with('success', $msg);
@@ -276,16 +269,12 @@ class StudyPlanController extends Controller
 
     public function destroy(StudyPlan $studyPlan)
     {
-        if ($studyPlan->teacher_id !== Auth::id()) {
-            abort(403);
-        }
-
-        if (in_array($studyPlan->status, ['pending', 'approved'])) {
-            return redirect()->back()->withErrors(['error' => 'لا يمكن حذف الخطة وهي قيد المراجعة أو معتمدة.']);
+        if (\Illuminate\Support\Facades\Auth::user()->cannot('delete', $studyPlan)) {
+            abort(403, 'لا يمكنك حذف هذه الخطة');
         }
 
         if ($studyPlan->attachment_path) {
-            Storage::disk('public')->delete($studyPlan->attachment_path);
+            Storage::disk('local')->delete($studyPlan->attachment_path);
         }
 
         $studyPlan->delete();
@@ -295,14 +284,14 @@ class StudyPlanController extends Controller
 
     public function download(StudyPlan $studyPlan)
     {
-        if ($studyPlan->teacher_id !== Auth::id()) {
-            abort(403);
+        if (\Illuminate\Support\Facades\Auth::user()->cannot('download', $studyPlan)) {
+            abort(403, 'لا تملك صلاحية تحميل هذه الخطة');
         }
 
-        if (!Storage::disk('public')->exists($studyPlan->attachment_path)) {
+        if (!Storage::disk('local')->exists($studyPlan->attachment_path)) {
             abort(404, 'الملف غير موجود');
         }
 
-        return Storage::disk('public')->download($studyPlan->attachment_path, $studyPlan->title . '.' . pathinfo($studyPlan->attachment_path, PATHINFO_EXTENSION));
+        return Storage::disk('local')->download($studyPlan->attachment_path, $studyPlan->title . '.' . pathinfo($studyPlan->attachment_path, PATHINFO_EXTENSION));
     }
 }

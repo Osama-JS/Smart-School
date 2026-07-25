@@ -16,7 +16,7 @@ class StudyPlanCommentController extends Controller
     {
         // Both Teacher and Supervisor should be able to view comments.
         // We'll rely on basic auth and route grouping.
-        $comments = $studyPlan->comments()->with('user:id,name,role')->latest()->get();
+        $comments = $studyPlan->comments()->with('user:id,name')->latest()->get();
         return response()->json($comments);
     }
 
@@ -37,7 +37,7 @@ class StudyPlanCommentController extends Controller
             'is_resolved' => false,
         ]);
 
-        $comment->load('user:id,name,role');
+        $comment->load('user:id,name');
 
         return response()->json($comment, 201);
     }

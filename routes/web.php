@@ -184,6 +184,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:إدارة الخطط الدراسية')->group(function () {
         Route::get('/academic/study-plans/analytics', [\App\Http\Controllers\Academic\StudyPlanAnalyticsController::class, 'index'])->name('academic.study-plans.analytics');
         Route::get('/academic/study-plans', [\App\Http\Controllers\Academic\StudyPlanController::class, 'index'])->name('academic.study-plans.index');
+        Route::get('/academic/study-plans/{studyPlan}', [\App\Http\Controllers\Academic\StudyPlanController::class, 'show'])->name('academic.study-plans.show');
         Route::post('/academic/study-plans/{studyPlan}/review', [\App\Http\Controllers\Academic\StudyPlanController::class, 'review'])->name('academic.study-plans.review');
         Route::delete('/academic/study-plans/{studyPlan}', [\App\Http\Controllers\Academic\StudyPlanController::class, 'destroy'])->name('academic.study-plans.destroy');
         Route::get('/academic/study-plans/{studyPlan}/download', [\App\Http\Controllers\Academic\StudyPlanController::class, 'download'])->name('academic.study-plans.download');
@@ -192,6 +193,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/academic/study-plan-templates', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'index'])->name('academic.study-plan-templates.index');
         Route::post('/academic/study-plan-templates', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'store'])->name('academic.study-plan-templates.store');
         Route::put('/academic/study-plan-templates/{studyPlanTemplate}', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'update'])->name('academic.study-plan-templates.update');
+        Route::patch('/academic/study-plan-templates/{studyPlanTemplate}/toggle-active', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'toggleActive'])->name('academic.study-plan-templates.toggle-active');
         Route::delete('/academic/study-plan-templates/{studyPlanTemplate}', [\App\Http\Controllers\Academic\StudyPlanTemplateController::class, 'destroy'])->name('academic.study-plan-templates.destroy');
     });
 

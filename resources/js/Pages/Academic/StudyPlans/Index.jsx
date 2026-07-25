@@ -11,27 +11,6 @@ import axios from 'axios';
 import html2pdf from 'html2pdf.js';
 import { StudyPlanPdfTemplate } from '@/Components/StudyPlanPdfTemplate';
 
-function Modal({ isOpen, onClose, title, children }) {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-4xl z-10 overflow-hidden border border-slate-100 dark:border-slate-800">
-                <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 to-indigo-500" />
-                <div className="flex items-center justify-between p-6 border-b border-slate-100/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-900/30">
-                    <h3 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-                        <Sparkles className="w-5 h-5 text-primary-500" />
-                        {title}
-                    </h3>
-                    <button onClick={onClose} className="p-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400">
-                        <X size={20} />
-                    </button>
-                </div>
-                <div className="p-6 md:p-8 max-h-[75vh] overflow-y-auto">{children}</div>
-            </div>
-        </div>
-    );
-}
 
 export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, divisions, filters, teachers }) {
     const { flash } = usePage().props;
@@ -41,17 +20,6 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
     const [filterTeacher, setFilterTeacher] = useState(filters?.teacher_id || '');
     const [filterStatus, setFilterStatus] = useState(filters?.status || '');
 
-    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-    const [reviewingPlan, setReviewingPlan] = useState(null);
-    const [reviewForm, setReviewForm] = useState({ status: '', admin_feedback: '' });
-    const [processing, setProcessing] = useState(false);
-    
-    // Comments State
-    const [comments, setComments] = useState([]);
-    const [activeCellKey, setActiveCellKey] = useState(null);
-    const [newComment, setNewComment] = useState('');
-    const [loadingComments, setLoadingComments] = useState(false);
-    
     // PDF Export State
     const [pdfPlan, setPdfPlan] = useState(null);
 
@@ -74,20 +42,30 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
                         filename:     `الخطة_الدراسية_${pdfPlan.title}.pdf`,
                         image:        { type: 'jpeg', quality: 0.98 },
                         html2canvas:  { scale: 2, useCORS: true, logging: false },
-                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
                     };
-                    html2pdf().set(opt).from(element).save().then(() => {
-                        setPdfPlan(null); // Reset after download
-                        Swal.close();
-                    }).catch((err) => {
-                        console.error('PDF generation error:', err);
+                    try {
+                        html2pdf().set(opt).from(element).save().then(() => {
+                            setPdfPlan(null); // Reset after download
+                            Swal.close();
+                        }).catch((err) => {
+                            console.error('PDF generation promise error:', err);
+                            setPdfPlan(null);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'خطأ',
+                                text: 'حدث خطأ (Promise): ' + (err.message || err.toString())
+                            });
+                        });
+                    } catch (err) {
+                        console.error('PDF generation sync error:', err);
                         setPdfPlan(null);
                         Swal.fire({
                             icon: 'error',
                             title: 'خطأ',
-                            text: 'حدث خطأ أثناء تصدير الملف.'
+                            text: 'حدث خطأ (Sync): ' + (err.message || err.toString())
                         });
-                    });
+                    }
                 } else {
                     setPdfPlan(null);
                     Swal.close();
@@ -129,72 +107,8 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
         }
     };
 
-    const fetchComments = async (planId) => {
-        setLoadingComments(true);
-        try {
-            const res = await axios.get(route('study-plan-comments.index', planId));
-            setComments(res.data);
-        } catch (err) {
-            console.error('Error fetching comments:', err);
-        } finally {
-            setLoadingComments(false);
-        }
-    };
-
-    const addComment = async () => {
-        if (!newComment.trim() || !activeCellKey || !reviewingPlan) return;
-        try {
-            const res = await axios.post(route('study-plan-comments.store', reviewingPlan.id), {
-                cell_key: activeCellKey,
-                comment: newComment
-            });
-            setComments([res.data, ...comments]);
-            setNewComment('');
-        } catch (err) {
-            console.error('Error adding comment:', err);
-        }
-    };
-
-    const resolveComment = async (commentId) => {
-        try {
-            await axios.patch(route('study-plan-comments.resolve', commentId));
-            setComments(comments.map(c => c.id === commentId ? { ...c, is_resolved: true } : c));
-        } catch (err) {
-            console.error('Error resolving comment:', err);
-        }
-    };
-
     const openReviewModal = (plan) => {
-        setReviewingPlan(plan);
-        setReviewForm({ status: plan.status, admin_feedback: plan.admin_feedback || '' });
-        setActiveCellKey(null);
-        setComments([]);
-        setIsReviewModalOpen(true);
-        fetchComments(plan.id);
-    };
-
-    const submitReview = (e, status) => {
-        e.preventDefault();
-        
-        if (status === 'rejected' && !reviewForm.admin_feedback) {
-            alert('يجب كتابة ملاحظات عند رفض الخطة');
-            return;
-        }
-
-        setProcessing(true);
-        router.post(route('academic.study-plans.review', reviewingPlan.id), {
-            status,
-            admin_feedback: reviewForm.admin_feedback
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setIsReviewModalOpen(false);
-                setProcessing(false);
-            },
-            onError: () => {
-                setProcessing(false);
-            }
-        });
+        router.get(route('academic.study-plans.show', plan.id));
     };
 
     const deletePlan = (plan) => {
@@ -422,7 +336,7 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
                                                         <Edit size={16} />
                                                     </button>
                                                 )}
-                                                {plan.status === 'approved' && plan.content && (
+                                                {plan.status === 'approved' && (plan.rows?.length > 0 || plan.content) && (
                                                     <button 
                                                         onClick={() => setPdfPlan(plan)}
                                                         className="w-9 h-9 flex items-center justify-center rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 transition-colors" title="تصدير كملف PDF معتمد"
@@ -542,7 +456,7 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
                                                 <Download size={16} /> تحميل الخطة المرفقة
                                             </a>
                                         )}
-                                        {plan.status === 'approved' && plan.content && (
+                                        {plan.status === 'approved' && (plan.rows?.length > 0 || plan.content) && (
                                             <button 
                                                 onClick={() => setPdfPlan(plan)}
                                                 className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 rounded-xl font-bold text-sm transition mt-2 border border-emerald-100 dark:border-emerald-800"
@@ -560,165 +474,6 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
 
 
 
-            {/* Review Modal */}
-            <Modal isOpen={isReviewModalOpen} onClose={() => setIsReviewModalOpen(false)} title="مراجعة الخطة الدراسية">
-                <form className="space-y-6">
-                    {reviewingPlan && (
-                        <div className="mb-6 space-y-4">
-                            <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
-                                <h4 className="font-bold text-slate-800 dark:text-white mb-2">{reviewingPlan.title}</h4>
-                                <div className="text-sm text-slate-500 flex gap-4">
-                                    <span>المعلم: {reviewingPlan.teacher?.name}</span>
-                                    <span>المادة: {reviewingPlan.subject?.name}</span>
-                                </div>
-                            </div>
-
-                            {reviewingPlan.content && (Array.isArray(reviewingPlan.content) ? reviewingPlan.content.length > 0 : reviewingPlan.content?.rows?.length > 0) && reviewingPlan.template && (
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="lg:col-span-2 overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl max-h-[60vh]">
-                                        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700 text-sm">
-                                            <thead className="bg-slate-100 dark:bg-slate-800 sticky top-0 z-10">
-                                                <tr>
-                                                    {reviewingPlan.template.columns.map((col, idx) => (
-                                                        <th key={idx} className="px-4 py-3 text-right font-bold text-slate-600 dark:text-slate-300 border-l border-slate-200 dark:border-slate-700 last:border-0">{col.label}</th>
-                                                    ))}
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700">
-                                                {((reviewingPlan.content && typeof reviewingPlan.content === 'object' && !Array.isArray(reviewingPlan.content)) ? (reviewingPlan.content.rows || []) : (reviewingPlan.content || [])).map((row, rowIdx) => (
-                                                    <tr key={rowIdx}>
-                                                        {reviewingPlan.template.columns.map((col, colIdx) => {
-                                                            const cellKey = `row_${rowIdx}_col_${col.id}`;
-                                                            const cellComments = comments.filter(c => c.cell_key === cellKey);
-                                                            const hasOpenComments = cellComments.some(c => !c.is_resolved);
-                                                            const isSelected = activeCellKey === cellKey;
-                                                            return (
-                                                                <td 
-                                                                    key={colIdx} 
-                                                                    onClick={() => setActiveCellKey(cellKey)}
-                                                                    className={`px-4 py-3 border-l border-slate-200 dark:border-slate-700 last:border-0 align-top whitespace-pre-wrap cursor-pointer transition relative group ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20 ring-2 ring-inset ring-primary-500' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}
-                                                                >
-                                                                    {hasOpenComments && (
-                                                                        <div className="absolute top-2 left-2 flex items-center justify-center">
-                                                                            <span className="flex h-3 w-3 relative">
-                                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                                                                <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                    <div className="group-hover:opacity-100 opacity-0 absolute top-2 left-2 text-slate-300 transition-opacity">
-                                                                        {!hasOpenComments && <MessageSquare size={14} />}
-                                                                    </div>
-                                                                    <div className="pr-2">
-                                                                        {col.type === 'checkbox' 
-                                                                            ? (row[col.id] === 'true' || row[col.id] === true ? 'نعم' : 'لا') 
-                                                                            : (row[col.id] || '-')}
-                                                                    </div>
-                                                                </td>
-                                                            );
-                                                        })}
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <div className="lg:col-span-1 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900 flex flex-col max-h-[60vh]">
-                                        <div className="p-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-t-xl font-bold flex items-center gap-2">
-                                            <MessageSquare size={18} className="text-primary-500" />
-                                            التعليقات الحية
-                                        </div>
-                                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                            {!activeCellKey ? (
-                                                <div className="text-center text-slate-400 text-sm py-10">
-                                                    انقر على أي خلية في الجدول لإضافة تعليق أو عرض المحادثة المرتبطة بها.
-                                                </div>
-                                            ) : loadingComments ? (
-                                                <div className="text-center text-slate-400 text-sm py-10">جاري التحميل...</div>
-                                            ) : (
-                                                <>
-                                                    {comments.filter(c => c.cell_key === activeCellKey).length === 0 ? (
-                                                        <div className="text-center text-slate-400 text-sm py-10">لا توجد تعليقات على هذه الخلية بعد.</div>
-                                                    ) : (
-                                                        comments.filter(c => c.cell_key === activeCellKey).map(comment => (
-                                                            <div key={comment.id} className={`p-3 rounded-xl text-sm ${comment.is_resolved ? 'bg-slate-100 dark:bg-slate-800 opacity-60' : 'bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700'}`}>
-                                                                <div className="flex items-center justify-between mb-2">
-                                                                    <span className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                                                                        <User size={12} className="text-slate-400" />
-                                                                        {comment.user?.name}
-                                                                    </span>
-                                                                    {comment.is_resolved && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 rounded">محلول</span>}
-                                                                </div>
-                                                                <p className="text-slate-600 dark:text-slate-300 mb-2">{comment.comment}</p>
-                                                                <div className="flex items-center justify-between text-[10px] text-slate-400">
-                                                                    <span>{new Date(comment.created_at).toLocaleString('ar-EG')}</span>
-                                                                    {!comment.is_resolved && (
-                                                                        <button type="button" onClick={() => resolveComment(comment.id)} className="text-primary-500 hover:text-primary-700 font-bold">حل التعليق</button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        ))
-                                                    )}
-                                                </>
-                                            )}
-                                        </div>
-                                        {activeCellKey && (
-                                            <div className="p-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 rounded-b-xl">
-                                                <div className="relative flex items-center">
-                                                    <input 
-                                                        type="text" 
-                                                        value={newComment}
-                                                        onChange={e => setNewComment(e.target.value)}
-                                                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addComment())}
-                                                        placeholder="اكتب تعليقك..." 
-                                                        className="w-full bg-slate-100 dark:bg-slate-900 border-none rounded-xl pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary-500"
-                                                    />
-                                                    <button type="button" onClick={addComment} disabled={!newComment.trim()} className="absolute left-2 p-1.5 text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-lg disabled:opacity-50 transition">
-                                                        <Send size={16} className="rotate-180" />
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {reviewingPlan.attachment_path && (
-                                <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                                    <div className="flex items-center gap-3">
-                                        <FileText className="text-primary-500" />
-                                        <span className="font-bold text-slate-700 dark:text-slate-300">يوجد ملف مرفق جاهز</span>
-                                    </div>
-                                    <a href={route('academic.study-plans.download', reviewingPlan.id)} className="px-4 py-2 bg-primary-100 text-primary-700 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary-200 transition">
-                                        <Download size={14} /> تحميل الملف
-                                    </a>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    <div>
-                        <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">ملاحظات الاعتماد / التعديل (اختياري)</label>
-                        <textarea 
-                            value={reviewForm.admin_feedback} 
-                            onChange={e => setReviewForm({...reviewForm, admin_feedback: e.target.value})} 
-                            placeholder="اكتب ملاحظاتك للمعلم هنا لتوجيهه بشأن الخطة..." 
-                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3 outline-none focus:border-primary-500 text-sm font-bold min-h-[120px]" 
-                        ></textarea>
-                    </div>
-
-                    <div className="pt-4 flex justify-between items-center border-t border-slate-100 dark:border-slate-800 mt-6 pt-6">
-                        <button type="button" onClick={() => setIsReviewModalOpen(false)} className="px-6 py-3 rounded-xl font-bold bg-slate-100 text-slate-600 hover:bg-slate-200">إلغاء</button>
-                        <div className="flex gap-3">
-                            <button type="button" onClick={(e) => submitReview(e, 'rejected')} disabled={processing} className="px-6 py-3 rounded-xl font-bold bg-rose-100 text-rose-700 hover:bg-rose-200 disabled:opacity-50 flex items-center gap-2">
-                                <AlertCircle size={18}/> رفض الخطة
-                            </button>
-                            <button type="button" onClick={(e) => submitReview(e, 'approved')} disabled={processing} className="px-6 py-3 rounded-xl font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-50 flex items-center gap-2">
-                                <Check size={18}/> اعتماد الخطة
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </Modal>
 
             {/* Hidden container for PDF rendering */}
 

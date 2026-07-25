@@ -28,7 +28,7 @@ class StudyPlanCalendarController extends Controller
     {
         $teacherId = Auth::id();
 
-        $plans = StudyPlan::with(['subject', 'grade', 'template'])
+        $plans = StudyPlan::with(['subject', 'grade', 'template', 'rows'])
             ->where('teacher_id', $teacherId)
             ->where('status', 'approved')
             ->get();
@@ -47,9 +47,6 @@ class StudyPlanCalendarController extends Controller
             $objectivesColId = null;
 
             foreach ($template->columns as $col) {
-                if ($col['type'] === 'date') {
-                    $dateColId = $col['id'];
-                }
                 // Try to guess topic or objectives for a richer event description
                 if (str_contains(mb_strtolower($col['label']), 'موضوع') || str_contains(mb_strtolower($col['label']), 'درس')) {
                     $topicColId = $col['id'];
@@ -59,16 +56,44 @@ class StudyPlanCalendarController extends Controller
                 }
             }
 
-            if (!$dateColId || !is_array($plan->content)) {
+            // Fallback for older plans or just getting the content correctly
+            $rowDataList = $plan->rows->isNotEmpty() ? $plan->rows->pluck('data') : (is_array($plan->content) ? $plan->content : []);
+            
+            // Note: Some legacy content may have been wrapped in a 'rows' key
+            if (isset($rowDataList['rows'])) {
+                $rowDataList = $rowDataList['rows'];
+            }
+
+            if (empty($rowDataList)) {
                 continue;
             }
 
-            foreach ($plan->content as $index => $row) {
-                if (empty($row[$dateColId])) {
+            $weeks = $template->weeks ?? [];
+
+            foreach ($rowDataList as $index => $row) {
+                if (is_string($row)) {
+                    $row = json_decode($row, true);
+                }
+
+                // Get date from template weeks if available
+                $dateVal = null;
+                if (isset($weeks[$index]) && !empty($weeks[$index]['start_date_gregorian'])) {
+                    $dateVal = $weeks[$index]['start_date_gregorian'];
+                } else {
+                    // Try to find a date in the row data directly if there's a date column
+                    $dateColId = null;
+                    foreach ($template->columns as $col) {
+                        if ($col['type'] === 'date') $dateColId = $col['id'];
+                    }
+                    if ($dateColId && !empty($row[$dateColId])) {
+                        $dateVal = $row[$dateColId];
+                    }
+                }
+
+                if (empty($dateVal)) {
                     continue;
                 }
 
-                $dateVal = $row[$dateColId];
                 // Try parsing the date
                 try {
                     $parsedDate = Carbon::parse($dateVal)->format('Y-m-d');
@@ -77,7 +102,7 @@ class StudyPlanCalendarController extends Controller
                 }
 
                 $subjectName = $plan->subject->name ?? 'مادة';
-                $topic = $topicColId && !empty($row[$topicColId]) ? $row[$topicColId] : 'خطة دراسية جديدة';
+                $topic = $topicColId && !empty($row[$topicColId]) ? $row[$topicColId] : 'خطة دراسية';
                 $objectives = $objectivesColId && !empty($row[$objectivesColId]) ? $row[$objectivesColId] : '';
 
                 $title = "{$subjectName} - {$topic}";

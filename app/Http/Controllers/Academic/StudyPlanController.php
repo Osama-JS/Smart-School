@@ -17,7 +17,7 @@ class StudyPlanController extends Controller
     {
         $branchId = \Illuminate\Support\Facades\Auth::user()->branch_id ?? null;
 
-        $query = StudyPlan::with(['grade', 'subject', 'teacher', 'template']);
+        $query = StudyPlan::with(['grade', 'subject', 'teacher', 'template', 'rows']);
 
         if ($branchId) {
             $query->whereHas('teacher', function($q) use ($branchId) {
@@ -97,10 +97,22 @@ class StudyPlanController extends Controller
         ]);
     }
 
+    public function show(Request $request, StudyPlan $studyPlan)
+    {
+        $studyPlan->load(['grade', 'subject', 'teacher', 'template', 'rows']);
+
+        return Inertia::render('Academic/StudyPlans/Show', [
+            'studyPlan' => $studyPlan,
+        ]);
+    }
+
     public function destroy(StudyPlan $studyPlan)
     {
+        if (\Illuminate\Support\Facades\Auth::user()->cannot('delete', $studyPlan)) {
+            abort(403, 'لا تملك صلاحية حذف هذه الخطة');
+        }
         if ($studyPlan->attachment_path) {
-            Storage::disk('public')->delete($studyPlan->attachment_path);
+            Storage::disk('local')->delete($studyPlan->attachment_path);
         }
 
         $studyPlan->delete();
@@ -110,9 +122,12 @@ class StudyPlanController extends Controller
 
     public function review(Request $request, StudyPlan $studyPlan)
     {
+        if ($request->user()->cannot('review', $studyPlan)) {
+            abort(403, 'لا تملك صلاحية مراجعة هذه الخطة');
+        }
         $validated = $request->validate([
             'status' => 'required|in:approved,rejected',
-            'admin_feedback' => 'nullable|string',
+            'admin_feedback' => 'required_if:status,rejected|nullable|string',
         ]);
 
         $studyPlan->update([
@@ -141,10 +156,13 @@ class StudyPlanController extends Controller
 
     public function download(StudyPlan $studyPlan)
     {
-        if (empty($studyPlan->attachment_path) || !Storage::disk('public')->exists($studyPlan->attachment_path)) {
+        if (\Illuminate\Support\Facades\Auth::user()->cannot('download', $studyPlan)) {
+            abort(403, 'لا تملك صلاحية تحميل هذه الخطة');
+        }
+        if (empty($studyPlan->attachment_path) || !Storage::disk('local')->exists($studyPlan->attachment_path)) {
             abort(404, 'الملف غير موجود');
         }
 
-        return Storage::disk('public')->download($studyPlan->attachment_path, $studyPlan->title . '.' . pathinfo($studyPlan->attachment_path, PATHINFO_EXTENSION));
+        return Storage::disk('local')->download($studyPlan->attachment_path, $studyPlan->title . '.' . pathinfo($studyPlan->attachment_path, PATHINFO_EXTENSION));
     }
 }
