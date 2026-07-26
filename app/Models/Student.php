@@ -49,6 +49,11 @@ class Student extends Model
         return $this->hasOne(StudentMedicalRecord::class);
     }
 
+    // سجل الإنجازات
+    public function achievements(): HasMany {
+        return $this->hasMany(StudentAchievement::class);
+    }
+
     // زيارات الطالب للعيادة
     public function clinicVisits(): HasMany {
         return $this->hasMany(ClinicVisit::class);

@@ -107,4 +107,26 @@ class NotificationService
             $this->sendEmailNotification($user, $title, $message);
         }
     }
+
+    /**
+     * إرسال رسالة واتساب (محاكاة)
+     */
+    public function sendWhatsappNotification(User $user, $message)
+    {
+        // Check if the user has a phone number
+        $phone = $user->phone ?? 'بدون رقم';
+        
+        // Here you would integrate with a real WhatsApp API (like Twilio, Infobip, Unifonic, etc.)
+        // Example: WhatsAppApi::send($phone, $message);
+        
+        // For now, we simulate the sending by logging it
+        Log::info("====================================");
+        Log::info("[WHATSAPP MESSAGE SIMULATION]");
+        Log::info("To: " . $user->name . " (" . $phone . ")");
+        Log::info("Message: " . $message);
+        Log::info("Status: Simulated sending successfully.");
+        Log::info("====================================");
+
+        return true;
+    }
 }

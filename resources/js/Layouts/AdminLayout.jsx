@@ -5,7 +5,7 @@ import {
     Menu, X, BookOpen, Clock, ShieldCheck, Map, Activity, 
     Home, LogOut, ChevronDown, CheckSquare, Plus, CheckCircle, Store, Sun, Moon, PanelLeftClose, PanelLeftOpen, User,
     FileText, Sliders, Layers, BarChart, UserPlus, FileSignature, ShieldAlert,
-    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ArrowUp, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone
+    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ArrowUp, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone, Trophy, Medal
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import ToastNotification from '@/Components/ToastNotification';
@@ -205,6 +205,13 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
                 { name: 'الترفيع الجماعي', icon: ArrowUp, url: route('academic.promotions'), permission: 'إدارة الطلاب' },
                 { name: 'أولياء الأمور', icon: Users, url: route('academic.parents'), permission: 'إدارة أولياء الأمور' },
+                { name: 'لائحة المخالفات (طلاب)', icon: ShieldAlert, url: route('academic.student-violation-types.index'), permission: 'إدارة الطلاب' },
+                { name: 'سجل المخالفات (طلاب)', icon: AlertCircle, url: route('academic.student-violations.index'), permission: 'إدارة الطلاب' },
+                { name: 'استدعاءات أولياء الأمور', icon: Users, url: route('academic.parent-summons.index'), permission: 'إدارة الطلاب' },
+                { name: 'أنواع إنجازات الطلاب', icon: Star, url: route('academic.achievement-types.index'), permission: 'إدارة أنواع الإنجازات' },
+                { name: 'إعدادات التلعيب والشارات', icon: Medal, url: route('academic.gamification.index'), permission: 'إعدادات التلعيب والشارات' },
+                { name: 'سجل إنجازات الطلاب', icon: Trophy, url: route('academic.achievements.index'), permission: 'عرض إنجازات الطلاب' },
+                { name: 'تعهدات الطلاب', icon: FileSignature, url: route('academic.student-pledges.index'), permission: 'إدارة الطلاب' },
                 { name: 'الغياب المدرسي', icon: AlertTriangle, url: route('academic.attendances.index'), permission: 'إدارة الطلاب' },
                 { name: 'غياب الحصص', icon: Clock, url: route('academic.attendances.classes'), permission: 'إدارة الطلاب' },
             ]

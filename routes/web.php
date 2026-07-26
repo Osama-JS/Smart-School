@@ -307,6 +307,70 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'academic.students.destroy',
         ]);
 
+        // Student Discipline System
+        Route::resource('/academic/student-violation-types', \App\Http\Controllers\Academic\StudentViolationTypeController::class)->names([
+            'index'   => 'academic.student-violation-types.index',
+            'store'   => 'academic.student-violation-types.store',
+            'update'  => 'academic.student-violation-types.update',
+            'destroy' => 'academic.student-violation-types.destroy',
+        ])->except(['create', 'show', 'edit']);
+
+        Route::get('/academic/student-violations/analytics', [\App\Http\Controllers\Academic\StudentViolationController::class, 'analytics'])->name('academic.student-violations.analytics');
+        Route::get('/academic/student-violations/check-repetition', [\App\Http\Controllers\Academic\StudentViolationController::class, 'checkRepetition'])->name('academic.student-violations.check-repetition');
+        Route::get('/academic/student-violations/analytics', [\App\Http\Controllers\Academic\StudentViolationController::class, 'analytics'])->name('academic.student-violations.analytics');
+        Route::get('/academic/student-violations/check-repetition', [\App\Http\Controllers\Academic\StudentViolationController::class, 'checkRepetition'])->name('academic.student-violations.check-repetition');
+        Route::resource('/academic/student-violations', \App\Http\Controllers\Academic\StudentViolationController::class)->names([
+            'index'   => 'academic.student-violations.index',
+            'store'   => 'academic.student-violations.store',
+            'update'  => 'academic.student-violations.update',
+            'destroy' => 'academic.student-violations.destroy',
+        ])->except(['create', 'edit', 'show']);
+    });
+
+    Route::middleware('permission:إدارة إنجازات الطلاب')->group(function () {
+        // Student Achievements & Gamification
+        Route::get('/academic/achievements/certificate/{student}', [\App\Http\Controllers\Academic\StudentAchievementController::class, 'certificate'])->name('academic.achievements.certificate');
+        Route::resource('/academic/achievements', \App\Http\Controllers\Academic\StudentAchievementController::class)->names([
+            'index'   => 'academic.achievements.index',
+            'store'   => 'academic.achievements.store',
+            'update'  => 'academic.achievements.update',
+            'destroy' => 'academic.achievements.destroy',
+        ])->except(['create', 'edit', 'show']);
+
+        Route::resource('/academic/achievement-types', \App\Http\Controllers\Academic\StudentAchievementTypeController::class)->names([
+            'index'   => 'academic.achievement-types.index',
+            'store'   => 'academic.achievement-types.store',
+            'update'  => 'academic.achievement-types.update',
+            'destroy' => 'academic.achievement-types.destroy',
+        ])->except(['create', 'edit', 'show']);
+
+        // Gamification Settings (Tiers & Badges)
+        Route::get('/academic/gamification-settings', [\App\Http\Controllers\Academic\GamificationSettingsController::class, 'index'])->name('academic.gamification.index');
+        Route::post('/academic/gamification-settings/tiers', [\App\Http\Controllers\Academic\GamificationSettingsController::class, 'storeTier'])->name('academic.gamification.tiers.store');
+        Route::put('/academic/gamification-settings/tiers/{tier}', [\App\Http\Controllers\Academic\GamificationSettingsController::class, 'updateTier'])->name('academic.gamification.tiers.update');
+        Route::delete('/academic/gamification-settings/tiers/{tier}', [\App\Http\Controllers\Academic\GamificationSettingsController::class, 'destroyTier'])->name('academic.gamification.tiers.destroy');
+
+        Route::post('/academic/gamification-settings/badges', [\App\Http\Controllers\Academic\GamificationSettingsController::class, 'storeBadge'])->name('academic.gamification.badges.store');
+        Route::put('/academic/gamification-settings/badges/{badge}', [\App\Http\Controllers\Academic\GamificationSettingsController::class, 'updateBadge'])->name('academic.gamification.badges.update');
+        Route::delete('/academic/gamification-settings/badges/{badge}', [\App\Http\Controllers\Academic\GamificationSettingsController::class, 'destroyBadge'])->name('academic.gamification.badges.destroy');
+    });
+
+    Route::middleware('permission:إدارة الطلاب')->group(function () {
+        Route::resource('/academic/parent-summons', \App\Http\Controllers\Academic\ParentSummonController::class)->names([
+            'index'   => 'academic.parent-summons.index',
+            'store'   => 'academic.parent-summons.store',
+            'update'  => 'academic.parent-summons.update',
+            'destroy' => 'academic.parent-summons.destroy',
+        ])->except(['create', 'show', 'edit']);
+
+        Route::post('/academic/student-pledges/{student_pledge}/sign', [\App\Http\Controllers\Academic\StudentPledgeController::class, 'sign'])->name('academic.student-pledges.sign');
+        Route::resource('/academic/student-pledges', \App\Http\Controllers\Academic\StudentPledgeController::class)->names([
+            'index'   => 'academic.student-pledges.index',
+            'store'   => 'academic.student-pledges.store',
+            'update'  => 'academic.student-pledges.update',
+            'destroy' => 'academic.student-pledges.destroy',
+        ])->except(['create', 'show', 'edit']);
+
         // Bulk Promotion
         Route::get('/academic/promotions', [\App\Http\Controllers\Academic\PromotionController::class, 'index'])->name('academic.promotions');
         Route::post('/academic/promotions/students', [\App\Http\Controllers\Academic\PromotionController::class, 'students'])->name('academic.promotions.students');
