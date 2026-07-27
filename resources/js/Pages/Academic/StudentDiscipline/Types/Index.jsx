@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit2, Trash2, ShieldAlert, X, Save, FileText, CheckCircle, AlertTriangle, AlertCircle, Search, LayoutGrid, Table2, Printer, Target, GraduationCap } from 'lucide-react';
+import SelectInput from '@/Components/SelectInput';
 
 export default function Types({ auth, types }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -453,21 +454,17 @@ export default function Types({ auth, types }) {
 
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">درجة المخالفة <span className="text-rose-500">*</span></label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white appearance-none"
-                                                value={data.degree}
-                                                onChange={e => setData('degree', e.target.value)}
-                                                required
-                                            >
-                                                <option value="first_degree">مخالفة من الدرجة الأولى (مخالفات بسيطة)</option>
-                                                <option value="second_degree">مخالفة من الدرجة الثانية (مخالفات متوسطة)</option>
-                                                <option value="third_degree">مخالفة من الدرجة الثالثة (مخالفات جسيمة)</option>
-                                            </select>
-                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-5 text-slate-400">
-                                                <Target size={16} />
-                                            </div>
-                                        </div>
+                                        <SelectInput
+                                            options={[
+                                                { value: 'first_degree', label: 'مخالفة من الدرجة الأولى (مخالفات بسيطة)' },
+                                                { value: 'second_degree', label: 'مخالفة من الدرجة الثانية (مخالفات متوسطة)' },
+                                                { value: 'third_degree', label: 'مخالفة من الدرجة الثالثة (مخالفات جسيمة)' },
+                                            ]}
+                                            value={data.degree}
+                                            onChange={val => setData('degree', val)}
+                                            className="w-full"
+                                            required
+                                        />
                                     </div>
                                 </div>
 

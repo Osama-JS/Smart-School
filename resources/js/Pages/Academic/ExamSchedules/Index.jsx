@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Calendar, Plus, Trash2, X, ChevronLeft, CalendarClock, Settings, Layers, CalendarDays, Search } from 'lucide-react';
 import ToastNotification from '@/Components/ToastNotification';
 import RichTextEditor from '@/Components/RichTextEditor';
+import SelectInput from '@/Components/SelectInput';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ar';
 
@@ -267,20 +268,16 @@ export default function Index({ schedules, periods }) {
                                 <div className="space-y-1">
                                     <label className="text-sm font-bold text-slate-700 dark:text-slate-300 ml-1">الفترة الزمنية للنتائج</label>
                                     <div className="relative">
-                                        <select 
-                                            className="erp-input w-full bg-slate-50 focus:bg-white dark:bg-slate-900 dark:focus:bg-slate-800 transition-colors appearance-none pr-4 pl-10" 
+                                        <SelectInput
                                             value={data.period_id}
-                                            onChange={e => setData('period_id', e.target.value)}
+                                            onChange={val => setData('period_id', val)}
+                                            options={periods.map(p => ({
+                                                value: p.id,
+                                                label: `${p.month_name} - ${p.semester?.name}`
+                                            }))}
+                                            placeholder="اختر الفترة المستهدفة..."
                                             required
-                                        >
-                                            <option value="" disabled>اختر الفترة المستهدفة...</option>
-                                            {periods.map(p => (
-                                                <option key={p.id} value={p.id}>
-                                                    {p.month_name} - {p.semester?.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <CalendarClock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                        />
                                     </div>
                                     <p className="text-xs text-slate-500 mt-2">ملاحظة: درجات هذا الاختبار سترصد تحت الفترة المحددة.</p>
                                     {errors.period_id && <p className="text-red-500 text-xs mt-1 font-medium">{errors.period_id}</p>}

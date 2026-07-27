@@ -53,6 +53,12 @@ class Enrollment extends Model
         return $this->hasMany(WeeklyEvaluation::class);
     }
 
+    /** نتائج الفصل الدراسي */
+    public function semesterResults(): HasMany
+    {
+        return $this->hasMany(SemesterResult::class);
+    }
+
     // ── Scopes ──
 
     public function scopeActive($query)

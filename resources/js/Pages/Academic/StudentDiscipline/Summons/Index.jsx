@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit2, Trash2, Users, CheckCircle, AlertTriangle, CalendarDays, Search, X, User, Activity, Clock, FileText, CheckSquare, MessageSquare, Tag, Calendar, AlignLeft } from 'lucide-react';
+import SelectInput from '@/Components/SelectInput';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 
 export default function Summons({ auth, summons, students, violations }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -357,42 +359,23 @@ export default function Summons({ auth, summons, students, violations }) {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="md:col-span-2">
                                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الطالب <span className="text-rose-500">*</span></label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white appearance-none"
-                                                    value={data.student_id}
-                                                    onChange={e => setData('student_id', e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="">-- اختر الطالب --</option>
-                                                    {students.map(s => (
-                                                        <option key={s.id} value={s.id}>{s.user?.name}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-5 text-slate-400">
-                                                    <User size={16} />
-                                                </div>
-                                            </div>
+                                            <SelectInput
+                                                options={[{ value: '', label: '-- اختر الطالب --' }, ...students.map(s => ({ value: s.id, label: s.user?.name }))]}
+                                                value={data.student_id}
+                                                onChange={val => setData('student_id', val)}
+                                                className="w-full"
+                                            />
                                             {errors.student_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.student_id}</p>}
                                         </div>
 
                                         <div className="md:col-span-2">
                                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">ارتباط بمخالفة (اختياري)</label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white appearance-none"
-                                                    value={data.student_violation_id}
-                                                    onChange={e => setData('student_violation_id', e.target.value)}
-                                                >
-                                                    <option value="">-- بدون مخالفة مرتبطة --</option>
-                                                    {violations.filter(v => !data.student_id || v.student_id == data.student_id).map(v => (
-                                                        <option key={v.id} value={v.id}>{v.violation_type?.name} ({v.violation_date})</option>
-                                                    ))}
-                                                </select>
-                                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-5 text-slate-400">
-                                                    <Tag size={16} />
-                                                </div>
-                                            </div>
+                                            <SelectInput
+                                                options={[{ value: '', label: '-- بدون مخالفة مرتبطة --' }, ...violations.filter(v => !data.student_id || v.student_id == data.student_id).map(v => ({ value: v.id, label: `${v.violation_type?.name} (${v.violation_date})` }))]}
+                                                value={data.student_violation_id}
+                                                onChange={val => setData('student_violation_id', val)}
+                                                className="w-full"
+                                            />
                                             {errors.student_violation_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.student_violation_id}</p>}
                                         </div>
                                     </div>
@@ -401,36 +384,27 @@ export default function Summons({ auth, summons, students, violations }) {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تاريخ الاستدعاء <span className="text-rose-500">*</span></label>
-                                        <div className="relative">
-                                            <input
-                                                type="date"
-                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl pl-5 pr-12 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white"
-                                                value={data.summon_date}
-                                                onChange={e => setData('summon_date', e.target.value)}
-                                                required
-                                            />
-                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">
-                                                <Calendar size={16} />
-                                            </div>
-                                        </div>
+                                        <FlatpickrInput
+                                            type="date"
+                                            value={data.summon_date}
+                                            onChange={(val) => setData('summon_date', val)}
+                                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl pl-5 pr-12 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white"
+                                            required
+                                        />
                                     </div>
                                     
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الحالة</label>
-                                        <div className="relative">
-                                            <select
-                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white appearance-none"
-                                                value={data.status}
-                                                onChange={e => setData('status', e.target.value)}
-                                            >
-                                                <option value="scheduled">مجدول</option>
-                                                <option value="attended">حضر</option>
-                                                <option value="no_show">لم يحضر</option>
-                                            </select>
-                                            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-5 text-slate-400">
-                                                <CheckSquare size={16} />
-                                            </div>
-                                        </div>
+                                        <SelectInput
+                                            options={[
+                                                { value: 'scheduled', label: 'مجدول' },
+                                                { value: 'attended', label: 'حضر' },
+                                                { value: 'no_show', label: 'لم يحضر' }
+                                            ]}
+                                            value={data.status}
+                                            onChange={val => setData('status', val)}
+                                            className="w-full"
+                                        />
                                     </div>
                                 </div>
 

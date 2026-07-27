@@ -107,6 +107,10 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
         }).filter(group => group.items.length > 0);
     }, [groupedPermissions, searchQuery]);
 
+    const totalPermissionsCount = React.useMemo(() => {
+        return permissions.reduce((acc, group) => acc + (group.items?.length || 0), 0);
+    }, [permissions]);
+
     const selectRole = (role) => {
         setSelectedRole(role);
         setRolePerms(new Set(role.permissions));
@@ -259,7 +263,7 @@ export default function PermissionsIndex({ roles = [], permissions = [] }) {
                                     <h2 className="text-base font-bold text-dark-900 dark:text-white">
                                         صلاحيات دور: <span className="text-primary-600 dark:text-primary-400">{selectedRole.name}</span>
                                     </h2>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-semibold">{rolePerms.size} صلاحية مفعّلة</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 font-semibold">{rolePerms.size} صلاحية مفعّلة من أصل {totalPermissionsCount} صلاحية</p>
                                 </div>
                                 <div className="flex items-center gap-3 w-full md:w-auto">
                                     <div className="relative flex-1 md:w-64">

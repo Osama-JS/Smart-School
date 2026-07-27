@@ -35,10 +35,25 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
         ->where('branch_id', $branchId)
         ->get();
 
-        $periods = DailyPeriod::where('branch_id', $branchId)->orderBy('start_time')->get();
-
         $selectedDivisionId = $request->division_id;
         $selectedSemesterId = $request->semester_id;
+
+        $periodsQuery = DailyPeriod::where('branch_id', $branchId);
+        
+        if ($selectedDivisionId) {
+            $division = Division::find($selectedDivisionId);
+            $gradeId = $division ? $division->grade_id : null;
+            if ($gradeId) {
+                $periodsQuery->where(function($q) use ($gradeId) {
+                    $q->whereNull('timetable_group_id')
+                      ->orWhereHas('group.grades', function($q2) use ($gradeId) {
+                          $q2->where('grades.id', $gradeId);
+                      });
+                });
+            }
+        }
+        
+        $periods = $periodsQuery->orderBy('start_time')->get();
 
         $timetable = [];
         if ($selectedDivisionId && $selectedSemesterId) {
@@ -106,6 +121,10 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
 
         if (!$division || !$period || !$subject || !$teacher) {
             return redirect()->back()->with('error', 'بيانات غير صالحة أو لا تنتمي لفرعك.');
+        }
+
+        if ($period->is_break) {
+            return redirect()->back()->with('error', 'لا يمكن إسناد معلم إلى فترة راحة.');
         }
 
         // --- CONFLICT PREVENTION (منع التعارض) ---

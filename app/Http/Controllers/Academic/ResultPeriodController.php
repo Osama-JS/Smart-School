@@ -51,9 +51,17 @@ class ResultPeriodController extends Controller implements \Illuminate\Routing\C
         $rules = [
             'semester_id'     => 'required|exists:semesters,id',
             'month_name'      => 'required|string|max:255',
+            'period_type'     => 'required|string|in:monthly,exam',
             'fill_start_date' => 'required|date',
             'fill_end_date'   => 'required|date|after_or_equal:fill_start_date',
+            'weeks_dates'     => 'nullable|array',
         ];
+
+        if ($request->input('period_type') === 'monthly') {
+            $rules['weeks_dates'] = 'required|array|size:4';
+            $rules['weeks_dates.*.start_date'] = 'required|date|after_or_equal:fill_start_date|before_or_equal:fill_end_date';
+            $rules['weeks_dates.*.end_date'] = 'required|date|after_or_equal:weeks_dates.*.start_date|before_or_equal:fill_end_date';
+        }
 
         if ($isAdmin) {
             $rules['branch_id'] = 'required|exists:branches,id';
@@ -82,9 +90,17 @@ class ResultPeriodController extends Controller implements \Illuminate\Routing\C
         $rules = [
             'semester_id'     => 'required|exists:semesters,id',
             'month_name'      => 'required|string|max:255',
+            'period_type'     => 'required|string|in:monthly,exam',
             'fill_start_date' => 'required|date',
             'fill_end_date'   => 'required|date|after_or_equal:fill_start_date',
+            'weeks_dates'     => 'nullable|array',
         ];
+
+        if ($request->input('period_type') === 'monthly') {
+            $rules['weeks_dates'] = 'required|array|size:4';
+            $rules['weeks_dates.*.start_date'] = 'required|date|after_or_equal:fill_start_date|before_or_equal:fill_end_date';
+            $rules['weeks_dates.*.end_date'] = 'required|date|after_or_equal:weeks_dates.*.start_date|before_or_equal:fill_end_date';
+        }
 
         if ($isAdmin) {
             $rules['branch_id'] = 'required|exists:branches,id';

@@ -10,23 +10,64 @@ export default function ResultPeriods({ periods, semesters, branches, isAdmin })
     const [showModal, setShowModal] = useState(false);
     const [editingPeriod, setEditingPeriod] = useState(null);
 
+    const defaultWeeks = Array(4).fill(null).map((_, i) => ({
+        name: `الأسبوع ${i + 1}`,
+        start_date: '',
+        end_date: ''
+    }));
+
     const { data, setData, post, put, delete: destroy, processing, errors, reset } = useForm({
         semester_id: '',
+        period_type: 'monthly',
         month_name: '',
         fill_start_date: '',
         fill_end_date: '',
         branch_id: '',
+        weeks_dates: defaultWeeks,
     });
+
+    const calculateWeeks = (start, end) => {
+        if (!start || !end) return defaultWeeks;
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        if (startDate >= endDate) return defaultWeeks;
+
+        const totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        const daysPerWeek = Math.floor(totalDays / 4);
+        let currentStart = new Date(startDate);
+        
+        return Array(4).fill(null).map((_, i) => {
+            const weekStart = new Date(currentStart);
+            let weekEnd = new Date(currentStart);
+            
+            if (i === 3) {
+                weekEnd = new Date(endDate); // Last week takes the remaining days
+            } else {
+                weekEnd.setDate(weekStart.getDate() + daysPerWeek - 1);
+            }
+            
+            currentStart = new Date(weekEnd);
+            currentStart.setDate(currentStart.getDate() + 1);
+
+            return {
+                name: `الأسبوع ${i + 1}`,
+                start_date: weekStart.toISOString().split('T')[0],
+                end_date: weekEnd.toISOString().split('T')[0]
+            };
+        });
+    };
 
     const openModal = (period = null) => {
         setEditingPeriod(period);
         if (period) {
             setData({
                 semester_id: period.semester_id,
+                period_type: period.period_type || 'monthly',
                 month_name: period.month_name,
                 fill_start_date: period.fill_start_date,
                 fill_end_date: period.fill_end_date,
                 branch_id: period.branch_id || '',
+                weeks_dates: period.weeks_dates || defaultWeeks,
             });
         } else {
             reset();
@@ -111,6 +152,7 @@ export default function ResultPeriods({ periods, semesters, branches, isAdmin })
                             <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 font-semibold border-b border-gray-100 dark:border-gray-700">
                                 <tr>
                                     <th className="px-6 py-4">اسم الفترة</th>
+                                    <th className="px-6 py-4">النوع</th>
                                     <th className="px-6 py-4">الفصل الدراسي</th>
                                     {isAdmin && <th className="px-6 py-4">الفرع</th>}
                                     <th className="px-6 py-4 text-center">بداية الرصد</th>
@@ -127,10 +169,13 @@ export default function ResultPeriods({ periods, semesters, branches, isAdmin })
                                     const isFuture = now < period.fill_start_date;
                                     return (
                                         <tr key={period.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/25 transition-colors">
-                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
+                                            <td className="px-6 py-4 font-bold text-gray-900 dark:text-white">
                                                 {period.month_name}
                                             </td>
-                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-300">
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400 font-medium">
+                                                {period.period_type === 'monthly' ? 'رصد درجات شهري' : 'موعد امتحانات'}
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-600 dark:text-gray-400">
                                                 {period.semester?.name} ({period.semester?.academic_year?.year_name})
                                             </td>
                                             {isAdmin && (
@@ -174,9 +219,9 @@ export default function ResultPeriods({ periods, semesters, branches, isAdmin })
             </div>
 
             {/* Modal */}
-            <Modal show={showModal} onClose={closeModal} maxWidth="md">
-                <form onSubmit={handleSubmit} className="p-6">
-                    <div className="flex justify-between items-center mb-6">
+            <Modal show={showModal} onClose={closeModal} maxWidth="2xl">
+                <form onSubmit={handleSubmit} className="flex flex-col max-h-[90vh]">
+                    <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800 shrink-0 bg-white dark:bg-slate-800 sticky top-0 z-10">
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                             {editingPeriod ? 'تعديل فترة الرصد' : 'إضافة فترة رصد'}
                         </h2>
@@ -185,7 +230,7 @@ export default function ResultPeriods({ periods, semesters, branches, isAdmin })
                         </button>
                     </div>
 
-                    <div className="space-y-5">
+                    <div className="p-6 overflow-y-auto space-y-5 grow">
                         {isAdmin && (
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الفرع</label>
@@ -211,6 +256,28 @@ export default function ResultPeriods({ periods, semesters, branches, isAdmin })
                         </div>
 
                         <div>
+                            <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">نوع الفترة</label>
+                            <SelectInput
+                                value={data.period_type}
+                                onChange={val => {
+                                    setData(prev => ({
+                                        ...prev,
+                                        period_type: val,
+                                        weeks_dates: val === 'monthly' && prev.fill_start_date && prev.fill_end_date
+                                            ? (prev.weeks_dates && prev.weeks_dates[0]?.start_date ? prev.weeks_dates : calculateWeeks(prev.fill_start_date, prev.fill_end_date))
+                                            : prev.weeks_dates
+                                    }));
+                                }}
+                                options={[
+                                    { value: 'monthly', label: 'رصد درجات شهري' },
+                                    { value: 'exam', label: 'موعد امتحانات' }
+                                ]}
+                                placeholder="اختر نوع الفترة..."
+                            />
+                            {errors.period_type && <p className="mt-1 text-sm font-bold text-red-500">{errors.period_type}</p>}
+                        </div>
+
+                        <div>
                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">اسم الفترة (مثال: الشهر الأول، منتصف الفصل)</label>
                             <input
                                 type="text"
@@ -228,39 +295,98 @@ export default function ResultPeriods({ periods, semesters, branches, isAdmin })
                                 <FlatpickrInput
                                     type="date"
                                     value={data.fill_start_date || ''}
-                                    onChange={date => setData('fill_start_date', date)}
+                                    onChange={date => {
+                                        setData(prev => ({
+                                            ...prev,
+                                            fill_start_date: date,
+                                            weeks_dates: prev.period_type === 'monthly' && prev.fill_end_date 
+                                                ? calculateWeeks(date, prev.fill_end_date) 
+                                                : prev.weeks_dates
+                                        }));
+                                    }}
                                     className="block w-full p-3 font-bold text-slate-800 border-2 border-slate-200 rounded-xl bg-slate-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-slate-900/50 dark:border-slate-700 dark:text-white transition-all shadow-sm"
                                 />
                                 {errors.fill_start_date && <p className="mt-1 text-sm font-bold text-red-500">{errors.fill_start_date}</p>}
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">نهاية فترة الرصد</label>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">نهاية فترة الرصد (إغلاق نهائي)</label>
                                 <FlatpickrInput
                                     type="date"
                                     value={data.fill_end_date || ''}
-                                    onChange={date => setData('fill_end_date', date)}
+                                    onChange={date => {
+                                        setData(prev => ({
+                                            ...prev,
+                                            fill_end_date: date,
+                                            weeks_dates: prev.period_type === 'monthly' && prev.fill_start_date 
+                                                ? calculateWeeks(prev.fill_start_date, date) 
+                                                : prev.weeks_dates
+                                        }));
+                                    }}
                                     className="block w-full p-3 font-bold text-slate-800 border-2 border-slate-200 rounded-xl bg-slate-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-slate-900/50 dark:border-slate-700 dark:text-white transition-all shadow-sm"
                                 />
                                 {errors.fill_end_date && <p className="mt-1 text-sm font-bold text-red-500">{errors.fill_end_date}</p>}
                             </div>
                         </div>
+
+                        {data.period_type === 'monthly' && (
+                            <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <h3 className="font-bold text-slate-800 dark:text-white mb-4">تقسيم أسابيع الشهر (إلزامي 4 أسابيع)</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {data.weeks_dates.map((week, idx) => (
+                                        <div key={idx} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <p className="font-bold text-sm text-slate-600 dark:text-slate-400 mb-3">{week.name}</p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">تاريخ البداية</label>
+                                                    <FlatpickrInput
+                                                        type="date"
+                                                        value={week.start_date || ''}
+                                                        onChange={date => {
+                                                            const newWeeks = [...data.weeks_dates];
+                                                            newWeeks[idx].start_date = date;
+                                                            setData('weeks_dates', newWeeks);
+                                                        }}
+                                                        className="block w-full p-2 text-sm font-bold text-slate-800 border-2 border-slate-200 rounded-lg bg-white focus:ring-primary-500 focus:border-primary-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                                                    />
+                                                    {errors[`weeks_dates.${idx}.start_date`] && <p className="mt-1 text-xs font-bold text-red-500">{errors[`weeks_dates.${idx}.start_date`]}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-500 mb-1">تاريخ النهاية</label>
+                                                    <FlatpickrInput
+                                                        type="date"
+                                                        value={week.end_date || ''}
+                                                        onChange={date => {
+                                                            const newWeeks = [...data.weeks_dates];
+                                                            newWeeks[idx].end_date = date;
+                                                            setData('weeks_dates', newWeeks);
+                                                        }}
+                                                        className="block w-full p-2 text-sm font-bold text-slate-800 border-2 border-slate-200 rounded-lg bg-white focus:ring-primary-500 focus:border-primary-500 dark:bg-slate-800 dark:border-slate-600 dark:text-white"
+                                                    />
+                                                    {errors[`weeks_dates.${idx}.end_date`] && <p className="mt-1 text-xs font-bold text-red-500">{errors[`weeks_dates.${idx}.end_date`]}</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <div className="p-6 flex justify-end gap-3 border-t border-gray-100 dark:border-gray-800 shrink-0 bg-gray-50 dark:bg-slate-900/50 sticky bottom-0 z-10">
                         <button
                             type="button"
                             onClick={closeModal}
-                            className="px-6 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors"
+                            className="px-5 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700 transition-colors"
                         >
                             إلغاء
                         </button>
                         <button
                             type="submit"
                             disabled={processing}
-                            className="flex items-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors shadow-lg shadow-primary-500/30 disabled:opacity-50"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-primary-600 rounded-xl hover:bg-primary-700 focus:ring-4 focus:ring-primary-500/20 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                         >
-                            <Save className="w-4 h-4" />
-                            {processing ? 'جاري الحفظ...' : 'حفظ الفترة'}
+                            <Save size={18} />
+                            {processing ? 'جاري الحفظ...' : 'حفظ'}
                         </button>
                     </div>
                 </form>

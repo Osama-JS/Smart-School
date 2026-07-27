@@ -30,7 +30,8 @@ class ExamScheduleController extends Controller
         
         $schedules = $schedulesQuery->latest()->get();
         
-        $periodsQuery = ResultPeriod::with('semester.academicYear');
+        $periodsQuery = ResultPeriod::with('semester.academicYear')
+            ->where('period_type', 'exam');
         if ($branchId) {
             $periodsQuery->where('branch_id', $branchId);
         }

@@ -213,9 +213,14 @@ export default function StudentsIndex({ students, academicYears, sections }) {
                                                 </div>
                                             )}
                                         </div>
-                                        <Link href={route('academic.students.edit', student.id)} className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors">
-                                            الملف الكامل &larr;
-                                        </Link>
+                                        <div className="flex gap-3 items-center">
+                                            <Link href={route('academic.students.grade-report', student.id)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
+                                                كشف الدرجات
+                                            </Link>
+                                            <Link href={route('academic.students.edit', student.id)} className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors">
+                                                الملف الكامل &larr;
+                                            </Link>
+                                        </div>
                                     </div>
                                 </div>
                             );

@@ -29,6 +29,11 @@ class Grade extends Model
         return $this->hasMany(Division::class);
     }
 
+    public function timetableGroups()
+    {
+        return $this->belongsToMany(TimetableGroup::class, 'timetable_group_grades');
+    }
+
     /** شعب السنة الدراسية المحددة */
     public function divisionsForYear($academicYearId): HasMany
     {

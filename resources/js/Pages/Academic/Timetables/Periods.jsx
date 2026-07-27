@@ -1,68 +1,137 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Clock, Plus, Edit, Trash2, Save, X, Coffee, BookOpen, Table2, List } from 'lucide-react';
+import { Clock, Plus, Edit, Trash2, Save, X, Coffee, BookOpen, Table2, List, Filter, Users, FolderKanban } from 'lucide-react';
 import Swal from 'sweetalert2';
 import Modal from '@/Components/Modal';
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import SelectInput from '@/Components/SelectInput';
 
-export default function PeriodsIndex({ periods }) {
-    const [isModalOpen, setIsModalOpen] = useState(false);
+export default function PeriodsIndex({ periods, groups, sections }) {
+    const [isPeriodModalOpen, setIsPeriodModalOpen] = useState(false);
+    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+    
     const [editingPeriod, setEditingPeriod] = useState(null);
-    const [viewMode, setViewMode] = useState('timeline'); // 'timeline' or 'table'
+    const [editingGroup, setEditingGroup] = useState(null);
+    
+    const [viewMode, setViewMode] = useState('timeline');
+    const [activeGroupId, setActiveGroupId] = useState(null); // null means "All / General"
 
-    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
+    // Form for Period
+    const periodForm = useForm({
         period_name: '',
         start_time: '',
         end_time: '',
+        timetable_group_id: '',
+        is_break: false,
     });
 
-    const openModal = (period = null) => {
-        clearErrors();
+    // Form for Group
+    const groupForm = useForm({
+        name: '',
+        grade_ids: [],
+    });
+
+    // ---- Group Modal Handlers ----
+    const openGroupModal = (group = null) => {
+        groupForm.clearErrors();
+        if (group) {
+            setEditingGroup(group);
+            groupForm.setData({
+                name: group.name,
+                grade_ids: group.grades ? group.grades.map(g => g.id) : [],
+            });
+        } else {
+            setEditingGroup(null);
+            groupForm.setData({
+                name: '',
+                grade_ids: [],
+            });
+        }
+        setIsGroupModalOpen(true);
+    };
+
+    const closeGroupModal = () => {
+        setIsGroupModalOpen(false);
+        setTimeout(() => groupForm.reset(), 300);
+    };
+
+    const handleGroupSubmit = (e) => {
+        e.preventDefault();
+        if (editingGroup) {
+            groupForm.put(route('academic.timetable-groups.update', editingGroup.id), {
+                onSuccess: () => closeGroupModal(),
+            });
+        } else {
+            groupForm.post(route('academic.timetable-groups.store'), {
+                onSuccess: () => closeGroupModal(),
+            });
+        }
+    };
+
+    const handleDeleteGroup = (id) => {
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: "سيتم حذف المجموعة مع جميع الحصص المرتبطة بها!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'نعم، احذف',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.delete(route('academic.timetable-groups.destroy', id), {
+                    preserveScroll: true
+                });
+            }
+        });
+    };
+
+    // ---- Period Modal Handlers ----
+    const openPeriodModal = (period = null) => {
+        periodForm.clearErrors();
         if (period) {
             setEditingPeriod(period);
-            setData({
+            periodForm.setData({
                 period_name: period.period_name,
-                start_time: period.start_time.substring(0, 5), // Remove seconds
+                start_time: period.start_time.substring(0, 5),
                 end_time: period.end_time.substring(0, 5),
+                timetable_group_id: period.timetable_group_id || '',
+                is_break: period.is_break,
             });
         } else {
             setEditingPeriod(null);
-            setData({
+            periodForm.setData({
                 period_name: '',
                 start_time: '',
                 end_time: '',
+                timetable_group_id: activeGroupId || '',
+                is_break: false,
             });
         }
-        setIsModalOpen(true);
+        setIsPeriodModalOpen(true);
     };
 
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setTimeout(() => {
-            setData({
-                period_name: '',
-                start_time: '',
-                end_time: '',
-            });
-            clearErrors();
-        }, 300);
+    const closePeriodModal = () => {
+        setIsPeriodModalOpen(false);
+        setTimeout(() => periodForm.reset(), 300);
     };
 
-    const handleSubmit = (e) => {
+    const handlePeriodSubmit = (e) => {
         e.preventDefault();
         if (editingPeriod) {
-            put(route('academic.periods.update', editingPeriod.id), {
-                onSuccess: () => closeModal(),
+            periodForm.put(route('academic.periods.update', editingPeriod.id), {
+                onSuccess: () => closePeriodModal(),
             });
         } else {
-            post(route('academic.periods.store'), {
-                onSuccess: () => closeModal(),
+            periodForm.post(route('academic.periods.store'), {
+                onSuccess: () => closePeriodModal(),
             });
         }
     };
 
-    const handleDelete = (id) => {
+    const handleDeletePeriod = (id) => {
         Swal.fire({
             title: 'هل أنت متأكد؟',
             text: "لن تتمكن من التراجع عن الحذف! سيتأثر الجدول الدراسي المرتبط بهذه الحصة.",
@@ -75,303 +144,375 @@ export default function PeriodsIndex({ periods }) {
         }).then((result) => {
             if (result.isConfirmed) {
                 router.delete(route('academic.periods.destroy', id), {
-                    preserveScroll: true,
-                    onError: (errors) => {
-                        if (errors.error) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'عذراً، لا يمكن الحذف',
-                                text: errors.error,
-                                confirmButtonText: 'حسناً',
-                                confirmButtonColor: '#3b82f6',
-                                customClass: {
-                                    confirmButton: 'rounded-xl px-5 py-2.5 font-bold',
-                                    popup: 'rounded-3xl dark:bg-slate-900 dark:border dark:border-slate-800',
-                                    title: 'text-slate-800 dark:text-white',
-                                    htmlContainer: 'text-slate-500 dark:text-slate-400'
-                                }
-                            });
-                        }
-                    }
+                    preserveScroll: true
                 });
             }
         });
     };
 
-    return (
-        <AdminLayout activeMenu="أوقات الحصص">
-            <Head title="الحصص اليومية | النظام الأكاديمي" />
+    // Helpers
+    const formatTime = (timeStr) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        let h = parseInt(hours);
+        const ampm = h >= 12 ? 'م' : 'ص';
+        h = h % 12;
+        h = h ? h : 12;
+        return `${h}:${minutes} ${ampm}`;
+    };
 
-            <div className="max-w-7xl mx-auto space-y-6 animate-fade-in pb-12">
+    const getDuration = (start, end) => {
+        if (!start || !end) return 0;
+        const [h1, m1] = start.split(':').map(Number);
+        const [h2, m2] = end.split(':').map(Number);
+        return (h2 * 60 + m2) - (h1 * 60 + m1);
+    };
+
+    const allGrades = useMemo(() => {
+        return sections.flatMap(section => 
+            section.grades.map(grade => ({
+                value: grade.id,
+                label: `${section.name} - ${grade.name}`
+            }))
+        );
+    }, [sections]);
+
+    const isBreak = (period) => {
+        return period.is_break || period.period_name.includes('راحة') || period.period_name.includes('فسحة') || period.period_name.includes('إفطار');
+    };
+
+    // Filter periods by active group
+    const filteredPeriods = useMemo(() => {
+        if (activeGroupId === null) {
+            // General / All
+            return periods; 
+        }
+        return periods.filter(p => p.timetable_group_id === activeGroupId);
+    }, [periods, activeGroupId]);
+
+    return (
+        <AdminLayout activeMenu="الحصص اليومية">
+            <Head title="توزيع الحصص والمجموعات | النظام الإداري" />
+
+            <div className="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                    
-                    {/* Fine abstract geometric background lines */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                         <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
-                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
-                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
-                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
-                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
                         </svg>
                     </div>
-
-                    <div className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+                    
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30">
-                                <Clock size={28} strokeWidth={1.5} />
+                            <div className="w-14 h-14 rounded-2xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                                <FolderKanban size={28} />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">جدولة الحصص اليومية</h1>
-                                <p className="text-primary-700/80 dark:text-primary-300/80 text-sm mt-1 font-semibold">إعداد توقيتات الحصص (مثل: الحصة الأولى، الفسحة)</p>
+                                <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                                    المجموعات والحصص اليومية
+                                </h1>
+                                <p className="text-primary-700/80 dark:text-primary-300/80 mt-1 text-sm font-bold">
+                                    نظّم الجداول بإنشاء مجموعات للترتيب، ثم أضف الحصص وفترات الراحة داخل كل مجموعة.
+                                </p>
                             </div>
                         </div>
 
-                        <button
-                            onClick={() => openModal()}
-                            className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-primary-500/30 transition-all shrink-0 w-full sm:w-auto"
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            <button 
+                                onClick={() => openGroupModal()}
+                                className="flex-1 md:flex-none px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
+                            >
+                                <Plus size={18} /> مجموعة جديدة
+                            </button>
+                            <button 
+                                onClick={() => openPeriodModal()}
+                                className="flex-1 md:flex-none px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-primary-500/20 active:scale-95"
+                            >
+                                <Plus size={18} /> إضافة حصة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Groups Selection Row */}
+                <div className="flex overflow-x-auto pb-4 pt-2 -mx-4 px-4 sm:mx-0 sm:px-0 gap-4 snap-x hide-scrollbar">
+                    {/* General / All Group Card */}
+                    <div 
+                        onClick={() => setActiveGroupId(null)}
+                        className={`snap-start shrink-0 w-64 p-5 rounded-3xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-4 ${
+                            activeGroupId === null 
+                                ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20 dark:border-primary-500 shadow-sm' 
+                                : 'bg-white border-slate-100 hover:border-primary-200 dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700'
+                        }`}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activeGroupId === null ? 'bg-primary-500 text-white' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                <List size={20} />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-lg text-slate-800 dark:text-white">الكل (عام)</h3>
+                                <p className="text-xs font-bold text-slate-500">الحصص المشتركة وغير المرتبطة</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                            <span>عرض جميع الحصص</span>
+                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">{periods.length}</span>
+                        </div>
+                    </div>
+
+                    {/* Dynamic Group Cards */}
+                    {groups.map(group => (
+                        <div 
+                            key={group.id}
+                            onClick={() => setActiveGroupId(group.id)}
+                            className={`relative group snap-start shrink-0 w-64 p-5 rounded-3xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-4 ${
+                                activeGroupId === group.id 
+                                    ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20 dark:border-primary-500 shadow-sm' 
+                                    : 'bg-white border-slate-100 hover:border-primary-200 dark:bg-slate-900 dark:border-slate-800 dark:hover:border-slate-700'
+                            }`}
                         >
-                            <Plus size={18} /> <span>إضافة حصة / فترة</span>
+                            {/* Group Actions */}
+                            <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                <button onClick={(e) => { e.stopPropagation(); openGroupModal(group); }} className="w-7 h-7 bg-white dark:bg-slate-800 text-sky-500 rounded-full flex items-center justify-center shadow-sm hover:bg-sky-50">
+                                    <Edit size={14} />
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); handleDeleteGroup(group.id); }} className="w-7 h-7 bg-white dark:bg-slate-800 text-rose-500 rounded-full flex items-center justify-center shadow-sm hover:bg-rose-50">
+                                    <Trash2 size={14} />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${activeGroupId === group.id ? 'bg-primary-500 text-white' : 'bg-indigo-50 text-indigo-500 dark:bg-indigo-500/10'}`}>
+                                    <Users size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-lg text-slate-800 dark:text-white truncate max-w-[120px]">{group.name}</h3>
+                                    <p className="text-xs font-bold text-slate-500 truncate max-w-[120px]">
+                                        {group.grades?.map(g => g.name).join(', ') || 'لا توجد فصول'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                                <span>{group.grades?.length} فصل مرتبط</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Toolbar */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-4 flex justify-between">
+                    <div className="font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                        <Clock size={18} />
+                        {activeGroupId === null ? 'جميع الحصص' : `حصص مجموعة: ${groups.find(g => g.id === activeGroupId)?.name}`}
+                    </div>
+                    <div className="flex bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+                        <button onClick={() => setViewMode('timeline')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${viewMode === 'timeline' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                            <List size={16} className="inline-block mr-1" /> مسار
+                        </button>
+                        <button onClick={() => setViewMode('table')} className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${viewMode === 'table' ? 'bg-white dark:bg-slate-700 text-primary-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                            <Table2 size={16} className="inline-block mr-1" /> جدول
                         </button>
                     </div>
                 </div>
 
-                <div className="flex justify-end z-20 relative">
-                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-dark-800 p-1.5 rounded-2xl w-full sm:w-auto justify-center sm:justify-start shadow-sm border border-slate-200 dark:border-dark-700">
-                        <button 
-                            onClick={() => setViewMode('timeline')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                                viewMode === 'timeline' 
-                                ? 'bg-white dark:bg-dark-700 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200 dark:border-dark-600' 
-                                : 'text-slate-500 hover:text-slate-700 dark:text-dark-400 dark:hover:text-dark-200'
-                            }`}
-                        >
-                            <List size={18} />
-                            <span className="hidden sm:inline">مسار زمني</span>
-                        </button>
-                        <button 
-                            onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${
-                                viewMode === 'table' 
-                                ? 'bg-white dark:bg-dark-700 text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200 dark:border-dark-600' 
-                                : 'text-slate-500 hover:text-slate-700 dark:text-dark-400 dark:hover:text-dark-200'
-                            }`}
-                        >
-                            <Table2 size={18} />
-                            <span className="hidden sm:inline">جدول تفصيلي</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Periods Timeline View */}
-                <div className="bg-white/50 dark:bg-dark-900/40 backdrop-blur-xl border border-dark-100 dark:border-dark-800 rounded-[2rem] p-6 md:p-10 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl pointer-events-none" />
-                    
-                    {periods.length > 0 ? (
-                        viewMode === 'timeline' ? (
-                            <div className="relative max-w-4xl mx-auto before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-dark-200 before:via-primary-300 before:to-dark-200 dark:before:from-dark-700 dark:before:via-primary-700 dark:before:to-dark-700">
-                                {periods.map((period, idx) => {
-                                    const start = new Date(`2000-01-01T${period.start_time}`);
-                                    const end = new Date(`2000-01-01T${period.end_time}`);
-                                    const diffMins = Math.round((end - start) / 60000);
-                                    const isBreak = period.period_name.includes('فسحة') || period.period_name.includes('استراحة') || period.period_name.includes('صلاة');
-                                    
-                                    return (
-                                        <div key={period.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group mb-8 transition-all hover:-translate-y-1">
-                                            
-                                            {/* Timeline Dot */}
-                                            <div className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-dark-900 bg-white dark:bg-dark-800 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 relative z-10 ${isBreak ? 'text-amber-500' : 'text-primary-500'}`}>
-                                                {isBreak ? <Coffee size={16} /> : <BookOpen size={16} />}
+                {/* Periods List */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                    {filteredPeriods.length > 0 ? (
+                        viewMode === 'table' ? (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-right">
+                                    <thead className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                                        <tr>
+                                            <th className="px-6 py-4 font-black">اسم الحصة</th>
+                                            <th className="px-6 py-4 font-black">من</th>
+                                            <th className="px-6 py-4 font-black">إلى</th>
+                                            <th className="px-6 py-4 font-black text-center">المدة</th>
+                                            <th className="px-6 py-4 font-black text-center">المجموعة</th>
+                                            <th className="px-6 py-4 font-black text-center">الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                                        {filteredPeriods.map((period) => (
+                                            <tr key={period.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 group ${period.is_break ? 'bg-amber-50/20' : ''}`}>
+                                                <td className="px-6 py-4">
+                                                    <span className="font-bold flex items-center gap-2">
+                                                        {period.period_name}
+                                                        {period.is_break && <Coffee size={14} className="text-amber-500" />}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 font-bold text-emerald-600">{formatTime(period.start_time)}</td>
+                                                <td className="px-6 py-4 font-bold text-rose-600">{formatTime(period.end_time)}</td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold">
+                                                        {getDuration(period.start_time, period.end_time)} د
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    {period.group ? (
+                                                        <span className="px-3 py-1 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 rounded-lg text-xs font-black">
+                                                            {period.group.name}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-black">
+                                                            بدون مجموعة
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button onClick={() => openPeriodModal(period)} className="mx-1 text-sky-500 hover:text-sky-700"><Edit size={16} /></button>
+                                                    <button onClick={() => handleDeletePeriod(period.id)} className="mx-1 text-rose-500 hover:text-rose-700"><Trash2 size={16} /></button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="p-6 md:p-10 relative">
+                                <div className="absolute top-10 bottom-10 right-10 md:right-16 w-0.5 bg-slate-100 dark:bg-slate-800 hidden sm:block"></div>
+                                <div className="space-y-6 relative z-10">
+                                    {filteredPeriods.map((period) => (
+                                        <div key={period.id} className="flex sm:flex-row flex-col sm:items-center gap-4 sm:gap-8 group">
+                                            <div className="w-full sm:w-32 flex sm:flex-col justify-between sm:justify-center items-center sm:items-end shrink-0 order-2 sm:order-1 font-bold">
+                                                <span className="text-slate-700 dark:text-slate-300">{formatTime(period.start_time)}</span>
+                                                <div className="w-0.5 h-6 bg-slate-200 dark:bg-slate-700 mx-auto hidden sm:block"></div>
+                                                <span className="text-slate-500 text-sm">{formatTime(period.end_time)}</span>
                                             </div>
-
-                                            {/* Content Card */}
-                                            <div className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-5 rounded-2xl border ${isBreak ? 'bg-amber-50/50 dark:bg-amber-500/5 border-amber-200/50 dark:border-amber-500/20' : 'bg-white dark:bg-dark-800 border-dark-100 dark:border-dark-700'} shadow-sm hover:shadow-md transition-shadow relative group-hover:border-primary-300 dark:group-hover:border-primary-700`}>
-                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-black ${isBreak ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400' : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'}`}>
-                                                            {idx + 1}
-                                                        </span>
-                                                        <h3 className="font-black text-lg text-dark-900 dark:text-white">{period.period_name}</h3>
-                                                    </div>
-                                                    <div className="flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => openModal(period)} className="p-2 text-dark-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-lg transition-all" title="تعديل">
-                                                            <Edit size={16} />
-                                                        </button>
-                                                        <button onClick={() => handleDelete(period.id)} className="p-2 text-dark-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all" title="حذف">
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
+                                            <div className="hidden sm:flex w-10 items-center justify-center order-2">
+                                                <div className={`w-10 h-10 rounded-full border-4 border-white flex items-center justify-center z-10 shadow-sm ${isBreak(period) ? 'bg-amber-100 text-amber-500' : 'bg-primary-100 text-primary-500'}`}>
+                                                    {isBreak(period) ? <Coffee size={16} /> : <BookOpen size={16} />}
                                                 </div>
-                                                
-                                                <div className="flex flex-wrap items-center gap-4 text-sm font-bold">
-                                                    <div className="flex items-center gap-1.5 text-dark-600 dark:text-dark-300 bg-dark-50 dark:bg-dark-900/50 px-3 py-1.5 rounded-lg border border-dark-100 dark:border-dark-800" dir="ltr">
-                                                        <Clock size={14} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
-                                                        {period.start_time ? period.start_time.substring(0, 5) : ''}
+                                            </div>
+                                            <div className="flex-1 order-1 sm:order-3">
+                                                <div className={`p-5 rounded-2xl border flex justify-between items-center ${isBreak(period) ? 'bg-amber-50/50 border-amber-100' : 'bg-white border-slate-100 dark:bg-slate-800/50'}`}>
+                                                    <div>
+                                                        <h3 className="text-lg font-black">{period.period_name}</h3>
+                                                        <p className="text-sm font-bold text-slate-500">المدة: {getDuration(period.start_time, period.end_time)} دقيقة - {period.group ? period.group.name : 'بدون مجموعة'}</p>
                                                     </div>
-                                                    <div className="text-dark-300 dark:text-dark-600 font-normal">إلى</div>
-                                                    <div className="flex items-center gap-1.5 text-dark-600 dark:text-dark-300 bg-dark-50 dark:bg-dark-900/50 px-3 py-1.5 rounded-lg border border-dark-100 dark:border-dark-800" dir="ltr">
-                                                        <Clock size={14} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
-                                                        {period.end_time ? period.end_time.substring(0, 5) : ''}
-                                                    </div>
-                                                    
-                                                    <div className="mr-auto mt-2 sm:mt-0">
-                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black ${isBreak ? 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' : 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30'}`}>
-                                                            {diffMins} دقيقة
-                                                        </span>
+                                                    <div className="flex gap-2">
+                                                        <button onClick={() => openPeriodModal(period)} className="w-10 h-10 rounded-xl bg-slate-50 border flex items-center justify-center hover:bg-sky-50 text-slate-500"><Edit size={16} /></button>
+                                                        <button onClick={() => handleDeletePeriod(period.id)} className="w-10 h-10 rounded-xl bg-slate-50 border flex items-center justify-center hover:bg-rose-50 text-slate-500"><Trash2 size={16} /></button>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div className="relative z-10 w-full overflow-x-auto bg-white dark:bg-dark-800/80 rounded-2xl border border-dark-100 dark:border-dark-700 shadow-sm">
-                                <table className="w-full text-right border-collapse whitespace-nowrap">
-                                    <thead>
-                                        <tr className="bg-dark-50 dark:bg-dark-900/50 border-b border-dark-100 dark:border-dark-700 text-dark-500 dark:text-dark-400 text-sm font-black">
-                                            <th className="py-4 px-6 text-center w-16">#</th>
-                                            <th className="py-4 px-6">النوع / المسمى</th>
-                                            <th className="py-4 px-6">وقت البدء</th>
-                                            <th className="py-4 px-6">وقت الانتهاء</th>
-                                            <th className="py-4 px-6">المدة</th>
-                                            <th className="py-4 px-6 text-left w-32">إجراءات</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-dark-100 dark:divide-dark-800/50">
-                                        {periods.map((period, idx) => {
-                                            const start = new Date(`2000-01-01T${period.start_time}`);
-                                            const end = new Date(`2000-01-01T${period.end_time}`);
-                                            const diffMins = Math.round((end - start) / 60000);
-                                            const isBreak = period.period_name.includes('فسحة') || period.period_name.includes('استراحة') || period.period_name.includes('صلاة');
-                                            
-                                            return (
-                                                <tr key={period.id} className={`hover:bg-dark-50/50 dark:hover:bg-dark-800/30 transition-colors group ${isBreak ? 'bg-amber-50/20 dark:bg-amber-500/5' : ''}`}>
-                                                    <td className="py-4 px-6 text-center">
-                                                        <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-sm font-black ${isBreak ? 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400' : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'}`}>
-                                                            {idx + 1}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-4 px-6">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${isBreak ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-500 border-amber-200 dark:border-amber-800' : 'bg-dark-50 dark:bg-dark-800 text-primary-500 border-dark-200 dark:border-dark-700'}`}>
-                                                                {isBreak ? <Coffee size={20} /> : <BookOpen size={20} />}
-                                                            </div>
-                                                            <span className="font-black text-dark-900 dark:text-white text-base">{period.period_name}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 px-6">
-                                                        <div className="flex items-center gap-2 text-dark-600 dark:text-dark-300 font-bold" dir="ltr">
-                                                            <Clock size={16} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
-                                                            {period.start_time ? period.start_time.substring(0, 5) : ''}
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 px-6">
-                                                        <div className="flex items-center gap-2 text-dark-600 dark:text-dark-300 font-bold" dir="ltr">
-                                                            <Clock size={16} className={isBreak ? 'text-amber-500' : 'text-primary-500'} />
-                                                            {period.end_time ? period.end_time.substring(0, 5) : ''}
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-4 px-6">
-                                                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-black ${isBreak ? 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30' : 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30'}`}>
-                                                            {diffMins} دقيقة
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-4 px-6 text-left">
-                                                        <div className="flex items-center justify-end gap-2">
-                                                            <button onClick={() => openModal(period)} className="p-2 text-dark-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/10 rounded-xl transition-all" title="تعديل">
-                                                                <Edit size={18} />
-                                                            </button>
-                                                            <button onClick={() => handleDelete(period.id)} className="p-2 text-dark-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all" title="حذف">
-                                                                <Trash2 size={18} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                                    ))}
+                                </div>
                             </div>
                         )
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-20 text-center relative z-10">
-                            <div className="w-24 h-24 bg-dark-50 dark:bg-dark-800/50 rounded-full flex items-center justify-center mb-6 border border-dark-100 dark:border-dark-700 relative shadow-inner">
-                                <Clock size={40} className="text-dark-300 dark:text-dark-600" />
-                                <div className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full border-2 border-white dark:border-dark-900" />
-                            </div>
-                            <h3 className="text-dark-900 dark:text-white font-black text-xl mb-3">لم يتم إعداد أوقات الحصص بعد</h3>
-                            <p className="text-dark-500 dark:text-dark-400 max-w-sm mx-auto font-semibold leading-relaxed">
-                                قم بإضافة الحصص والفترات الدراسية (مثل الحصة الأولى، الفسحة) لبناء مخطط زمني لليوم الدراسي بشكل منظم.
-                            </p>
+                        <div className="py-20 text-center">
+                            <Clock size={48} className="mx-auto text-slate-300 mb-4" />
+                            <h3 className="text-xl font-bold text-slate-700 mb-2">لا توجد حصص هنا</h3>
+                            <button onClick={() => openPeriodModal()} className="mt-4 px-6 py-2 bg-primary-100 text-primary-700 font-bold rounded-xl inline-flex items-center gap-2">
+                                <Plus size={18} /> أضف حصة
+                            </button>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Create/Edit Modal */}
-            <Modal show={isModalOpen} onClose={closeModal} maxWidth="md">
-                <div className="relative bg-white dark:bg-dark-900 rounded-[2rem] shadow-2xl w-full overflow-hidden border border-dark-100 dark:border-dark-800 transform transition-all">
-                    <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-500 via-primary-400 to-primary-600" />
-                    <div className="p-6 md:p-8">
-                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-dark-100 dark:border-dark-800">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400 flex items-center justify-center shadow-inner">
-                                    <Clock size={24} />
-                                </div>
-                                <h2 className="text-xl font-black text-dark-900 dark:text-white">
-                                    {editingPeriod ? 'تعديل توقيت' : 'إضافة توقيت جديد'}
-                                </h2>
-                            </div>
-                            <button onClick={closeModal} className="w-10 h-10 flex items-center justify-center rounded-xl bg-dark-50 dark:bg-dark-800 text-dark-400 hover:text-dark-600 dark:hover:text-dark-300 hover:bg-dark-100 dark:hover:bg-dark-700 transition-colors">
-                                <X size={20} />
+            {/* Modal for Group */}
+            <Modal show={isGroupModalOpen} onClose={closeGroupModal} maxWidth="md">
+                <div className="p-6">
+                    <h2 className="text-xl font-black text-slate-800 mb-6">{editingGroup ? 'تعديل المجموعة' : 'إضافة مجموعة جدول جديدة'}</h2>
+                    <form onSubmit={handleGroupSubmit} className="space-y-5">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1.5">اسم المجموعة <span className="text-rose-500">*</span></label>
+                            <input
+                                type="text"
+                                value={groupForm.data.name}
+                                onChange={(e) => groupForm.setData('name', e.target.value)}
+                                className="w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl px-4 py-2 font-bold focus:ring-primary-500"
+                                placeholder="مثال: مسار الابتدائية"
+                                required
+                            />
+                            {groupForm.errors.name && <p className="text-rose-500 text-xs mt-1">{groupForm.errors.name}</p>}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1.5">الفصول المرتبطة <span className="text-rose-500">*</span></label>
+                            <SelectInput
+                                isMulti={true}
+                                value={groupForm.data.grade_ids}
+                                onChange={(val) => groupForm.setData('grade_ids', val)}
+                                className="w-full font-bold"
+                                options={allGrades}
+                                placeholder="اختر الفصول..."
+                            />
+                            {groupForm.errors.grade_ids && <p className="text-rose-500 text-xs mt-1">{groupForm.errors.grade_ids}</p>}
+                        </div>
+                        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                            <button type="button" onClick={closeGroupModal} className="px-5 py-2.5 font-bold bg-slate-100 rounded-xl">إلغاء</button>
+                            <button type="submit" disabled={groupForm.processing} className="px-6 py-2.5 font-bold text-white bg-primary-600 rounded-xl flex items-center gap-2">
+                                <Save size={18} /> {groupForm.processing ? 'جاري الحفظ...' : 'حفظ'}
                             </button>
                         </div>
+                    </form>
+                </div>
+            </Modal>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Modal for Period */}
+            <Modal show={isPeriodModalOpen} onClose={closePeriodModal} maxWidth="md">
+                <div className="p-6">
+                    <h2 className="text-xl font-black text-slate-800 mb-6">{editingPeriod ? 'تعديل الحصة' : 'إضافة حصة'}</h2>
+                    <form onSubmit={handlePeriodSubmit} className="space-y-5">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1.5">اسم الحصة <span className="text-rose-500">*</span></label>
+                            <input
+                                type="text"
+                                value={periodForm.data.period_name}
+                                onChange={(e) => periodForm.setData('period_name', e.target.value)}
+                                className="w-full border border-slate-200 dark:border-slate-700 dark:bg-slate-900 rounded-xl px-4 py-2 font-bold focus:ring-primary-500"
+                                required
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-black text-dark-800 dark:text-dark-200 mb-2">مسمى الفترة <span className="text-red-500">*</span></label>
-                                <input type="text"
-                                    className={`w-full bg-dark-50 dark:bg-dark-800 border-2 ${errors.period_name ? 'border-red-400 dark:border-red-500/50' : 'border-transparent dark:border-transparent focus:border-primary-500'} rounded-xl px-5 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/20 transition-all text-dark-900 dark:text-white font-bold placeholder:text-dark-400`}
-                                    value={data.period_name} onChange={e => setData('period_name', e.target.value)} placeholder="مثال: الحصة الأولى، الفسحة..." />
-                                {errors.period_name && <p className="text-xs font-bold text-red-500 mt-1.5">{errors.period_name}</p>}
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">من <span className="text-rose-500">*</span></label>
+                                <FlatpickrInput
+                                    type="time"
+                                    value={periodForm.data.start_time}
+                                    onChange={(val) => periodForm.setData('start_time', val)}
+                                    className="w-full text-center"
+                                />
                             </div>
-
-                            <div className="grid grid-cols-2 gap-5">
-                                <div>
-                                    <label className="block text-sm font-black text-dark-800 dark:text-dark-200 mb-2">وقت البدء <span className="text-red-500">*</span></label>
-                                    <FlatpickrInput 
-                                        type="time"
-                                        className={`!bg-dark-50 dark:!bg-dark-800 !border-2 ${errors.start_time ? '!border-red-400 dark:!border-red-500/50' : '!border-transparent dark:!border-transparent focus:!border-primary-500'} !rounded-xl !px-5 !py-3.5 !outline-none focus:!ring-4 focus:!ring-primary-500/20 transition-all text-dark-800 dark:text-white font-bold`}
-                                        value={data.start_time} 
-                                        onChange={val => setData('start_time', val)} 
-                                    />
-                                    {errors.start_time && <p className="text-xs font-bold text-red-500 mt-1.5">{errors.start_time}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-black text-dark-800 dark:text-dark-200 mb-2">وقت الانتهاء <span className="text-red-500">*</span></label>
-                                    <FlatpickrInput 
-                                        type="time"
-                                        className={`!bg-dark-50 dark:!bg-dark-800 !border-2 ${errors.end_time ? '!border-red-400 dark:!border-red-500/50' : '!border-transparent dark:!border-transparent focus:!border-primary-500'} !rounded-xl !px-5 !py-3.5 !outline-none focus:!ring-4 focus:!ring-primary-500/20 transition-all text-dark-800 dark:text-white font-bold`}
-                                        value={data.end_time} 
-                                        onChange={val => setData('end_time', val)} 
-                                    />
-                                    {errors.end_time && <p className="text-xs font-bold text-red-500 mt-1.5">{errors.end_time}</p>}
-                                </div>
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 mb-1.5">إلى <span className="text-rose-500">*</span></label>
+                                <FlatpickrInput
+                                    type="time"
+                                    value={periodForm.data.end_time}
+                                    onChange={(val) => periodForm.setData('end_time', val)}
+                                    className="w-full text-center"
+                                />
                             </div>
-
-                            <div className="flex justify-end gap-3 pt-6 mt-8 border-t border-dark-100 dark:border-dark-800">
-                                <button type="button" onClick={closeModal} className="px-6 py-3.5 text-sm font-bold text-dark-600 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800 rounded-xl transition-colors">
-                                    إلغاء
-                                </button>
-                                <button type="submit" disabled={processing} className="flex items-center gap-2 bg-gradient-to-l from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white px-8 py-3.5 rounded-xl text-sm font-black shadow-lg shadow-primary-500/30 transition-all active:scale-95 disabled:opacity-70">
-                                    {processing ? 'جاري الحفظ...' : <><Save size={18} /> حفظ التوقيت</>}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1.5">المجموعة (اختياري)</label>
+                            <SelectInput
+                                value={periodForm.data.timetable_group_id}
+                                onChange={(val) => periodForm.setData('timetable_group_id', val)}
+                                options={[{ value: '', label: 'بدون مجموعة (تطبق على الكل)' }, ...groups.map(g => ({ value: g.id, label: g.name }))]}
+                                className="w-full font-bold"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="is_break"
+                                checked={periodForm.data.is_break}
+                                onChange={(e) => periodForm.setData('is_break', e.target.checked)}
+                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-5 h-5 cursor-pointer"
+                            />
+                            <label htmlFor="is_break" className="text-sm font-bold text-slate-700 cursor-pointer">هذه فترة راحة (فسحة/إفطار)</label>
+                        </div>
+                        <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                            <button type="button" onClick={closePeriodModal} className="px-5 py-2.5 font-bold bg-slate-100 rounded-xl">إلغاء</button>
+                            <button type="submit" disabled={periodForm.processing} className="px-6 py-2.5 font-bold text-white bg-primary-600 rounded-xl flex items-center gap-2">
+                                <Save size={18} /> {periodForm.processing ? 'جاري الحفظ...' : 'حفظ'}
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </Modal>
         </AdminLayout>

@@ -282,7 +282,7 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                                             {periods.map(period => {
                                                 const slot = getSlotData(day, period.id);
                                                 const periodName = period.period_name || '';
-                                                const isBreak = periodName.includes('فسحة') || periodName.includes('استراحة') || periodName.includes('صلاة');
+                                                const isBreak = period.is_break || periodName.includes('فسحة') || periodName.includes('استراحة') || periodName.includes('صلاة');
                                                 
                                                 if (isBreak) {
                                                     return (

@@ -108,15 +108,25 @@ function ActionMenu({ subject, onEdit, onDelete }) {
 }
 
 export default function SubjectsIndex({ subjects, sections, branches = [], isAdmin = false, filters }) {
-    const { flash, errors } = usePage().props;
+    const { flash } = usePage().props;
     const [viewMode, setViewMode] = useState('cards');
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
 
     // --- Modal States ---
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const { data: form, setData: setForm, post, put, processing, errors, reset, clearErrors } = useForm({
+        name: '',
+        icon: 'BookOpen',
+        branch_id: '',
+        grade_ids: [],
+        weekly_oral_max: 5,
+        weekly_homework_max: 5,
+        monthly_behavior_max: 10,
+        monthly_exam_max: 50,
+        semester_aggregate_max: 20,
+        final_exam_max: 80,
+    });
     const [editingItem, setEditingItem] = useState(null);
-    const [form, setForm] = useState({ name: '', icon: 'BookOpen', branch_id: '', grade_ids: [] });
-    const [processing, setProcessing] = useState(false);
 
     // Handle Search debounce
     useEffect(() => {
@@ -132,15 +142,22 @@ export default function SubjectsIndex({ subjects, sections, branches = [], isAdm
     const openModal = (subject = null) => {
         setEditingItem(subject);
         if (subject) {
-            setForm({ 
-                name: subject.name, 
+            setForm({
+                name: subject.name,
                 icon: subject.icon || 'BookOpen',
                 branch_id: subject.branch_id || '',
-                grade_ids: subject.grades.map(g => g.id) 
+                grade_ids: subject.grades.map(g => g.id),
+                weekly_oral_max: subject.weekly_oral_max ?? 5,
+                weekly_homework_max: subject.weekly_homework_max ?? 5,
+                monthly_behavior_max: subject.monthly_behavior_max ?? 10,
+                monthly_exam_max: subject.monthly_exam_max ?? 50,
+                semester_aggregate_max: subject.semester_aggregate_max ?? 20,
+                final_exam_max: subject.final_exam_max ?? 80,
             });
         } else {
-            setForm({ name: '', icon: 'BookOpen', branch_id: '', grade_ids: [] });
+            reset();
         }
+        clearErrors();
         setIsModalOpen(true);
     };
 
@@ -499,6 +516,78 @@ export default function SubjectsIndex({ subjects, sections, branches = [], isAdm
                                     {getSubjectIcon(icon.name)}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">درجة الشفهي الأسبوعية</label>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                step="0.5" 
+                                value={form.weekly_oral_max} 
+                                onChange={e => setForm({...form, weekly_oral_max: e.target.value})} 
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-800 dark:text-white font-bold" 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">درجة الواجبات الأسبوعية</label>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                step="0.5" 
+                                value={form.weekly_homework_max} 
+                                onChange={e => setForm({...form, weekly_homework_max: e.target.value})} 
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-800 dark:text-white font-bold" 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">درجة السلوك الشهرية</label>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                step="0.5" 
+                                value={form.monthly_behavior_max} 
+                                onChange={e => setForm({...form, monthly_behavior_max: e.target.value})} 
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-800 dark:text-white font-bold" 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">درجة الاختبار الشهري</label>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                step="0.5" 
+                                value={form.monthly_exam_max} 
+                                onChange={e => setForm({...form, monthly_exam_max: e.target.value})} 
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-800 dark:text-white font-bold" 
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">درجة أعمال السنة الإجمالية</label>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                step="0.5" 
+                                value={form.semester_aggregate_max} 
+                                onChange={e => setForm({...form, semester_aggregate_max: e.target.value})} 
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-800 dark:text-white font-bold" 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">درجة الاختبار النهائي</label>
+                            <input 
+                                type="number" 
+                                min="0" 
+                                step="0.5" 
+                                value={form.final_exam_max} 
+                                onChange={e => setForm({...form, final_exam_max: e.target.value})} 
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-slate-800 dark:text-white font-bold" 
+                            />
                         </div>
                     </div>
 

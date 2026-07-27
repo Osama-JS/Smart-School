@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Academic;
 use App\Http\Controllers\Controller;
 use App\Models\MonthlyGrade;
 use App\Models\ResultPeriod;
-use App\Models\SubjectGradeSetting;
 use App\Models\Division;
 use App\Models\DivisionSubjectTeacher;
 use App\Models\Enrollment;
@@ -28,7 +27,12 @@ class MonthlyGradeController extends Controller implements \Illuminate\Routing\C
         $isTeacher = $user && $user->role && $user->role->name === 'معلم';
         $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير النظام', 'مدير الفرع']);
 
-        $periods = ResultPeriod::where('branch_id', $user->branch_id)->orderBy('fill_start_date', 'desc')->get();
+        $periods = ResultPeriod::where('branch_id', $user->branch_id)
+            ->where(function($q) {
+                $q->where('period_type', 'monthly')->orWhereNull('period_type');
+            })
+            ->orderBy('fill_start_date', 'desc')
+            ->get();
 
         $divisionsQuery = Division::with(['grade', 'branch'])->where('branch_id', $user->branch_id);
         
@@ -84,17 +88,15 @@ class MonthlyGradeController extends Controller implements \Illuminate\Routing\C
             }
         }
 
-        // Get Grade Settings for this subject
-        $gradeSetting = SubjectGradeSetting::where('subject_id', $subject_id)->first();
-        if (!$gradeSetting || empty($gradeSetting->criteria_weights)) {
-            return redirect()->back()->with('error', 'لم يتم ضبط إعدادات توزيع الدرجات لهذه المادة. يرجى التواصل مع الإدارة.');
-        }
+        // Get Grade Settings for this subject from the subject itself
+        $subject = \App\Models\Subject::find($subject_id);
+        $gradeSetting = $subject;
 
         // Get Enrolled Students in this Division
-        $enrollments = Enrollment::with('student')
+        $enrollments = Enrollment::with('student.user')
             ->where('division_id', $division->id)
             ->where('academic_year_id', $period->semester->academic_year_id) // Match the current year of the period
-            ->where('status', 'نشط')
+            ->where('status', 'active')
             ->get();
 
         // Get Existing Grades
@@ -105,7 +107,7 @@ class MonthlyGradeController extends Controller implements \Illuminate\Routing\C
 
         return Inertia::render('Teacher/MonthlyGrades/GradeEntry', [
             'division' => $division->load('grade'),
-            'subject' => \App\Models\Subject::find($subject_id),
+            'subject' => $subject,
             'period' => $period,
             'gradeSetting' => $gradeSetting,
             'enrollments' => $enrollments,
@@ -113,12 +115,11 @@ class MonthlyGradeController extends Controller implements \Illuminate\Routing\C
         ]);
     }
 
-    public function storeGrades(Request $request, Division $division, $subject_id, ResultPeriod $period)
+    private function checkPermissionAndPeriod(Request $request, Division $division, $subject_id, ResultPeriod $period)
     {
         $user = auth()->user();
         $isTeacher = $user && $user->role && $user->role->name === 'معلم';
 
-        // Check if teacher is assigned to this division and subject
         if ($isTeacher) {
             $isAssigned = DivisionSubjectTeacher::where('division_id', $division->id)
                 ->where('subject_id', $subject_id)
@@ -129,22 +130,49 @@ class MonthlyGradeController extends Controller implements \Illuminate\Routing\C
             }
         }
 
-        // Check if period is open for grading
         $today = today();
         if ($today < $period->fill_start_date || $today > $period->fill_end_date) {
-            return redirect()->back()->with('error', 'فترة الرصد مغلقة أو غير متاحة حالياً.');
+            return 'فترة الرصد مغلقة أو غير متاحة حالياً.';
+        }
+
+        return null; // No errors
+    }
+
+    public function saveWeeklyScores(Request $request, Division $division, $subject_id, ResultPeriod $period)
+    {
+        if ($error = $this->checkPermissionAndPeriod($request, $division, $subject_id, $period)) {
+            return redirect()->back()->with('error', $error);
+        }
+
+        $weekKey = $request->input('week_key');
+        if ($weekKey && $period->weeks_dates && is_array($period->weeks_dates)) {
+            preg_match('/week_(\d+)/', $weekKey, $matches);
+            if (isset($matches[1])) {
+                $weekIndex = intval($matches[1]) - 1;
+                $weekData = $period->weeks_dates[$weekIndex] ?? null;
+                if ($weekData && isset($weekData['start_date'])) {
+                    if (today() < \Carbon\Carbon::parse($weekData['start_date'])) {
+                        return redirect()->back()->with('error', 'لا يمكن إدخال درجات هذا الأسبوع لأنه لم يبدأ بعد.');
+                    }
+                }
+            }
         }
 
         $validated = $request->validate([
+            'week_key' => 'required|string',
             'grades' => 'required|array',
             'grades.*.enrollment_id' => 'required|exists:enrollments,id',
-            'grades.*.scores' => 'required|array',
+            'grades.*.oral' => 'required|numeric|min:0',
+            'grades.*.homework' => 'required|numeric|min:0',
+            'grades.*.note' => 'nullable|string|max:500',
         ]);
+
+        $weekKey = $validated['week_key'];
 
         DB::beginTransaction();
         try {
             foreach ($validated['grades'] as $gradeData) {
-                MonthlyGrade::updateOrCreate(
+                $monthlyGrade = MonthlyGrade::firstOrCreate(
                     [
                         'enrollment_id' => $gradeData['enrollment_id'],
                         'period_id' => $period->id,
@@ -152,15 +180,84 @@ class MonthlyGradeController extends Controller implements \Illuminate\Routing\C
                     ],
                     [
                         'semester_id' => $period->semester_id,
-                        'scores' => $gradeData['scores']
+                        'weekly_scores' => [],
                     ]
                 );
+
+                if ($monthlyGrade->is_submitted) {
+                    continue; // Skip if already submitted
+                }
+
+                $weeklyScores = $monthlyGrade->weekly_scores ?? [];
+                $weeklyScores[$weekKey] = [
+                    'oral' => (float)$gradeData['oral'],
+                    'homework' => (float)$gradeData['homework'],
+                    'note' => $gradeData['note'] ?? null,
+                ];
+
+                $monthlyGrade->update(['weekly_scores' => $weeklyScores]);
             }
             DB::commit();
-            return redirect()->back()->with('success', 'تم رصد وحفظ الدرجات بنجاح');
+            return redirect()->back()->with('success', 'تم حفظ درجات الأسبوع بنجاح');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'حدث خطأ أثناء حفظ الدرجات: ' . $e->getMessage());
+        }
+    }
+
+    public function submitMonth(Request $request, Division $division, $subject_id, ResultPeriod $period)
+    {
+        if ($error = $this->checkPermissionAndPeriod($request, $division, $subject_id, $period)) {
+            return redirect()->back()->with('error', $error);
+        }
+
+        $validated = $request->validate([
+            'grades' => 'required|array',
+            'grades.*.enrollment_id' => 'required|exists:enrollments,id',
+            'grades.*.behavior' => 'required|numeric|min:0',
+            'grades.*.monthly_exam' => 'required|numeric|min:0',
+            'grades.*.note' => 'nullable|string|max:500',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            foreach ($validated['grades'] as $gradeData) {
+                $monthlyGrade = MonthlyGrade::firstOrCreate(
+                    [
+                        'enrollment_id' => $gradeData['enrollment_id'],
+                        'period_id' => $period->id,
+                        'subject_id' => $subject_id,
+                    ],
+                    [
+                        'semester_id' => $period->semester_id,
+                    ]
+                );
+
+                if ($monthlyGrade->is_submitted) {
+                    continue; // Already submitted
+                }
+
+                $finalScores = $monthlyGrade->buildFinalScores(
+                    (float)$gradeData['behavior'],
+                    (float)$gradeData['monthly_exam']
+                );
+                
+                if (isset($gradeData['note'])) {
+                    $finalScores['note'] = $gradeData['note'];
+                }
+
+                $monthlyGrade->update([
+                    'scores' => $finalScores,
+                    'is_submitted' => true,
+                    'submitted_at' => now(),
+                    'submitted_by' => auth()->id(),
+                ]);
+            }
+            DB::commit();
+            return redirect()->back()->with('success', 'تم رفع درجات الشهر النهائي وقفلها بنجاح.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'حدث خطأ أثناء الرفع: ' . $e->getMessage());
         }
     }
 }

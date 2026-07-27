@@ -12,13 +12,14 @@ class ResultPeriod extends Model
     use \App\Traits\LogsActivity;
 
     protected $fillable = [
-        'semester_id', 'branch_id', 'month_name',
-        'fill_start_date', 'fill_end_date'
+        'semester_id', 'branch_id', 'month_name', 'period_type',
+        'fill_start_date', 'fill_end_date', 'weeks_dates'
     ];
 
     protected $casts = [
         'fill_start_date' => 'date',
         'fill_end_date'   => 'date',
+        'weeks_dates'     => 'array',
     ];
 
     // ── العلاقات ──

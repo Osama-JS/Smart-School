@@ -138,6 +138,11 @@ Route::middleware('auth')->group(function () {
             'update'  => 'academic.periods.update',
             'destroy' => 'academic.periods.destroy',
         ])->except(['create', 'edit', 'show']);
+        
+        // Timetable Groups
+        Route::post('/academic/timetable-groups', [\App\Http\Controllers\Academic\TimetableGroupController::class, 'store'])->name('academic.timetable-groups.store');
+        Route::put('/academic/timetable-groups/{group}', [\App\Http\Controllers\Academic\TimetableGroupController::class, 'update'])->name('academic.timetable-groups.update');
+        Route::delete('/academic/timetable-groups/{group}', [\App\Http\Controllers\Academic\TimetableGroupController::class, 'destroy'])->name('academic.timetable-groups.destroy');
 
         Route::get('/academic/timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'index'])->name('academic.timetable');
         Route::post('/academic/timetable/assign', [\App\Http\Controllers\Academic\TimetableController::class, 'assign'])->name('academic.timetable.assign');
@@ -396,7 +401,16 @@ Route::middleware('auth')->group(function () {
         // Monthly Grades for Teachers & Admin
         Route::get('/academic/monthly-grades', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'index'])->name('academic.monthly-grades.index');
         Route::get('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'gradeEntry'])->name('academic.monthly-grades.entry');
-        Route::post('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'storeGrades'])->name('academic.monthly-grades.store');
+        Route::post('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}/save-weekly', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'saveWeeklyScores'])->name('academic.monthly-grades.save-weekly');
+        Route::post('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}/submit-month', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'submitMonth'])->name('academic.monthly-grades.submit-month');
+
+        // Semester Results
+        Route::get('/academic/semester-results', [\App\Http\Controllers\Academic\SemesterResultController::class, 'index'])->name('academic.semester-results.index');
+        Route::post('/academic/semester-results', [\App\Http\Controllers\Academic\SemesterResultController::class, 'store'])->name('academic.semester-results.store');
+        Route::post('/academic/semester-results/lock', [\App\Http\Controllers\Academic\SemesterResultController::class, 'lock'])->name('academic.semester-results.lock');
+
+        // Student Grade Report
+        Route::get('/academic/students/{student}/grade-report', [\App\Http\Controllers\Academic\StudentGradeReportController::class, 'show'])->name('academic.students.grade-report');
     });
 
     // ── HR Routes ──

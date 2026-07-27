@@ -7,6 +7,8 @@ import { saveAs } from 'file-saver';
 import html2pdf from 'html2pdf.js';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit2, Trash2, FileText, CheckCircle, AlertTriangle, CalendarDays, Search, X, AlertCircle, User, Activity, Clock, FileBadge, Tag, Calendar, CheckSquare, AlignLeft, Shield, Filter, SlidersHorizontal, Download, ChevronDown, RotateCcw } from 'lucide-react';
+import SelectInput from '@/Components/SelectInput';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 
 export default function Violations({ auth, violations, types, students, grades, activeYearId }) {
     const { logo_url } = usePage().props;
@@ -677,30 +679,22 @@ export default function Violations({ auth, violations, types, students, grades, 
                             <div className="space-y-3">
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">الصف والشعبة</label>
                                 <div className="flex gap-2">
-                                    <div className="relative flex-1">
-                                        <select
+                                    <div className="flex-1">
+                                        <SelectInput
+                                            options={[{ value: '', label: 'جميع الصفوف' }, ...(grades?.map(g => ({ value: g.id, label: g.name })) || [])]}
                                             value={selectedGrade}
-                                            onChange={(e) => { setSelectedGrade(e.target.value); setSelectedDivision(''); }}
-                                            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 px-4 pl-8 text-sm focus:ring-2 focus:ring-primary-500/20 text-slate-800 dark:text-white transition-all outline-none appearance-none"
-                                        >
-                                            <option value="">جميع الصفوف</option>
-                                            {grades?.map(grade => <option key={grade.id} value={grade.id}>{grade.name}</option>)}
-                                        </select>
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ChevronDown size={14} className="text-slate-400" /></div>
+                                            onChange={val => { setSelectedGrade(val); setSelectedDivision(''); }}
+                                            className="w-full"
+                                        />
                                     </div>
                                     {selectedGrade && (
-                                        <div className="relative flex-1 animate-fade-in-up">
-                                            <select
+                                        <div className="flex-1 animate-fade-in-up">
+                                            <SelectInput
+                                                options={[{ value: '', label: 'جميع الشعب' }, ...(grades.find(g => g.id.toString() === selectedGrade.toString())?.divisions?.map(d => ({ value: d.id, label: d.name })) || [])]}
                                                 value={selectedDivision}
-                                                onChange={(e) => setSelectedDivision(e.target.value)}
-                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 px-4 pl-8 text-sm focus:ring-2 focus:ring-primary-500/20 text-slate-800 dark:text-white transition-all outline-none appearance-none"
-                                            >
-                                                <option value="">جميع الشعب</option>
-                                                {grades.find(g => g.id.toString() === selectedGrade.toString())?.divisions?.map(division => (
-                                                    <option key={division.id} value={division.id}>{division.name}</option>
-                                                ))}
-                                            </select>
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ChevronDown size={14} className="text-slate-400" /></div>
+                                                onChange={val => setSelectedDivision(val)}
+                                                className="w-full"
+                                            />
                                         </div>
                                     )}
                                 </div>
@@ -709,25 +703,20 @@ export default function Violations({ auth, violations, types, students, grades, 
                             {/* Severity Degree */}
                             <div className="space-y-3">
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">درجة المخالفة</label>
-                                <div className="relative">
-                                    <select
-                                        value={selectedDegree}
-                                        onChange={(e) => setSelectedDegree(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 px-4 pl-8 pr-10 text-sm focus:ring-2 focus:ring-primary-500/20 text-slate-800 dark:text-white transition-all outline-none appearance-none"
-                                    >
-                                        <option value="">جميع الدرجات</option>
-                                        <option value="1">مخالفات الدرجة الأولى</option>
-                                        <option value="2">مخالفات الدرجة الثانية</option>
-                                        <option value="3">مخالفات الدرجة الثالثة</option>
-                                        <option value="4">مخالفات الدرجة الرابعة</option>
-                                        <option value="5">مخالفات الدرجة الخامسة</option>
-                                        <option value="6">مخالفات الدرجة السادسة</option>
-                                    </select>
-                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <AlertTriangle className="w-4 h-4 text-slate-400" />
-                                    </div>
-                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><ChevronDown size={14} className="text-slate-400" /></div>
-                                </div>
+                                <SelectInput
+                                    options={[
+                                        { value: '', label: 'جميع الدرجات' },
+                                        { value: '1', label: 'مخالفات الدرجة الأولى' },
+                                        { value: '2', label: 'مخالفات الدرجة الثانية' },
+                                        { value: '3', label: 'مخالفات الدرجة الثالثة' },
+                                        { value: '4', label: 'مخالفات الدرجة الرابعة' },
+                                        { value: '5', label: 'مخالفات الدرجة الخامسة' },
+                                        { value: '6', label: 'مخالفات الدرجة السادسة' },
+                                    ]}
+                                    value={selectedDegree}
+                                    onChange={val => setSelectedDegree(val)}
+                                    className="w-full"
+                                />
                             </div>
                         </div>
                     </div>
@@ -864,43 +853,25 @@ export default function Violations({ auth, violations, types, students, grades, 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الطالب المخالف <span className="text-rose-500">*</span></label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white appearance-none"
-                                                    value={data.student_id}
-                                                    onChange={e => setData('student_id', e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="">-- اختر الطالب --</option>
-                                                    {students.map(s => (
-                                                        <option key={s.id} value={s.id}>{s.user?.name}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-5 text-slate-400">
-                                                    <User size={16} />
-                                                </div>
-                                            </div>
+                                            <SelectInput
+                                                options={[{ value: '', label: '-- اختر الطالب --' }, ...students.map(s => ({ value: s.id, label: s.user?.name }))]}
+                                                value={data.student_id}
+                                                onChange={val => setData('student_id', val)}
+                                                className="w-full"
+                                                required
+                                            />
                                             {errors.student_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.student_id}</p>}
                                         </div>
 
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">نوع المخالفة <span className="text-rose-500">*</span></label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white appearance-none"
-                                                    value={data.violation_type_id}
-                                                    onChange={e => handleTypeChange(e.target.value)}
-                                                    required
-                                                >
-                                                    <option value="">-- اختر نوع المخالفة --</option>
-                                                    {types.map(t => (
-                                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                                    ))}
-                                                </select>
-                                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-5 text-slate-400">
-                                                    <Tag size={16} />
-                                                </div>
-                                            </div>
+                                            <SelectInput
+                                                options={[{ value: '', label: '-- اختر نوع المخالفة --' }, ...types.map(t => ({ value: t.id, label: t.name }))]}
+                                                value={data.violation_type_id}
+                                                onChange={val => handleTypeChange(val)}
+                                                className="w-full"
+                                                required
+                                            />
                                             {errors.violation_type_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.violation_type_id}</p>}
                                         </div>
                                     </div>
@@ -909,36 +880,27 @@ export default function Violations({ auth, violations, types, students, grades, 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تاريخ وقوع المخالفة <span className="text-rose-500">*</span></label>
-                                        <div className="relative">
-                                            <input
-                                                type="date"
-                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl pl-5 pr-12 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white"
-                                                value={data.violation_date}
-                                                onChange={e => setData('violation_date', e.target.value)}
-                                                required
-                                            />
-                                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">
-                                                <Calendar size={16} />
-                                            </div>
-                                        </div>
+                                        <FlatpickrInput
+                                            type="date"
+                                            value={data.violation_date}
+                                            onChange={(val) => setData('violation_date', val)}
+                                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl pl-5 pr-12 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white"
+                                            required
+                                        />
                                     </div>
                                     
                                     {editingViolation && (
                                         <div>
                                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">حالة المعالجة</label>
-                                            <div className="relative">
-                                                <select
-                                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-5 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white appearance-none"
-                                                    value={data.status}
-                                                    onChange={e => setData('status', e.target.value)}
-                                                >
-                                                    <option value="pending">قيد المعالجة</option>
-                                                    <option value="resolved">تمت المعالجة</option>
-                                                </select>
-                                                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-5 text-slate-400">
-                                                    <CheckSquare size={16} />
-                                                </div>
-                                            </div>
+                                            <SelectInput
+                                                options={[
+                                                    { value: 'pending', label: 'قيد المعالجة' },
+                                                    { value: 'resolved', label: 'تمت المعالجة' },
+                                                ]}
+                                                value={data.status}
+                                                onChange={val => setData('status', val)}
+                                                className="w-full"
+                                            />
                                         </div>
                                     )}
                                 </div>
@@ -979,18 +941,34 @@ export default function Violations({ auth, violations, types, students, grades, 
 
                                 <div>
                                     <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مرفقات (اختياري)</label>
-                                    <div className="relative">
+                                    <div className="relative group">
                                         <input
                                             type="file"
-                                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl pl-5 pr-14 py-2.5 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 transition-all dark:text-white dark:file:bg-primary-900/20 dark:file:text-primary-400"
+                                            id="attachment-upload"
+                                            className="hidden"
                                             onChange={e => setData('attachment', e.target.files[0])}
                                             accept=".pdf,.jpg,.jpeg,.png"
                                         />
-                                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400">
-                                            <FileBadge size={18} />
-                                        </div>
+                                        <label 
+                                            htmlFor="attachment-upload"
+                                            className={`flex items-center gap-4 p-4 rounded-2xl border-2 border-dashed cursor-pointer transition-all w-full
+                                                ${data.attachment ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-300 dark:border-primary-500/30' : 'bg-slate-50 dark:bg-slate-900/50 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                                        >
+                                            <div className={`w-12 h-12 flex items-center justify-center rounded-xl shrink-0 transition-colors
+                                                ${data.attachment ? 'bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400' : 'bg-slate-200 dark:bg-slate-800 text-slate-500 group-hover:text-primary-500 group-hover:bg-primary-50 dark:group-hover:bg-primary-500/10'}`}>
+                                                {data.attachment ? <CheckCircle size={24} /> : <FileBadge size={24} />}
+                                            </div>
+                                            <div className="flex-1 overflow-hidden">
+                                                <p className={`font-bold truncate text-sm mb-1 ${data.attachment ? 'text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                    {data.attachment ? data.attachment.name : 'انقر لاختيار ملف أو اسحب الملف هنا'}
+                                                </p>
+                                                <p className="text-xs text-slate-500 font-semibold truncate">
+                                                    {data.attachment ? (data.attachment.size / 1024 / 1024).toFixed(2) + ' MB' : 'يدعم PDF, JPG, PNG (الحد الأقصى 2MB)'}
+                                                </p>
+                                            </div>
+                                        </label>
                                     </div>
-                                    {errors.attachment && <p className="text-xs text-rose-500 mt-1.5">{errors.attachment}</p>}
+                                    {errors.attachment && <p className="text-xs text-rose-500 mt-2 font-semibold flex items-center gap-1"><AlertCircle size={14}/> {errors.attachment}</p>}
                                 </div>
 
                                 <div className="pt-6 mt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
