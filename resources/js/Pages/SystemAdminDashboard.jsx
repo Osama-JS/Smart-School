@@ -3,10 +3,10 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, usePage } from '@inertiajs/react';
 import NewsTicker from '@/Components/NewsTicker';
 import { 
-    Users, Store, Calendar, Activity, Clock, ShieldAlert, AlertCircle, Building2, UserCog, Database
+    Users, Store, Calendar, Activity, Clock, ShieldAlert, AlertCircle, Building2, UserCog, Database, Server, HardDrive, Cpu, MemoryStick 
 } from 'lucide-react';
 
-export default function SystemAdminDashboard({ stats, recentActivities }) {
+export default function SystemAdminDashboard({ stats, recentActivities, serverMetrics }) {
     const { auth, logo_url } = usePage().props;
 
     // Live digital clock state
@@ -177,6 +177,83 @@ export default function SystemAdminDashboard({ stats, recentActivities }) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Server Infrastructure Monitoring */}
+                        {serverMetrics && (
+                            <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] space-y-6 bg-[radial-gradient(#f8fafc_1px,transparent_1px)] dark:bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
+                                <div className="flex items-center justify-between border-b border-slate-100/80 dark:border-slate-800/60 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Server size={18} className="text-primary-500" />
+                                        <h3 className="font-black text-slate-800 dark:text-white text-sm sm:text-base">البنية التحتية والخوادم</h3>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-100 dark:border-emerald-500/20 text-[10px] font-bold">
+                                        <span className="relative flex h-2 w-2">
+                                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                        </span>
+                                        متصل (Live)
+                                    </div>
+                                </div>
+
+                                <div className="space-y-5">
+                                    {/* Uptime */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                            <Clock size={14} className="text-primary-500" />
+                                            <span className="text-xs font-bold">زمن التشغيل (Uptime):</span>
+                                        </div>
+                                        <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 dir-ltr">{serverMetrics.uptime}</span>
+                                    </div>
+
+                                    {/* CPU */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                                <Cpu size={14} className="text-blue-500" />
+                                                <span className="text-xs font-bold">استهلاك المعالج (CPU):</span>
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{serverMetrics.cpu}%</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                                            <div className="bg-blue-500 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${serverMetrics.cpu === 'N/A' ? 0 : Math.min(100, parseFloat(serverMetrics.cpu))}%` }}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* RAM */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                                <MemoryStick size={14} className="text-purple-500" />
+                                                <span className="text-xs font-bold">استهلاك الذاكرة (RAM):</span>
+                                            </div>
+                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{serverMetrics.ram}%</span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                                            <div className="bg-purple-500 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${serverMetrics.ram === 'N/A' ? 0 : Math.min(100, parseFloat(serverMetrics.ram))}%` }}></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Storage */}
+                                    <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                                                <HardDrive size={14} className={serverMetrics.storage.status === 'danger' ? 'text-red-500' : (serverMetrics.storage.status === 'warning' ? 'text-amber-500' : 'text-emerald-500')} />
+                                                <span className="text-xs font-bold">حالة التخزين (Storage):</span>
+                                            </div>
+                                            <span className={`text-xs font-bold ${serverMetrics.storage.status === 'danger' ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>
+                                                {serverMetrics.storage.used_percent}% ({serverMetrics.storage.used_gb} GB / {serverMetrics.storage.total_gb} GB)
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                                            <div className={`h-2.5 rounded-full transition-all duration-1000 ${serverMetrics.storage.status === 'danger' ? 'bg-red-500' : (serverMetrics.storage.status === 'warning' ? 'bg-amber-500' : 'bg-emerald-500')}`} style={{ width: `${Math.min(100, serverMetrics.storage.used_percent)}%` }}></div>
+                                        </div>
+                                        {serverMetrics.storage.status === 'danger' && (
+                                            <p className="text-[10px] text-red-500 font-semibold pt-1">⚠️ مساحة التخزين على وشك النفاذ. يُرجى مراجعة الخادم لتجنب توقف النظام.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Recent Activities Panel */}

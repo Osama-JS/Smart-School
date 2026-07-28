@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, usePage } from '@inertiajs/react';
-import { 
+import {
     LayoutDashboard, Users, Calendar, Settings, Search, Bell,
-    Menu, X, BookOpen, Clock, ShieldCheck, Map, Activity, 
+    Menu, X, BookOpen, Clock, ShieldCheck, Map, Activity,
     Home, LogOut, ChevronDown, CheckSquare, Plus, CheckCircle, Store, Sun, Moon, PanelLeftClose, PanelLeftOpen, User,
     FileText, Sliders, Layers, BarChart, UserPlus, FileSignature, ShieldAlert,
-    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ArrowUp, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone, Trophy, Medal
+    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ArrowUp, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone, Trophy, Medal, Database
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import ToastNotification from '@/Components/ToastNotification';
@@ -18,7 +18,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
     const [profileDropdown, setProfileDropdown] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-    
+
     // Get current URL path from Inertia
     const { url } = usePage();
 
@@ -36,7 +36,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             return false;
         }
     };
-    
+
     // Search State
     const [searchQuery, setSearchQuery] = useState('');
     const [showSearchDropdown, setShowSearchDropdown] = useState(false);
@@ -133,12 +133,14 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'إدارة الفروع', icon: Store, url: route('hr.branches') },
                 { name: 'إدارة الصلاحيات', icon: Shield, url: route('admin.permissions') },
                 { name: 'إعدادات النظام', icon: Settings, url: route('admin.settings') },
+                { name: 'النسخ الاحتياطي', icon: Database, url: route('admin.backups') },
             ]
         },
         {
             title: 'التقارير والإحصائيات',
             items: [
-                { name: 'تقارير الأداء', icon: BarChart, url: '#' },
+                { name: 'تقارير الأداء', icon: BarChart, url: route('admin.performance.index') },
+                { name: 'إحصائيات المرور', icon: Users, url: route('admin.traffic.index') },
                 { name: 'سجلات النظام', icon: Activity, url: route('admin.activity-logs.index') },
             ]
         }
@@ -269,7 +271,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
 
     // Compute Search Results
     const allNavItems = filteredMenuGroups.flatMap(group => group.items);
-    const searchResults = searchQuery.trim() 
+    const searchResults = searchQuery.trim()
         ? allNavItems.filter(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()) && item.url)
         : [];
 
@@ -287,7 +289,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         <div className="flex flex-col h-full">
             {/* Brand Line */}
             <div className="brand-line"></div>
-            
+
             {/* Logo & Close button for mobile */}
             <div className="p-5 flex items-center gap-3 border-b border-white/10">
                 <img src={logo_url || '/images/school_logo.png'} alt="مدارس القيم" className="h-11 w-11 rounded-xl object-contain bg-white/10 p-1 shrink-0" />
@@ -296,7 +298,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                     <p className="text-[11px] text-gray-500 truncate">نظام القيم ERP</p>
                 </div>
                 {/* Close button — mobile only */}
-                <button 
+                <button
                     className="lg:hidden erp-btn-ghost text-gray-400 hover:text-white hover:bg-white/10 rounded-lg p-2"
                     onClick={closeMobileSidebar}
                     aria-label="إغلاق القائمة"
@@ -355,18 +357,17 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
     return (
         <div className="min-h-screen flex font-sans" dir="rtl">
             {/* Desktop Sidebar */}
-            <aside className={`erp-sidebar hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${
-                sidebarOpen ? 'w-[280px]' : 'w-0 overflow-hidden'
-            }`}>
+            <aside className={`erp-sidebar hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${sidebarOpen ? 'w-[280px]' : 'w-0 overflow-hidden'
+                }`}>
                 <SidebarContent />
             </aside>
 
             {/* Mobile Sidebar with animated backdrop */}
             {mobileSidebarOpen && (
                 <div className="fixed inset-0 z-40 lg:hidden">
-                    <div 
+                    <div
                         className={`sidebar-backdrop ${sidebarClosing ? 'closing' : ''}`}
-                        onClick={closeMobileSidebar} 
+                        onClick={closeMobileSidebar}
                     />
                     <aside className={`sidebar-mobile-panel erp-sidebar flex flex-col ${sidebarClosing ? 'closing' : ''}`}>
                         <SidebarContent />
@@ -397,9 +398,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                         {/* Desktop Search */}
                         <div className="hidden md:flex items-center relative" onClick={(e) => e.stopPropagation()}>
                             <Search size={16} className={`absolute right-3 pointer-events-none transition-colors ${showSearchDropdown && searchQuery ? 'text-primary-500' : 'text-slate-400'}`} />
-                            <input 
-                                type="text" 
-                                placeholder="بحث في النظام..." 
+                            <input
+                                type="text"
+                                placeholder="بحث في النظام..."
                                 className="erp-input w-56 lg:w-72 pr-9 text-sm !py-2 !border-slate-200 dark:!border-slate-700 bg-slate-50/80 dark:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-sm"
                                 value={searchQuery}
                                 onChange={(e) => {
@@ -408,7 +409,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                 }}
                                 onFocus={() => setShowSearchDropdown(true)}
                             />
-                            
+
                             {/* Search Results Dropdown */}
                             {showSearchDropdown && searchQuery.trim() !== '' && (
                                 <div className="absolute top-full mt-2 right-0 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 py-2 animate-scale-in z-50 overflow-hidden">
@@ -416,8 +417,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                         <div className="max-h-80 overflow-y-auto custom-scrollbar">
                                             <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase">نتائج البحث</div>
                                             {searchResults.map((item, idx) => (
-                                                <Link 
-                                                    key={idx} 
+                                                <Link
+                                                    key={idx}
                                                     href={item.url}
                                                     className="flex items-center gap-3 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                                                     onClick={() => {
@@ -442,8 +443,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                         </div>
 
                         {/* Mobile Search Button */}
-                        <button 
-                            className="erp-btn-ghost md:hidden" 
+                        <button
+                            className="erp-btn-ghost md:hidden"
                             onClick={() => setMobileSearchOpen(true)}
                             aria-label="بحث"
                         >
@@ -453,8 +454,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
 
                     <div className="flex items-center gap-1 sm:gap-2">
                         {/* Theme Toggle Button */}
-                        <button 
-                            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
+                        <button
+                            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
                             className="erp-btn-ghost text-slate-500 hover:text-primary-600 transition-colors"
                             aria-label="تبديل المظهر"
                         >
@@ -464,7 +465,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                         <NotificationDropdown />
 
                         <div className="relative">
-                            <button 
+                            <button
                                 className="flex items-center gap-2 sm:gap-3 py-1.5 px-2 sm:px-3 rounded-lg hover:bg-slate-50 transition-colors"
                                 onClick={(e) => { e.stopPropagation(); setProfileDropdown(!profileDropdown); }}
                                 aria-label="الملف الشخصي"
@@ -504,7 +505,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                         <div className="flex items-center gap-3 p-4 bg-white dark:bg-[#121820] border-b border-slate-100 dark:border-slate-800 shadow-sm">
                             <div className="flex-1 relative flex items-center group">
                                 <Search size={18} className="absolute right-4 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
-                                <input 
+                                <input
                                     type="text"
                                     placeholder="ابحث في النظام..."
                                     className="w-full bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-4 py-3.5 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none font-bold text-slate-800 dark:text-slate-100 transition-all shadow-inner"
@@ -513,7 +514,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                                 {searchQuery && (
-                                    <button 
+                                    <button
                                         className="absolute left-4 p-1 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white"
                                         onClick={() => setSearchQuery('')}
                                     >
@@ -521,8 +522,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                     </button>
                                 )}
                             </div>
-                            <button 
-                                className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:border-rose-500/30 transition-all shadow-sm shrink-0 active:scale-95" 
+                            <button
+                                className="p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 dark:hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:border-rose-500/30 transition-all shadow-sm shrink-0 active:scale-95"
                                 onClick={() => {
                                     setMobileSearchOpen(false);
                                     setSearchQuery('');
@@ -532,7 +533,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                 <span className="text-sm font-bold px-1">إلغاء</span>
                             </button>
                         </div>
-                        
+
                         {/* Search Results Mobile */}
                         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                             {searchQuery.trim() !== '' ? (
@@ -543,8 +544,8 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                             <span className="w-5 h-5 rounded-md bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-[10px] text-slate-600 dark:text-slate-400">{searchResults.length}</span>
                                         </div>
                                         {searchResults.map((item, idx) => (
-                                            <Link 
-                                                key={idx} 
+                                            <Link
+                                                key={idx}
                                                 href={item.url}
                                                 className="flex items-center gap-4 px-4 py-3.5 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold text-slate-700 dark:text-slate-200 shadow-sm hover:border-primary-500 dark:hover:border-primary-500 hover:shadow-md hover:-translate-y-0.5 transition-all active:scale-[0.98] group"
                                                 onClick={() => {
@@ -598,7 +599,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                     {filteredBottomNavItems.map((item, idx) => {
                         const isActive = isMenuActive(item.url, item.name, item.key);
                         const isMore = item.action === 'sidebar';
-                        
+
                         if (isMore) {
                             return (
                                 <button

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Check, Save, Settings as SettingsIcon, Building, Clock, ShieldCheck, Upload, Calendar, Lock } from 'lucide-react';
+import { Check, Save, Settings as SettingsIcon, Building, Clock, ShieldCheck, Upload, Calendar, Lock, Link, Mail, MessageSquare, Key, Server, Hash, User, Network, RefreshCw } from 'lucide-react';
 
 export default function SettingsIndex({ settings }) {
     const { flash, logo_url } = usePage().props;
@@ -10,14 +11,58 @@ export default function SettingsIndex({ settings }) {
         academic_year: settings.academic_year || '',
         session_timeout: settings.session_timeout || 120,
         max_login_attempts: settings.max_login_attempts || 5,
+        maintenance_mode: settings.maintenance_mode || false,
+        mail_host: settings.mail_host || '',
+        mail_port: settings.mail_port || '',
+        mail_username: settings.mail_username || '',
+        mail_password: settings.mail_password || '',
+        mail_encryption: settings.mail_encryption || 'tls',
+        mail_from_address: settings.mail_from_address || '',
+        sms_gateway_url: settings.sms_gateway_url || '',
+        sms_api_key: settings.sms_api_key || '',
+        sms_sender_id: settings.sms_sender_id || '',
+        local_server_url: settings.local_server_url || '',
+        local_server_api_key: settings.local_server_api_key || '',
+        local_server_sync_enabled: settings.local_server_sync_enabled || false,
         logo: null,
     });
     const [logoPreview, setLogoPreview] = useState(logo_url || '');
     const [saving, setSaving] = useState(false);
+    const [testingConnection, setTestingConnection] = useState(false);
+    const [testResult, setTestResult] = useState(null); // { success: true/false, message: '' }
     const [activeTab, setActiveTab] = useState('general'); // 'general' | 'security'
+
+    const testLocalServer = async () => {
+        if (!form.local_server_url) {
+            setTestResult({ success: false, message: 'الرجاء إدخال رابط الخادم أولاً.' });
+            return;
+        }
+
+        setTestingConnection(true);
+        setTestResult(null);
+
+        try {
+            const response = await axios.post(route('admin.settings.test-local-server'), {
+                url: form.local_server_url,
+                api_key: form.local_server_api_key,
+            });
+            setTestResult({ success: true, message: response.data.message });
+        } catch (error) {
+            setTestResult({
+                success: false,
+                message: error.response?.data?.message || 'حدث خطأ أثناء محاولة الاتصال بالخادم.'
+            });
+        } finally {
+            setTestingConnection(false);
+        }
+    };
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
+    };
+
+    const toggleMaintenanceMode = () => {
+        setForm({ ...form, maintenance_mode: !form.maintenance_mode });
     };
 
     const handleFileChange = (e) => {
@@ -106,6 +151,21 @@ export default function SettingsIndex({ settings }) {
                             <ShieldCheck size={16} className={activeTab === 'security' ? 'text-primary-500' : 'text-slate-400'} />
                             <span>الأمان والوصول</span>
                             {activeTab === 'security' && (
+                                <div className="absolute right-0 top-1/4 bottom-1/4 w-1 bg-primary-500 rounded-l-md" />
+                            )}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setActiveTab('integrations')}
+                            className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-bold transition-all duration-300 relative ${
+                                activeTab === 'integrations'
+                                    ? 'bg-white dark:bg-[#121820] text-primary-600 dark:text-primary-400 shadow-sm border border-slate-200/40 dark:border-slate-800'
+                                    : 'text-slate-550 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-250 hover:bg-slate-100/50 dark:hover:bg-slate-900/20'
+                            }`}
+                        >
+                            <Link size={16} className={activeTab === 'integrations' ? 'text-primary-500' : 'text-slate-400'} />
+                            <span>بوابات الربط (API)</span>
+                            {activeTab === 'integrations' && (
                                 <div className="absolute right-0 top-1/4 bottom-1/4 w-1 bg-primary-500 rounded-l-md" />
                             )}
                         </button>
@@ -217,6 +277,223 @@ export default function SettingsIndex({ settings }) {
                                                 value={form.max_login_attempts} onChange={handleChange} />
                                         </div>
                                         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-1.5 mr-1">عدد المحاولات الخاطئة المتاحة قبل قفل الحساب مؤقتاً.</span>
+                                    </div>
+                                </div>
+
+                                {/* Maintenance Mode Toggle */}
+                                <div className="group flex flex-col pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div>
+                                            <label className="block text-sm font-bold text-red-600 dark:text-red-400 mb-1">وضع الصيانة (Maintenance Mode)</label>
+                                            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold block max-w-lg">
+                                                عند تفعيل وضع الصيانة، سيتم منع دخول جميع المستخدمين وعرض صفحة "النظام تحت الصيانة". لا يشمل هذا الإغلاق مدراء النظام لتتمكن من تحديث النظام بأمان.
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={toggleMaintenanceMode}
+                                            className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${form.maintenance_mode ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                                            role="switch"
+                                            aria-checked={form.maintenance_mode}
+                                        >
+                                            <span
+                                                aria-hidden="true"
+                                                className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${form.maintenance_mode ? '-translate-x-7' : 'translate-x-0'}`}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Tab 3: Integrations Settings */}
+                            <div className={activeTab === 'integrations' ? 'block space-y-8' : 'hidden'}>
+                                <div>
+                                    <h3 className="text-lg font-bold text-dark-900 dark:text-white mb-2 flex items-center gap-3">
+                                        <div className="p-2 bg-primary-50 dark:bg-primary-500/10 rounded-xl text-primary-500 dark:text-primary-400 shrink-0">
+                                            <Mail size={20} />
+                                        </div>
+                                        <span>إعدادات البريد الإلكتروني (SMTP)</span>
+                                    </h3>
+                                    <p className="text-slate-400 dark:text-slate-500 text-xs font-semibold mr-13">تكوين خادم إرسال البريد الإلكتروني الخاص بالمدرسة لإرسال الإشعارات.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">خادم SMTP (Host)</label>
+                                        <div className="relative flex items-center">
+                                            <Server size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="text" name="mail_host" placeholder="smtp.mailtrap.io"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.mail_host} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">المنفذ (Port)</label>
+                                        <div className="relative flex items-center">
+                                            <Hash size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="text" name="mail_port" placeholder="2525"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.mail_port} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">اسم المستخدم (Username)</label>
+                                        <div className="relative flex items-center">
+                                            <User size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="text" name="mail_username"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.mail_username} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">كلمة المرور (Password)</label>
+                                        <div className="relative flex items-center">
+                                            <Key size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="password" name="mail_password"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.mail_password} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">التشفير (Encryption)</label>
+                                        <div className="relative flex items-center">
+                                            <Lock size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="text" name="mail_encryption" placeholder="tls / ssl"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.mail_encryption} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">عنوان الإرسال (From Address)</label>
+                                        <div className="relative flex items-center">
+                                            <Mail size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="email" name="mail_from_address" placeholder="noreply@school.com"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.mail_from_address} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-100 dark:border-slate-800/80 pt-8">
+                                    <h3 className="text-lg font-bold text-dark-900 dark:text-white mb-2 flex items-center gap-3">
+                                        <div className="p-2 bg-primary-50 dark:bg-primary-500/10 rounded-xl text-primary-500 dark:text-primary-400 shrink-0">
+                                            <MessageSquare size={20} />
+                                        </div>
+                                        <span>إعدادات الرسائل النصية (SMS Gateway)</span>
+                                    </h3>
+                                    <p className="text-slate-400 dark:text-slate-500 text-xs font-semibold mr-13">ربط النظام بمزود خدمة الرسائل النصية لإرسال تنبيهات للآباء والطلاب.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                    <div className="group/input flex flex-col md:col-span-2">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">رابط البوابة (Gateway URL)</label>
+                                        <div className="relative flex items-center">
+                                            <Link size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="url" name="sms_gateway_url" placeholder="https://api.sms-provider.com/send"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.sms_gateway_url} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">مفتاح الربط (API Key)</label>
+                                        <div className="relative flex items-center">
+                                            <Key size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="password" name="sms_api_key" placeholder="••••••••••••••••"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.sms_api_key} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">اسم المرسل (Sender ID)</label>
+                                        <div className="relative flex items-center">
+                                            <Hash size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="text" name="sms_sender_id" placeholder="SmartSchool"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.sms_sender_id} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-slate-100 dark:border-slate-800/80 pt-8">
+                                    <h3 className="text-lg font-bold text-dark-900 dark:text-white mb-2 flex items-center gap-3">
+                                        <div className="p-2 bg-primary-50 dark:bg-primary-500/10 rounded-xl text-primary-500 dark:text-primary-400 shrink-0">
+                                            <Network size={20} />
+                                        </div>
+                                        <span>إعدادات الربط مع الخادم المحلي (Local Server)</span>
+                                    </h3>
+                                    <p className="text-slate-400 dark:text-slate-500 text-xs font-semibold mr-13">إعدادات المزامنة مع الخادم الخاص بالمدرسة لتبادل بيانات الحضور والانصراف والأنظمة الأخرى.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                                    <div className="group/input flex flex-col md:col-span-2">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">رابط الخادم (Server URL)</label>
+                                        <div className="relative flex items-center">
+                                            <Server size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="url" name="local_server_url" placeholder="http://192.168.1.100:8080/api"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.local_server_url} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col">
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">مفتاح الربط (API Token)</label>
+                                        <div className="relative flex items-center">
+                                            <Key size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 pointer-events-none transition-all duration-300" />
+                                            <input type="password" name="local_server_api_key" placeholder="••••••••••••••••"
+                                                className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                value={form.local_server_api_key} onChange={handleChange} />
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col justify-center border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3">
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-1 flex items-center gap-2">
+                                                    <RefreshCw size={14} className={form.local_server_sync_enabled ? 'text-primary-500 animate-spin-slow' : 'text-slate-400'} />
+                                                    تفعيل المزامنة التلقائية
+                                                </label>
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold block">
+                                                    إرسال واستقبال البيانات مع الخادم المحلي دورياً
+                                                </span>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setForm({ ...form, local_server_sync_enabled: !form.local_server_sync_enabled })}
+                                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none ${form.local_server_sync_enabled ? 'bg-primary-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                                                role="switch"
+                                                aria-checked={form.local_server_sync_enabled}
+                                            >
+                                                <span
+                                                    aria-hidden="true"
+                                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-300 ease-in-out ${form.local_server_sync_enabled ? '-translate-x-5' : 'translate-x-0'}`}
+                                                />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="group/input flex flex-col justify-center border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-3">
+                                        <div className="flex flex-col gap-2">
+                                            <button 
+                                                type="button" 
+                                                onClick={testLocalServer}
+                                                disabled={testingConnection || !form.local_server_url}
+                                                className="flex items-center justify-center gap-2 w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs transition-colors disabled:opacity-50"
+                                            >
+                                                {testingConnection ? (
+                                                    <>
+                                                        <div className="w-3.5 h-3.5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
+                                                        <span>جاري الفحص...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Network size={14} />
+                                                        <span>فحص الاتصال</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                            {testResult && (
+                                                <div className={`text-[11px] font-bold p-2 rounded-lg text-center ${testResult.success ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'}`}>
+                                                    {testResult.message}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

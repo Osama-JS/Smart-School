@@ -79,7 +79,31 @@ Route::middleware('auth')->group(function () {
         // ── Settings ──
         Route::get('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings');
         Route::post('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'update'])->name('admin.settings.update');
+        Route::post('/admin/settings/test-local-server', [\App\Http\Controllers\Admin\SettingsController::class, 'testLocalServerConnection'])->name('admin.settings.test-local-server');
 
+        // ── Backups ──
+        Route::get('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'index'])->name('admin.backups');
+        Route::post('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'store'])->name('admin.backups.store');
+        Route::get('/admin/backups/{filename}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])->name('admin.backups.download');
+        Route::delete('/admin/backups/{filename}', [\App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('admin.backups.destroy');
+
+        // ── Performance Reports ──
+        Route::get('/admin/performance-reports', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'index'])->name('admin.performance.index');
+        
+        // ── User Engagement ──
+        Route::get('/admin/user-engagement', [\App\Http\Controllers\Admin\UserEngagementController::class, 'index'])->name('admin.engagement.index');
+        
+
+
+        Route::delete('/admin/performance-reports/slow-queries', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'clearSlowQueries'])->name('admin.performance.clear-slow-queries');
+        Route::post('/admin/performance-reports/retry-jobs', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'retryFailedJobs'])->name('admin.performance.retry-jobs');
+        Route::delete('/admin/performance-reports/flush-jobs', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'flushFailedJobs'])->name('admin.performance.flush-jobs');
+        Route::post('/admin/performance-reports/optimize', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'optimizeSystem'])->name('admin.performance.optimize');
+        Route::post('/admin/performance-reports/archive', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'archiveRecords'])->name('admin.performance.archive');
+        Route::get('/admin/performance-reports/archive/download/{filename}', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'downloadArchive'])->name('admin.performance.archive.download');
+
+        // ── Traffic Analytics ──
+        Route::get('/admin/traffic-analytics', [\App\Http\Controllers\Admin\TrafficAnalyticsController::class, 'index'])->name('admin.traffic.index');
 
         // ── Branches ──
         Route::get('/hr/branches', [\App\Http\Controllers\HR\BranchController::class, 'index'])->name('hr.branches');

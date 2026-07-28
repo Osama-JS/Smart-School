@@ -15,9 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\CheckInstallation::class,
+            \App\Http\Middleware\CheckMaintenanceMode::class,
             \App\Http\Middleware\EnsureActiveAcademicYear::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\PerformanceTrackingMiddleware::class,
         ]);
 
         $middleware->alias([

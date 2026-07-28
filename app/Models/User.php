@@ -28,6 +28,7 @@ class User extends Authenticatable
     // الرقابة والنشاطات
     public function activityLogs(): HasMany { return $this->hasMany(ActivityLog::class); }
     public function notifications(): HasMany { return $this->hasMany(Notification::class); }
+    public function loginLogs(): HasMany { return $this->hasMany(UserLoginLog::class); }
 
     // جلب الأبناء المرتبطين بولي الأمر هذا
     public function children()

@@ -9,10 +9,11 @@ use App\Models\Attendance;
 use App\Models\ActivityLog;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
+use App\Services\ServerMonitorService;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request, ServerMonitorService $serverMonitor)
     {
         $user = auth()->user();
         $roleName = $user->role ? $user->role->name : null;
@@ -69,6 +70,8 @@ class DashboardController extends Controller
                 ];
             });
 
+            $serverMetrics = $serverMonitor->getMetrics();
+
             return Inertia::render('SystemAdminDashboard', [
                 'stats' => [
                     'branches' => number_format($totalBranches),
@@ -76,7 +79,8 @@ class DashboardController extends Controller
                     'users' => number_format($totalUsers),
                     'managers' => number_format($totalManagers),
                 ],
-                'recentActivities' => $recentActivities
+                'recentActivities' => $recentActivities,
+                'serverMetrics' => $serverMetrics
             ]);
         }
 

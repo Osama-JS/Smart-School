@@ -1,0 +1,36 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        // First truncate to reset the heatmap data so we don't have collisions when dropping unique index
+        DB::table('traffic_analytics')->truncate();
+
+        Schema::table('traffic_analytics', function (Blueprint $table) {
+            $table->dropUnique(['day_of_week', 'hour', 'role_name']);
+            $table->string('branch_name')->default('الفرع الرئيسي')->after('role_name');
+            $table->unique(['day_of_week', 'hour', 'role_name', 'branch_name'], 'traffic_analytics_unique_index');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('traffic_analytics', function (Blueprint $table) {
+            $table->dropUnique('traffic_analytics_unique_index');
+            $table->dropColumn('branch_name');
+            $table->unique(['day_of_week', 'hour', 'role_name']);
+        });
+    }
+};
