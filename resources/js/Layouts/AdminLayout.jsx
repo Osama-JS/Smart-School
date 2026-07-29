@@ -163,6 +163,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'مخالفات الموظفين', icon: AlertTriangle, url: route('hr.employee-violations'), permission: 'إدارة المخالفات' },
                 { name: 'أنواع الإنجازات', icon: Star, url: route('hr.achievement-types'), permission: 'عرض أنواع الإنجازات' },
                 { name: 'سجل الإنجازات', icon: CheckCircle, url: route('hr.employee-achievements'), permission: 'عرض الإنجازات' },
+                { name: 'قوالب التقييم', icon: FileSignature, url: route('hr.appraisals.templates.index'), permission: 'إدارة التقييمات الإدارية' },
+                { name: 'دورات التقييم', icon: Calendar, url: route('hr.appraisals.cycles.index'), permission: 'إدارة التقييمات الإدارية' },
+                { name: 'تقييمات الأداء', icon: Star, url: route('hr.appraisals.index') },
             ]
         },
         {

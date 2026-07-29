@@ -13,6 +13,10 @@ Route::post('/install/step', [\App\Http\Controllers\InstallController::class, 'r
 // ── Public Verification ──
 Route::get('/verify/study-plan/{id}', [\App\Http\Controllers\StudyPlanVerificationController::class, 'show'])->name('verify.study-plan');
 
+Route::get('/debug-notifications', function() {
+    return \App\Models\Notification::latest()->take(5)->get();
+});
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -92,6 +96,9 @@ Route::middleware('auth')->group(function () {
         
         // ── User Engagement ──
         Route::get('/admin/user-engagement', [\App\Http\Controllers\Admin\UserEngagementController::class, 'index'])->name('admin.engagement.index');
+        Route::get('/admin/user-engagement/export', [\App\Http\Controllers\Admin\UserEngagementController::class, 'export'])->name('admin.engagement.export');
+        Route::get('/admin/user-engagement/{user}', [\App\Http\Controllers\Admin\UserEngagementController::class, 'show'])->name('admin.engagement.show');
+        Route::post('/admin/user-engagement/{user}/nudge', [\App\Http\Controllers\Admin\UserEngagementController::class, 'nudge'])->name('admin.engagement.nudge');
         
 
 
@@ -575,6 +582,38 @@ Route::middleware('auth')->group(function () {
         Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
         Route::put('/hr/attendance/{attendance}', [\App\Http\Controllers\HR\AttendanceController::class, 'update'])->name('hr.attendance.update');
     });
+
+    // ── Administrative Appraisals ──
+    Route::middleware('permission:إدارة التقييمات الإدارية')->group(function () {
+        Route::resource('/hr/appraisals/templates', \App\Http\Controllers\HR\AppraisalTemplateController::class)->names([
+            'index'   => 'hr.appraisals.templates.index',
+            'store'   => 'hr.appraisals.templates.store',
+            'update'  => 'hr.appraisals.templates.update',
+            'destroy' => 'hr.appraisals.templates.destroy',
+        ])->except(['create', 'edit', 'show']);
+
+        Route::resource('/hr/appraisals/cycles', \App\Http\Controllers\HR\AppraisalCycleController::class)->names([
+            'index'   => 'hr.appraisals.cycles.index',
+            'store'   => 'hr.appraisals.cycles.store',
+            'update'  => 'hr.appraisals.cycles.update',
+            'destroy' => 'hr.appraisals.cycles.destroy',
+        ])->except(['create', 'edit', 'show']);
+
+        Route::post('/hr/appraisals/{appraisal}/approve-hr', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'approveHr'])->name('hr.appraisals.approve-hr');
+    });
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/hr/appraisals/dashboard', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'dashboard'])->name('hr.appraisals.dashboard');
+        Route::get('/hr/appraisals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'index'])->name('hr.appraisals.index');
+        Route::post('/hr/appraisals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'store'])->name('hr.appraisals.store');
+        Route::get('/hr/appraisals/{appraisal}', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'show'])->name('hr.appraisals.show');
+        Route::post('/hr/appraisals/{appraisal}/submit-self', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'submitSelf'])->name('hr.appraisals.submit-self');
+        Route::post('/hr/appraisals/{appraisal}/submit-manager', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'submitManager'])->name('hr.appraisals.submit-manager');
+        Route::post('/hr/appraisals/{appraisal}/scores/{score}/goals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'storeGoal'])->name('hr.appraisals.goals.store');
+        Route::put('/hr/appraisals/{appraisal}/goals/{goal}/progress', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'updateGoalProgress'])->name('hr.appraisals.goals.progress');
+        Route::delete('/hr/appraisals/{appraisal}/goals/{goal}', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'destroyGoal'])->name('hr.appraisals.goals.destroy');
+    });
+
     // ── Reports ──
     Route::middleware('permission:إدارة قوالب التقارير')->group(function () {
         Route::resource('/hr/reports/templates', \App\Http\Controllers\HR\ReportTemplateController::class)->names([

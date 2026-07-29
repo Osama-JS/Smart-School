@@ -5,6 +5,10 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+@unlink(__DIR__.'/../bootstrap/cache/routes-v7.php');
+@unlink(__DIR__.'/../bootstrap/cache/packages.php');
+@unlink(__DIR__.'/../bootstrap/cache/services.php');
+
 // Determine if the application is in maintenance mode...
 if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
     require $maintenance;

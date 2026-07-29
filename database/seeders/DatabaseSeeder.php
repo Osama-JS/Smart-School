@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call(FollowupBooksPermissionsSeeder::class);
         $this->call(AdvancedModulesPermissionsSeeder::class);
         $this->call(ClinicPermissionsSeeder::class);
+        $this->call(AdministrativeAppraisalPermissionsSeeder::class);
 
         // المرحلة 2: الفروع (تعتمد عليها باقي البيانات)
         $this->command->info('── المرحلة 2: الفروع ──');

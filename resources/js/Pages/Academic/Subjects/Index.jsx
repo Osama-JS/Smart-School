@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, useForm } from '@inertiajs/react';
 import Swal from 'sweetalert2';
 import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
@@ -176,16 +176,13 @@ export default function SubjectsIndex({ subjects, sections, branches = [], isAdm
 
     const submitForm = (e) => {
         e.preventDefault();
-        setProcessing(true);
         if (editingItem) {
-            router.put(route('academic.subjects.update', editingItem.id), form, { 
+            put(route('academic.subjects.update', editingItem.id), { 
                 onSuccess: () => setIsModalOpen(false),
-                onFinish: () => setProcessing(false) 
             });
         } else {
-            router.post(route('academic.subjects.store'), form, { 
+            post(route('academic.subjects.store'), { 
                 onSuccess: () => setIsModalOpen(false),
-                onFinish: () => setProcessing(false) 
             });
         }
     };

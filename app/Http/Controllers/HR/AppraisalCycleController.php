@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers\HR;
+
+use App\Http\Controllers\Controller;
+use App\Models\AppraisalCycle;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class AppraisalCycleController extends Controller
+{
+    public function index()
+    {
+        $cycles = AppraisalCycle::latest()->get();
+
+        return Inertia::render('HR/Appraisals/Cycles/Index', [
+            'cycles' => $cycles
+        ]);
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'required|in:monthly,semi-annual,annual',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'status' => 'required|in:draft,active,closed',
+        ]);
+
+        $cycle = AppraisalCycle::create($validated);
+
+        if ($cycle->status === 'active') {
+            $this->notifyEmployees($cycle);
+        }
+
+        return redirect()->back()->with('success', 'Appraisal cycle created successfully.');
+    }
+
+    public function update(Request $request, AppraisalCycle $cycle)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'required|in:monthly,semi-annual,annual',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'status' => 'required|in:draft,active,closed',
+        ]);
+
+        $oldStatus = $cycle->status;
+        $cycle->update($validated);
+
+        if ($oldStatus !== 'active' && $cycle->status === 'active') {
+            $this->notifyEmployees($cycle);
+        }
+
+        return redirect()->back()->with('success', 'Appraisal cycle updated successfully.');
+    }
+
+    private function notifyEmployees(AppraisalCycle $cycle)
+    {
+        $employees = \App\Models\Employee::with('user')->get();
+        $notificationService = new \App\Services\NotificationService();
+        $senderId = \Illuminate\Support\Facades\Auth::id();
+
+        foreach ($employees as $employee) {
+            if ($employee->user) {
+                $notificationService->sendInternalNotification(
+                    $employee->user->id,
+                    'دورة تقييم جديدة',
+                    "تم فتح دورة تقييم جديدة ({$cycle->title})، يرجى تقديم تقييمك الذاتي.",
+                    'hr',
+                    $senderId
+                );
+            }
+        }
+    }
+
+    public function destroy(AppraisalCycle $cycle)
+    {
+        $cycle->delete();
+        return redirect()->back()->with('success', 'Appraisal cycle deleted successfully.');
+    }
+}
