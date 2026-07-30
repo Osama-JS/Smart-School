@@ -15,6 +15,12 @@ class EmployeeAppraisal extends Model
         'employee_signature', 'manager_signature', 'hr_signature'
     ];
 
+    protected $casts = [
+        'self_score' => 'float',
+        'manager_score' => 'float',
+        'final_score' => 'float',
+    ];
+
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');

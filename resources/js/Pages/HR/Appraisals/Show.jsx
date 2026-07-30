@@ -117,8 +117,8 @@ const ScoreGoals = ({ appraisal, score, isEmployee, isManager }) => {
 
 export default function AppraisalsShow({ appraisal, integrationData, trendData, smartAlert }) {
     const { auth, flash } = usePage().props;
-    const isEmployee = auth.user?.employee_id === appraisal.employee_id || auth.user?.employee?.id === appraisal.employee_id;
-    const isManager = auth.user?.employee_id === appraisal.manager_id || auth.user?.employee?.id === appraisal.manager_id;
+    const isEmployee = auth.user?.id === appraisal.employee?.user_id || auth.user?.employee_id === appraisal.employee_id || auth.user?.employee?.id === appraisal.employee_id;
+    const isManager = auth.user?.id === appraisal.manager?.user_id || auth.user?.employee_id === appraisal.manager_id || auth.user?.employee?.id === appraisal.manager_id;
     const isHR = auth.user?.permissions?.includes('إدارة التقييمات الإدارية') || auth.user?.role?.name === 'مدير النظام' || auth.user?.role?.name === 'مدير الفرع';
 
     const { data: selfData, setData: setSelfData, post: postSelf, processing: selfProcessing } = useForm({

@@ -225,7 +225,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             title: 'الإشراف والمتابعة',
             items: [
                 { name: 'الحضور', icon: CheckSquare },
-                { name: 'التقييم', icon: Star },
+                { name: 'تقييماتي', icon: Star, url: route('hr.appraisals.index') },
                 { name: 'إدارة دفاتر المتابعة', icon: BookOpen, url: route('admin.followup-books.index') },
                 { name: 'الزيارات الصفية', icon: Eye, url: route('academic.classroom-visits'), permission: 'إدارة الزيارات الصفية' },
                 { name: 'زياراتي الصفية', icon: Eye, url: route('teacher.my-classroom-visits'), permission: 'عرض زياراتي الصفية' },

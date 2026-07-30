@@ -57,12 +57,16 @@ class AppServiceProvider extends ServiceProvider
                 if ($query->time > 500) {
                     // Prevent logging queries related to the slow_queries table itself to avoid infinite loops
                     if (!str_contains($query->sql, 'insert into `slow_queries`')) {
-                        \App\Models\SlowQuery::create([
-                            'sql_query' => $query->sql,
-                            'bindings' => $query->bindings,
-                            'execution_time_ms' => $query->time,
-                            'path' => request()->path(),
-                        ]);
+                        try {
+                            \App\Models\SlowQuery::create([
+                                'sql_query' => $query->sql,
+                                'bindings' => $query->bindings,
+                                'execution_time_ms' => $query->time,
+                                'path' => request()->path(),
+                            ]);
+                        } catch (\Throwable $e) {
+                            // Ignore logging errors (e.g. table not found during migrations)
+                        }
                     }
                 }
             });

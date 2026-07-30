@@ -12,7 +12,7 @@ class AppraisalTemplateController extends Controller
 {
     public function index()
     {
-        $templates = AppraisalTemplate::with('jobGrade')->withCount('kpis')->get();
+        $templates = AppraisalTemplate::with(['jobGrade', 'kpis'])->withCount('kpis')->get();
         $jobGrades = JobGrade::all();
 
         return Inertia::render('HR/Appraisals/Templates/Index', [
@@ -48,7 +48,7 @@ class AppraisalTemplateController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Template created successfully.');
+        return redirect()->back()->with('success', 'تم إنشاء قالب التقييم بنجاح.');
     }
 
     public function update(Request $request, AppraisalTemplate $template)
@@ -78,12 +78,12 @@ class AppraisalTemplateController extends Controller
             ]);
         }
 
-        return redirect()->back()->with('success', 'Template updated successfully.');
+        return redirect()->back()->with('success', 'تم تحديث قالب التقييم بنجاح.');
     }
 
     public function destroy(AppraisalTemplate $template)
     {
         $template->delete();
-        return redirect()->back()->with('success', 'Template deleted successfully.');
+        return redirect()->back()->with('success', 'تم حذف قالب التقييم بنجاح.');
     }
 }

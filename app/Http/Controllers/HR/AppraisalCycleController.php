@@ -34,7 +34,7 @@ class AppraisalCycleController extends Controller
             $this->notifyEmployees($cycle);
         }
 
-        return redirect()->back()->with('success', 'Appraisal cycle created successfully.');
+        return redirect()->back()->with('success', 'تم إنشاء دورة التقييم بنجاح.');
     }
 
     public function update(Request $request, AppraisalCycle $cycle)
@@ -54,7 +54,7 @@ class AppraisalCycleController extends Controller
             $this->notifyEmployees($cycle);
         }
 
-        return redirect()->back()->with('success', 'Appraisal cycle updated successfully.');
+        return redirect()->back()->with('success', 'تم تحديث دورة التقييم بنجاح.');
     }
 
     private function notifyEmployees(AppraisalCycle $cycle)
@@ -79,6 +79,6 @@ class AppraisalCycleController extends Controller
     public function destroy(AppraisalCycle $cycle)
     {
         $cycle->delete();
-        return redirect()->back()->with('success', 'Appraisal cycle deleted successfully.');
+        return redirect()->back()->with('success', 'تم حذف دورة التقييم بنجاح.');
     }
 }

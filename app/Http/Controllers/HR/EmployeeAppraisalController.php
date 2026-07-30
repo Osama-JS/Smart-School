@@ -70,13 +70,20 @@ class EmployeeAppraisalController extends Controller
     {
         $user = Auth::user();
         
-        $query = EmployeeAppraisal::with(['employee', 'cycle', 'template']);
+        $query = EmployeeAppraisal::with(['employee.user', 'cycle', 'template']);
         
         $employee = $user->employee;
-        if ($employee && !$user->hasPermission('عرض التقييمات الإدارية')) {
-            // If the user doesn't have the global permission, they can only see their own or their team's appraisals.
-            $query->where('employee_id', $employee->id)
-                  ->orWhere('manager_id', $employee->id);
+        if (!$user->hasPermission('عرض التقييمات الإدارية')) {
+            if ($employee) {
+                // If the user doesn't have the global permission, they can only see their own or their team's appraisals.
+                $query->where(function($q) use ($employee) {
+                    $q->where('employee_id', $employee->id)
+                      ->orWhere('manager_id', $employee->id);
+                });
+            } else {
+                // Not an employee and no global permission? See nothing.
+                $query->where('id', '<', 0);
+            }
         }
 
         $appraisals = $query->latest()->get();
@@ -96,16 +103,26 @@ class EmployeeAppraisalController extends Controller
 
         $employee = Auth::user()->employee;
         if (!$employee) {
-            return redirect()->back()->with('error', 'You are not linked to an employee profile.');
+            return redirect()->back()->with('error', 'حسابك غير مرتبط بملف موظف.');
         }
 
         // Find applicable template
-        $template = AppraisalTemplate::where('job_grade_id', $employee->job_grade_id)
-            ->where('is_active', true)
-            ->first();
+        $template = null;
+        if ($employee->job_grade_id) {
+            $template = AppraisalTemplate::where('job_grade_id', $employee->job_grade_id)
+                ->where('is_active', true)
+                ->first();
+        }
+
+        // Fallback to generic template
+        if (!$template) {
+            $template = AppraisalTemplate::whereNull('job_grade_id')
+                ->where('is_active', true)
+                ->first();
+        }
 
         if (!$template) {
-            return redirect()->back()->with('error', 'No active appraisal template found for your job grade.');
+            return redirect()->back()->with('error', 'لا يوجد قالب تقييم مفعل مخصص لدرجتك الوظيفية أو قالب عام.');
         }
 
         // Check if already exists
@@ -114,7 +131,7 @@ class EmployeeAppraisalController extends Controller
             ->exists();
 
         if ($exists) {
-            return redirect()->back()->with('error', 'You already have an appraisal for this cycle.');
+            return redirect()->back()->with('error', 'يوجد لديك تقييم بالفعل لهذه الدورة.');
         }
 
         $appraisal = EmployeeAppraisal::create([
@@ -132,13 +149,13 @@ class EmployeeAppraisalController extends Controller
             ]);
         }
 
-        return redirect()->route('hr.appraisals.show', $appraisal->id)->with('success', 'Appraisal initialized.');
+        return redirect()->route('hr.appraisals.show', $appraisal->id)->with('success', 'تم بدء التقييم بنجاح.');
     }
 
     // Show Appraisal Form (Self or Manager view)
     public function show(EmployeeAppraisal $appraisal)
     {
-        $appraisal->load(['employee.department', 'employee.jobGrade', 'cycle', 'template.kpis', 'scores.kpi', 'scores.goals']);
+        $appraisal->load(['employee.user', 'employee.department', 'employee.jobGrade', 'manager.user', 'cycle', 'template.kpis', 'scores.kpi', 'scores.goals']);
 
         // Fetch Integration Data
         $startDate = $appraisal->cycle->start_date;
@@ -261,7 +278,7 @@ class EmployeeAppraisalController extends Controller
             );
         }
 
-        return redirect()->route('hr.appraisals.index')->with('success', 'Self evaluation submitted.');
+        return redirect()->route('hr.appraisals.index')->with('success', 'تم تقديم التقييم الذاتي بنجاح.');
     }
 
     // Submit Manager Evaluation
@@ -299,7 +316,7 @@ class EmployeeAppraisalController extends Controller
             'manager_signature' => $validated['manager_signature'] ?? null
         ]);
 
-        return redirect()->route('hr.appraisals.index')->with('success', 'Manager evaluation submitted.');
+        return redirect()->route('hr.appraisals.index')->with('success', 'تم اعتماد تقييم المدير بنجاح.');
     }
 
     // HR Approval
@@ -319,7 +336,7 @@ class EmployeeAppraisalController extends Controller
             'hr_signature' => $validated['hr_signature'] ?? null
         ]);
 
-        return redirect()->route('hr.appraisals.index')->with('success', 'Appraisal approved by HR.');
+        return redirect()->route('hr.appraisals.index')->with('success', 'تم الاعتماد النهائي للتقييم بنجاح.');
     }
 
     // SMART Goals Management
