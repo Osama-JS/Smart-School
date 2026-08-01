@@ -1,21 +1,22 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import {
     LayoutDashboard, Users, Calendar, Settings, Search, Bell,
     Menu, X, BookOpen, Clock, ShieldCheck, Map, Activity,
     Home, LogOut, ChevronDown, CheckSquare, Plus, CheckCircle, Store, Sun, Moon, PanelLeftClose, PanelLeftOpen, User,
     FileText, Sliders, Layers, BarChart, UserPlus, FileSignature, ShieldAlert,
-    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ArrowUp, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone, Trophy, Medal, Database
+    ListTodo, AlertTriangle, Eye, Shield, Key, HeartPulse, GraduationCap, ArrowUp, ClipboardList, Book, Newspaper, Library, Briefcase, Mail, Star, AlertCircle, Megaphone, Trophy, Medal, Database, Award
 } from 'lucide-react';
 import NotificationDropdown from '@/Components/NotificationDropdown';
 import ToastNotification from '@/Components/ToastNotification';
 
 export default function AdminLayout({ children, activeMenu = 'المستخدمون' }) {
-    const { auth, logo_url, isAdmin, isSystemAdmin } = usePage().props;
+    const { auth, logo_url, isAdmin, isSystemAdmin, active_child_id } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
     const [sidebarClosing, setSidebarClosing] = useState(false);
     const [profileDropdown, setProfileDropdown] = useState(false);
+    const [childSwitchModal, setChildSwitchModal] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
@@ -148,8 +149,38 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'القائمة الرئيسية',
             items: [
-                { name: 'الرئيسية', icon: Home, url: route('dashboard') },
+                { name: 'الرئيسية', icon: Home, url: route('dashboard'), role: '!طالب', allowParent: true },
                 { name: 'المستخدمون', icon: Users, url: route('users.index'), permission: 'إدارة المستخدمين' },
+            ]
+        },
+        {
+            title: 'بوابة ولي الأمر',
+            items: [
+                { name: 'مركز التحكم الشامل', icon: LayoutDashboard, url: route('parent.dashboard'), role: 'ولي أمر' },
+                { name: 'الجدول الأسبوعي', icon: Calendar, url: route('parent.timetable'), role: 'ولي أمر' },
+                { name: 'الحضور والغياب', icon: Clock, url: route('parent.attendance'), role: 'ولي أمر' },
+                { name: 'جدول الاختبارات', icon: ClipboardList, url: route('parent.exam-schedule'), role: 'ولي أمر' },
+                { name: 'المهام والواجبات', icon: ListTodo, url: route('parent.tasks'), role: 'ولي أمر' },
+                { name: 'المخالفات والتعهدات', icon: AlertTriangle, url: route('parent.discipline'), role: 'ولي أمر' },
+                { name: 'درجاتي ونتائجي', icon: Award, url: route('parent.grades'), role: 'ولي أمر' },
+                { name: 'سجل الإنجازات', icon: Trophy, url: route('parent.achievements'), role: 'ولي أمر' },
+                { name: 'المكتبة الرقمية', icon: Library, url: route('parent.library'), role: 'ولي أمر' },
+                { name: 'إشعاراتي', icon: Bell, url: route('notifications.my-notifications'), role: 'ولي أمر' },
+            ]
+        },
+        {
+            title: 'بوابة الطالب',
+            items: [
+                { name: 'لوحة الطالب', icon: Home, url: route('student.dashboard'), role: 'طالب' },
+                { name: 'الجدول الأسبوعي', icon: Calendar, url: route('student.timetable'), role: 'طالب' },
+                { name: 'الحضور والغياب', icon: Clock, url: route('student.attendance'), role: 'طالب' },
+                { name: 'جدول الاختبارات', icon: ClipboardList, url: route('student.exam-schedule'), role: 'طالب' },
+                { name: 'المهام والواجبات', icon: ListTodo, url: route('student.tasks'), role: 'طالب' },
+                { name: 'المخالفات والتعهدات', icon: AlertTriangle, url: route('student.discipline'), role: 'طالب' },
+                { name: 'درجاتي ونتائجي', icon: Award, url: route('student.grades'), role: 'طالب' },
+                { name: 'سجل الإنجازات', icon: Trophy, url: route('student.achievements'), role: 'طالب' },
+                { name: 'المكتبة الرقمية', icon: Library, url: route('student.library'), role: 'طالب' },
+                { name: 'إشعاراتي', icon: Bell, url: route('notifications.my-notifications'), role: 'طالب' },
             ]
         },
         {
@@ -200,8 +231,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'المواد الدراسية', icon: BookOpen, url: route('academic.subjects.index'), permission: 'إدارة المواد الدراسية' },
                 { name: 'إعداد الحصص اليومية', icon: Clock, url: route('academic.periods'), permission: 'إدارة الجداول الدراسية' },
                 { name: 'جدول الحصص العام', icon: Calendar, url: route('academic.timetable'), permission: 'إدارة الجداول الدراسية' },
-                { name: 'جدولي الدراسي', icon: Calendar, url: route('academic.my-timetable') },
-                { name: 'جدول اختباراتي', icon: Calendar, url: route('student.exam-schedule') },
+                { name: 'جدولي الدراسي', icon: Calendar, url: route('academic.my-timetable'), role: 'معلم' },
                 { name: 'التغطية والاحتياط', icon: ShieldCheck, url: route('academic.coverage.index'), permission: 'إدارة الجداول الدراسية' },
                 { name: 'جداول الاختبارات', icon: FileText, url: route('academic.exam-schedules.index'), permission: 'إدارة الجداول الدراسية' },
                 { name: 'فترات الرصد', icon: Calendar, url: route('academic.result-periods.index'), permission: 'إدارة الدرجات' },
@@ -247,7 +277,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'المحتوى والتواصل',
             items: [
-                { name: 'الأخبار والإعلانات', icon: Megaphone, url: route('news.index') },
+                { name: 'الأخبار والإعلانات', icon: Megaphone, url: route('news.index'), allowStudent: true },
                 { name: 'المكتبة الرقمية', icon: Library, url: route('academic.library.digital.index'), permission: 'عرض المكتبة الرقمية' },
                 { name: 'الكتب الورقية', icon: Book, url: route('academic.library.books.index'), permission: 'عرض الكتب الورقية' },
                 { name: 'استعارة الكتب', icon: BookOpen, url: route('academic.library.borrowings.index'), permission: 'عرض الاستعارات' },
@@ -269,7 +299,22 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
 
     const filteredMenuGroups = menuGroups.map(group => ({
         ...group,
-        items: group.items.filter(item => !item.permission || hasPermission(item.permission))
+        items: group.items.filter(item => {
+            // Student isolation logic
+            if (auth?.user?.role?.name === 'طالب') {
+                return item.role === 'طالب' || item.allowStudent === true;
+            }
+            // Parent isolation logic
+            if (auth?.user?.role?.name === 'ولي أمر') {
+                return item.role === 'ولي أمر' || item.allowParent === true;
+            }
+            // Normal employee logic
+            if (item.role) {
+                if (item.role.startsWith('!') && auth?.user?.role?.name === item.role.substring(1)) return false;
+                if (!item.role.startsWith('!') && auth?.user?.role?.name !== item.role) return false;
+            }
+            return !item.permission || hasPermission(item.permission);
+        })
     })).filter(group => group.items.length > 0);
 
     // Compute Search Results
@@ -489,6 +534,19 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                                     <Link href={route('profile.edit')} className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
                                         <User size={16} /> <span>الملف الشخصي</span>
                                     </Link>
+                                    
+                                    {auth?.user?.role?.name === 'ولي أمر' && (
+                                        <button 
+                                            onClick={() => {
+                                                setProfileDropdown(false);
+                                                setChildSwitchModal(true);
+                                            }}
+                                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors w-full text-right"
+                                        >
+                                            <Users size={16} /> <span>تبديل الأبناء</span>
+                                        </button>
+                                    )}
+
                                     <Link href={route('admin.settings')} className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
                                         <Settings size={16} /> <span>الإعدادات</span>
                                     </Link>
@@ -633,6 +691,77 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
 
             {/* Global Toast Notifications */}
             <ToastNotification />
+
+            {/* Child Switch Modal */}
+            {childSwitchModal && auth?.user?.role?.name === 'ولي أمر' && auth?.user?.children && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setChildSwitchModal(false)} />
+                    <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                            <h2 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+                                <Users className="text-primary-500" size={24} /> تبديل الأبناء
+                            </h2>
+                            <button 
+                                onClick={() => setChildSwitchModal(false)}
+                                className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors"
+                            >
+                                <X size={20} strokeWidth={3} />
+                            </button>
+                        </div>
+                        <div className="p-6 max-h-[60vh] overflow-y-auto">
+                            <div className="space-y-3">
+                                {auth.user.children.length === 0 ? (
+                                    <div className="text-center py-8 text-slate-500">لا يوجد أبناء مسجلين بحسابك</div>
+                                ) : (
+                                    auth.user.children.map(child => {
+                                        const isActive = active_child_id === child.id;
+                                        return (
+                                            <button 
+                                                key={child.id}
+                                                onClick={() => {
+                                                    router.get(window.location.pathname, { child_id: child.id }, { preserveState: false });
+                                                    setChildSwitchModal(false);
+                                                }}
+                                                className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-right ${
+                                                    isActive 
+                                                        ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/10 shadow-sm' 
+                                                        : 'border-slate-100 dark:border-slate-800 hover:border-primary-200 dark:hover:border-primary-500/30 hover:bg-slate-50 dark:hover:bg-slate-800'
+                                                }`}
+                                            >
+                                                <div className={`w-14 h-14 rounded-xl flex items-center justify-center shrink-0 border ${
+                                                    isActive ? 'bg-primary-100 border-primary-200 dark:bg-primary-900/50 dark:border-primary-700' : 'bg-slate-100 dark:bg-slate-800 border-transparent text-slate-400'
+                                                }`}>
+                                                    {child.user?.profile_photo_path ? (
+                                                        <img src={`/storage/${child.user.profile_photo_path}`} alt={child.user?.name} className="w-full h-full object-cover rounded-xl" />
+                                                    ) : (
+                                                        <span className={`text-xl font-bold ${isActive ? 'text-primary-600 dark:text-primary-400' : 'text-slate-400'}`}>
+                                                            {child.user?.name ? child.user.name.charAt(0) : 'ط'}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <h3 className={`font-bold text-lg ${isActive ? 'text-primary-700 dark:text-primary-300' : 'text-slate-700 dark:text-slate-200'}`}>
+                                                        {child.user?.name || 'طالب غير معروف'}
+                                                    </h3>
+                                                    <p className={`text-sm mt-0.5 ${isActive ? 'text-primary-600/80 dark:text-primary-400/80' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                        {child.current_enrollment?.division?.grade?.name || 'غير مسجل'} 
+                                                        {child.current_enrollment?.division?.name ? ` - شعبة ${child.current_enrollment.division.name}` : ''}
+                                                    </p>
+                                                </div>
+                                                {isActive && (
+                                                    <div className="mr-auto w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center shadow-sm">
+                                                        <CheckSquare size={14} />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -42,6 +42,10 @@ class HandleInertiaRequests extends Middleware
             if ($user->role) {
                 $userPermissions = $user->role->permissions->pluck('name')->toArray();
             }
+            
+            if ($user->role?->name === 'ولي أمر') {
+                $user->loadMissing('children.user', 'children.currentEnrollment.division.grade');
+            }
         }
 
         return [
@@ -50,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'permissions' => $userPermissions,
             ],
+            'active_child_id' => $user && $user->role?->name === 'ولي أمر' ? (session('selected_child_id') ?? $user->children->first()?->id) : null,
             'isAdmin' => $isAdmin,
             'isSystemAdmin' => $isSystemAdmin,
             'logo_url' => asset('images/logo.png') . '?v=' . (file_exists(public_path('images/logo.png')) ? filemtime(public_path('images/logo.png')) : time()),

@@ -179,7 +179,7 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
             <div className="py-6 sm:py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 relative">
                 
                 {/* Header Section with Brand Colors and Geometric Accent */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none">
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-[2.5rem] p-6 md:p-8 mb-8 shadow-sm dark:shadow-none">
                     {/* Brand Line Accent */}
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
@@ -201,15 +201,17 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                 إدارة موارد التعلم والملفات التعليمية والمراجع الرقمية
                             </p>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-                            <button
-                                onClick={() => setIsAddModalOpen(true)}
-                                className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95"
-                            >
-                                <Plus size={18} /> 
-                                <span>رفع مورد جديد</span>
-                            </button>
-                        </div>
+                        {auth?.user?.role?.name !== 'طالب' && (
+                            <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                                <button
+                                    onClick={() => setIsAddModalOpen(true)}
+                                    className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all active:scale-95"
+                                >
+                                    <Plus size={18} /> 
+                                    <span>رفع مورد جديد</span>
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -382,9 +384,11 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                 إزالة التصفية
                             </button>
                         ) : (
-                            <button onClick={() => setIsAddModalOpen(true)} className="px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20">
-                                إضافة المورد الأول
-                            </button>
+                            auth?.user?.role?.name !== 'طالب' && (
+                                <button onClick={() => setIsAddModalOpen(true)} className="px-6 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20">
+                                    إضافة المورد الأول
+                                </button>
+                            )
                         )}
                     </div>
                 ) : (
@@ -418,7 +422,7 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                 >
                                                     <Bookmark size={16} fill={item.is_bookmarked_by_user ? "currentColor" : "none"} />
                                                 </button>
-                                                {auth?.user?.role?.name !== 'معلم' && (
+                                                {!['معلم', 'طالب'].includes(auth?.user?.role?.name) && (
                                                     <button 
                                                         onClick={() => handleDelete(item)}
                                                         className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
@@ -569,7 +573,7 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                             >
                                                                 <Download size={18} />
                                                             </a>
-                                                            {auth?.user?.role?.name !== 'معلم' && (
+                                                            {!['معلم', 'طالب'].includes(auth?.user?.role?.name) && (
                                                                 <button 
                                                                     onClick={() => handleDelete(item)}
                                                                     className="p-2 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all"

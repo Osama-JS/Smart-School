@@ -267,11 +267,63 @@ Route::middleware('auth')->group(function () {
     // Teacher's Timetable and Classroom Visits (No specific permission needed, checking logic in controller or open to all teachers)
     Route::get('/academic/my-timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'myTimetable'])->name('academic.my-timetable');
     
-    // Student's Exam Schedule
-    Route::get('/student/my-exam-schedule', [\App\Http\Controllers\Student\ExamScheduleController::class, 'index'])->name('student.exam-schedule');
-    Route::get('/student/my-exam-schedule/{examSchedule}/ics', [\App\Http\Controllers\Student\ExamScheduleController::class, 'exportIcs'])->name('student.exam-schedule.ics');
-    Route::get('/student/my-exam-schedule/{examSchedule}/print', [\App\Http\Controllers\Student\ExamScheduleController::class, 'printSchedule'])->name('student.exam-schedule.print');
-    
+    // ── Parent Portal ──
+    Route::prefix('parent')->name('parent.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [\App\Http\Controllers\Student\StudentDashboardController::class, 'index'])->name('dashboard');
+        
+        // Modules (Reusing Student Controllers)
+        Route::get('/timetable', [\App\Http\Controllers\Student\MyTimetableController::class, 'index'])->name('timetable');
+        Route::get('/attendance', [\App\Http\Controllers\Student\MyAttendanceController::class, 'index'])->name('attendance');
+        Route::get('/exam-schedule', [\App\Http\Controllers\Student\ExamScheduleController::class, 'index'])->name('exam-schedule');
+        Route::get('/tasks', [\App\Http\Controllers\Student\MyTasksController::class, 'index'])->name('tasks');
+        Route::get('/discipline', [\App\Http\Controllers\Student\MyDisciplineController::class, 'index'])->name('discipline');
+        Route::get('/grades', [\App\Http\Controllers\Student\MyGradesController::class, 'index'])->name('grades');
+        Route::get('/achievements', [\App\Http\Controllers\Student\MyAchievementsController::class, 'index'])->name('achievements');
+        Route::get('/library', [\App\Http\Controllers\Student\MyLibraryController::class, 'index'])->name('library');
+    });
+
+    // ── Student Portal ──
+    Route::prefix('student')->name('student.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [\App\Http\Controllers\Student\StudentDashboardController::class, 'index'])->name('dashboard');
+        
+        // Exam Schedule
+        Route::get('/my-exam-schedule', [\App\Http\Controllers\Student\ExamScheduleController::class, 'index'])->name('exam-schedule');
+        Route::get('/my-exam-schedule/{examSchedule}/ics', [\App\Http\Controllers\Student\ExamScheduleController::class, 'exportIcs'])->name('exam-schedule.ics');
+        Route::get('/my-exam-schedule/{examSchedule}/print', [\App\Http\Controllers\Student\ExamScheduleController::class, 'printSchedule'])->name('exam-schedule.print');
+        
+        // Timetable
+        Route::get('/my-timetable', [\App\Http\Controllers\Student\MyTimetableController::class, 'index'])->name('timetable');
+        
+        // Study Plans
+        Route::get('/my-study-plans', [\App\Http\Controllers\Student\MyStudyPlanController::class, 'index'])->name('study-plans');
+        
+        // Grades & Results
+        Route::get('/my-grades', [\App\Http\Controllers\Student\MyGradesController::class, 'index'])->name('grades');
+        Route::get('/my-grades/certificate/{semester}', [\App\Http\Controllers\Student\MyGradesController::class, 'certificate'])->name('certificate');
+        Route::get('/my-grades/certificate-monthly/{period}', [\App\Http\Controllers\Student\MyGradesController::class, 'monthlyCertificate'])->name('certificate.monthly');
+        Route::get('/my-attendance', [\App\Http\Controllers\Student\MyAttendanceController::class, 'index'])->name('attendance');
+        
+        // Records (Attendance, Gamification, Discipline)
+        Route::get('/my-records', [\App\Http\Controllers\Student\MyRecordController::class, 'index'])->name('records');
+
+        // Tasks & Homework
+        Route::get('/my-tasks', [\App\Http\Controllers\Student\MyTasksController::class, 'index'])->name('tasks');
+        Route::post('/my-tasks', [\App\Http\Controllers\Student\MyTasksController::class, 'store'])->name('tasks.store');
+        Route::put('/my-tasks/{task}/status', [\App\Http\Controllers\Student\MyTasksController::class, 'updateStatus'])->name('tasks.update-status');
+        Route::delete('/my-tasks/{task}', [\App\Http\Controllers\Student\MyTasksController::class, 'destroy'])->name('tasks.destroy');
+
+        // Discipline & Pledges
+        Route::get('/my-discipline', [\App\Http\Controllers\Student\MyDisciplineController::class, 'index'])->name('discipline');
+        Route::put('/my-discipline/pledge/{pledge}/sign', [\App\Http\Controllers\Student\MyDisciplineController::class, 'signPledge'])->name('discipline.sign-pledge');
+
+        // Achievements
+        Route::get('/my-achievements', [\App\Http\Controllers\Student\MyAchievementsController::class, 'index'])->name('achievements');
+
+        // Library
+        Route::get('/my-library', [\App\Http\Controllers\Student\MyLibraryController::class, 'index'])->name('library');
+    });
     // Teacher's Exam Schedule
     Route::get('/teacher/my-exam-schedules', [\App\Http\Controllers\Teacher\ExamScheduleController::class, 'index'])->name('teacher.my-exam-schedules');
     Route::get('/teacher/my-exam-schedules/{examSchedule}/print', [\App\Http\Controllers\Teacher\ExamScheduleController::class, 'print'])->name('teacher.my-exam-schedules.print');

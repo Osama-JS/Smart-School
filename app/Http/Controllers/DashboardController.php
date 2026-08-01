@@ -242,6 +242,16 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // --- Student Dashboard ---
+        if ($roleName === 'طالب') {
+            return redirect()->route('student.dashboard');
+        }
+
+        // --- Parent Dashboard ---
+        if ($roleName === 'ولي أمر') {
+            return redirect()->route('parent.dashboard');
+        }
+
         return Inertia::render('Dashboards/EmployeeDashboard', [
             'attendanceStatus' => $todayAttendance,
             'upcomingMeetings' => $upcomingMeetings,

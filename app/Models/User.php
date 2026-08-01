@@ -61,6 +61,9 @@ class User extends Authenticatable
      */
     public function hasPermission($permissionName): bool
     {
+        if ($this->role->name === 'طالب' && $permissionName === 'عرض المكتبة الرقمية') {
+            return true;
+        }
         return $this->role->permissions()->where('name', $permissionName)->exists();
     }
 

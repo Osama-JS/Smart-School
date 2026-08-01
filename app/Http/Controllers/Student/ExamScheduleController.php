@@ -10,14 +10,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use Inertia\Inertia;
 
+use App\Traits\ResolvesStudent;
+
 class ExamScheduleController extends Controller
 {
+    use ResolvesStudent;
+
     public function index(Request $request)
     {
-        $user = auth()->user();
-        
-        // Find if user is a student
-        $student = Student::where('user_id', $user->id)->first();
+        [$student, $children] = $this->resolveStudent($request);
         
         $divisionIds = [];
         
@@ -26,11 +27,6 @@ class ExamScheduleController extends Controller
             $divisionIds = Enrollment::where('student_id', $student->id)
                 ->pluck('division_id')
                 ->toArray();
-        } else {
-            // Fallback for testing: if user is not a student (e.g., admin), 
-            // maybe they want to view the page. Let's pass an empty array, 
-            // or if requested, we could pass a specific division.
-            // For now, we leave it empty, and the UI will show "No schedule assigned".
         }
 
         if (empty($divisionIds)) {
@@ -51,6 +47,8 @@ class ExamScheduleController extends Controller
         return Inertia::render('Student/MyExamSchedule', [
             'schedules' => $schedules,
             'isStudent' => $student ? true : false,
+            'children' => $children ?? [],
+            'activeChildId' => $student?->id,
         ]);
     }
 

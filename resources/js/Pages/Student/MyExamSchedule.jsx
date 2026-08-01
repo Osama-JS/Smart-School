@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Calendar, Clock, BookOpen, Download, AlertCircle, FileText, ChevronDown, CheckCircle2, MapPin } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ar';
+import ChildSelector from '@/Components/ChildSelector';
 
 // Dynamic color generator for subjects
 const getSubjectColor = (id) => {
@@ -17,7 +18,7 @@ const getSubjectColor = (id) => {
     return colors[id % colors.length];
 };
 
-export default function MyExamSchedule({ schedules, isStudent }) {
+export default function MyExamSchedule({ schedules, isStudent, children, activeChildId }) {
     
     const renderTimeline = (schedule) => {
         const days = {};
@@ -140,21 +141,31 @@ export default function MyExamSchedule({ schedules, isStudent }) {
             <Head title="جدول الاختبارات الخاص بي" />
             
             <div className="p-4 md:p-8 max-w-6xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
-                    <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-bold text-sm mb-3 border border-primary-100 dark:border-primary-800/50">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
-                            </span>
-                            الاستعداد للاختبارات
+                <ChildSelector children={children} activeChildId={activeChildId} />
+
+                <div className="relative overflow-hidden bg-white dark:bg-[#121820]/95 border border-slate-200 dark:border-slate-800/80 rounded-[2.5rem] p-8 md:p-10 mb-10 shadow-sm">
+                    <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-400 via-primary-600 to-primary-800" />
+                    <div className="absolute -left-20 -top-20 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl pointer-events-none" />
+
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 flex items-center justify-center shrink-0 border border-primary-200 dark:border-primary-700/50 shadow-inner">
+                                <Calendar size={32} className="text-primary-600 dark:text-primary-400" />
+                            </div>
+                            <div>
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-bold text-xs mb-3 border border-primary-100 dark:border-primary-800/50">
+                                    <span className="relative flex h-1.5 w-1.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary-500"></span>
+                                    </span>
+                                    الاستعداد للاختبارات
+                                </div>
+                                <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">جدول الاختبارات</h1>
+                                <p className="text-slate-500 dark:text-slate-400 mt-1.5 font-medium max-w-xl leading-relaxed">
+                                    استعرض مواعيد اختباراتك والمقررات المطلوبة لكل مادة لضمان أفضل استعداد للنجاح 💯
+                                </p>
+                            </div>
                         </div>
-                        <h1 className="text-3xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-800 to-slate-500 dark:from-white dark:to-slate-400 flex items-center gap-4">
-                            جدول الاختبارات
-                        </h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-3 text-lg font-medium max-w-2xl">
-                            استعرض مواعيد اختباراتك والمقررات المطلوبة لكل مادة لضمان أفضل استعداد للنجاح.
-                        </p>
                     </div>
                 </div>
 

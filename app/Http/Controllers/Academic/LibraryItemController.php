@@ -35,6 +35,7 @@ class LibraryItemController extends Controller
 
         $branchId = $user->branch_id ?? null;
         $isTeacher = $user->role && $user->role->name === 'معلم';
+        $isStudent = $user->role && $user->role->name === 'طالب';
 
         $gradesQuery = Grade::query();
         if ($branchId) {
@@ -44,6 +45,23 @@ class LibraryItemController extends Controller
         $subjectsQuery = Subject::query();
         if ($branchId) {
             $subjectsQuery->where('branch_id', $branchId);
+        }
+
+        if ($isStudent && $user->student) {
+            $enrollment = $user->student->currentEnrollment()->with('division')->first();
+            if ($enrollment && $enrollment->division) {
+                $studentGradeId = $enrollment->division->grade_id;
+                $gradesQuery->where('id', $studentGradeId);
+                // Override the items query to only show items for this student's grade
+                $items = LibraryItem::with(['grade', 'subject', 'uploader', 'ratings', 'bookmarks'])
+                    ->where('grade_id', $studentGradeId)
+                    ->when($request->subject_id, function ($query, $subject_id) {
+                        return $query->where('subject_id', $subject_id);
+                    })
+                    ->latest()
+                    ->paginate(10)
+                    ->withQueryString();
+            }
         }
 
         if ($isTeacher) {
@@ -84,6 +102,8 @@ class LibraryItemController extends Controller
 
     public function store(Request $request)
     {
+        if (auth()->user()->role && auth()->user()->role->name === 'طالب') abort(403);
+
         $request->validate([
             'title' => 'required|string|max:255',
             'grade_id' => 'required|exists:grades,id',
@@ -124,6 +144,8 @@ class LibraryItemController extends Controller
 
     public function update(Request $request, LibraryItem $libraryItem)
     {
+        if (auth()->user()->role && auth()->user()->role->name === 'طالب') abort(403);
+
         $request->validate([
             'title' => 'required|string|max:255',
             'grade_id' => 'required|exists:grades,id',
@@ -161,7 +183,7 @@ class LibraryItemController extends Controller
     public function destroy(LibraryItem $libraryItem)
     {
         $user = auth()->user();
-        if ($user->role && $user->role->name === 'معلم') {
+        if ($user->role && in_array($user->role->name, ['معلم', 'طالب'])) {
             abort(403, 'غير مصرح لك بحذف الموارد من المكتبة الرقمية. الرجاء الرجوع للإدارة.');
         }
 
