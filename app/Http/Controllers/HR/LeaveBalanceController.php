@@ -145,9 +145,16 @@ class LeaveBalanceController extends Controller
         $employees = $employeesQuery->get();
 
         $count = 0;
+        $skippedTypes = [];
+
         foreach ($employees as $employee) {
             foreach ($leaveTypes as $type) {
-                if ($type->default_days === null) continue;
+                if ($type->default_days === null) {
+                    if (!in_array($type->name, $skippedTypes)) {
+                        $skippedTypes[] = $type->name;
+                    }
+                    continue;
+                }
 
                 $exists = LeaveBalance::where('employee_id', $employee->id)
                     ->where('academic_year_id', $request->academic_year_id)
@@ -164,6 +171,19 @@ class LeaveBalanceController extends Controller
                     $count++;
                 }
             }
+        }
+
+        if (count($skippedTypes) > 0) {
+            $skippedNames = implode('، ', $skippedTypes);
+            if ($count === 0) {
+                return back()->with('error', "لم يتم توليد أي أرصدة. يرجى تحديد (الأيام الافتراضية) أولاً لأنواع الإجازات التالية: {$skippedNames}.");
+            } else {
+                return back()->with('warning', "تم توليد {$count} رصيد جديد بنجاح، وتم تخطي الأنواع التالية لعدم تحديد أيام افتراضية لها: {$skippedNames}.");
+            }
+        }
+
+        if ($count === 0) {
+            return back()->with('info', 'لم يتم توليد أي أرصدة جديدة. (جميع الموظفين المحددين يمتلكون أرصدة مسبقاً).');
         }
 
         return back()->with('success', "تم توليد {$count} رصيد جديد للموظفين بنجاح.");

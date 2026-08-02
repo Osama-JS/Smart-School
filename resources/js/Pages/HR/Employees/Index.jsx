@@ -54,9 +54,9 @@ function ActionMenu({ emp }) {
                     <Link href={route('hr.employees.edit', emp.id)} className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
                         <Edit2 size={14} className="text-primary-500" /> تعديل البيانات
                     </Link>
-                    <button className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
+                    <Link href={route('hr.leaves', { employee_id: emp.id })} className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
                         <Calendar size={14} className="text-amber-500" /> سجل الإجازات
-                    </button>
+                    </Link>
                     <Link href={route('hr.employees.destroy', emp.id)} method="delete" as="button" className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-500/10 transition-colors text-right">
                         <Trash2 size={14} /> حذف الموظف
                     </Link>

@@ -18,17 +18,41 @@ class EmployeeAppraisalController extends Controller
 {
     public function dashboard()
     {
+        $user = Auth::user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $branchId = $user->branch_id ?? session('branch_id');
+
+        $baseQuery = function($query) use ($isSystemAdmin, $branchId) {
+            if (!$isSystemAdmin && $branchId) {
+                $query->join('employees as emp_filter', 'employee_appraisals.employee_id', '=', 'emp_filter.id')
+                      ->join('users as usr_filter', 'emp_filter.user_id', '=', 'usr_filter.id')
+                      ->where('usr_filter.branch_id', $branchId);
+            }
+        };
+
         // 1. Department Performance (Average Final Score by Department)
-        $departmentPerformance = \DB::table('employee_appraisals')
+        $deptQuery = \DB::table('employee_appraisals')
             ->join('employees', 'employee_appraisals.employee_id', '=', 'employees.id')
             ->join('departments', 'employees.department_id', '=', 'departments.id')
             ->select('departments.name', \DB::raw('ROUND(AVG(employee_appraisals.final_score), 1) as avg_score'))
             ->whereNotNull('employee_appraisals.final_score')
-            ->groupBy('departments.id', 'departments.name')
-            ->get();
+            ->groupBy('departments.id', 'departments.name');
+            
+        if (!$isSystemAdmin && $branchId) {
+            $deptQuery->join('users', 'employees.user_id', '=', 'users.id')
+                      ->where('users.branch_id', $branchId);
+        }
+        $departmentPerformance = $deptQuery->get();
 
         // 2. Score Distribution
-        $completedAppraisals = EmployeeAppraisal::whereNotNull('final_score')->get();
+        $completedAppraisalsQuery = EmployeeAppraisal::whereNotNull('final_score');
+        if (!$isSystemAdmin && $branchId) {
+            $completedAppraisalsQuery->whereHas('employee.user', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+        $completedAppraisals = $completedAppraisalsQuery->get();
+        
         $distribution = [
             'excellent' => $completedAppraisals->where('final_score', '>=', 90)->count(),
             'vgood' => $completedAppraisals->where('final_score', '>=', 80)->where('final_score', '<', 90)->count(),
@@ -37,24 +61,27 @@ class EmployeeAppraisalController extends Controller
         ];
 
         // 3. Self vs Manager Score averages (from 1 to 5)
-        $scoresData = \DB::table('employee_appraisal_scores')
-            ->select(\DB::raw('ROUND(AVG(self_score), 2) as avg_self'), \DB::raw('ROUND(AVG(manager_score), 2) as avg_manager'))
-            ->whereNotNull('self_score')
-            ->whereNotNull('manager_score')
-            ->first();
+        $scoresQuery = \DB::table('employee_appraisal_scores')
+            ->join('employee_appraisals', 'employee_appraisal_scores.appraisal_id', '=', 'employee_appraisals.id')
+            ->select(\DB::raw('ROUND(AVG(employee_appraisal_scores.self_score), 2) as avg_self'), \DB::raw('ROUND(AVG(employee_appraisal_scores.manager_score), 2) as avg_manager'))
+            ->whereNotNull('employee_appraisal_scores.self_score')
+            ->whereNotNull('employee_appraisal_scores.manager_score');
+            
+        $baseQuery($scoresQuery);
+        $scoresData = $scoresQuery->first();
 
         // 4. Top 5 & Bottom 5 Employees
-        $topEmployees = EmployeeAppraisal::with(['employee.user', 'employee.department'])
-            ->whereNotNull('final_score')
-            ->orderByDesc('final_score')
-            ->limit(5)
-            ->get();
+        $topQuery = EmployeeAppraisal::with(['employee.user', 'employee.department'])->whereNotNull('final_score')->orderByDesc('final_score')->limit(5);
+        $bottomQuery = EmployeeAppraisal::with(['employee.user', 'employee.department'])->whereNotNull('final_score')->orderBy('final_score')->limit(5);
 
-        $bottomEmployees = EmployeeAppraisal::with(['employee.user', 'employee.department'])
-            ->whereNotNull('final_score')
-            ->orderBy('final_score')
-            ->limit(5)
-            ->get();
+        if (!$isSystemAdmin && $branchId) {
+            $branchFilter = function($q) use ($branchId) { $q->whereHas('employee.user', function($sq) use ($branchId) { $sq->where('branch_id', $branchId); }); };
+            $branchFilter($topQuery);
+            $branchFilter($bottomQuery);
+        }
+
+        $topEmployees = $topQuery->get();
+        $bottomEmployees = $bottomQuery->get();
 
         return Inertia::render('HR/Appraisals/Dashboard', [
             'departmentPerformance' => $departmentPerformance,
@@ -69,6 +96,8 @@ class EmployeeAppraisalController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+        $isSystemAdmin = $user->role && $user->role->name === 'مدير النظام';
+        $branchId = $user->branch_id ?? session('branch_id');
         
         $query = EmployeeAppraisal::with(['employee.user', 'cycle', 'template']);
         
@@ -84,6 +113,11 @@ class EmployeeAppraisalController extends Controller
                 // Not an employee and no global permission? See nothing.
                 $query->where('id', '<', 0);
             }
+        } elseif (!$isSystemAdmin && $branchId) {
+            // User has permission, but is not System Admin. Filter by their branch.
+            $query->whereHas('employee.user', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
         }
 
         $appraisals = $query->latest()->get();
@@ -150,6 +184,76 @@ class EmployeeAppraisalController extends Controller
         }
 
         return redirect()->route('hr.appraisals.show', $appraisal->id)->with('success', 'تم بدء التقييم بنجاح.');
+    }
+
+    public function generate(Request $request)
+    {
+        $request->validate([
+            'cycle_id' => 'required|exists:appraisal_cycles,id'
+        ]);
+
+        $cycleId = $request->cycle_id;
+        $user = Auth::user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $branchId = $user->branch_id ?? session('branch_id');
+
+        $employeesQuery = Employee::with('user');
+        
+        if (!$isSystemAdmin && $branchId) {
+            $employeesQuery->whereHas('user', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+        
+        $employees = $employeesQuery->get();
+        
+        $templates = AppraisalTemplate::with('kpis')->where('is_active', true)->get();
+        $genericTemplate = $templates->whereNull('job_grade_id')->first();
+
+        $generatedCount = 0;
+        $skippedCount = 0;
+
+        foreach ($employees as $employee) {
+            $exists = EmployeeAppraisal::where('employee_id', $employee->id)
+                ->where('cycle_id', $cycleId)
+                ->exists();
+
+            if ($exists) {
+                $skippedCount++;
+                continue;
+            }
+
+            $template = null;
+            if ($employee->job_grade_id) {
+                $template = $templates->where('job_grade_id', $employee->job_grade_id)->first();
+            }
+            if (!$template) {
+                $template = $genericTemplate;
+            }
+
+            if (!$template) {
+                $skippedCount++;
+                continue;
+            }
+
+            $appraisal = EmployeeAppraisal::create([
+                'employee_id' => $employee->id,
+                'cycle_id' => $cycleId,
+                'template_id' => $template->id,
+                'manager_id' => $employee->manager_id,
+                'status' => 'pending_self'
+            ]);
+
+            foreach ($template->kpis as $kpi) {
+                $appraisal->scores()->create([
+                    'kpi_id' => $kpi->id,
+                ]);
+            }
+            
+            $generatedCount++;
+        }
+
+        return redirect()->back()->with('success', "تم توليد {$generatedCount} تقييم بنجاح، وتم تخطي {$skippedCount} (موجودة مسبقاً أو بدون قالب).");
     }
 
     // Show Appraisal Form (Self or Manager view)
@@ -248,11 +352,13 @@ class EmployeeAppraisalController extends Controller
 
         foreach ($validated['scores'] as $scoreData) {
             $score = $appraisal->scores()->find($scoreData['id']);
-            $score->update(['self_score' => $scoreData['self_score']]);
-            
-            $weight = $score->kpi->weight;
-            $totalScore += ($scoreData['self_score'] * $weight);
-            $totalWeight += $weight;
+            if ($score && $score->kpi) {
+                $score->update(['self_score' => $scoreData['self_score']]);
+                
+                $weight = $score->kpi->weight;
+                $totalScore += ($scoreData['self_score'] * $weight);
+                $totalWeight += $weight;
+            }
         }
 
         $selfFinalScore = $totalWeight > 0 ? ($totalScore / ($totalWeight * 5)) * 100 : 0; // Assuming 5 is max
@@ -284,7 +390,18 @@ class EmployeeAppraisalController extends Controller
     // Submit Manager Evaluation
     public function submitManager(Request $request, EmployeeAppraisal $appraisal)
     {
-        if ($appraisal->status !== 'pending_manager') abort(403);
+        if ($appraisal->status !== 'pending_manager') abort(403, 'التقييم ليس في مرحلة اعتماد المدير.');
+
+        $user = Auth::user();
+        $isSystemAdmin = $user->role && $user->role->name === 'مدير النظام';
+        $employee = $user->employee;
+
+        if (!$isSystemAdmin) {
+            if (!$employee || $appraisal->manager_id !== $employee->id) {
+                abort(403, 'غير مصرح لك باعتماد هذا التقييم كمدير.');
+            }
+        }
+
 
         $validated = $request->validate([
             'scores' => 'required|array',
@@ -299,11 +416,13 @@ class EmployeeAppraisalController extends Controller
 
         foreach ($validated['scores'] as $scoreData) {
             $score = $appraisal->scores()->find($scoreData['id']);
-            $score->update(['manager_score' => $scoreData['manager_score']]);
-            
-            $weight = $score->kpi->weight;
-            $totalScore += ($scoreData['manager_score'] * $weight);
-            $totalWeight += $weight;
+            if ($score && $score->kpi) {
+                $score->update(['manager_score' => $scoreData['manager_score']]);
+                
+                $weight = $score->kpi->weight;
+                $totalScore += ($scoreData['manager_score'] * $weight);
+                $totalWeight += $weight;
+            }
         }
 
         $managerFinalScore = $totalWeight > 0 ? ($totalScore / ($totalWeight * 5)) * 100 : 0;
@@ -322,7 +441,15 @@ class EmployeeAppraisalController extends Controller
     // HR Approval
     public function approveHr(Request $request, EmployeeAppraisal $appraisal)
     {
-        if ($appraisal->status !== 'pending_hr') abort(403);
+        if ($appraisal->status !== 'pending_hr') abort(403, 'التقييم ليس في مرحلة اعتماد الموارد البشرية.');
+
+        $user = Auth::user();
+        $isSystemAdmin = $user->role && $user->role->name === 'مدير النظام';
+
+        if (!$isSystemAdmin && !$user->hasPermission('إدارة التقييمات الإدارية')) {
+            abort(403, 'غير مصرح لك بالاعتماد النهائي للتقييم.');
+        }
+
 
         $validated = $request->validate([
             'hr_comments' => 'nullable|string',

@@ -130,17 +130,36 @@ function AppraisalCard({ appraisal, statusConfig, index }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AppraisalsIndex({ appraisals, activeCycles }) {
-    const { flash } = usePage().props;
+    const { auth, flash } = usePage().props;
     const [processing, setProcessing] = useState(false);
     const [viewMode, setViewMode] = useState('table');
     const [filter, setFilter] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [showGenerateModal, setShowGenerateModal] = useState(false);
+    const [generating, setGenerating] = useState(false);
+    const [selectedCycleId, setSelectedCycleId] = useState('');
+
+    const canManage = auth?.permissions?.includes('إدارة التقييمات الإدارية') || auth?.user?.role?.name === 'مدير النظام';
 
     const startAppraisal = (cycleId) => {
         setProcessing(true);
         router.post(route('hr.appraisals.store'), { cycle_id: cycleId }, {
             preserveScroll: true,
             onFinish: () => setProcessing(false)
+        });
+    };
+
+    const handleGenerate = (e) => {
+        e.preventDefault();
+        if (!selectedCycleId) return;
+        setGenerating(true);
+        router.post(route('hr.appraisals.generate'), { cycle_id: selectedCycleId }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowGenerateModal(false);
+                setSelectedCycleId('');
+            },
+            onFinish: () => setGenerating(false)
         });
     };
 
@@ -221,13 +240,24 @@ export default function AppraisalsIndex({ appraisals, activeCycles }) {
                             </p>
                         </div>
 
-                        <Link
-                            href={route('hr.appraisals.dashboard')}
-                            className="flex items-center gap-2.5 px-6 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl shadow-sm text-sm font-bold transition-all active:scale-[0.97] shrink-0 group"
-                        >
-                            <BarChart size={18} className="text-primary-500 group-hover:scale-110 transition-transform" />
-                            <span>لوحة بيانات التقييم</span>
-                        </Link>
+                        <div className="flex items-center gap-3">
+                            {canManage && (
+                                <button
+                                    onClick={() => setShowGenerateModal(true)}
+                                    className="flex items-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-primary-600 to-violet-600 hover:from-primary-700 hover:to-violet-700 text-white rounded-2xl shadow-md shadow-primary-500/20 text-sm font-bold transition-all active:scale-[0.97] shrink-0"
+                                >
+                                    <Sparkles size={18} />
+                                    <span>توليد التقييمات</span>
+                                </button>
+                            )}
+                            <Link
+                                href={route('hr.appraisals.dashboard')}
+                                className="flex items-center gap-2.5 px-6 py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl shadow-sm text-sm font-bold transition-all active:scale-[0.97] shrink-0 group"
+                            >
+                                <BarChart size={18} className="text-primary-500 group-hover:scale-110 transition-transform" />
+                                <span>لوحة بيانات التقييم</span>
+                            </Link>
+                        </div>
                     </div>
                 </div>
 
@@ -469,6 +499,67 @@ export default function AppraisalsIndex({ appraisals, activeCycles }) {
                     </div>
                 )}
             </div>
+
+            {/* ── Generate Modal ── */}
+            {showGenerateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => !generating && setShowGenerateModal(false)} />
+                    <div className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl p-6 md:p-8 animate-slide-up border border-slate-100 dark:border-slate-800">
+                        <button onClick={() => !generating && setShowGenerateModal(false)} className="absolute top-4 left-4 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 bg-slate-50 dark:bg-slate-800 rounded-xl transition-colors">
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-500/20 dark:to-primary-500/10 flex items-center justify-center">
+                                <Sparkles size={28} className="text-primary-600 dark:text-primary-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-800 dark:text-white">توليد جماعي للتقييمات</h3>
+                                <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">إنشاء نماذج التقييم لموظفي الفرع</p>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleGenerate} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">اختر الدورة</label>
+                                <div className="relative">
+                                    <select
+                                        value={selectedCycleId}
+                                        onChange={e => setSelectedCycleId(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none appearance-none"
+                                        required
+                                        disabled={generating}
+                                    >
+                                        <option value="">-- اختر دورة التقييم --</option>
+                                        {activeCycles?.map(cycle => (
+                                            <option key={cycle.id} value={cycle.id}>{cycle.title}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={generating || !selectedCycleId}
+                                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50"
+                            >
+                                {generating ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <span>جاري التوليد...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Play size={18} />
+                                        <span>توليد التقييمات الآن</span>
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }

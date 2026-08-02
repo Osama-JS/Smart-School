@@ -98,5 +98,11 @@ class SystemPermissionsSeeder extends Seeder
 
         $this->command->info('⚙️ Now adding administrative appraisals permissions...');
         $this->call(AdministrativeAppraisalPermissionsSeeder::class);
+
+        $this->command->info('⚙️ Now adding achievement permissions...');
+        $this->call(AchievementPermissionsSeeder::class);
+
+        $this->command->info('⚙️ Now adding discipline and gamification permissions...');
+        $this->call(DisciplineAndGamificationPermissionsSeeder::class);
     }
 }

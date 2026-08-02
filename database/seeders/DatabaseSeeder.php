@@ -18,7 +18,6 @@ class DatabaseSeeder extends Seeder
         // المرحلة 1: الصلاحيات والأدوار (لا تعتمد على أي شيء)
         $this->command->info('── المرحلة 1: الصلاحيات والأدوار ──');
         $this->call(PermissionsSeeder::class);
-        $this->call(RolesSeeder::class);
         $this->call(NewFeaturesPermissionsSeeder::class);
         $this->call(LibraryPermissionsSeeder::class);
         $this->call(NewsPermissionsSeeder::class);
@@ -28,6 +27,14 @@ class DatabaseSeeder extends Seeder
         $this->call(ClinicPermissionsSeeder::class);
         $this->call(AdministrativeAppraisalPermissionsSeeder::class);
         $this->call(ParentStudentPermissionsSeeder::class);
+        $this->call(AchievementPermissionsSeeder::class);
+        $this->call(DisciplineAndGamificationPermissionsSeeder::class);
+        $this->call(MobileAppPermissionsSeeder::class);
+        $this->call(SystemPermissionsSeeder::class);
+        $this->call(GranularPermissionsSeeder::class);
+        
+        // RolesSeeder must be called last so it can sync ALL created permissions to the Admin role
+        $this->call(RolesSeeder::class);
 
         // المرحلة 2: الفروع (تعتمد عليها باقي البيانات)
         $this->command->info('── المرحلة 2: الفروع ──');

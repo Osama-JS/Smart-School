@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class AppraisalCycle extends Model
 {
     use \App\Traits\LogsActivity;
+    use \App\Traits\BelongsToBranch;
 
     protected $fillable = [
-        'title', 'type', 'start_date', 'end_date', 'status'
+        'branch_id', 'title', 'type', 'start_date', 'end_date', 'status'
     ];
 
     protected $casts = [

@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 class AppraisalTemplate extends Model
 {
     use \App\Traits\LogsActivity;
+    use \App\Traits\BelongsToBranch;
 
     protected $fillable = [
-        'title', 'job_grade_id', 'description', 'is_active'
+        'branch_id', 'title', 'job_grade_id', 'description', 'is_active'
     ];
 
     protected $casts = [

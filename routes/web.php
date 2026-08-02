@@ -652,6 +652,7 @@ Route::middleware('auth')->group(function () {
         ])->except(['create', 'edit', 'show']);
 
         Route::post('/hr/appraisals/{appraisal}/approve-hr', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'approveHr'])->name('hr.appraisals.approve-hr');
+        Route::post('/hr/appraisals/generate', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'generate'])->name('hr.appraisals.generate');
     });
 
     Route::middleware('auth')->group(function () {
