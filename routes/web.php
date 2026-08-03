@@ -72,6 +72,14 @@ Route::middleware('auth')->group(function () {
     Route::patch('/dashboard/quick-tasks/{task}/toggle', [\App\Http\Controllers\DashboardController::class, 'toggleQuickTask'])->name('dashboard.quick-tasks.toggle');
     Route::delete('/dashboard/quick-tasks/{task}', [\App\Http\Controllers\DashboardController::class, 'destroyQuickTask'])->name('dashboard.quick-tasks.destroy');
 
+    // ── User Engagement (Admin & System Admin) ──
+    Route::middleware([\App\Http\Middleware\AdminEngagementAccess::class])->group(function () {
+        Route::get('/admin/user-engagement', [\App\Http\Controllers\Admin\UserEngagementController::class, 'index'])->name('admin.engagement.index');
+        Route::get('/admin/user-engagement/export', [\App\Http\Controllers\Admin\UserEngagementController::class, 'export'])->name('admin.engagement.export');
+        Route::get('/admin/user-engagement/{user}', [\App\Http\Controllers\Admin\UserEngagementController::class, 'show'])->name('admin.engagement.show');
+        Route::post('/admin/user-engagement/{user}/nudge', [\App\Http\Controllers\Admin\UserEngagementController::class, 'nudge'])->name('admin.engagement.nudge');
+    });
+
     // ── System Admin Only Routes ──
     Route::middleware([\App\Http\Middleware\SystemAdminOnly::class])->group(function () {
         // ── Permissions & Roles ──
@@ -94,12 +102,7 @@ Route::middleware('auth')->group(function () {
         // ── Performance Reports ──
         Route::get('/admin/performance-reports', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'index'])->name('admin.performance.index');
         
-        // ── User Engagement ──
-        Route::get('/admin/user-engagement', [\App\Http\Controllers\Admin\UserEngagementController::class, 'index'])->name('admin.engagement.index');
-        Route::get('/admin/user-engagement/export', [\App\Http\Controllers\Admin\UserEngagementController::class, 'export'])->name('admin.engagement.export');
-        Route::get('/admin/user-engagement/{user}', [\App\Http\Controllers\Admin\UserEngagementController::class, 'show'])->name('admin.engagement.show');
-        Route::post('/admin/user-engagement/{user}/nudge', [\App\Http\Controllers\Admin\UserEngagementController::class, 'nudge'])->name('admin.engagement.nudge');
-        
+
 
 
         Route::delete('/admin/performance-reports/slow-queries', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'clearSlowQueries'])->name('admin.performance.clear-slow-queries');

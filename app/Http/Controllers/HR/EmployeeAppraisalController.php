@@ -22,74 +22,77 @@ class EmployeeAppraisalController extends Controller
         $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         $branchId = $user->branch_id ?? session('branch_id');
 
-        $baseQuery = function($query) use ($isSystemAdmin, $branchId) {
+        $cacheKey = "appraisal_dashboard_branch_{$branchId}";
+
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($isSystemAdmin, $branchId) {
+            $baseQuery = function($query) use ($isSystemAdmin, $branchId) {
+                if (!$isSystemAdmin && $branchId) {
+                    $query->join('employees as emp_filter', 'employee_appraisals.employee_id', '=', 'emp_filter.id')
+                          ->join('users as usr_filter', 'emp_filter.user_id', '=', 'usr_filter.id')
+                          ->where('usr_filter.branch_id', $branchId);
+                }
+            };
+
+            // 1. Department Performance (Average Final Score by Department)
+            $deptQuery = \DB::table('employee_appraisals')
+                ->join('employees', 'employee_appraisals.employee_id', '=', 'employees.id')
+                ->join('departments', 'employees.department_id', '=', 'departments.id')
+                ->select('departments.name', \DB::raw('ROUND(AVG(employee_appraisals.final_score), 1) as avg_score'))
+                ->whereNotNull('employee_appraisals.final_score')
+                ->groupBy('departments.id', 'departments.name');
+                
             if (!$isSystemAdmin && $branchId) {
-                $query->join('employees as emp_filter', 'employee_appraisals.employee_id', '=', 'emp_filter.id')
-                      ->join('users as usr_filter', 'emp_filter.user_id', '=', 'usr_filter.id')
-                      ->where('usr_filter.branch_id', $branchId);
+                $deptQuery->join('users', 'employees.user_id', '=', 'users.id')
+                          ->where('users.branch_id', $branchId);
             }
-        };
+            $departmentPerformance = $deptQuery->get();
 
-        // 1. Department Performance (Average Final Score by Department)
-        $deptQuery = \DB::table('employee_appraisals')
-            ->join('employees', 'employee_appraisals.employee_id', '=', 'employees.id')
-            ->join('departments', 'employees.department_id', '=', 'departments.id')
-            ->select('departments.name', \DB::raw('ROUND(AVG(employee_appraisals.final_score), 1) as avg_score'))
-            ->whereNotNull('employee_appraisals.final_score')
-            ->groupBy('departments.id', 'departments.name');
+            // 2. Score Distribution
+            $completedAppraisalsQuery = EmployeeAppraisal::whereNotNull('final_score');
+            if (!$isSystemAdmin && $branchId) {
+                $completedAppraisalsQuery->whereHas('employee.user', function($q) use ($branchId) {
+                    $q->where('branch_id', $branchId);
+                });
+            }
+            $completedAppraisals = $completedAppraisalsQuery->get();
             
-        if (!$isSystemAdmin && $branchId) {
-            $deptQuery->join('users', 'employees.user_id', '=', 'users.id')
-                      ->where('users.branch_id', $branchId);
-        }
-        $departmentPerformance = $deptQuery->get();
+            $distribution = [
+                'excellent' => $completedAppraisals->where('final_score', '>=', 90)->count(),
+                'vgood' => $completedAppraisals->where('final_score', '>=', 80)->where('final_score', '<', 90)->count(),
+                'good' => $completedAppraisals->where('final_score', '>=', 70)->where('final_score', '<', 80)->count(),
+                'needs_improvement' => $completedAppraisals->where('final_score', '<', 70)->count(),
+            ];
 
-        // 2. Score Distribution
-        $completedAppraisalsQuery = EmployeeAppraisal::whereNotNull('final_score');
-        if (!$isSystemAdmin && $branchId) {
-            $completedAppraisalsQuery->whereHas('employee.user', function($q) use ($branchId) {
-                $q->where('branch_id', $branchId);
-            });
-        }
-        $completedAppraisals = $completedAppraisalsQuery->get();
-        
-        $distribution = [
-            'excellent' => $completedAppraisals->where('final_score', '>=', 90)->count(),
-            'vgood' => $completedAppraisals->where('final_score', '>=', 80)->where('final_score', '<', 90)->count(),
-            'good' => $completedAppraisals->where('final_score', '>=', 70)->where('final_score', '<', 80)->count(),
-            'needs_improvement' => $completedAppraisals->where('final_score', '<', 70)->count(),
-        ];
+            // 3. Self vs Manager Score averages (from 1 to 5)
+            $scoresQuery = \DB::table('employee_appraisal_scores')
+                ->join('employee_appraisals', 'employee_appraisal_scores.appraisal_id', '=', 'employee_appraisals.id')
+                ->select(\DB::raw('ROUND(AVG(employee_appraisal_scores.self_score), 2) as avg_self'), \DB::raw('ROUND(AVG(employee_appraisal_scores.manager_score), 2) as avg_manager'))
+                ->whereNotNull('employee_appraisal_scores.self_score')
+                ->whereNotNull('employee_appraisal_scores.manager_score');
+                
+            $baseQuery($scoresQuery);
+            $scoresData = $scoresQuery->first();
 
-        // 3. Self vs Manager Score averages (from 1 to 5)
-        $scoresQuery = \DB::table('employee_appraisal_scores')
-            ->join('employee_appraisals', 'employee_appraisal_scores.appraisal_id', '=', 'employee_appraisals.id')
-            ->select(\DB::raw('ROUND(AVG(employee_appraisal_scores.self_score), 2) as avg_self'), \DB::raw('ROUND(AVG(employee_appraisal_scores.manager_score), 2) as avg_manager'))
-            ->whereNotNull('employee_appraisal_scores.self_score')
-            ->whereNotNull('employee_appraisal_scores.manager_score');
-            
-        $baseQuery($scoresQuery);
-        $scoresData = $scoresQuery->first();
+            // 4. Top 5 & Bottom 5 Employees
+            $topQuery = EmployeeAppraisal::with(['employee.user', 'employee.department'])->whereNotNull('final_score')->orderByDesc('final_score')->limit(5);
+            $bottomQuery = EmployeeAppraisal::with(['employee.user', 'employee.department'])->whereNotNull('final_score')->orderBy('final_score')->limit(5);
 
-        // 4. Top 5 & Bottom 5 Employees
-        $topQuery = EmployeeAppraisal::with(['employee.user', 'employee.department'])->whereNotNull('final_score')->orderByDesc('final_score')->limit(5);
-        $bottomQuery = EmployeeAppraisal::with(['employee.user', 'employee.department'])->whereNotNull('final_score')->orderBy('final_score')->limit(5);
+            if (!$isSystemAdmin && $branchId) {
+                $branchFilter = function($q) use ($branchId) { $q->whereHas('employee.user', function($sq) use ($branchId) { $sq->where('branch_id', $branchId); }); };
+                $branchFilter($topQuery);
+                $branchFilter($bottomQuery);
+            }
 
-        if (!$isSystemAdmin && $branchId) {
-            $branchFilter = function($q) use ($branchId) { $q->whereHas('employee.user', function($sq) use ($branchId) { $sq->where('branch_id', $branchId); }); };
-            $branchFilter($topQuery);
-            $branchFilter($bottomQuery);
-        }
+            return [
+                'departmentPerformance' => $departmentPerformance,
+                'distribution' => $distribution,
+                'selfVsManager' => $scoresData,
+                'topEmployees' => $topQuery->get(),
+                'bottomEmployees' => $bottomQuery->get()
+            ];
+        });
 
-        $topEmployees = $topQuery->get();
-        $bottomEmployees = $bottomQuery->get();
-
-        return Inertia::render('HR/Appraisals/Dashboard', [
-            'departmentPerformance' => $departmentPerformance,
-            'distribution' => $distribution,
-            'selfVsManager' => $scoresData,
-            'topEmployees' => $topEmployees,
-            'bottomEmployees' => $bottomEmployees
-        ]);
+        return Inertia::render('HR/Appraisals/Dashboard', $data);
     }
 
     // List appraisals for an employee (Self), Manager, or HR
@@ -213,12 +216,13 @@ class EmployeeAppraisalController extends Controller
         $generatedCount = 0;
         $skippedCount = 0;
 
-        foreach ($employees as $employee) {
-            $exists = EmployeeAppraisal::where('employee_id', $employee->id)
-                ->where('cycle_id', $cycleId)
-                ->exists();
+        $existingEmployeeIds = EmployeeAppraisal::where('cycle_id', $cycleId)
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->pluck('employee_id')
+            ->toArray();
 
-            if ($exists) {
+        foreach ($employees as $employee) {
+            if (in_array($employee->id, $existingEmployeeIds)) {
                 $skippedCount++;
                 continue;
             }
@@ -291,15 +295,21 @@ class EmployeeAppraisalController extends Controller
         $smartAlert = null;
 
         $departmentId = $appraisal->employee->department_id;
+        $cycleIds = $historicalAppraisals->pluck('cycle_id')->unique()->toArray();
+
+        $deptAvgsRaw = \DB::table('employee_appraisals')
+            ->join('employees', 'employee_appraisals.employee_id', '=', 'employees.id')
+            ->select('employee_appraisals.cycle_id', \DB::raw('AVG(employee_appraisals.final_score) as avg_score'))
+            ->where('employees.department_id', $departmentId)
+            ->whereIn('employee_appraisals.cycle_id', $cycleIds)
+            ->whereNotNull('employee_appraisals.final_score')
+            ->groupBy('employee_appraisals.cycle_id')
+            ->pluck('avg_score', 'cycle_id')
+            ->toArray();
         
         foreach ($historicalAppraisals as $hist) {
-            // Get department average for this specific cycle
-            $deptAvg = \DB::table('employee_appraisals')
-                ->join('employees', 'employee_appraisals.employee_id', '=', 'employees.id')
-                ->where('employees.department_id', $departmentId)
-                ->where('employee_appraisals.cycle_id', $hist->cycle_id)
-                ->whereNotNull('employee_appraisals.final_score')
-                ->avg('employee_appraisals.final_score');
+            // Get department average for this specific cycle from pre-fetched array
+            $deptAvg = $deptAvgsRaw[$hist->cycle_id] ?? 0;
 
             $trendData[] = [
                 'cycle' => $hist->cycle->title,

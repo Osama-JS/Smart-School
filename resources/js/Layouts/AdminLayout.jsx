@@ -293,6 +293,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                     { name: 'إعدادات النظام', icon: Settings, url: route('admin.settings') },
                 ] : []),
                 { name: 'سجل النشاطات', icon: Activity, url: route('admin.activity-logs.index') },
+                { name: 'سجل التفاعل والنشاط', icon: Users, url: route('admin.engagement.index') },
             ]
         }] : []),
     ];

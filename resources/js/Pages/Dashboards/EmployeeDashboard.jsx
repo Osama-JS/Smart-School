@@ -143,22 +143,22 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
                                 <div className="w-2 h-6 bg-primary-500 rounded-full"></div> الإجراءات السريعة
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <button className="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-lg hover:shadow-blue-500/10 p-6 rounded-[2rem] transition-all hover:-translate-y-1 group">
+                                <Link href={route('hr.my-requests.index')} className="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-lg hover:shadow-blue-500/10 p-6 rounded-[2rem] transition-all hover:-translate-y-1 group">
                                     <div className="w-14 h-14 bg-blue-50 dark:bg-blue-500/10 text-blue-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"><Plane size={24} /></div>
                                     <span className="font-bold text-sm text-slate-700 dark:text-slate-300">طلب إجازة</span>
-                                </button>
+                                </Link>
                                 <Link href={route('hr.reports.my-reports.index')} className="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-lg hover:shadow-emerald-500/10 p-6 rounded-[2rem] transition-all hover:-translate-y-1 group">
                                     <div className="w-14 h-14 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"><Edit3 size={24} /></div>
                                     <span className="font-bold text-sm text-slate-700 dark:text-slate-300">كتابة تقرير</span>
                                 </Link>
-                                <button className="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-lg hover:shadow-purple-500/10 p-6 rounded-[2rem] transition-all hover:-translate-y-1 group">
-                                    <div className="w-14 h-14 bg-purple-50 dark:bg-purple-500/10 text-purple-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"><FileText size={24} /></div>
-                                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300">كشف الراتب</span>
-                                </button>
-                                <button className="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-lg hover:shadow-amber-500/10 p-6 rounded-[2rem] transition-all hover:-translate-y-1 group">
-                                    <div className="w-14 h-14 bg-amber-50 dark:bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"><AlertCircle size={24} /></div>
-                                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300">الدعم الفني</span>
-                                </button>
+                                <Link href={route('hr.employee-violations')} className="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-lg hover:shadow-purple-500/10 p-6 rounded-[2rem] transition-all hover:-translate-y-1 group">
+                                    <div className="w-14 h-14 bg-purple-50 dark:bg-purple-500/10 text-purple-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"><ShieldAlert size={24} /></div>
+                                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300">مخالفات الموظفين</span>
+                                </Link>
+                                <Link href={route('hr.attendance')} className="flex flex-col items-center justify-center gap-3 bg-white dark:bg-[#121820] border border-slate-100 dark:border-slate-800 hover:border-amber-300 dark:hover:border-amber-700 hover:shadow-lg hover:shadow-amber-500/10 p-6 rounded-[2rem] transition-all hover:-translate-y-1 group">
+                                    <div className="w-14 h-14 bg-amber-50 dark:bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"><Clock size={24} /></div>
+                                    <span className="font-bold text-sm text-slate-700 dark:text-slate-300">سجل الحضور</span>
+                                </Link>
                             </div>
                         </div>
 

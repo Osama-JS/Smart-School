@@ -147,6 +147,15 @@ class LeaveBalanceController extends Controller
         $count = 0;
         $skippedTypes = [];
 
+        $existingBalances = LeaveBalance::where('academic_year_id', $request->academic_year_id)
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->whereIn('leave_type_id', $leaveTypes->pluck('id'))
+            ->get()
+            ->map(fn($b) => $b->employee_id . '_' . $b->leave_type_id)
+            ->toArray();
+
+        $inserts = [];
+
         foreach ($employees as $employee) {
             foreach ($leaveTypes as $type) {
                 if ($type->default_days === null) {
@@ -156,20 +165,24 @@ class LeaveBalanceController extends Controller
                     continue;
                 }
 
-                $exists = LeaveBalance::where('employee_id', $employee->id)
-                    ->where('academic_year_id', $request->academic_year_id)
-                    ->where('leave_type_id', $type->id)
-                    ->exists();
-
-                if (!$exists) {
-                    LeaveBalance::create([
+                $key = $employee->id . '_' . $type->id;
+                if (!in_array($key, $existingBalances)) {
+                    $inserts[] = [
                         'employee_id' => $employee->id,
                         'academic_year_id' => $request->academic_year_id,
                         'leave_type_id' => $type->id,
-                        'total_days' => $type->default_days
-                    ]);
-                    $count++;
+                        'total_days' => $type->default_days,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 }
+            }
+        }
+
+        $count = count($inserts);
+        if ($count > 0) {
+            foreach (array_chunk($inserts, 500) as $chunk) {
+                LeaveBalance::insert($chunk);
             }
         }
 

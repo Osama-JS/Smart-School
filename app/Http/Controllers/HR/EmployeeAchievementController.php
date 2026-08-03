@@ -65,7 +65,7 @@ class EmployeeAchievementController extends Controller implements \Illuminate\Ro
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, NotificationService $notificationService)
     {
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -97,7 +97,23 @@ class EmployeeAchievementController extends Controller implements \Illuminate\Ro
 
         $achievement->save();
 
-        return back()->with('success', 'تم تسجيل الإنجاز بنجاح.');
+        // إرسال الإشعار للموظف
+        $achievement->load('achievementType');
+        $employeeUser = User::find($achievement->user_id);
+        if ($employeeUser) {
+            // الإشعار الداخلي (لوحة التحكم)
+            $notificationService->sendInternalNotification(
+                $employeeUser->id,
+                'إنجاز جديد: ' . $achievement->achievementType->name,
+                'تم منحك ' . $achievement->points . ' نقطة تقديراً لجهودك.',
+                'achievement'
+            );
+            
+            // إشعار الإيميل (يعمل في الخلفية)
+            $employeeUser->notify(new \App\Notifications\EmployeeAchievementNotification($achievement));
+        }
+
+        return back()->with('success', 'تم تسجيل الإنجاز بنجاح وإشعار الموظف.');
     }
 
     public function update(Request $request, EmployeeAchievement $employeeAchievement)

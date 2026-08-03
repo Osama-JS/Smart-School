@@ -58,67 +58,73 @@ class StudentViolationController extends Controller
         $branchId = auth()->user()->branch_id;
         $activeYear = AcademicYear::where('is_active', true)->first();
         
-        $query = StudentViolation::where('student_violations.branch_id', $branchId);
-        if ($activeYear) {
-            $query->where('student_violations.academic_year_id', $activeYear->id);
-        }
-
-        // Most common violations
-        $commonViolations = (clone $query)
-            ->join('student_violation_types', 'student_violations.violation_type_id', '=', 'student_violation_types.id')
-            ->select('student_violation_types.name', DB::raw('count(*) as count'))
-            ->groupBy('student_violation_types.name')
-            ->orderByDesc('count')
-            ->limit(7)
-            ->get();
-
-        // Violations by day of week
-        $violationsByDayRaw = (clone $query)
-            ->select(DB::raw('DAYNAME(violation_date) as day_name'), DB::raw('DAYOFWEEK(violation_date) as day_num'), DB::raw('count(*) as count'))
-            ->groupBy('day_name', 'day_num')
-            ->orderBy('day_num')
-            ->get();
-            
-        // Map day names to Arabic
-        $dayNamesAr = [
-            'Sunday' => 'الأحد',
-            'Monday' => 'الإثنين',
-            'Tuesday' => 'الثلاثاء',
-            'Wednesday' => 'الأربعاء',
-            'Thursday' => 'الخميس',
-            'Friday' => 'الجمعة',
-            'Saturday' => 'السبت',
-        ];
+        $cacheKey = "violation_analytics_branch_{$branchId}_year_" . ($activeYear ? $activeYear->id : 'none');
         
-        $violationsByDay = $violationsByDayRaw->map(function ($item) use ($dayNamesAr) {
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($branchId, $activeYear) {
+            $query = StudentViolation::where('student_violations.branch_id', $branchId);
+            if ($activeYear) {
+                $query->where('student_violations.academic_year_id', $activeYear->id);
+            }
+
+            // Most common violations
+            $commonViolations = (clone $query)
+                ->join('student_violation_types', 'student_violations.violation_type_id', '=', 'student_violation_types.id')
+                ->select('student_violation_types.name', DB::raw('count(*) as count'))
+                ->groupBy('student_violation_types.name')
+                ->orderByDesc('count')
+                ->limit(7)
+                ->get();
+
+            // Violations by day of week
+            $violationsByDayRaw = (clone $query)
+                ->select(DB::raw('DAYNAME(violation_date) as day_name'), DB::raw('DAYOFWEEK(violation_date) as day_num'), DB::raw('count(*) as count'))
+                ->groupBy('day_name', 'day_num')
+                ->orderBy('day_num')
+                ->get();
+                
+            // Map day names to Arabic
+            $dayNamesAr = [
+                'Sunday' => 'الأحد',
+                'Monday' => 'الإثنين',
+                'Tuesday' => 'الثلاثاء',
+                'Wednesday' => 'الأربعاء',
+                'Thursday' => 'الخميس',
+                'Friday' => 'الجمعة',
+                'Saturday' => 'السبت',
+            ];
+            
+            $violationsByDay = $violationsByDayRaw->map(function ($item) use ($dayNamesAr) {
+                return [
+                    'name' => $dayNamesAr[$item->day_name] ?? $item->day_name,
+                    'count' => $item->count
+                ];
+            });
+
+            // Violations by Division
+            $violationsByDivision = (clone $query)
+                ->join('students', 'student_violations.student_id', '=', 'students.id')
+                ->join('enrollments', function($join) use ($activeYear) {
+                    $join->on('students.id', '=', 'enrollments.student_id');
+                    if ($activeYear) {
+                        $join->where('enrollments.academic_year_id', '=', $activeYear->id);
+                    }
+                })
+                ->join('divisions', 'enrollments.division_id', '=', 'divisions.id')
+                ->join('grades', 'divisions.grade_id', '=', 'grades.id')
+                ->select(DB::raw('CONCAT(grades.name, " - ", divisions.name) as name'), DB::raw('count(*) as count'))
+                ->groupBy('grades.name', 'divisions.name')
+                ->orderByDesc('count')
+                ->limit(10)
+                ->get();
+                
             return [
-                'name' => $dayNamesAr[$item->day_name] ?? $item->day_name,
-                'count' => $item->count
+                'commonViolations' => $commonViolations,
+                'violationsByDay' => $violationsByDay,
+                'violationsByDivision' => $violationsByDivision,
             ];
         });
-
-        // Violations by Division
-        $violationsByDivision = (clone $query)
-            ->join('students', 'student_violations.student_id', '=', 'students.id')
-            ->join('enrollments', function($join) use ($activeYear) {
-                $join->on('students.id', '=', 'enrollments.student_id');
-                if ($activeYear) {
-                    $join->where('enrollments.academic_year_id', '=', $activeYear->id);
-                }
-            })
-            ->join('divisions', 'enrollments.division_id', '=', 'divisions.id')
-            ->join('grades', 'divisions.grade_id', '=', 'grades.id')
-            ->select(DB::raw('CONCAT(grades.name, " - ", divisions.name) as name'), DB::raw('count(*) as count'))
-            ->groupBy('grades.name', 'divisions.name')
-            ->orderByDesc('count')
-            ->limit(10)
-            ->get();
             
-        return Inertia::render('Academic/StudentDiscipline/Violations/Analytics', [
-            'commonViolations' => $commonViolations,
-            'violationsByDay' => $violationsByDay,
-            'violationsByDivision' => $violationsByDivision,
-        ]);
+        return Inertia::render('Academic/StudentDiscipline/Violations/Analytics', $data);
     }
 
     public function checkRepetition(Request $request)
@@ -151,7 +157,7 @@ class StudentViolationController extends Controller
         ]);
     }
 
-    public function store(Request $request, \App\Services\NotificationService $notificationService)
+    public function store(Request $request, \App\Services\NotificationService $notificationService, \App\Services\EscalationService $escalationService)
     {
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
@@ -174,62 +180,31 @@ class StudentViolationController extends Controller
         $data['supervisor_id'] = auth()->id();
         $data['status'] = 'pending';
 
-        $violation = StudentViolation::with('student.user')->find(StudentViolation::create($data)->id);
-
-        // In-App Notification to Counselors (Academic Supervisors)
-        $studentName = $violation->student->user->name ?? 'طالب';
-        $notificationService->sendBroadcastNotification(
-            'مخالفة سلوكية جديدة',
-            "تم تسجيل مخالفة سلوكية للطالب $studentName",
-            'violation',
-            auth()->id(),
-            $violation->branch_id,
-            'role',
-            'academic_supervisor'
-        );
-
-        // Escalation Engine Logic
-        $activeYearId = AcademicYear::where('is_active', true)->value('id');
+        $repetitionCount = 0;
         
-        $repetitionCount = StudentViolation::where('student_id', $violation->student_id)
-            ->where('violation_type_id', $violation->violation_type_id)
-            ->where('academic_year_id', $activeYearId)
-            ->count();
+        DB::beginTransaction();
+        try {
+            $violation = StudentViolation::with('student.user')->find(StudentViolation::create($data)->id);
 
-        // If it's the 2nd time or more, we auto-escalate
-        if ($repetitionCount >= 2) {
-            $type = StudentViolationType::find($violation->violation_type_id);
+            // In-App Notification to Counselors (Academic Supervisors)
+            $studentName = $violation->student->user->name ?? 'طالب';
+            $notificationService->sendBroadcastNotification(
+                'مخالفة سلوكية جديدة',
+                "تم تسجيل مخالفة سلوكية للطالب $studentName",
+                'violation',
+                auth()->id(),
+                $violation->branch_id,
+                'role',
+                'academic_supervisor'
+            );
+
+            // Escalation Engine Logic
+            $repetitionCount = $escalationService->processEscalation($violation);
             
-            // 1. Auto generate Parent Summon
-            ParentSummon::create([
-                'branch_id' => $violation->branch_id,
-                'student_id' => $violation->student_id,
-                'student_violation_id' => $violation->id,
-                'summon_date' => Carbon::parse($violation->violation_date)->addDays(1)->format('Y-m-d'), // Next day
-                'reason' => 'استدعاء آلي بسبب تكرار مخالفة: ' . $type->name,
-                'status' => 'scheduled',
-                'notes' => 'تم إنشاء هذا الاستدعاء آلياً بواسطة محرك التصعيد بسبب تكرار المخالفة للمرة ' . $repetitionCount
-            ]);
-
-            // 2. Auto generate Student Pledge
-            StudentPledge::create([
-                'branch_id' => $violation->branch_id,
-                'student_id' => $violation->student_id,
-                'student_violation_id' => $violation->id,
-                'pledge_text' => 'أتعهد أنا الطالب بعدم تكرار مخالفة (' . $type->name . ') والالتزام بأنظمة وقوانين المدرسة.',
-                'date' => Carbon::parse($violation->violation_date)->format('Y-m-d'),
-                'is_signed_by_student' => false,
-                'is_signed_by_parent' => false,
-            ]);
-
-            // 3. Parent Notification (WhatsApp Simulation)
-            $studentWithParents = clone $violation->student;
-            $studentWithParents->load('parents');
-            foreach ($studentWithParents->parents as $parent) {
-                $dateStr = Carbon::parse($violation->violation_date)->addDays(1)->format('Y-m-d');
-                $msg = "عزيزي ولي أمر الطالب {$studentName}، نود إشعاركم بوجود استدعاء لزيارة المدرسة بتاريخ {$dateStr} لمناقشة تكرار مخالفة: {$type->name}. لتأكيد الحضور: " . url('/');
-                $notificationService->sendWhatsappNotification($parent, $msg);
-            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'حدث خطأ أثناء التسجيل: ' . $e->getMessage());
         }
 
         return redirect()->back()->with('success', 'تم تسجيل المخالفة بنجاح' . ($repetitionCount >= 2 ? ' وتم التصعيد وإنشاء استدعاء وتعهد آلياً.' : ''));
