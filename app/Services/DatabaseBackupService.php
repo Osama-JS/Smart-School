@@ -24,11 +24,11 @@ class DatabaseBackupService
 
         $filePath = $path . '/' . $filename;
         
-        $host = env('DB_HOST', '127.0.0.1');
-        $username = env('DB_USERNAME', 'root');
-        $password = env('DB_PASSWORD', '');
-        $database = env('DB_DATABASE', '');
-        $port = env('DB_PORT', '3306');
+        $host = config('database.connections.mysql.host', '127.0.0.1');
+        $username = config('database.connections.mysql.username', 'root');
+        $password = config('database.connections.mysql.password', '');
+        $database = config('database.connections.mysql.database', '');
+        $port = config('database.connections.mysql.port', '3306');
 
         if (empty($database)) {
             throw new \Exception("اسم قاعدة البيانات غير موجود في الإعدادات.");

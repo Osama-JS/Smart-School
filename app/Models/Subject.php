@@ -9,10 +9,7 @@ class Subject extends Model
 {
     use \App\Traits\LogsActivity;
     protected $fillable = [
-        'name', 'icon', 'branch_id',
-        'weekly_oral_max', 'weekly_homework_max', 
-        'monthly_behavior_max', 'monthly_exam_max',
-        'semester_aggregate_max', 'final_exam_max'
+        'name', 'icon', 'branch_id'
     ];
 
     // الفرع الذي تتبعه المادة

@@ -15,26 +15,11 @@ class DatabaseSeeder extends Seeder
         $this->command->info('🚀 Starting Smart School database seeding...');
         $this->command->newLine();
 
-        // المرحلة 1: الصلاحيات والأدوار (لا تعتمد على أي شيء)
+        // المرحلة 1: الصلاحيات والأدوار
+        // يستخدم MasterPermissionsSeeder الموحد الذي يجمع جميع الصلاحيات والأدوار
+        // بدون تعارض أو حذف (firstOrCreate + syncWithoutDetaching)
         $this->command->info('── المرحلة 1: الصلاحيات والأدوار ──');
-        $this->call(PermissionsSeeder::class);
-        $this->call(NewFeaturesPermissionsSeeder::class);
-        $this->call(LibraryPermissionsSeeder::class);
-        $this->call(NewsPermissionsSeeder::class);
-        $this->call(StudyPlanPermissionsSeeder::class);
-        $this->call(FollowupBooksPermissionsSeeder::class);
-        $this->call(AdvancedModulesPermissionsSeeder::class);
-        $this->call(ClinicPermissionsSeeder::class);
-        $this->call(AdministrativeAppraisalPermissionsSeeder::class);
-        $this->call(ParentStudentPermissionsSeeder::class);
-        $this->call(AchievementPermissionsSeeder::class);
-        $this->call(DisciplineAndGamificationPermissionsSeeder::class);
-        $this->call(MobileAppPermissionsSeeder::class);
-        $this->call(SystemPermissionsSeeder::class);
-        $this->call(GranularPermissionsSeeder::class);
-        
-        // RolesSeeder must be called last so it can sync ALL created permissions to the Admin role
-        $this->call(RolesSeeder::class);
+        $this->call(MasterPermissionsSeeder::class);
 
         // المرحلة 2: الفروع (تعتمد عليها باقي البيانات)
         $this->command->info('── المرحلة 2: الفروع ──');

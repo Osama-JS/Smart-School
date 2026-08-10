@@ -43,7 +43,7 @@ export default function Create({ student }) {
         } finally {
             setIsSearching(false);
         }
-    }, 500);
+    }, 250);
 
     const onSearchChange = (e) => {
         setSearchQuery(e.target.value);
@@ -100,18 +100,18 @@ export default function Create({ student }) {
             <div className="p-6 space-y-6">
                 
                 {/* Header Section with Brand Colors and Geometric Accent (Shifts Style) */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50/70 via-white to-white dark:from-indigo-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-indigo-100 dark:border-indigo-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none">
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     {/* Brand Line Accent */}
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-rose-500 to-indigo-600" />
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
                     {/* Fine abstract geometric background lines */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                         <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-indigo-600" />
-                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-indigo-500" fill="none" />
-                            <circle cx="250" cy="90" r="4" className="fill-indigo-500" />
-                            <circle cx="500" cy="160" r="6" className="fill-indigo-400" />
-                            <circle cx="750" cy="60" r="3" className="fill-indigo-300" />
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
                         </svg>
                     </div>
 
@@ -122,7 +122,7 @@ export default function Create({ student }) {
                             </Link>
                             <div>
                                 <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">تسجيل زيارة عيادة جديدة</h1>
-                                <p className="text-indigo-700/80 dark:text-indigo-300/80 mt-1 text-sm font-semibold">توثيق مراجعة الطالب للعيادة، الأعراض، الإجراء المتخذ وقرار الخروج</p>
+                                <p className="text-primary-700/80 dark:text-primary-300/80 mt-1 text-sm font-semibold">توثيق مراجعة الطالب للعيادة، الأعراض، الإجراء المتخذ وقرار الخروج</p>
                             </div>
                         </div>
                     </div>
@@ -138,8 +138,8 @@ export default function Create({ student }) {
                                             <div
                                                 className={classNames(
                                                     "relative flex h-14 w-14 items-center justify-center rounded-2xl border-2 transition-all duration-300 shadow-sm shrink-0",
-                                                    step.id < currentStep ? 'bg-indigo-600 border-indigo-600 text-white' : 
-                                                    step.id === currentStep ? 'bg-white border-indigo-600 text-indigo-600 ring-4 ring-indigo-50' : 'bg-slate-50 border-slate-200 text-slate-400'
+                                                    step.id < currentStep ? 'bg-primary-600 border-primary-600 text-white' : 
+                                                    step.id === currentStep ? 'bg-white border-primary-600 text-primary-600 ring-4 ring-primary-50' : 'bg-slate-50 border-slate-200 text-slate-400'
                                                 )}
                                             >
                                                 <step.icon size={26} />
@@ -168,7 +168,7 @@ export default function Create({ student }) {
                             {currentStep === 1 && (
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="text-center max-w-lg mx-auto">
-                                        <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-indigo-50 text-indigo-600 mb-4 border border-indigo-100 shadow-inner">
+                                        <div className="inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-primary-50 text-primary-600 mb-4 border border-primary-100 shadow-inner">
                                             <Search size={36} />
                                         </div>
                                         <h3 className="text-2xl font-black text-slate-900">البحث عن الطالب</h3>
@@ -178,17 +178,25 @@ export default function Create({ student }) {
                                     <div className="max-w-xl mx-auto relative">
                                         <div className="relative group">
                                             <div className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none">
-                                                <Search className="h-6 w-6 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                                                {isSearching ? (
+                                                    <div className="animate-spin h-5 w-5 border-2 border-primary-600 border-t-transparent rounded-full"></div>
+                                                ) : (
+                                                    <Search className="h-6 w-6 text-slate-400 group-focus-within:text-primary-600 transition-colors" />
+                                                )}
                                             </div>
                                             <input
                                                 type="text"
-                                                className="block w-full pl-5 pr-14 py-4 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-indigo-100 focus:border-indigo-600 bg-slate-50/50 focus:bg-white transition-all text-lg font-bold shadow-sm"
+                                                className="block w-full pl-5 pr-14 py-4 border-2 border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary-100 focus:border-primary-600 bg-slate-50/50 focus:bg-white transition-all text-lg font-bold shadow-sm"
                                                 placeholder="اكتب اسم الطالب..."
                                                 value={searchQuery}
                                                 onChange={onSearchChange}
                                             />
                                         </div>
-                                        
+                                        {searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
+                                            <div className="absolute z-20 w-full mt-2 bg-white/95 backdrop-blur-lg border border-slate-200 rounded-2xl shadow-2xl p-6 text-center">
+                                                <p className="text-slate-500 font-bold">لا يوجد طالب بهذا الاسم أو الرقم</p>
+                                            </div>
+                                        )}
                                         {searchResults.length > 0 && (
                                             <ul className="absolute z-20 w-full mt-2 bg-white/95 backdrop-blur-lg border border-slate-200 rounded-2xl shadow-2xl overflow-hidden max-h-80 overflow-y-auto divide-y divide-slate-100">
                                                 {searchResults.map((std) => (
@@ -196,18 +204,18 @@ export default function Create({ student }) {
                                                         <button
                                                             type="button"
                                                             onClick={() => selectStudent(std)}
-                                                            className="w-full text-right p-4 hover:bg-indigo-50/80 transition-colors flex items-center justify-between group"
+                                                            className="w-full text-right p-4 hover:bg-primary-50/80 transition-colors flex items-center justify-between group"
                                                         >
                                                             <div className="flex items-center gap-4">
-                                                                <div className="h-12 w-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-lg shadow-sm">
+                                                                <div className="h-12 w-12 rounded-2xl bg-primary-100 text-primary-700 flex items-center justify-center font-black text-lg shadow-sm">
                                                                     {getInitials(std.name)}
                                                                 </div>
                                                                 <div>
-                                                                    <p className="font-black text-slate-900 group-hover:text-indigo-700 text-base">{std.name}</p>
+                                                                    <p className="font-black text-slate-900 group-hover:text-primary-700 text-base">{std.name}</p>
                                                                     <p className="text-xs text-slate-500 font-bold">{std.grade?.name} - {std.division?.name}</p>
                                                                 </div>
                                                             </div>
-                                                            <ChevronLeft className="text-slate-300 group-hover:text-indigo-600 transition-transform group-hover:-translate-x-1" />
+                                                            <ChevronLeft className="text-slate-300 group-hover:text-primary-600 transition-transform group-hover:-translate-x-1" />
                                                         </button>
                                                     </li>
                                                 ))}
@@ -276,7 +284,7 @@ export default function Create({ student }) {
                                     {selectedStudent && (
                                         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center font-black">
+                                                <div className="h-10 w-10 bg-primary-600 text-white rounded-xl flex items-center justify-center font-black">
                                                     {getInitials(selectedStudent.name)}
                                                 </div>
                                                 <div>
@@ -284,7 +292,7 @@ export default function Create({ student }) {
                                                     <p className="text-xs text-slate-500 font-bold">{selectedStudent.grade?.name} - {selectedStudent.division?.name}</p>
                                                 </div>
                                             </div>
-                                            <Link href={route('clinic.records.show', selectedStudent.id)} target="_blank" className="text-xs text-indigo-600 hover:underline font-bold">
+                                            <Link href={route('clinic.records.show', selectedStudent.id)} target="_blank" className="text-xs text-primary-600 hover:underline font-bold">
                                                 الملف الطبي الكامل &rarr;
                                             </Link>
                                         </div>
@@ -295,7 +303,7 @@ export default function Create({ student }) {
                                         <InputLabel htmlFor="symptoms" value="الأعراض أو شكوى الطالب" className="text-lg font-black text-slate-900 mb-2" />
                                         <textarea
                                             id="symptoms"
-                                            className="block w-full border-2 border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 rounded-2xl shadow-sm p-4 text-base font-bold bg-slate-50/50 focus:bg-white transition-all resize-none"
+                                            className="block w-full border-2 border-slate-200 focus:border-primary-600 focus:ring-4 focus:ring-primary-100 rounded-2xl shadow-sm p-4 text-base font-bold bg-slate-50/50 focus:bg-white transition-all resize-none"
                                             rows="4"
                                             value={data.symptoms}
                                             onChange={(e) => setData('symptoms', e.target.value)}
@@ -306,14 +314,14 @@ export default function Create({ student }) {
                                         {/* Quick Symptom Tags */}
                                         <div className="mt-3 flex flex-wrap items-center gap-2">
                                             <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                <Sparkles size={14} className="text-indigo-500" /> اقتراحات سريعة:
+                                                <Sparkles size={14} className="text-primary-500" /> اقتراحات سريعة:
                                             </span>
                                             {commonSymptoms.map((sym) => (
                                                 <button
                                                     key={sym}
                                                     type="button"
                                                     onClick={() => addSymptomTag(sym)}
-                                                    className="px-3 py-1 rounded-xl bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-bold transition-all border border-slate-200 hover:border-indigo-200"
+                                                    className="px-3 py-1 rounded-xl bg-slate-100 hover:bg-primary-50 text-slate-700 hover:text-primary-700 text-xs font-bold transition-all border border-slate-200 hover:border-primary-200"
                                                 >
                                                     + {sym}
                                                 </button>
@@ -332,7 +340,7 @@ export default function Create({ student }) {
                                         <InputLabel htmlFor="action_taken" value="الإجراء المتخذ (العلاج)" className="text-lg font-black text-slate-900 mb-2" />
                                         <textarea
                                             id="action_taken"
-                                            className="block w-full border-2 border-slate-200 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 rounded-2xl shadow-sm p-4 text-base font-bold bg-slate-50/50 focus:bg-white transition-all resize-none"
+                                            className="block w-full border-2 border-slate-200 focus:border-primary-600 focus:ring-4 focus:ring-primary-100 rounded-2xl shadow-sm p-4 text-base font-bold bg-slate-50/50 focus:bg-white transition-all resize-none"
                                             rows="3"
                                             value={data.action_taken}
                                             onChange={(e) => setData('action_taken', e.target.value)}
@@ -343,7 +351,7 @@ export default function Create({ student }) {
                                         {/* Quick Action Tags */}
                                         <div className="mt-3 flex flex-wrap items-center gap-2">
                                             <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                                                <Sparkles size={14} className="text-indigo-500" /> إجراءات متكررة:
+                                                <Sparkles size={14} className="text-primary-500" /> إجراءات متكررة:
                                             </span>
                                             {commonActions.map((act) => (
                                                 <button
@@ -455,13 +463,13 @@ export default function Create({ student }) {
                                     type="button"
                                     onClick={() => setCurrentStep(prev => prev + 1)}
                                     disabled={!isStepValid(currentStep)}
-                                    className="px-8 py-3.5 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                                    className="px-8 py-3.5 bg-primary-600 text-white rounded-2xl font-black hover:bg-primary-700 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                                 >
                                     التالي
                                     <ChevronLeft size={20} />
                                 </button>
                             ) : (
-                                <PrimaryButton disabled={processing || !isStepValid(3)} className="rounded-2xl px-10 py-3.5 text-lg font-black shadow-lg hover:shadow-xl gap-2 bg-indigo-600 hover:bg-indigo-700">
+                                <PrimaryButton disabled={processing || !isStepValid(3)} className="rounded-2xl px-10 py-3.5 text-lg font-black shadow-lg hover:shadow-xl gap-2 bg-primary-600 hover:bg-primary-700">
                                     <Save size={22} />
                                     حفظ وإنهاء الزيارة
                                 </PrimaryButton>

@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 
 class ServerMonitorService
 {
@@ -16,6 +18,77 @@ class ServerMonitorService
             'ram' => $this->getRamUsage(),
             'storage' => $this->getStorageHealth(),
             'uptime' => $this->getUptime(),
+            'system_health' => $this->getSystemHealth(),
+        ];
+    }
+
+    /**
+     * Get system health alerts (DB status and error logs)
+     */
+    private function getSystemHealth()
+    {
+        // 1. Check Database connection latency
+        $dbStatus = 'متصلة';
+        $dbLatency = 0;
+        $dbStatusType = 'success';
+        
+        try {
+            $start = microtime(true);
+            DB::connection()->getPdo();
+            $dbLatency = round((microtime(true) - $start) * 1000); // in ms
+            
+            if ($dbLatency > 500) {
+                $dbStatusType = 'warning';
+                $dbStatus = 'متصلة (بطيئة)';
+            }
+        } catch (\Exception $e) {
+            $dbStatus = 'مفصولة';
+            $dbStatusType = 'error';
+        }
+
+        // 2. Check Laravel Log for today's errors
+        $logPath = storage_path('logs/laravel.log');
+        $errorCount = 0;
+        $hasCritical = false;
+        
+        if (File::exists($logPath)) {
+            $todayStr = date('Y-m-d');
+            // Read last 2000 lines for performance instead of full file
+            $lines = array_slice(file($logPath), -2000);
+            foreach ($lines as $line) {
+                if (strpos($line, "[$todayStr") !== false) {
+                    if (strpos($line, '.ERROR:') !== false) {
+                        $errorCount++;
+                    }
+                    if (strpos($line, '.EMERGENCY:') !== false || strpos($line, '.CRITICAL:') !== false) {
+                        $hasCritical = true;
+                    }
+                }
+            }
+        }
+
+        $logStatusText = 'لا توجد أخطاء اليوم';
+        $logStatusType = 'success';
+        
+        if ($hasCritical) {
+            $logStatusText = 'يوجد أخطاء حرجة اليوم';
+            $logStatusType = 'error';
+        } elseif ($errorCount > 0) {
+            $logStatusText = "مسجل {$errorCount} خطأ اليوم";
+            $logStatusType = 'warning';
+        }
+
+        return [
+            'database' => [
+                'status' => $dbStatus,
+                'latency' => $dbLatency . ' ms',
+                'type' => $dbStatusType
+            ],
+            'errors' => [
+                'status' => $logStatusText,
+                'count' => $errorCount,
+                'type' => $logStatusType
+            ]
         ];
     }
 

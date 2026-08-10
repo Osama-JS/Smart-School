@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router, usePage } from '@inertiajs/react';
+import SelectInput from '@/Components/SelectInput';
 import { Eye, Play, Star, Clock, CheckCircle, Users, BarChart, AlertTriangle, Check, LayoutGrid, List, Sparkles, Search, Filter, ChevronDown, Award, TrendingUp, UserCheck, ShieldCheck, ArrowLeft, X } from 'lucide-react';
 
 // ─── Animated Counter ─────────────────────────────────────────────────────────
@@ -522,21 +523,16 @@ export default function AppraisalsIndex({ appraisals, activeCycles }) {
                         <form onSubmit={handleGenerate} className="space-y-6">
                             <div>
                                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">اختر الدورة</label>
-                                <div className="relative">
-                                    <select
-                                        value={selectedCycleId}
-                                        onChange={e => setSelectedCycleId(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none appearance-none"
-                                        required
-                                        disabled={generating}
-                                    >
-                                        <option value="">-- اختر دورة التقييم --</option>
-                                        {activeCycles?.map(cycle => (
-                                            <option key={cycle.id} value={cycle.id}>{cycle.title}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                                </div>
+                                <SelectInput
+                                    value={selectedCycleId}
+                                    onChange={val => setSelectedCycleId(val)}
+                                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all dark:text-white"
+                                    disabled={generating}
+                                    options={[
+                                        { value: '', label: '-- اختر دورة التقييم --' },
+                                        ...(activeCycles || []).map(cycle => ({ value: cycle.id, label: cycle.title }))
+                                    ]}
+                                />
                             </div>
 
                             <button

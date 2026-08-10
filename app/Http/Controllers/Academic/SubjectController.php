@@ -94,12 +94,6 @@ class SubjectController extends Controller implements \Illuminate\Routing\Contro
                 'name' => $validated['name'],
                 'icon' => $validated['icon'] ?? null,
                 'branch_id' => $isAdmin ? $validated['branch_id'] : $user->branch_id,
-                'weekly_oral_max' => $validated['weekly_oral_max'] ?? 5,
-                'weekly_homework_max' => $validated['weekly_homework_max'] ?? 5,
-                'monthly_behavior_max' => $validated['monthly_behavior_max'] ?? 10,
-                'monthly_exam_max' => $validated['monthly_exam_max'] ?? 50,
-                'semester_aggregate_max' => $validated['semester_aggregate_max'] ?? 20,
-                'final_exam_max' => $validated['final_exam_max'] ?? 30,
             ];
 
             $subject = Subject::create($subjectData);
@@ -123,12 +117,6 @@ class SubjectController extends Controller implements \Illuminate\Routing\Contro
             'icon'                 => 'nullable|string|max:50',
             'grade_ids'            => 'required|array|min:1',
             'grade_ids.*'          => 'exists:grades,id',
-            'weekly_oral_max'      => 'nullable|numeric|min:0',
-            'weekly_homework_max'  => 'nullable|numeric|min:0',
-            'monthly_behavior_max' => 'nullable|numeric|min:0',
-            'monthly_exam_max'     => 'nullable|numeric|min:0',
-            'semester_aggregate_max' => 'nullable|numeric|min:0',
-            'final_exam_max'       => 'nullable|numeric|min:0',
         ];
 
         if ($isAdmin) {
@@ -150,12 +138,6 @@ class SubjectController extends Controller implements \Illuminate\Routing\Contro
                 'name' => $validated['name'],
                 'icon' => $validated['icon'] ?? null,
                 'branch_id' => $isAdmin ? $validated['branch_id'] : $user->branch_id,
-                'weekly_oral_max' => $validated['weekly_oral_max'] ?? 5,
-                'weekly_homework_max' => $validated['weekly_homework_max'] ?? 5,
-                'monthly_behavior_max' => $validated['monthly_behavior_max'] ?? 10,
-                'monthly_exam_max' => $validated['monthly_exam_max'] ?? 50,
-                'semester_aggregate_max' => $validated['semester_aggregate_max'] ?? 20,
-                'final_exam_max' => $validated['final_exam_max'] ?? 80,
             ]);
             $subject->grades()->sync($validated['grade_ids']);
 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm, usePage } from '@inertiajs/react';
+import SelectInput from '@/Components/SelectInput';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 import { Plus, Edit2, Trash2, Calendar, Save, Check, Clock, X, Activity, CalendarDays, BarChart, Timer, CalendarRange, FileCheck, AlertCircle, ChevronLeft, ChevronRight, Sparkles, RotateCcw, Zap, LayoutGrid, List } from 'lucide-react';
 
 // ─── Animated Counter ─────────────────────────────────────────────────────────
@@ -542,30 +544,32 @@ export default function CyclesIndex({ cycles }) {
                                     <Timer size={13} className="text-primary-400" />
                                     نوع التقييم
                                 </label>
-                                <select
+                                <SelectInput
                                     value={data.type}
-                                    onChange={e => setData('type', e.target.value)}
-                                    className="w-full bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
-                                >
-                                    <option value="monthly">شهري</option>
-                                    <option value="semi-annual">نصف سنوي</option>
-                                    <option value="annual">سنوي</option>
-                                </select>
+                                    onChange={val => setData('type', val)}
+                                    className="w-full bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                                    options={[
+                                        { value: 'monthly', label: 'شهري' },
+                                        { value: 'semi-annual', label: 'نصف سنوي' },
+                                        { value: 'annual', label: 'سنوي' }
+                                    ]}
+                                />
                             </div>
                             <div>
                                 <label className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2.5">
                                     <Activity size={13} className="text-primary-400" />
                                     حالة الدورة
                                 </label>
-                                <select
+                                <SelectInput
                                     value={data.status}
-                                    onChange={e => setData('status', e.target.value)}
-                                    className="w-full bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
-                                >
-                                    <option value="draft">مسودة</option>
-                                    <option value="active">نشطة (متاح للتقييم)</option>
-                                    <option value="closed">مغلقة</option>
-                                </select>
+                                    onChange={val => setData('status', val)}
+                                    className="w-full bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                                    options={[
+                                        { value: 'draft', label: 'مسودة' },
+                                        { value: 'active', label: 'نشطة (متاح للتقييم)' },
+                                        { value: 'closed', label: 'مغلقة' }
+                                    ]}
+                                />
                             </div>
                         </div>
 
@@ -578,20 +582,20 @@ export default function CyclesIndex({ cycles }) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1.5 block">تاريخ البداية</span>
-                                    <input
+                                    <FlatpickrInput
                                         type="date"
                                         value={data.start_date}
-                                        onChange={e => setData('start_date', e.target.value)}
+                                        onChange={d => setData('start_date', d)}
                                         className="w-full bg-white dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
                                         required
                                     />
                                 </div>
                                 <div>
                                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1.5 block">تاريخ النهاية</span>
-                                    <input
+                                    <FlatpickrInput
                                         type="date"
                                         value={data.end_date}
-                                        onChange={e => setData('end_date', e.target.value)}
+                                        onChange={d => setData('end_date', d)}
                                         className="w-full bg-white dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-700/50 rounded-xl px-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
                                         required
                                     />

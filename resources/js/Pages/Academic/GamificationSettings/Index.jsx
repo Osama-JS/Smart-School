@@ -218,28 +218,46 @@ export default function GamificationSettings({ tiers = [], badges = [] }) {
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {tiers.map(tier => (
-                            <div key={tier.id} className="bg-white dark:bg-[#121820] rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all flex flex-col items-center text-center relative group">
-                                <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                    <button onClick={() => openTierModal(tier)} className="p-2 bg-slate-100 hover:bg-primary-50 text-slate-400 hover:text-primary-500 rounded-full transition-colors">
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button onClick={() => confirmDelete('tier', tier.id)} className="p-2 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full transition-colors">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                                
-                                <div className={`w-20 h-20 rounded-full flex items-center justify-center border-4 mb-4 ${tier.color_class}`}>
-                                    {React.cloneElement(getIconComp(tier.icon), { size: 36 })}
-                                </div>
-                                <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{tier.name}</h3>
-                                <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 font-bold text-sm w-full">
-                                    أعلى من <span className="text-lg text-primary-600 mx-1">{tier.min_points}</span> نقطة
-                                </div>
+                    {tiers.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#121820] rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center shadow-sm">
+                            <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] flex items-center justify-center mb-6">
+                                <Trophy size={48} className="text-slate-300 dark:text-slate-600" />
                             </div>
-                        ))}
-                    </div>
+                            <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-3">لا توجد مستويات بعد</h3>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto font-medium leading-relaxed">
+                                قم بتحديد مستويات النقاط (مثل: برونزي، فضي، ذهبي) ليتم ترقية حسابات الطلاب تلقائياً عند وصولهم للحد الأدنى.
+                            </p>
+                            <button
+                                onClick={() => openTierModal()}
+                                className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3.5 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-primary-500/30 transition-transform hover:scale-105"
+                            >
+                                <Plus size={20} /> إضافة أول مستوى
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                            {tiers.map(tier => (
+                                <div key={tier.id} className="bg-white dark:bg-[#121820] rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all flex flex-col items-center text-center relative group">
+                                    <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                        <button onClick={() => openTierModal(tier)} className="p-2 bg-slate-100 hover:bg-primary-50 text-slate-400 hover:text-primary-500 rounded-full transition-colors">
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button onClick={() => confirmDelete('tier', tier.id)} className="p-2 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full transition-colors">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                    
+                                    <div className={`w-20 h-20 rounded-full flex items-center justify-center border-4 mb-4 shadow-inner ${tier.color_class}`}>
+                                        {React.cloneElement(getIconComp(tier.icon), { size: 36 })}
+                                    </div>
+                                    <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">{tier.name}</h3>
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 font-bold text-sm w-full border border-slate-100 dark:border-slate-700/50">
+                                        أعلى من <span className="text-lg text-primary-600 mx-1">{tier.min_points}</span> نقطة
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -255,34 +273,52 @@ export default function GamificationSettings({ tiers = [], badges = [] }) {
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {badges.map(badge => (
-                            <div key={badge.id} className="bg-white dark:bg-[#121820] rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all flex gap-4 relative group">
-                                <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
-                                    <button onClick={() => openBadgeModal(badge)} className="p-2 bg-slate-100 hover:bg-primary-50 text-slate-400 hover:text-primary-500 rounded-full transition-colors">
-                                        <Edit2 size={16} />
-                                    </button>
-                                    <button onClick={() => confirmDelete('badge', badge.id)} className="p-2 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full transition-colors">
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
+                    {badges.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center p-16 bg-white dark:bg-[#121820] rounded-[2.5rem] border border-slate-100 dark:border-slate-800 text-center shadow-sm">
+                            <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem] flex items-center justify-center mb-6">
+                                <Award size={48} className="text-slate-300 dark:text-slate-600" />
+                            </div>
+                            <h3 className="text-2xl font-black text-slate-800 dark:text-white mb-3">لا توجد شارات بعد</h3>
+                            <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-md mx-auto font-medium leading-relaxed">
+                                ابتكر شارات وأوسمة تشجيعية (مثل: العبقري، الموهوب) ليتنافس الطلاب على حصدها عند إنجاز المهام المطلوبة.
+                            </p>
+                            <button
+                                onClick={() => openBadgeModal()}
+                                className="bg-primary-500 hover:bg-primary-600 text-white px-8 py-3.5 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-primary-500/30 transition-transform hover:scale-105"
+                            >
+                                <Plus size={20} /> ابتكار أول شارة
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {badges.map(badge => (
+                                <div key={badge.id} className="bg-white dark:bg-[#121820] rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all flex gap-4 relative group items-start">
+                                    <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
+                                        <button onClick={() => openBadgeModal(badge)} className="p-2 bg-slate-100 hover:bg-primary-50 text-slate-400 hover:text-primary-500 rounded-full transition-colors">
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button onClick={() => confirmDelete('badge', badge.id)} className="p-2 bg-slate-100 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-full transition-colors">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
 
-                                <div className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center border shadow-inner ${badge.color_class}`}>
-                                    {React.cloneElement(getIconComp(badge.icon), { size: 32 })}
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">{badge.name}</h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 line-clamp-2 leading-relaxed">
-                                        {badge.description}
-                                    </p>
-                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-600 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg inline-flex">
-                                        <Target size={14} className="text-primary-500" />
-                                        تحقيق {badge.required_count} إنجاز ({badge.category_target})
+                                    <div className={`w-16 h-16 shrink-0 rounded-2xl flex items-center justify-center border shadow-inner ${badge.color_class}`}>
+                                        {React.cloneElement(getIconComp(badge.icon), { size: 32 })}
+                                    </div>
+                                    <div className="flex-1 pr-2">
+                                        <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">{badge.name}</h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 line-clamp-2 leading-relaxed min-h-[32px]">
+                                            {badge.description || 'لا يوجد وصف تعريفي'}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 px-3 py-2 rounded-xl inline-flex w-full">
+                                            <Target size={14} className="text-primary-500 shrink-0" />
+                                            <span className="truncate">تحقيق {badge.required_count} إنجاز ({badge.category_target})</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

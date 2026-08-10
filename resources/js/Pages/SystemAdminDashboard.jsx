@@ -161,18 +161,55 @@ export default function SystemAdminDashboard({ stats, recentActivities, serverMe
                                 </div>
                             </div>
                             <div className="space-y-3">
-                                <div className="flex items-start gap-3.5 p-3.5 bg-emerald-50/40 dark:bg-emerald-500/10 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
-                                    <Database size={16} className="text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+                                {/* Database Status */}
+                                <div className={`flex items-start gap-3.5 p-3.5 rounded-2xl border ${
+                                    serverMetrics?.system_health?.database?.type === 'success' ? 'bg-emerald-50/40 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20' : 
+                                    (serverMetrics?.system_health?.database?.type === 'warning' ? 'bg-amber-50/40 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20' : 
+                                    'bg-red-50/40 dark:bg-red-500/10 border-red-100 dark:border-red-500/20')
+                                }`}>
+                                    <Database size={16} className={`mt-0.5 shrink-0 ${
+                                        serverMetrics?.system_health?.database?.type === 'success' ? 'text-emerald-600 dark:text-emerald-400' :
+                                        (serverMetrics?.system_health?.database?.type === 'warning' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400')
+                                    }`} />
                                     <div className="min-w-0">
-                                        <p className="text-xs sm:text-sm font-bold text-emerald-800 dark:text-emerald-400">قاعدة البيانات متصلة</p>
-                                        <p className="text-[10px] text-emerald-600/90 dark:text-emerald-500/80 mt-1 font-semibold">استجابة سريعة للنظام</p>
+                                        <p className={`text-xs sm:text-sm font-bold ${
+                                            serverMetrics?.system_health?.database?.type === 'success' ? 'text-emerald-800 dark:text-emerald-400' :
+                                            (serverMetrics?.system_health?.database?.type === 'warning' ? 'text-amber-800 dark:text-amber-400' : 'text-red-800 dark:text-red-400')
+                                        }`}>
+                                            قاعدة البيانات: {serverMetrics?.system_health?.database?.status || 'جاري التحقق...'}
+                                        </p>
+                                        <p className={`text-[10px] mt-1 font-semibold ${
+                                            serverMetrics?.system_health?.database?.type === 'success' ? 'text-emerald-600/90 dark:text-emerald-500/80' :
+                                            (serverMetrics?.system_health?.database?.type === 'warning' ? 'text-amber-600/90 dark:text-amber-500/80' : 'text-red-600/90 dark:text-red-500/80')
+                                        }`}>
+                                            سرعة الاستجابة: <span className="dir-ltr inline-block">{serverMetrics?.system_health?.database?.latency || 'N/A'}</span>
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="flex items-start gap-3.5 p-3.5 bg-primary-50/40 dark:bg-primary-500/10 rounded-2xl border border-primary-100 dark:border-primary-500/20">
-                                    <AlertCircle size={16} className="text-primary-600 dark:text-primary-400 mt-0.5 shrink-0" />
+
+                                {/* System Errors */}
+                                <div className={`flex items-start gap-3.5 p-3.5 rounded-2xl border ${
+                                    serverMetrics?.system_health?.errors?.type === 'success' ? 'bg-primary-50/40 dark:bg-primary-500/10 border-primary-100 dark:border-primary-500/20' : 
+                                    (serverMetrics?.system_health?.errors?.type === 'warning' ? 'bg-amber-50/40 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20' : 
+                                    'bg-red-50/40 dark:bg-red-500/10 border-red-100 dark:border-red-500/20')
+                                }`}>
+                                    <AlertCircle size={16} className={`mt-0.5 shrink-0 ${
+                                        serverMetrics?.system_health?.errors?.type === 'success' ? 'text-primary-600 dark:text-primary-400' :
+                                        (serverMetrics?.system_health?.errors?.type === 'warning' ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400')
+                                    }`} />
                                     <div className="min-w-0">
-                                        <p className="text-xs sm:text-sm font-bold text-primary-800 dark:text-primary-400">لا توجد أخطاء حيوية</p>
-                                        <p className="text-[10px] text-primary-600/90 dark:text-primary-500/80 mt-1 font-semibold">النظام يعمل بكفاءة</p>
+                                        <p className={`text-xs sm:text-sm font-bold ${
+                                            serverMetrics?.system_health?.errors?.type === 'success' ? 'text-primary-800 dark:text-primary-400' :
+                                            (serverMetrics?.system_health?.errors?.type === 'warning' ? 'text-amber-800 dark:text-amber-400' : 'text-red-800 dark:text-red-400')
+                                        }`}>
+                                            سجل أخطاء النظام (اليوم)
+                                        </p>
+                                        <p className={`text-[10px] mt-1 font-semibold ${
+                                            serverMetrics?.system_health?.errors?.type === 'success' ? 'text-primary-600/90 dark:text-primary-500/80' :
+                                            (serverMetrics?.system_health?.errors?.type === 'warning' ? 'text-amber-600/90 dark:text-amber-500/80' : 'text-red-600/90 dark:text-red-500/80')
+                                        }`}>
+                                            {serverMetrics?.system_health?.errors?.status || 'جاري التحقق...'}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

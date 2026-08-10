@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, useForm, usePage } from '@inertiajs/react';
+import SelectInput from '@/Components/SelectInput';
 import { Plus, Edit2, Trash2, X, Save, FileSignature, Layers, Check, BarChart, ChevronDown, ChevronUp, Target, Sparkles, GripVertical, ToggleLeft, ToggleRight, Briefcase, Scale, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 // ─── Animated Counter ─────────────────────────────────────────────────────────
@@ -439,16 +440,15 @@ export default function TemplatesIndex({ templates, jobGrades }) {
                                     <Briefcase size={13} className="text-primary-400" />
                                     الدرجة الوظيفية
                                 </label>
-                                <select
+                                <SelectInput
                                     value={data.job_grade_id}
-                                    onChange={e => setData('job_grade_id', e.target.value)}
-                                    className="w-full bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-4 py-3.5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
-                                >
-                                    <option value="">عام لجميع الموظفين</option>
-                                    {jobGrades.map(grade => (
-                                        <option key={grade.id} value={grade.id}>{grade.name}</option>
-                                    ))}
-                                </select>
+                                    onChange={val => setData('job_grade_id', val)}
+                                    className="w-full bg-slate-50/80 dark:bg-slate-950/50 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                                    options={[
+                                        { value: '', label: 'عام لجميع الموظفين' },
+                                        ...jobGrades.map(grade => ({ value: grade.id, label: grade.name }))
+                                    ]}
+                                />
                             </div>
                             <div>
                                 <label className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2.5">

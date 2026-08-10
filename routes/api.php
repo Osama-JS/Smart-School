@@ -81,12 +81,20 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
 
     // Student App Routes
     Route::get('/student/grades', [\App\Http\Controllers\Api\StudentAppController::class, 'getMonthlyGrades']);
+    Route::get('/student/semester-results', [\App\Http\Controllers\Api\StudentAppController::class, 'getSemesterResults']);
     Route::get('/student/attendance', [\App\Http\Controllers\Api\StudentAppController::class, 'getAttendance']);
+    Route::get('/student/timetable', [\App\Http\Controllers\Api\StudentAppController::class, 'getTimetable']);
+    Route::get('/student/exam-schedules', [\App\Http\Controllers\Api\StudentAppController::class, 'getExamSchedules']);
+    Route::get('/student/homework', [\App\Http\Controllers\Api\StudentAppController::class, 'getHomework']);
 
     // Parent App Routes
     Route::get('/parent/children', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildren']);
     Route::get('/parent/children/{student_id}/grades', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildGrades']);
+    Route::get('/parent/children/{student_id}/semester-results', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildSemesterResults']);
     Route::get('/parent/children/{student_id}/attendance', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildAttendance']);
+    Route::get('/parent/children/{student_id}/timetable', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildTimetable']);
+    Route::get('/parent/children/{student_id}/exam-schedules', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildExamSchedules']);
+    Route::get('/parent/children/{student_id}/homework', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildHomework']);
 
     // Notifications (reusing NotificationController JSON responses)
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);

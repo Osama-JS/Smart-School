@@ -85,8 +85,13 @@ Route::middleware('auth')->group(function () {
         // ── Permissions & Roles ──
         Route::get('/admin/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'index'])->name('admin.permissions');
         Route::post('/admin/roles', [\App\Http\Controllers\Admin\PermissionController::class, 'storeRole'])->name('admin.roles.store');
+        Route::patch('/admin/roles/{role}', [\App\Http\Controllers\Admin\PermissionController::class, 'updateRole'])->name('admin.roles.update');
         Route::delete('/admin/roles/{role}', [\App\Http\Controllers\Admin\PermissionController::class, 'destroyRole'])->name('admin.roles.destroy');
         Route::post('/admin/roles/{role}/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'syncRolePermissions'])->name('admin.roles.permissions');
+        Route::patch('/admin/permissions/{permission}/module', [\App\Http\Controllers\Admin\PermissionController::class, 'updateModule'])->name('admin.permissions.update-module');
+        // Module management
+        Route::post('/admin/permission-modules', [\App\Http\Controllers\Admin\PermissionController::class, 'storeModule'])->name('admin.permission-modules.store');
+        Route::delete('/admin/permission-modules/{key}', [\App\Http\Controllers\Admin\PermissionController::class, 'destroyModule'])->name('admin.permission-modules.destroy');
 
         // ── Settings ──
         Route::get('/admin/settings', [\App\Http\Controllers\Admin\SettingsController::class, 'index'])->name('admin.settings');
@@ -98,6 +103,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'store'])->name('admin.backups.store');
         Route::get('/admin/backups/{filename}/download', [\App\Http\Controllers\Admin\BackupController::class, 'download'])->name('admin.backups.download');
         Route::delete('/admin/backups/{filename}', [\App\Http\Controllers\Admin\BackupController::class, 'destroy'])->name('admin.backups.destroy');
+        Route::delete('/admin/backups', [\App\Http\Controllers\Admin\BackupController::class, 'destroyAll'])->name('admin.backups.destroy-all');
 
         // ── Performance Reports ──
         Route::get('/admin/performance-reports', [\App\Http\Controllers\Admin\PerformanceReportController::class, 'index'])->name('admin.performance.index');
@@ -327,6 +333,11 @@ Route::middleware('auth')->group(function () {
         // Library
         Route::get('/my-library', [\App\Http\Controllers\Student\MyLibraryController::class, 'index'])->name('library');
     });
+    // Teacher's Class Attendances (Web)
+    Route::get('/teacher/class-attendances', [\App\Http\Controllers\Teacher\ClassAttendanceController::class, 'index'])->name('teacher.class-attendances.index');
+    Route::post('/teacher/class-attendances/get-students', [\App\Http\Controllers\Teacher\ClassAttendanceController::class, 'getStudents'])->name('teacher.class-attendances.get-students');
+    Route::post('/teacher/class-attendances', [\App\Http\Controllers\Teacher\ClassAttendanceController::class, 'store'])->name('teacher.class-attendances.store');
+
     // Teacher's Exam Schedule
     Route::get('/teacher/my-exam-schedules', [\App\Http\Controllers\Teacher\ExamScheduleController::class, 'index'])->name('teacher.my-exam-schedules');
     Route::get('/teacher/my-exam-schedules/{examSchedule}/print', [\App\Http\Controllers\Teacher\ExamScheduleController::class, 'print'])->name('teacher.my-exam-schedules.print');
@@ -447,6 +458,11 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:إدارة الطلاب')->group(function () {
+        // Class Attendances (Admins only)
+        Route::get('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'classReports'])->name('academic.attendances.classes');
+        Route::post('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'storeClassAttendance'])->name('academic.attendances.classes.store');
+        Route::post('/academic/class-attendances/bulk', [\App\Http\Controllers\StudentAttendanceController::class, 'storeBulkClassAttendance'])->name('academic.attendances.classes.storeBulk');
+
         Route::resource('/academic/parent-summons', \App\Http\Controllers\Academic\ParentSummonController::class)->names([
             'index'   => 'academic.parent-summons.index',
             'store'   => 'academic.parent-summons.store',
@@ -470,8 +486,8 @@ Route::middleware('auth')->group(function () {
 
         // Student Attendance Reports
         Route::get('/academic/attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'index'])->name('academic.attendances.index');
-        Route::get('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'classReports'])->name('academic.attendances.classes');
-        
+        Route::get('/academic/attendances/create', [\App\Http\Controllers\StudentAttendanceController::class, 'create'])->name('academic.attendances.create');
+        Route::post('/academic/attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'store'])->name('academic.attendances.store');
         // Result Periods
         Route::resource('/academic/result-periods', \App\Http\Controllers\Academic\ResultPeriodController::class)->names([
             'index'   => 'academic.result-periods.index',

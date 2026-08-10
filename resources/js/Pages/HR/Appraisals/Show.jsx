@@ -457,7 +457,7 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                                                     <div key={v.id} className="flex items-center gap-2 text-xs p-2.5 bg-rose-50/50 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-500/10 rounded-xl">
                                                         <AlertTriangle size={12} className="text-rose-400 shrink-0" />
                                                         <span className="text-rose-700 dark:text-rose-300 font-semibold flex-1">{v.violation_type?.name || 'مخالفة'}</span>
-                                                        <span className="text-rose-400 font-mono text-[10px]">{v.date}</span>
+                                                        <span className="text-rose-400 font-mono text-[10px]">{v.violation_date}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -483,7 +483,7 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                                                     <div key={a.id} className="flex items-center gap-2 text-xs p-2.5 bg-emerald-50/50 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/10 rounded-xl">
                                                         <Award size={12} className="text-emerald-400 shrink-0" />
                                                         <span className="text-emerald-700 dark:text-emerald-300 font-semibold flex-1">{a.achievement_type?.name || 'إنجاز'}</span>
-                                                        <span className="text-emerald-400 font-mono text-[10px]">{a.date}</span>
+                                                        <span className="text-emerald-400 font-mono text-[10px]">{a.achievement_date}</span>
                                                     </div>
                                                 ))}
                                             </div>

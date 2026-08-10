@@ -82,10 +82,17 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
 
         // For the subject selection modal
         $subjects = Subject::where('branch_id', $branchId)->get();
-        $teachers = User::where('branch_id', $branchId)
+        $teachers = User::with(['role', 'employee'])
+            ->where('branch_id', $branchId)
             ->whereHas('role', function($q){
                 $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']);
-            })->get(['id', 'name']);
+            })->get(['id', 'name', 'role_id'])->map(function($teacher) {
+                $jobTitle = $teacher->employee?->job_title ?? $teacher->role?->name ?? '';
+                return [
+                    'id' => $teacher->id,
+                    'name' => $jobTitle ? "{$teacher->name} - {$jobTitle}" : $teacher->name,
+                ];
+            });
 
         return Inertia::render('Academic/Timetables/Index', [
             'academicYears' => $academicYears,

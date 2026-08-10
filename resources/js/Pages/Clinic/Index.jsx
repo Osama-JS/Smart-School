@@ -79,35 +79,35 @@ export default function Index({ recentVisits, todayVisitsCount }) {
             <div className="p-6 space-y-6">
                 
                 {/* Header Section with Brand Colors and Geometric Accent (Shifts Style) */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-rose-50/70 via-white to-white dark:from-rose-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-rose-100 dark:border-rose-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none">
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     {/* Brand Line Accent */}
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-rose-500 via-indigo-500 to-rose-600" />
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
                     {/* Fine abstract geometric background lines */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                         <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-rose-600" />
-                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-rose-500" fill="none" />
-                            <circle cx="250" cy="90" r="4" className="fill-rose-500" />
-                            <circle cx="500" cy="160" r="6" className="fill-rose-400" />
-                            <circle cx="750" cy="60" r="3" className="fill-rose-300" />
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
                         </svg>
                     </div>
 
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="p-3.5 bg-rose-500 text-white rounded-2xl shadow-md shadow-rose-500/20 shrink-0">
+                            <div className="p-3.5 bg-primary-500 text-white rounded-2xl shadow-md shadow-primary-500/20 shrink-0">
                                 <HeartPulse size={32} strokeWidth={2.5} />
                             </div>
                             <div>
                                 <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">العيادة المدرسية</h1>
-                                <p className="text-rose-700/80 dark:text-rose-300/80 mt-1 text-sm font-semibold">إدارة السجلات الطبية للطلاب ومتابعة الزيارات اليومية والحالات الطارئة</p>
+                                <p className="text-primary-700/80 dark:text-primary-300/80 mt-1 text-sm font-semibold">إدارة السجلات الطبية للطلاب ومتابعة الزيارات اليومية والحالات الطارئة</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
                             <Link
                                 href={route('clinic.visits.create')}
-                                className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-rose-500 to-indigo-600 text-white rounded-2xl hover:from-rose-600 hover:to-indigo-700 hover:shadow-lg hover:shadow-rose-500/20 text-sm font-bold transition-all active:scale-95 shadow-md"
+                                className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/20 text-sm font-bold transition-all active:scale-95 shadow-md"
                             >
                                 <Plus size={20} strokeWidth={2.5} /> 
                                 <span>تسجيل زيارة جديدة</span>
@@ -158,7 +158,7 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                         {/* Search Section */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 relative z-50">
                             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                <Search size={20} className="text-indigo-500" />
+                                <Search size={20} className="text-primary-500" />
                                 البحث السريع عن السجل الطبي
                             </h3>
                             <div className="relative" ref={searchRef}>
@@ -167,7 +167,7 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                                 </div>
                                 <input
                                     type="text"
-                                    className="block w-full pl-4 pr-12 py-3.5 border-slate-200 rounded-xl focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-700 placeholder-slate-400 shadow-sm text-base font-medium"
+                                    className="block w-full pl-4 pr-12 py-3.5 border-slate-200 rounded-xl focus:ring-primary-500 focus:border-primary-500 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-700 placeholder-slate-400 shadow-sm text-base font-medium"
                                     placeholder="ابحث باسم الطالب، رقم الهوية..."
                                     value={searchQuery}
                                     onChange={onSearchChange}
@@ -175,7 +175,7 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                                 />
                                 {isSearching && (
                                     <div className="absolute inset-y-0 left-0 flex items-center pl-4">
-                                        <div className="animate-spin h-5 w-5 border-2 border-indigo-500 rounded-full border-t-transparent"></div>
+                                        <div className="animate-spin h-5 w-5 border-2 border-primary-500 rounded-full border-t-transparent"></div>
                                     </div>
                                 )}
                                 
@@ -196,11 +196,11 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                                                     <li key={student.id} className="p-3 hover:bg-slate-50 transition-colors group">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-4">
-                                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-blue-100 text-indigo-700 flex items-center justify-center font-bold text-base shadow-inner border border-indigo-50">
+                                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 text-primary-700 flex items-center justify-center font-bold text-base shadow-inner border border-primary-50">
                                                                     {getInitials(student.name)}
                                                                 </div>
                                                                 <div>
-                                                                    <p className="font-bold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">{student.name}</p>
+                                                                    <p className="font-bold text-slate-800 text-base group-hover:text-primary-600 transition-colors">{student.name}</p>
                                                                     <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mt-0.5">
                                                                         <span>{student.grade?.name} - {student.division?.name}</span>
                                                                         <span className="w-1 h-1 rounded-full bg-slate-300"></span>
@@ -218,7 +218,7 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                                                                 </Link>
                                                                 <Link
                                                                     href={route('clinic.visits.create', { student_id: student.id })}
-                                                                    className="px-4 py-2 text-sm bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl hover:bg-indigo-100 flex items-center gap-2 font-bold transition-all shadow-sm"
+                                                                    className="px-4 py-2 text-sm bg-primary-50 text-primary-700 border border-primary-100 rounded-xl hover:bg-primary-100 flex items-center gap-2 font-bold transition-all shadow-sm"
                                                                 >
                                                                     <Plus size={16} />
                                                                     زيارة
@@ -270,7 +270,7 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                                                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm shadow-inner border border-slate-200/50">
                                                                 {getInitials(visit.student?.name)}
                                                             </div>
-                                                            <Link href={route('clinic.records.show', visit.student_id)} className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                                                            <Link href={route('clinic.records.show', visit.student_id)} className="font-bold text-slate-800 group-hover:text-primary-600 transition-colors">
                                                                 {visit.student?.name}
                                                             </Link>
                                                         </div>

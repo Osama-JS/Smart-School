@@ -40,7 +40,7 @@ class PerformanceReportController extends Controller
             FROM information_schema.TABLES
             WHERE table_schema = ?
             ORDER BY (data_length + index_length) DESC
-            LIMIT 5
+            LIMIT 100
         ", [$databaseName]);
         
         $totalSizeResult = DB::select("

@@ -20,6 +20,17 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
         duration: '6_months'
     });
 
+    const [tablesPage, setTablesPage] = useState(1);
+    const [queriesPage, setQueriesPage] = useState(1);
+    const tablesPerPage = 5;
+    const queriesPerPage = 10;
+
+    const currentTables = dbHealth.top_tables.slice((tablesPage - 1) * tablesPerPage, tablesPage * tablesPerPage);
+    const totalTablesPages = Math.ceil(dbHealth.top_tables.length / tablesPerPage);
+
+    const currentQueries = slowQueries.slice((queriesPage - 1) * queriesPerPage, queriesPage * queriesPerPage);
+    const totalQueriesPages = Math.ceil(slowQueries.length / queriesPerPage);
+
     const optimizeSystem = (type) => {
         setIsOptimizing(true);
         setOptimizingType(type);
@@ -186,7 +197,7 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                    ═══════════════════════════════════════════════════════════ */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     {/* Section: Background Jobs */}
-                    <div>
+                    <div className="flex flex-col">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="h-10 w-10 rounded-xl bg-dark-50 dark:bg-dark-700 flex items-center justify-center text-dark-600 dark:text-dark-300">
                                 <Server size={20} />
@@ -194,7 +205,7 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                             <h2 className="text-xl font-black text-slate-800 dark:text-white">المهام الخلفية (Queue Workers)</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-1">
                             {/* Pending Jobs Card */}
                             <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col relative overflow-hidden group">
                                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
@@ -249,7 +260,7 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                     </div>
 
                     {/* Section: Storage & Database */}
-                    <div>
+                    <div className="flex flex-col">
                         <div className="flex items-center gap-3 mb-6">
                             <div className="h-10 w-10 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-400">
                                 <HardDrive size={20} />
@@ -257,7 +268,7 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                             <h2 className="text-xl font-black text-slate-800 dark:text-white">التخزين وقواعد البيانات</h2>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 flex-1">
                             {/* Database Size Card */}
                             <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm flex flex-col relative overflow-hidden group">
                                 <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
@@ -325,13 +336,13 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                                 <BarChart3 size={20} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white">أكبر 5 جداول مساحةً</h3>
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white">الجداول الأكثر استهلاكاً للمساحة</h3>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">مراقبة الجداول الأكثر استهلاكاً للتخزين</p>
                             </div>
                         </div>
                         <div className="flex-1 p-6">
                             <div className="space-y-5">
-                                {dbHealth.top_tables.map((table, index) => {
+                                {currentTables.map((table, index) => {
                                     const percentage = dbHealth.total_size_mb > 0
                                         ? Math.min(100, Math.round((table.size_mb / dbHealth.total_size_mb) * 100))
                                         : 0;
@@ -340,7 +351,7 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                                         <div key={index} className="space-y-2">
                                             <div className="flex items-center justify-between text-sm">
                                                 <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                                    <span className="w-5 h-5 rounded-md bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-[9px] text-primary-600 dark:text-primary-400 font-black ring-1 ring-primary-500/20">{index + 1}</span>
+                                                    <span className="w-5 h-5 rounded-md bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-[9px] text-primary-600 dark:text-primary-400 font-black ring-1 ring-primary-500/20">{(tablesPage - 1) * tablesPerPage + index + 1}</span>
                                                     {table.table_name}
                                                 </span>
                                                 <span className="font-mono font-bold text-slate-500 text-xs">{table.size_mb} MB</span>
@@ -361,6 +372,29 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                                     </div>
                                 )}
                             </div>
+                            
+                            {/* Pagination Controls for Tables */}
+                            {totalTablesPages > 1 && (
+                                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                                    <button
+                                        onClick={() => setTablesPage(p => Math.max(1, p - 1))}
+                                        disabled={tablesPage === 1}
+                                        className="px-3 py-1 text-xs font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                                    >
+                                        السابق
+                                    </button>
+                                    <span className="text-xs font-bold text-slate-500">
+                                        صفحة {tablesPage} من {totalTablesPages}
+                                    </span>
+                                    <button
+                                        onClick={() => setTablesPage(p => Math.min(totalTablesPages, p + 1))}
+                                        disabled={tablesPage === totalTablesPages}
+                                        className="px-3 py-1 text-xs font-bold bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                                    >
+                                        التالي
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -407,7 +441,7 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                                             </td>
                                         </tr>
                                     ) : (
-                                        slowQueries.map((query) => (
+                                        currentQueries.map((query) => (
                                             <tr key={query.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors group">
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold font-mono ring-1 ${
@@ -436,6 +470,29 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                                 </tbody>
                             </table>
                         </div>
+                        
+                        {/* Pagination Controls for Slow Queries */}
+                        {totalQueriesPages > 1 && (
+                            <div className="p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-800/20">
+                                <button
+                                    onClick={() => setQueriesPage(p => Math.max(1, p - 1))}
+                                    disabled={queriesPage === 1}
+                                    className="px-4 py-1.5 text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors border border-slate-200 dark:border-slate-700"
+                                >
+                                    السابق
+                                </button>
+                                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                                    الصفحة {queriesPage} من {totalQueriesPages}
+                                </span>
+                                <button
+                                    onClick={() => setQueriesPage(p => Math.min(totalQueriesPages, p + 1))}
+                                    disabled={queriesPage === totalQueriesPages}
+                                    className="px-4 py-1.5 text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors border border-slate-200 dark:border-slate-700"
+                                >
+                                    التالي
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -466,69 +523,7 @@ export default function PerformanceIndex({ avgResponseTime, totalRequests, slowQ
                     </div>
                 )}
 
-                {/* ═══════════════════════════════════════════════════════════
-                    Full System Optimization Section
-                   ═══════════════════════════════════════════════════════════ */}
-                <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 bg-primary-50/30 dark:bg-primary-500/5">
-                        <div className="p-2 bg-primary-100 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 rounded-xl ring-1 ring-primary-500/20">
-                            <Zap size={20} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-slate-800 dark:text-white">إدارة الذاكرة المؤقتة وتحسين السرعة (Cache & Optimization)</h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">أدوات الصيانة السريعة لتنظيف الذاكرة وتحسين أداء النظام بدون الحاجة لاستخدام (Terminal)</p>
-                        </div>
-                    </div>
-                    <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                        <button
-                            onClick={() => optimizeSystem('clear_cache')}
-                            disabled={isOptimizing}
-                            className="flex flex-col items-center justify-center p-6 border border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:border-primary-500/30 transition-all group disabled:opacity-50"
-                        >
-                            <div className="h-12 w-12 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-primary-50 group-hover:text-primary-500 dark:group-hover:bg-primary-500/10 mb-4 transition-colors ring-1 ring-slate-200 dark:ring-slate-700 group-hover:ring-primary-500/30">
-                                {isOptimizing && optimizingType === 'clear_cache' ? <RotateCcw className="animate-spin" size={24} /> : <Database size={24} />}
-                            </div>
-                            <span className="font-bold text-sm text-slate-800 dark:text-white">تنظيف الذاكرة (Cache)</span>
-                            <span className="text-xs text-slate-500 mt-1">تفريغ الكاش العام</span>
-                        </button>
 
-                        <button
-                            onClick={() => optimizeSystem('clear_views')}
-                            disabled={isOptimizing}
-                            className="flex flex-col items-center justify-center p-6 border border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:border-primary-500/30 transition-all group disabled:opacity-50"
-                        >
-                            <div className="h-12 w-12 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-primary-50 group-hover:text-primary-500 dark:group-hover:bg-primary-500/10 mb-4 transition-colors ring-1 ring-slate-200 dark:ring-slate-700 group-hover:ring-primary-500/30">
-                                {isOptimizing && optimizingType === 'clear_views' ? <RotateCcw className="animate-spin" size={24} /> : <Layout size={24} />}
-                            </div>
-                            <span className="font-bold text-sm text-slate-800 dark:text-white">تنظيف الواجهات (Views)</span>
-                            <span className="text-xs text-slate-500 mt-1">تفريغ كاش التصميم</span>
-                        </button>
-
-                        <button
-                            onClick={() => optimizeSystem('optimize_routes')}
-                            disabled={isOptimizing}
-                            className="flex flex-col items-center justify-center p-6 border border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:border-primary-500/30 transition-all group disabled:opacity-50"
-                        >
-                            <div className="h-12 w-12 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:bg-primary-50 group-hover:text-primary-500 dark:group-hover:bg-primary-500/10 mb-4 transition-colors ring-1 ring-slate-200 dark:ring-slate-700 group-hover:ring-primary-500/30">
-                                {isOptimizing && optimizingType === 'optimize_routes' ? <RotateCcw className="animate-spin" size={24} /> : <RouteIcon size={24} />}
-                            </div>
-                            <span className="font-bold text-sm text-slate-800 dark:text-white">تسريع المسارات (Routes)</span>
-                            <span className="text-xs text-slate-500 mt-1">بناء كاش الروابط</span>
-                        </button>
-
-                        <button
-                            onClick={() => optimizeSystem('optimize_all')}
-                            disabled={isOptimizing}
-                            className="flex flex-col items-center justify-center p-6 rounded-2xl bg-gradient-to-br from-primary-600 to-primary-700 dark:from-primary-700 dark:to-primary-800 hover:from-primary-700 hover:to-primary-800 transition-all group disabled:opacity-50 shadow-sm"
-                        >
-                            <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center text-white mb-4">
-                                {isOptimizing && optimizingType === 'optimize_all' ? <RotateCcw className="animate-spin text-white" size={24} /> : <Zap size={24} />}
-                            </div>
-                            <span className="font-bold text-sm text-white">تحسين شامل (Optimize)</span>
-                            <span className="text-xs text-primary-200 mt-1">تسريع النظام بالكامل</span>
-                        </button>
-                    </div>
-                </div>
 
             </div>
 

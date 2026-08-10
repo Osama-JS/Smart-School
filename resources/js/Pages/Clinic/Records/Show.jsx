@@ -72,18 +72,18 @@ export default function Show({ student }) {
             <div className="p-6 space-y-6">
                 
                 {/* Header Section with Brand Colors and Geometric Accent (Shifts Style) */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-indigo-50/70 via-white to-white dark:from-indigo-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-indigo-100 dark:border-indigo-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none">
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     {/* Brand Line Accent */}
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-600" />
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
                     {/* Fine abstract geometric background lines */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                         <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-indigo-600" />
-                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-indigo-500" fill="none" />
-                            <circle cx="250" cy="90" r="4" className="fill-indigo-500" />
-                            <circle cx="500" cy="160" r="6" className="fill-indigo-400" />
-                            <circle cx="750" cy="60" r="3" className="fill-indigo-300" />
+                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
+                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
+                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
+                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
+                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
                         </svg>
                     </div>
 
@@ -94,7 +94,7 @@ export default function Show({ student }) {
                             </Link>
                             <div>
                                 <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">الملف الطبي للطالب</h1>
-                                <p className="text-indigo-700/80 dark:text-indigo-300/80 mt-1 text-sm font-semibold">استعراض وتحديث المؤشرات الحيوية والتاريخ الطبي والعمليات الإقرارية</p>
+                                <p className="text-primary-700/80 dark:text-primary-300/80 mt-1 text-sm font-semibold">استعراض وتحديث المؤشرات الحيوية والتاريخ الطبي والعمليات الإقرارية</p>
                             </div>
                         </div>
                     </div>
@@ -136,13 +136,13 @@ export default function Show({ student }) {
                         <div className="p-8 relative z-10 pt-16">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                                 <div className="flex items-end gap-6">
-                                    <div className="h-28 w-28 bg-white rounded-3xl flex items-center justify-center text-indigo-600 font-black text-4xl shadow-xl border-4 border-white shrink-0">
+                                    <div className="h-28 w-28 bg-white rounded-3xl flex items-center justify-center text-primary-600 font-black text-4xl shadow-xl border-4 border-white shrink-0">
                                         {getInitials(student.name)}
                                     </div>
                                     <div className="mb-1">
                                         <h3 className="text-3xl font-black text-slate-900 mb-2">{student.name}</h3>
                                         <div className="flex flex-wrap items-center gap-3 text-sm font-bold text-slate-600">
-                                            <span className="bg-indigo-50 text-indigo-700 px-3.5 py-1.5 rounded-xl border border-indigo-100">{student.grade?.name} - {student.division?.name}</span>
+                                            <span className="bg-primary-50 text-primary-700 px-3.5 py-1.5 rounded-xl border border-primary-100">{student.grade?.name} - {student.division?.name}</span>
                                             <span className="bg-slate-100 text-slate-700 px-3.5 py-1.5 rounded-xl font-mono">الهوية: {student.national_id}</span>
                                         </div>
                                     </div>
@@ -165,14 +165,14 @@ export default function Show({ student }) {
                     <form onSubmit={submit} className="bg-white rounded-3xl shadow-sm border border-slate-200">
                         <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50 rounded-t-3xl">
                             <h3 className="text-xl font-black text-slate-800 flex items-center gap-2">
-                                <Stethoscope className="text-indigo-600" size={26} />
+                                <Stethoscope className="text-primary-600" size={26} />
                                 السجل الصحي المعتمد
                             </h3>
                             {!isEditing ? (
                                 <button
                                     type="button"
                                     onClick={() => setIsEditing(true)}
-                                    className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-bold hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                                    className="px-6 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
                                 >
                                     <User size={16} />
                                     تعديل البيانات الطبية
@@ -226,7 +226,7 @@ export default function Show({ student }) {
                                             classNames(
                                                 'w-full rounded-xl py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-2',
                                                 selected
-                                                    ? 'bg-white text-indigo-700 shadow-md font-black'
+                                                    ? 'bg-white text-primary-700 shadow-md font-black'
                                                     : 'text-slate-600 hover:text-slate-900'
                                             )
                                         }
@@ -238,7 +238,7 @@ export default function Show({ student }) {
                                             classNames(
                                                 'w-full rounded-xl py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-2',
                                                 selected
-                                                    ? 'bg-white text-indigo-700 shadow-md font-black'
+                                                    ? 'bg-white text-primary-700 shadow-md font-black'
                                                     : 'text-slate-600 hover:text-slate-900'
                                             )
                                         }
@@ -250,7 +250,7 @@ export default function Show({ student }) {
                                             classNames(
                                                 'w-full rounded-xl py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-2',
                                                 selected
-                                                    ? 'bg-white text-indigo-700 shadow-md font-black'
+                                                    ? 'bg-white text-primary-700 shadow-md font-black'
                                                     : 'text-slate-600 hover:text-slate-900'
                                             )
                                         }
@@ -264,9 +264,9 @@ export default function Show({ student }) {
                                     <Tab.Panel className="focus:outline-none space-y-8">
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                             {/* Height Card */}
-                                            <div className="p-6 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/40 to-white shadow-sm hover:shadow-md transition-all">
-                                                <div className="flex items-center gap-3 mb-4 text-indigo-600">
-                                                    <div className="p-3 bg-indigo-100 rounded-2xl"><Ruler size={26} /></div>
+                                            <div className="p-6 rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50/40 to-white shadow-sm hover:shadow-md transition-all">
+                                                <div className="flex items-center gap-3 mb-4 text-primary-600">
+                                                    <div className="p-3 bg-primary-100 rounded-2xl"><Ruler size={26} /></div>
                                                     <div>
                                                         <h4 className="font-black text-slate-800">الطول</h4>
                                                         <span className="text-xs text-slate-500 font-medium">بالسنتيمتر</span>
@@ -276,7 +276,7 @@ export default function Show({ student }) {
                                                     <input
                                                         type="number"
                                                         step="0.01"
-                                                        className="block w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 disabled:bg-transparent disabled:border-transparent disabled:font-black disabled:text-4xl disabled:p-0 disabled:text-slate-900 transition-all font-bold text-lg"
+                                                        className="block w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 disabled:bg-transparent disabled:border-transparent disabled:font-black disabled:text-4xl disabled:p-0 disabled:text-slate-900 transition-all font-bold text-lg"
                                                         value={data.height}
                                                         onChange={(e) => setData('height', e.target.value)}
                                                         disabled={!isEditing}
@@ -409,7 +409,7 @@ export default function Show({ student }) {
                                                 <InputLabel htmlFor="regular_medications" value="الأدوية المعتادة والمتكررة" className="font-black text-slate-800 text-base mb-2 flex items-center gap-2" />
                                                 <textarea
                                                     id="regular_medications"
-                                                    className="mt-1 block w-full border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm disabled:bg-white disabled:text-slate-800 disabled:border-slate-200 p-4 font-medium"
+                                                    className="mt-1 block w-full border-slate-200 focus:border-primary-500 focus:ring-primary-500 rounded-xl shadow-sm disabled:bg-white disabled:text-slate-800 disabled:border-slate-200 p-4 font-medium"
                                                     rows="4"
                                                     value={data.regular_medications}
                                                     onChange={(e) => setData('regular_medications', e.target.value)}
@@ -423,7 +423,7 @@ export default function Show({ student }) {
                                                 <InputLabel htmlFor="past_surgeries" value="العمليات الجراحية والعمليات السابقة" className="font-black text-slate-800 text-base mb-2 flex items-center gap-2" />
                                                 <textarea
                                                     id="past_surgeries"
-                                                    className="mt-1 block w-full border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm disabled:bg-white disabled:text-slate-800 disabled:border-slate-200 p-4 font-medium"
+                                                    className="mt-1 block w-full border-slate-200 focus:border-primary-500 focus:ring-primary-500 rounded-xl shadow-sm disabled:bg-white disabled:text-slate-800 disabled:border-slate-200 p-4 font-medium"
                                                     rows="4"
                                                     value={data.past_surgeries}
                                                     onChange={(e) => setData('past_surgeries', e.target.value)}

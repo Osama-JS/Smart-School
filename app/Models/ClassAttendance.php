@@ -14,8 +14,10 @@ class ClassAttendance extends Model
         'subject_id',
         'period_id',
         'teacher_id',
+        'recorder_id',
         'date',
         'status',
+        'notes',
     ];
 
     protected $casts = [
@@ -45,5 +47,10 @@ class ClassAttendance extends Model
     public function teacher()
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+    
+    public function recorder()
+    {
+        return $this->belongsTo(User::class, 'recorder_id');
     }
 }

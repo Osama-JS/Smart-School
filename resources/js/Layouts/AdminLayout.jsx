@@ -259,6 +259,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'إدارة دفاتر المتابعة', icon: BookOpen, url: route('admin.followup-books.index') },
                 { name: 'الزيارات الصفية', icon: Eye, url: route('academic.classroom-visits'), permission: 'إدارة الزيارات الصفية' },
                 { name: 'زياراتي الصفية', icon: Eye, url: route('teacher.my-classroom-visits'), permission: 'عرض زياراتي الصفية' },
+                { name: 'تحضير الحصص', icon: CheckSquare, url: route('teacher.class-attendances.index'), role: 'معلم' },
                 { name: 'دفاتري للتحضير', icon: BookOpen, url: route('teacher.lesson-preparations.index') },
                 { name: 'دفاتري للمتابعة', icon: BookOpen, url: route('teacher.followup-books.index') },
                 { name: 'خططي الدراسية', icon: Map, url: route('teacher.study-plans.index') },
@@ -334,7 +335,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
 
     const filteredBottomNavItems = bottomNavItems.filter(item => !item.permission || hasPermission(item.permission));
 
-    const SidebarContent = () => (
+    const sidebarContent = (
         <div className="flex flex-col h-full">
             {/* Brand Line */}
             <div className="brand-line"></div>
@@ -406,9 +407,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
     return (
         <div className="min-h-screen flex font-sans" dir="rtl">
             {/* Desktop Sidebar */}
-            <aside className={`erp-sidebar hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${sidebarOpen ? 'w-[280px]' : 'w-0 overflow-hidden'
+            <aside className={`erp-sidebar z-20 hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-all duration-300 ${sidebarOpen ? 'w-[280px]' : 'w-0 overflow-hidden'
                 }`}>
-                <SidebarContent />
+                {sidebarContent}
             </aside>
 
             {/* Mobile Sidebar with animated backdrop */}
@@ -419,7 +420,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                         onClick={closeMobileSidebar}
                     />
                     <aside className={`sidebar-mobile-panel erp-sidebar flex flex-col ${sidebarClosing ? 'closing' : ''}`}>
-                        <SidebarContent />
+                        {sidebarContent}
                     </aside>
                 </div>
             )}
@@ -427,7 +428,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             {/* Main Area */}
             <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
                 {/* Topbar */}
-                <header className={`erp-topbar flex items-center justify-between px-3 sm:px-4 lg:px-6 ${scrolled ? 'scrolled' : ''}`}>
+                <header className={`erp-topbar z-30 relative flex items-center justify-between px-3 sm:px-4 lg:px-6 ${scrolled ? 'scrolled' : ''}`}>
                     <div className="flex items-center gap-2 sm:gap-3">
                         <button className="erp-btn-ghost lg:hidden" onClick={() => setMobileSidebarOpen(true)} aria-label="فتح القائمة">
                             <Menu size={22} />
