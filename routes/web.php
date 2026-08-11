@@ -470,6 +470,16 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'academic.parent-summons.destroy',
         ])->except(['create', 'show', 'edit']);
 
+        Route::get('/academic/parent-visits/analytics', [\App\Http\Controllers\Academic\ParentVisitController::class, 'analytics'])->name('academic.parent-visits.analytics');
+        Route::post('/academic/parent-visits/{parentVisit}/achievement', [\App\Http\Controllers\Academic\ParentVisitController::class, 'convertToAchievement'])->name('academic.parent-visits.achievement');
+        Route::post('/academic/parent-visits/{parentVisit}/violation', [\App\Http\Controllers\Academic\ParentVisitController::class, 'convertToViolation'])->name('academic.parent-visits.violation');
+        Route::resource('/academic/parent-visits', \App\Http\Controllers\Academic\ParentVisitController::class)->names([
+            'index'   => 'academic.parent-visits.index',
+            'store'   => 'academic.parent-visits.store',
+            'update'  => 'academic.parent-visits.update',
+            'destroy' => 'academic.parent-visits.destroy',
+        ])->except(['create', 'show', 'edit']);
+
         Route::post('/academic/student-pledges/{student_pledge}/sign', [\App\Http\Controllers\Academic\StudentPledgeController::class, 'sign'])->name('academic.student-pledges.sign');
         Route::resource('/academic/student-pledges', \App\Http\Controllers\Academic\StudentPledgeController::class)->names([
             'index'   => 'academic.student-pledges.index',

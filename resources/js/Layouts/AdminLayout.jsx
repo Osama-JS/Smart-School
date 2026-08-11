@@ -243,6 +243,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'لائحة المخالفات (طلاب)', icon: ShieldAlert, url: route('academic.student-violation-types.index'), permission: 'إدارة الطلاب' },
                 { name: 'سجل المخالفات (طلاب)', icon: AlertCircle, url: route('academic.student-violations.index'), permission: 'إدارة الطلاب' },
                 { name: 'استدعاءات أولياء الأمور', icon: Users, url: route('academic.parent-summons.index'), permission: 'إدارة الطلاب' },
+                { name: 'زيارات أولياء الأمور', icon: UserPlus, url: route('academic.parent-visits.index'), permission: 'إدارة الطلاب' },
                 { name: 'أنواع إنجازات الطلاب', icon: Star, url: route('academic.achievement-types.index'), permission: 'إدارة أنواع الإنجازات' },
                 { name: 'إعدادات التلعيب والشارات', icon: Medal, url: route('academic.gamification.index'), permission: 'إعدادات التلعيب والشارات' },
                 { name: 'سجل إنجازات الطلاب', icon: Trophy, url: route('academic.achievements.index'), permission: 'عرض إنجازات الطلاب' },

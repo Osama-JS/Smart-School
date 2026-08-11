@@ -34,6 +34,7 @@ class SystemPermissionsSeeder extends Seeder
             ['name' => 'إدارة المواد الدراسية',  'module' => 'academic'],
             ['name' => 'إدارة الجداول الدراسية', 'module' => 'academic'],
             ['name' => 'إدارة التسجيلات',         'module' => 'academic'],
+            ['name' => 'إدارة زيارات أولياء الأمور', 'module' => 'academic'],
 
             // ── الطلاب ──
             ['name' => 'إدارة الطلاب',         'module' => 'students'],

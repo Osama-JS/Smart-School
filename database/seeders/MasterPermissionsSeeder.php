@@ -169,6 +169,7 @@ class MasterPermissionsSeeder extends Seeder
             ['name' => 'إدارة فترات الرصد', 'module' => 'academic'],
             ['name' => 'إدارة إنجازات الطلاب', 'module' => 'academic'],
             ['name' => 'إدارة انضباط الطلاب', 'module' => 'academic'],
+            ['name' => 'إدارة زيارات أولياء الأمور', 'module' => 'academic'],
             ['name' => 'عرض السنوات الدراسية', 'module' => 'academic'],
             ['name' => 'إضافة سنة دراسية', 'module' => 'academic'],
             ['name' => 'تعديل سنة دراسية', 'module' => 'academic'],
@@ -248,6 +249,14 @@ class MasterPermissionsSeeder extends Seeder
             ['name' => 'حذف تعهد', 'module' => 'academic'],
             ['name' => 'توقيع التعهد', 'module' => 'academic'],
             ['name' => 'طباعة التعهد', 'module' => 'academic'],
+            ['name' => 'عرض زيارات أولياء الأمور', 'module' => 'academic'],
+            ['name' => 'إضافة زيارة ولي أمر', 'module' => 'academic'],
+            ['name' => 'تعديل زيارة ولي أمر', 'module' => 'academic'],
+            ['name' => 'حذف زيارة ولي أمر', 'module' => 'academic'],
+            ['name' => 'اعتماد زيارة ولي أمر', 'module' => 'academic'],
+            ['name' => 'عرض إحصائيات الزيارات', 'module' => 'academic'],
+            ['name' => 'تحويل الزيارة لإنجاز', 'module' => 'academic'],
+            ['name' => 'تحويل الزيارة لمخالفة', 'module' => 'academic'],
 
             // ── 4. وحدة الطلاب (students) ──
             ['name' => 'إدارة الطلاب', 'module' => 'students'],
