@@ -406,7 +406,7 @@ class EmployeeAppraisalController extends Controller
         $isSystemAdmin = $user->role && $user->role->name === 'مدير النظام';
         $employee = $user->employee;
 
-        if (!$isSystemAdmin) {
+        if (!$isSystemAdmin && !$user->hasPermission('إدارة التقييمات الإدارية')) {
             if (!$employee || $appraisal->manager_id !== $employee->id) {
                 abort(403, 'غير مصرح لك باعتماد هذا التقييم كمدير.');
             }

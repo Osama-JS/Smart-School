@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دليل الاستخدام الشامل - النظام الإداري المدرسي الذكي</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            scroll-behavior: smooth;
+            background-color: #f8fafc;
+        }
+        .sidebar-link {
+            transition: all 0.3s ease;
+            display: block;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            color: #475569;
+        }
+        .sidebar-link:hover {
+            background-color: #e0e7ff;
+            color: #4338ca;
+            padding-right: 1.5rem;
+        }
+        h2 { scroll-margin-top: 100px; }
+        h3 { scroll-margin-top: 110px; color: #1e3a8a; border-bottom: 2px solid #e5e7eb; padding-bottom: 0.5rem; margin-top: 2rem;}
+        h4 { color: #374151; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.5rem;}
+        .step-list { list-style-type: decimal; margin-right: 1.5rem; space-y-2; }
+        .step-list li { margin-bottom: 0.5rem; line-height: 1.7; }
+        
+        .image-placeholder {
+            background-color: #f1f5f9;
+            border: 2px dashed #94a3b8;
+            color: #64748b;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+            margin: 1.5rem 0;
+            font-weight: 600;
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 2rem;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+        }
+        .info-box {
+            background-color: #eff6ff;
+            border-right: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .warning-box {
+            background-color: #fffbeb;
+            border-right: 4px solid #f59e0b;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-indigo-700 text-white shadow-xl fixed w-full z-20 top-0">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <span class="text-3xl">🏛️</span> دليل الاستخدام الشامل للمدرسة الذكية
+            </h1>
+            <button onclick="window.print()" class="bg-white text-indigo-700 px-5 py-2 rounded-md shadow hover:bg-indigo-50 font-bold transition">
+                🖨️ طباعة الدليل (PDF)
+            </button>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-6 pt-28 pb-12 flex flex-col lg:flex-row gap-8">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-full lg:w-1/4">
+            <div class="bg-white rounded-xl shadow-lg p-6 sticky top-28 border border-gray-100">
+                <h3 class="text-xl font-extrabold mb-4 border-b pb-3 text-gray-800" style="margin-top: 0;">فهرس المحتويات التفصيلي</h3>
+                <nav class="flex flex-col space-y-1 text-sm font-semibold">
+                    <a href="#intro" class="sidebar-link">1. تهيئة النظام وتسجيل الدخول</a>
+                    <a href="#admin" class="sidebar-link">2. إدارة شؤون الموظفين والهيكل (HR)</a>
+                    <a href="#academic" class="sidebar-link">3. الشؤون الأكاديمية والجداول</a>
+                    <a href="#teacher" class="sidebar-link">4. دليل المعلم وعمليات الفصل</a>
+                    <a href="#student-affairs" class="sidebar-link">5. شؤون الطلاب والانضباط</a>
+                    <a href="#evaluation" class="sidebar-link">6. التقييم والرصد والشهادات</a>
+                    <a href="#parent" class="sidebar-link">7. بوابة ولي الأمر والطالب</a>
+                    <a href="#communication" class="sidebar-link">8. التواصل والاجتماعات</a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="w-full lg:w-3/4 space-y-12">
+            
+            <!-- Section 1 -->
+            <section id="intro" class="bg-white rounded-xl shadow-lg p-8 lg:p-10 border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-800 mb-6">1. تهيئة النظام وتسجيل الدخول</h2>
+                
+                <p class="text-lg mb-4 text-gray-600 leading-relaxed">
+                    يُعد النظام الإداري المدرسي منصة سحابية متكاملة تتطلب اتصالاً بالإنترنت. تم تخصيص الواجهات لتكون متجاوبة وتعمل بكفاءة على أجهزة الكمبيوتر، الأجهزة اللوحية، والهواتف المحمولة.
+                </p>
+
+                <h3>1.1 تسجيل الدخول لأول مرة</h3>
+                <p class="text-gray-700">لتسجيل الدخول إلى النظام، يرجى اتباع الخطوات التفصيلية التالية:</p>
+                <ol class="step-list text-gray-700">
+                    <li>قم بفتح متصفح الإنترنت المفضل لديك (يُنصح باستخدام Google Chrome أو Microsoft Edge).</li>
+                    <li>أدخل الرابط المخصص لمدرستك في شريط العنوان أعلى المتصفح.</li>
+                    <li>ستظهر لك شاشة تسجيل الدخول الرئيسية. أدخل <strong>رقم الهوية الوطنية/الإقامة</strong> أو <strong>البريد الإلكتروني</strong> في الحقل الأول.</li>
+                    <li>أدخل <strong>كلمة المرور</strong> الافتراضية التي تم تزويدك بها من قبل إدارة النظام (عادة ما تكون مرسلة في رسالة نصية SMS).</li>
+                    <li>اضغط على زر <strong>تسجيل الدخول</strong>.</li>
+                    <li>عند الدخول لأول مرة، سيجبرك النظام فوراً على تغيير كلمة المرور الافتراضية لأسباب أمنية. أدخل كلمة مرور جديدة تحتوي على أحرف وأرقام.</li>
+                </ol>
+                
+                <div class="image-placeholder">
+                    📷 [صورة توضيحية: شاشة تسجيل الدخول وتغيير كلمة المرور لأول مرة]
+                </div>
+
+                <h3>1.2 استعادة كلمة المرور المفقودة</h3>
+                <ol class="step-list text-gray-700">
+                    <li>في شاشة تسجيل الدخول، انقر على الرابط <strong>"هل نسيت كلمة المرور؟"</strong>.</li>
+                    <li>سيُطلب منك إدخال بريدك الإلكتروني المسجل في النظام.</li>
+                    <li>اضغط على زر <strong>إرسال رابط الاستعادة</strong>.</li>
+                    <li>تفقد بريدك الإلكتروني، ستجد رسالة تحتوي على زر <strong>إعادة تعيين كلمة المرور</strong>.</li>
+                    <li>انقر على الزر، وقم بإدخال كلمة المرور الجديدة في النافذة المنبثقة.</li>
+                </ol>
+
+                <h3>1.3 نظرة على لوحة التحكم الرئيسية (Dashboard)</h3>
+                <p class="text-gray-700 leading-relaxed">
+                    بعد تسجيل الدخول بنجاح، ستنتقل إلى <strong>لوحة التحكم الرئيسية</strong>. تتغير محتويات هذه اللوحة بناءً على <em>صلاحياتك</em>. 
+                    <br>على سبيل المثال:
+                    <br>- <strong>المعلم:</strong> سيرى جدول حصصه اليومي، وعدد المهام المعلقة (مثل تحضير لم يُعتمد).
+                    <br>- <strong>شؤون الطلاب:</strong> سيرى إحصائيات الغياب اليومية للطلاب، وطلبات الاستدعاء المفتوحة.
+                    <br>- <strong>ولي الأمر:</strong> سيرى ملخصاً سريعاً لنتائج أبنائه وإشعارات الغياب.
+                </p>
+                <div class="info-box">
+                    <strong>💡 تلميح:</strong> يمكنك ترتيب وتخصيص الواجهات المصغرة (Widgets) في لوحة التحكم عن طريق سحبها وإفلاتها حسب أولوياتك اليومية.
+                </div>
+            </section>
+
+            <!-- Section 2 -->
+            <section id="admin" class="bg-white rounded-xl shadow-lg p-8 lg:p-10 border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-800 mb-6">2. إدارة شؤون الموظفين والهيكل (HR & Administration)</h2>
+                
+                <p class="text-gray-700 leading-relaxed">
+                    هذا القسم مصمم خصيصاً لمدراء الموارد البشرية، مدراء النظام، وقادة المدارس للتحكم الكامل بالموظفين وتتبع انضباطهم وتقييماتهم.
+                </p>
+
+                <h3>2.1 بناء الهيكل التنظيمي (Organization Chart)</h3>
+                <p class="text-gray-700">يجب على مسؤول النظام تعريف الهيكل قبل البدء بإضافة الموظفين:</p>
+                <ol class="step-list text-gray-700">
+                    <li>من القائمة الجانبية، انتقل إلى <strong>الإعدادات الإدارية > الهيكل التنظيمي</strong>.</li>
+                    <li>قم بإضافة <strong>الفروع (Branches)</strong> إذا كانت المدرسة تمتلك أكثر من مجمع تعليمي. حدد إحداثيات الفرع (خط الطول والعرض) لتمكين تسجيل الحضور الجغرافي.</li>
+                    <li>داخل كل فرع، قم بإضافة <strong>الأقسام (Departments)</strong> مثل (قسم الرياضيات، شؤون الطلاب، الإدارة المالية).</li>
+                    <li>في شاشة <strong>الدرجات الوظيفية (Job Grades)</strong>، قم بتعريف المسميات (مثال: رئيس قسم، وكيل شؤون طلاب، معلم) وحدد "المدير المباشر" لكل درجة لبناء التسلسل الهرمي.</li>
+                </ol>
+
+                <div class="image-placeholder">
+                    📷 [صورة توضيحية: شاشة الهيكل التنظيمي وربط الأقسام]
+                </div>
+
+                <h3>2.2 إضافة وإدارة الموظفين</h3>
+                <ol class="step-list text-gray-700">
+                    <li>انتقل إلى <strong>الموارد البشرية > ملفات الموظفين</strong>.</li>
+                    <li>انقر على زر <strong>+ موظف جديد</strong> أعلى اليسار.</li>
+                    <li>قم بتعبئة البيانات الشخصية (الاسم، الهوية، الجنسية، تاريخ الميلاد).</li>
+                    <li>في علامة التبويب "البيانات الوظيفية"، اربط الموظف بالفرع، القسم، والدرجة الوظيفية التي أنشأتها مسبقاً.</li>
+                    <li>بناءً على الدرجة الوظيفية، سيقوم النظام تلقائياً بربط الموظف بمديره المباشر ليتم توجيه طلبات الإجازة إليه.</li>
+                </ol>
+
+                <h3>2.3 إدارة الحضور والورديات (Attendance & Shifts)</h3>
+                <p class="text-gray-700">لضبط أوقات الدوام:</p>
+                <ol class="step-list text-gray-700">
+                    <li>اذهب إلى <strong>الموارد البشرية > الورديات (Shifts)</strong>.</li>
+                    <li>قم بإنشاء وردية جديدة (مثال: دوام صباحي) وحدد أيام العمل من الأحد للخميس، ووقت الدخول (06:30 ص) ووقت الانصراف (01:30 م).</li>
+                    <li>اربط مجموعة من الموظفين بهذه الوردية.</li>
+                    <li><strong>كيف يُسجل الموظف حضوره؟</strong> يقوم الموظف بفتح تطبيق النظام من هاتفه وهو داخل أسوار المدرسة، وينقر على "تسجيل حضور". سيقوم النظام بمطابقة إحداثيات GPS الخاصة بجواله (Geolocation) مع إحداثيات الفرع، وإذا كان ضمن النطاق المسموح، سيتم قبول تسجيل الحضور.</li>
+                </ol>
+                <div class="warning-box">
+                    <strong>⚠️ تحذير:</strong> التلاعب بالموقع الجغرافي (Fake GPS) يتم اكتشافه تلقائياً من قبل النظام ويتم تسجيل محاولة "تلاعب" في سجل الموظف.
+                </div>
+
+                <h3>2.4 إدارة الطلبات والإجازات</h3>
+                <ol class="step-list text-gray-700">
+                    <li>عندما يرفع الموظف طلب إجازة، يصل الإشعار فوراً إلى <strong>المدير المباشر</strong>.</li>
+                    <li>يستطيع المدير فتح الطلب من قسم <strong>الطلبات الإدارية > الطلبات الواردة</strong>.</li>
+                    <li>يعرض النظام للمدير بوضوح "رصيد الموظف الحالي من هذا النوع من الإجازات".</li>
+                    <li>إذا نقر المدير على "اعتماد"، ينتقل الطلب (إن تطلب الأمر) إلى مدير الموارد البشرية للاعتماد النهائي، ثم يتم خصم الرصيد تلقائياً.</li>
+                </ol>
+
+                <div class="image-placeholder">
+                    📷 [صورة توضيحية: شاشة الموافقة على طلب إجازة موظف وعرض الأرصدة]
+                </div>
+            </section>
+
+            <!-- Section 3 -->
+            <section id="academic" class="bg-white rounded-xl shadow-lg p-8 lg:p-10 border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-800 mb-6">3. الشؤون الأكاديمية والجداول</h2>
+                
+                <p class="text-gray-700 leading-relaxed">
+                    من خلال هذا القسم، يتم بناء العصب الأساسي للعملية التعليمية، من إعداد الفصول إلى بناء الجداول المدرسية المعقدة.
+                </p>
+
+                <h3>3.1 إعداد السنة الدراسية والفصول</h3>
+                <ol class="step-list text-gray-700">
+                    <li>اذهب إلى <strong>الشؤون الأكاديمية > التقويم الأكاديمي</strong>.</li>
+                    <li>قم بإنشاء <strong>سنة دراسية جديدة</strong> (مثال: 2026-2027).</li>
+                    <li>أضف <strong>الفصول الدراسية (Semesters)</strong> وحدد تاريخ بداية ونهاية كل فصل بدقة، فهذه التواريخ ستتحكم بظهور الجداول والخطط.</li>
+                    <li>قم بتوزيع الطلاب على <strong>الصفوف (Grades)</strong> (مثال: الأول المتوسط) و <strong>الشُعَب (Sections)</strong> (مثال: 1/أ، 1/ب).</li>
+                </ol>
+
+                <h3>3.2 إعداد الخطط الدراسية (Study Plans)</h3>
+                <p class="text-gray-700">لتوحيد العمل الأكاديمي، يتم إعداد الخطة مسبقاً:</p>
+                <ol class="step-list text-gray-700">
+                    <li>انتقل إلى <strong>الشؤون الأكاديمية > الخطط الدراسية</strong>.</li>
+                    <li>اختر المادة (مثال: علوم) والصف (الأول المتوسط).</li>
+                    <li>استخدم <strong>قالب الخطة (Template)</strong> لتقسيم محتوى المنهج على أسابيع الفصل الدراسي.</li>
+                    <li>بمجرد اعتماد المشرف للخطة، ستظهر تلقائياً لمعلمي العلوم في هذا الصف ليقوموا بتحضير دروسهم بناءً عليها.</li>
+                </ol>
+
+                <div class="image-placeholder">
+                    📷 [صورة توضيحية: واجهة بناء الخطة الدراسية وتوزيع الدروس على الأسابيع]
+                </div>
+
+                <h3>3.3 الجدول المدرسي وإدارة حصص الاحتياطي (Master Timetable & Coverages)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>انتقل إلى <strong>الجداول > الجدول الأسبوعي الرئيسي</strong>.</li>
+                    <li>قم بتوزيع الحصص على المعلمين والسحب والإفلات لترتيب الحصص على أيام الأسبوع والشُعب.</li>
+                    <li>في حالة غياب معلم بشكل مفاجئ، يقوم المشرف بفتح أداة <strong>تغطية الاحتياطي (Class Coverages)</strong>.</li>
+                    <li>يظهر النظام تلقائياً المعلمين "المتاحين" في تلك الحصة، مرتبين حسب عدد حصص الاحتياطي التي أخذوها مسبقاً لضمان العدالة في التوزيع.</li>
+                    <li>بمجرد إسناد الحصة لمعلم بديل، يصله إشعار فوري على جواله ليقوم بتغطية الفصل.</li>
+                </ol>
+            </section>
+
+            <!-- Section 4 -->
+            <section id="teacher" class="bg-white rounded-xl shadow-lg p-8 lg:p-10 border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-800 mb-6">4. دليل المعلم وعمليات الفصل</h2>
+                
+                <p class="text-gray-700 leading-relaxed">
+                    تم تصميم واجهة المعلم لتكون خفيفة، سريعة، ويمكن استخدامها من شاشة الجوال أو الجهاز اللوحي بسهولة داخل الفصل.
+                </p>
+
+                <h3>4.1 استعراض الجدول وأخذ الغياب في الحصة (Class Attendance)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>بمجرد دخول المعلم على حسابه، سيجد مربع <strong>"حصص اليوم"</strong> في منتصف لوحة التحكم.</li>
+                    <li>بجانب كل حصة يوجد زر أخضر <strong>"دخول الفصل"</strong>. اضغط عليه.</li>
+                    <li>ستظهر لك قائمة بأسماء الطلاب وصورهم الشخصية. افتراضياً، جميع الطلاب محددون كـ "حاضر".</li>
+                    <li>انقر على زر "حاضر" بجانب الطالب الغائب ليتحول لونه إلى أحمر ويصبح "غائب"، أو أصفر ليصبح "متأخر".</li>
+                    <li>انقر على <strong>حفظ الحضور</strong> أسفل الشاشة.</li>
+                </ol>
+                <div class="info-box">
+                    <strong>💡 آلية ذكية:</strong> بمجرد نقر المعلم على حفظ، وفي حال كان هذا الطالب يسجل غياباً لأول مرة في اليوم، سيقوم النظام فوراً (في الخلفية) بإرسال إشعار و رسالة SMS لولي أمره لإبلاغه بالغياب دون أي تدخل بشري آخر!
+                </div>
+
+                <div class="image-placeholder">
+                    📷 [صورة توضيحية: واجهة المعلم لقائمة الطلاب وتسجيل الحضور والانصراف]
+                </div>
+
+                <h3>4.2 تحضير الدروس (Lesson Preparation)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>من القائمة، اختر <strong>الفصول والمقررات > تحضير الدروس</strong>.</li>
+                    <li>انقر على <strong>تحضير درس جديد</strong>.</li>
+                    <li>اختر الدرس من القائمة المنسدلة (المرتبطة بالخطة الدراسية المعتمدة).</li>
+                    <li>اكتب أهداف الدرس، استراتيجيات التدريس، وأدوات التقييم. يمكنك إرفاق ملفات PDF أو روابط يوتيوب كإثراء.</li>
+                    <li>اضغط على <strong>إرسال للاعتماد</strong>. سيصل التحضير للمشرف التربوي للاطلاع والقبول.</li>
+                </ol>
+
+                <h3>4.3 إدارة السلوك والتحفيز (Gamification & Violations)</h3>
+                <p class="text-gray-700 leading-relaxed">
+                    يمكن للمعلم تعزيز التفاعل في الفصل من خلال نظام الأوسمة:
+                </p>
+                <ol class="step-list text-gray-700">
+                    <li>أثناء تواجدك في شاشة "دخول الفصل"، بجانب اسم كل طالب يوجد أيقونة <strong>نجمة (تحفيز)</strong> وأيقونة <strong>علم أحمر (مخالفة)</strong>.</li>
+                    <li>انقر على <strong>النجمة</strong> لطالب متفاعل. ستظهر لك نافذة لاختيار نوع الإنجاز (مثال: مشاركة متميزة، حل الواجب مبكراً). سيُضاف للطالب 10 نقاط في رصيده وسيصل إشعار سعيد لولي الأمر.</li>
+                    <li>في حال الإزعاج، انقر على <strong>العلم الأحمر</strong>. اختر نوع المخالفة (مثال: التحدث بدون إذن). لن تُخصم درجات فوراً، بل ستُرسل كـ "ملاحظة سلوكية" للموجه الطلابي ليتخذ الإجراء المناسب.</li>
+                </ol>
+            </section>
+
+            <!-- Section 5 -->
+            <section id="student-affairs" class="bg-white rounded-xl shadow-lg p-8 lg:p-10 border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-800 mb-6">5. شؤون الطلاب والانضباط</h2>
+
+                <h3>5.1 إدارة البيانات والملفات الشاملة للطلاب</h3>
+                <ol class="step-list text-gray-700">
+                    <li>انتقل إلى <strong>شؤون الطلاب > ملفات الطلاب</strong>.</li>
+                    <li>بإمكانك البحث عن أي طالب باستخدام رقم الهوية أو جزء من الاسم.</li>
+                    <li>بالدخول على ملف الطالب، ستجد تبويبات مفصلة: (البيانات الشخصية، السجل الأكاديمي، سجل الغياب، السجل السلوكي، السجل الطبي).</li>
+                    <li><strong>لربط طالب بولي أمر:</strong> في شاشة التسجيل، أدخل رقم هوية ولي الأمر. إذا كان ولي الأمر مسجلاً مسبقاً ولديه أبناء آخرون في المدرسة، سيقوم النظام تلقائياً بضم الطالب الجديد لملف ولي الأمر نفسه لتسهيل المتابعة من حساب واحد.</li>
+                </ol>
+
+                <div class="image-placeholder">
+                    📷 [صورة توضيحية: الملف الشامل للطالب المكون من تبويبات السلوك والصحة والدرجات]
+                </div>
+
+                <h3>5.2 إدارة الانضباط واستدعاء ولي الأمر (Pledges & Summons)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>عند قيام طالب بمخالفة تستوجب تدخلاً، اذهب إلى <strong>الانضباط > المخالفات المسجلة</strong>.</li>
+                    <li>راجع المخالفة المحولة من المعلم.</li>
+                    <li>إذا لزم الأمر، انقر على خيار <strong>أخذ تعهد (Student Pledge)</strong>. سيقوم النظام بتوليد نموذج تعهد آلياً باسم الطالب وموضوع المخالفة، ويمكن طباعته لتوقيع الطالب عليه وحفظه في الأرشيف الإلكتروني.</li>
+                    <li>في المخالفات الجسيمة، يمكنك النقر على <strong>استدعاء ولي أمر (Parent Summon)</strong>. سيُرسل النظام إشعاراً ورسالة لولي الأمر بضرورة مراجعة المدرسة، وسيتم تسجيل وتوثيق "تاريخ مراجعة ولي الأمر" فور قدومه للمدرسة في تبويب (Parent Visits).</li>
+                </ol>
+
+                <h3>5.3 العيادة المدرسية (School Clinic)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>المرشد الصحي يمكنه الدخول إلى <strong>العيادة > زيارات الطلاب</strong>.</li>
+                    <li>عند مجيء طالب للعيادة، يتم تسجيل شكوى الطالب، درجة حرارته، والإجراء المتخذ (إعطاء مسكن، طلب إسعاف، السماح بالراحة).</li>
+                    <li>يحتفظ النظام بكامل السجل الطبي والأدوية الممنوعة للطالب (حساسية الأدوية) لتحذير المرشد الصحي قبل صرف أي دواء.</li>
+                </ol>
+            </section>
+
+            <!-- Section 6 -->
+            <section id="evaluation" class="bg-white rounded-xl shadow-lg p-8 lg:p-10 border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-800 mb-6">6. التقييم والرصد والشهادات</h2>
+                
+                <p class="text-gray-700 leading-relaxed">
+                    يعالج النظام الدرجات بدقة عالية ويدعم أنظمة الرصد المستمر ورصد نهاية الفصل.
+                </p>
+
+                <h3>6.1 دفاتر المتابعة والتقييم الأسبوعي</h3>
+                <ol class="step-list text-gray-700">
+                    <li>يستخدم المعلم <strong>دفتر المتابعة (Followup Book)</strong> لرصد الدرجات المصغرة بشكل يومي أو أسبوعي (مثل: درجة المشاركة اليوم، درجة واجب المنصة).</li>
+                    <li>تُحفظ هذه الدرجات، ويمكن للنظام تجميعها آلياً بنهاية الشهر لاستخراج <strong>متوسط الدرجات (Monthly Grades)</strong> لكل طالب بناءً على المعايير المحددة (Evaluation Criteria).</li>
+                </ol>
+
+                <h3>6.2 رصد درجات الاختبارات النهائية (Semester Results)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>في فترة الاختبارات، يتم فتح صلاحية "رصد الدرجات النهائية" للمعلمين عبر <strong>التقييمات > رصد نهاية الفصل</strong>.</li>
+                    <li>يقوم المعلم بإدخال درجة الاختبار التحريري لكل طالب. يتم الجمع مع درجات أعمال السنة تلقائياً وفقاً لإعدادات المادة المحددة في النظام.</li>
+                    <li>بعد الانتهاء من الرصد، لا تعتمد الدرجة فوراً. يجب أن يقوم المشرف الأكاديمي أو المدير بمراجعة الرصد والنقر على زر <strong>الاعتماد النهائي وإغلاق الرصد</strong>.</li>
+                    <li>بمجرد الاعتماد، يتم توليد <strong>الشهادات (Report Cards)</strong> وتصبح متاحة للطباعة، وتُنشر في حسابات أولياء الأمور فوراً.</li>
+                </ol>
+
+                <div class="image-placeholder">
+                    📷 [صورة توضيحية: شاشة رصد الدرجات وحساب المجموع والاعتماد]
+                </div>
+            </section>
+
+            <!-- Section 7 -->
+            <section id="parent" class="bg-white rounded-xl shadow-lg p-8 lg:p-10 border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-800 mb-6">7. بوابة ولي الأمر والطالب</h2>
+                
+                <p class="text-gray-700 leading-relaxed">
+                    واجهات مبسطة ومصممة لتعزيز الشفافية وإبقاء المنزل متصلاً بالمدرسة لحظة بلحظة.
+                </p>
+
+                <h3>7.1 جولة في حساب ولي الأمر</h3>
+                <ol class="step-list text-gray-700">
+                    <li>بعد تسجيل الدخول، سيجد ولي الأمر في أعلى الشاشة <strong>صور وأسماء أبنائه</strong> كبطاقات.</li>
+                    <li>بالنقر على اسم أحد الأبناء، تتحول كافة البيانات في الشاشة لتخص هذا الابن تحديداً (مثل: جدول الحصص الخاص به، غيابه، سلوكه، ودرجاته).</li>
+                    <li>يمكن لولي الأمر رفع <strong>طلب استئذان (خروج مبكر)</strong> إلكترونياً. سيصل الطلب لإدارة شؤون الطلاب، وعند الموافقة يُرسل إشعار لولي الأمر بالتوجه للمدرسة لاستلام ابنه، ويتم إعلام المعلم بخروج الطالب.</li>
+                </ol>
+
+                <div class="image-placeholder">
+                    📷 [صورة توضيحية: واجهة ولي الأمر والتبديل بين بطاقات الأبناء واستعراض الإشعارات]
+                </div>
+
+                <h3>7.2 جولة في حساب الطالب (التحفيز والمهام)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>يستعرض الطالب <strong>الجدول المدرسي</strong> لمعرفة ما هي الدروس التي سيأخذها غداً وما المتوقع منه تحضيره بناءً على الخطة المرفوعة من المعلم.</li>
+                    <li>يتفاعل الطالب بشكل كبير مع واجهة <strong>التحفيز (Gamification)</strong>. يمكنه رؤية شريط تقدمه والانتقال من مستوى لآخر (مثال: من Tier 1 إلى Tier 2) بناءً على النقاط التي يجمعها.</li>
+                    <li>بإمكانه استعراض الأوسمة الممنوحة له من المعلمين، مما يخلق بيئة تنافسية إيجابية.</li>
+                </ol>
+            </section>
+
+            <!-- Section 8 -->
+            <section id="communication" class="bg-white rounded-xl shadow-lg p-8 lg:p-10 border border-gray-100">
+                <h2 class="text-3xl font-extrabold text-indigo-800 mb-6">8. التواصل والاجتماعات (Communication)</h2>
+                
+                <p class="text-gray-700 leading-relaxed">
+                    يوفر النظام أدوات مدمجة للتواصل الفعال وتقليل التشتت واستخدام برامج المراسلة الخارجية.
+                </p>
+
+                <h3>8.1 إدارة الاجتماعات الداخلية (Meetings)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>للمدراء صلاحية الدخول إلى <strong>التواصل > الاجتماعات</strong>.</li>
+                    <li>اضغط على <strong>جدولة اجتماع جديد</strong>. حدد الزمان والمكان (أو رابط الاجتماع عن بعد).</li>
+                    <li>في خانة المشاركين (Participants)، ابحث وأضف أسماء الموظفين أو المعلمين المطلوب حضورهم.</li>
+                    <li>قم بإرفاق ملفات (أجندة الاجتماع) ليطلعوا عليها قبل الحضور.</li>
+                    <li>أثناء أو بعد الاجتماع، يستطيع مدير الاجتماع كتابة <strong>محضر الاجتماع</strong> والقرارات المتخذة داخل النظام ليتم حفظها في أرشيف الاجتماعات.</li>
+                </ol>
+
+                <h3>8.2 منصة الأخبار والإعلانات (News Board)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>يمكن للإدارة نشر تعاميم أو إعلانات عامة لجميع طاقم المدرسة أو لأولياء الأمورผ่าน <strong>التواصل > الأخبار</strong>.</li>
+                    <li>الخبر يظهر في صدر لوحة التحكم كمنشور يشبه وسائل التواصل الاجتماعي.</li>
+                    <li>يمكن للمستخدمين (في حال تفعيل الخاصية) التفاعل مع الخبر بالضغط على زر <strong>الإعجاب (Like)</strong> أو كتابة <strong>التعليقات (Comments)</strong>، مما يعزز التفاعل المدرسي الداخلي.</li>
+                </ol>
+
+                <h3>8.3 غرف المحادثة (Chat System)</h3>
+                <ol class="step-list text-gray-700">
+                    <li>توجد أيقونة محادثة في أعلى يسار الشاشة تفتح <strong>نظام المراسلة الفوري</strong>.</li>
+                    <li>يمكن للمعلم التواصل المباشر والسريع مع زميله أو مع إدارة المدرسة.</li>
+                    <li>يتم إنشاء <strong>غرف محادثة (Chat Rooms)</strong> تلقائياً للأقسام، بحيث تتوفر غرفة مشتركة لمعلمي قسم الرياضيات لمناقشة أمورهم الخاصة بمأمونية تامة وداخل خوادم المدرسة.</li>
+                </ol>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-indigo-900 text-indigo-200 py-10 mt-16">
+        <div class="container mx-auto px-6 text-center">
+            <h4 class="text-2xl font-bold text-white mb-4">النظام الإداري المدرسي الذكي</h4>
+            <p class="mb-4 text-sm opacity-80">صُمم هذا الدليل الشامل ليرافقك خطوة بخطوة في رحلة التحول الرقمي لمدرستك. نحن نؤمن بأن الإدارة الذكية تبدأ بأدوات سهلة وقوية.</p>
+            <p class="text-sm border-t border-indigo-700 pt-6 mt-6 opacity-60">جميع الحقوق محفوظة &copy; 2026 - الإصدار 1.0 الاحترافي</p>
+        </div>
+    </footer>
+
+</body>
+</html>

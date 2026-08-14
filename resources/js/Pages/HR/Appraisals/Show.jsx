@@ -116,7 +116,7 @@ const ScoreGoals = ({ appraisal, score, isEmployee, isManager }) => {
 };
 
 export default function AppraisalsShow({ appraisal, integrationData, trendData, smartAlert }) {
-    const { auth, flash } = usePage().props;
+    const { auth, flash, errors } = usePage().props;
     const isEmployee = auth.user?.id === appraisal.employee?.user_id || auth.user?.employee_id === appraisal.employee_id || auth.user?.employee?.id === appraisal.employee_id;
     const isManager = auth.user?.id === appraisal.manager?.user_id || auth.user?.employee_id === appraisal.manager_id || auth.user?.employee?.id === appraisal.manager_id;
     const isHR = auth.user?.permissions?.includes('إدارة التقييمات الإدارية') || auth.user?.role?.name === 'مدير النظام' || auth.user?.role?.name === 'مدير الفرع';
@@ -144,9 +144,13 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
 
     const updateScore = (formType, index, field, value) => {
         if (formType === 'self') {
-            const newScores = [...selfData.scores]; newScores[index][field] = value; setSelfData('scores', newScores);
+            const newScores = [...selfData.scores]; 
+            newScores[index] = { ...newScores[index], [field]: value };
+            setSelfData('scores', newScores);
         } else {
-            const newScores = [...managerData.scores]; newScores[index][field] = value; setManagerData('scores', newScores);
+            const newScores = [...managerData.scores]; 
+            newScores[index] = { ...newScores[index], [field]: value };
+            setManagerData('scores', newScores);
         }
     };
 
@@ -167,6 +171,23 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                 {flash?.success && (
                     <div className="flex items-center gap-3 bg-emerald-50/80 dark:bg-emerald-500/10 backdrop-blur border border-emerald-250 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 px-5 py-3.5 rounded-2xl text-sm font-semibold animate-slide-down shadow-sm">
                         <Check size={16} /> {flash.success}
+                    </div>
+                )}
+                
+                {flash?.error && (
+                    <div className="flex items-center gap-3 bg-rose-50/80 dark:bg-rose-500/10 backdrop-blur border border-rose-250 dark:border-rose-500/20 text-rose-700 dark:text-rose-400 px-5 py-3.5 rounded-2xl text-sm font-semibold animate-slide-down shadow-sm">
+                        <AlertTriangle size={16} /> {flash.error}
+                    </div>
+                )}
+
+                {errors && Object.keys(errors).length > 0 && (
+                    <div className="bg-rose-50/80 dark:bg-rose-500/10 backdrop-blur border border-rose-250 dark:border-rose-500/20 p-4 rounded-2xl text-sm font-semibold animate-slide-down shadow-sm">
+                        <div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 mb-2">
+                            <AlertTriangle size={16} /> <span>يوجد أخطاء في الإدخال:</span>
+                        </div>
+                        <ul className="list-disc list-inside text-rose-600 dark:text-rose-300 text-xs space-y-1">
+                            {Object.values(errors).map((err, i) => <li key={i}>{err}</li>)}
+                        </ul>
                     </div>
                 )}
 
@@ -277,7 +298,7 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                                                     </td>
                                                     <td className="px-4 py-4 text-center">
                                                         {appraisal.status === 'pending_manager' && (isManager || isHR) ? (
-                                                            <input type="number" min="1" max="5" value={managerData.scores[index]?.manager_score || ''} onChange={e => updateScore('manager', index, 'manager_score', e.target.value)} className="w-16 mx-auto bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl text-center py-2 text-sm font-bold text-blue-700 dark:text-blue-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none transition-all" placeholder="1-5" />
+                                                            <input type="number" min="1" max="5" value={managerData.scores[index]?.manager_score || ''} onChange={e => updateScore('manager', index, 'manager_score', e.target.value)} className="w-16 mx-auto bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl text-center py-2 text-sm font-bold text-blue-700 dark:text-blue-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none transition-all" placeholder="1-5" required />
                                                         ) : (
                                                             <span className={`font-black text-sm ${score.manager_score ? 'text-blue-600 dark:text-blue-400' : 'text-slate-300 dark:text-slate-600'}`}>{score.manager_score || '—'}</span>
                                                         )}
