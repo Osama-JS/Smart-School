@@ -557,7 +557,7 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
                                         <option value="">-- اختر الرصيد --</option>
                                         {(leaveBalances[reviewingRequest.employee_id] || []).map(b => (
                                             <option key={b.leave_type_id} value={b.leave_type_id}>
-                                                {b.leaveType?.name || 'نوع مجهول'} (متبقي: {Math.max(0, b.total_days - b.used_days)} يوم)
+                                                {b.leave_type?.name || b.leaveType?.name || 'نوع مجهول'} (متبقي: {Math.max(0, b.total_days - b.used_days)} يوم)
                                             </option>
                                         ))}
                                     </select>

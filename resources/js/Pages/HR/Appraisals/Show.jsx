@@ -233,8 +233,13 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                 {/* Workflow Steps */}
                 <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-4 relative overflow-hidden">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
-                        {['pending_self', 'pending_manager', 'pending_hr', 'completed'].map((step, index, arr) => {
-                            const config = statusConfig[step];
+                        {(() => {
+                            const steps = appraisal.cycle?.requires_self_appraisal ? 
+                                ['pending_self', 'pending_manager', 'pending_hr', 'completed'] : 
+                                ['pending_manager', 'pending_hr', 'completed'];
+
+                            return steps.map((step, index, arr) => {
+                                const config = statusConfig[step];
                             const StepIcon = config.icon;
                             const isActive = appraisal.status === step;
                             const isPast = arr.indexOf(appraisal.status) > index;
@@ -253,7 +258,8 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                                     )}
                                 </div>
                             );
-                        })}
+                            });
+                        })()}
                     </div>
                 </div>
 
@@ -275,7 +281,9 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                                         <tr className="border-b border-slate-100 dark:border-slate-800">
                                             <th className="px-6 py-3.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">المعيار</th>
                                             <th className="px-4 py-3.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-20">الوزن</th>
-                                            <th className="px-4 py-3.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-32">التقييم الذاتي</th>
+                                            {appraisal.cycle?.requires_self_appraisal && (
+                                                <th className="px-4 py-3.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-32">التقييم الذاتي</th>
+                                            )}
                                             <th className="px-4 py-3.5 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-center w-32">تقييم المدير</th>
                                         </tr>
                                     </thead>
@@ -289,13 +297,15 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                                                     <td className="px-4 py-4 text-center">
                                                         <span className="inline-flex px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{score.kpi?.weight}</span>
                                                     </td>
-                                                    <td className="px-4 py-4 text-center">
-                                                        {appraisal.status === 'pending_self' && isEmployee ? (
-                                                            <input type="number" min="1" max="5" value={selfData.scores[index]?.self_score || ''} onChange={e => updateScore('self', index, 'self_score', e.target.value)} className="w-16 mx-auto bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl text-center py-2 text-sm font-bold text-amber-700 dark:text-amber-400 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-400 outline-none transition-all" placeholder="1-5" />
-                                                        ) : (
-                                                            <span className={`font-black text-sm ${score.self_score ? 'text-amber-600 dark:text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}>{score.self_score || '—'}</span>
-                                                        )}
-                                                    </td>
+                                                    {appraisal.cycle?.requires_self_appraisal && (
+                                                        <td className="px-4 py-4 text-center">
+                                                            {appraisal.status === 'pending_self' && isEmployee ? (
+                                                                <input type="number" min="1" max="5" value={selfData.scores[index]?.self_score || ''} onChange={e => updateScore('self', index, 'self_score', e.target.value)} className="w-16 mx-auto bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-xl text-center py-2 text-sm font-bold text-amber-700 dark:text-amber-400 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-400 outline-none transition-all" placeholder="1-5" />
+                                                            ) : (
+                                                                <span className={`font-black text-sm ${score.self_score ? 'text-amber-600 dark:text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}>{score.self_score || '—'}</span>
+                                                            )}
+                                                        </td>
+                                                    )}
                                                     <td className="px-4 py-4 text-center">
                                                         {appraisal.status === 'pending_manager' && (isManager || isHR) ? (
                                                             <input type="number" min="1" max="5" value={managerData.scores[index]?.manager_score || ''} onChange={e => updateScore('manager', index, 'manager_score', e.target.value)} className="w-16 mx-auto bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl text-center py-2 text-sm font-bold text-blue-700 dark:text-blue-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-400 outline-none transition-all" placeholder="1-5" required />
@@ -305,7 +315,7 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td colSpan="4" className="p-0 border-b border-slate-200 dark:border-slate-800/80">
+                                                    <td colSpan={appraisal.cycle?.requires_self_appraisal ? "4" : "3"} className="p-0 border-b border-slate-200 dark:border-slate-800/80">
                                                         <ScoreGoals appraisal={appraisal} score={score} isEmployee={isEmployee} isManager={isManager} />
                                                     </td>
                                                 </tr>
@@ -316,7 +326,7 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                             </div>
 
                             {/* Self Submit */}
-                            {appraisal.status === 'pending_self' && isEmployee && (
+                            {appraisal.cycle?.requires_self_appraisal && appraisal.status === 'pending_self' && isEmployee && (
                                 <form onSubmit={handleSelfSubmit} className="p-6 border-t border-slate-100 dark:border-slate-800 bg-amber-50/30 dark:bg-amber-500/5">
                                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">ملاحظات التقييم الذاتي</label>
                                     <textarea value={selfData.self_comments} onChange={e => setSelfData('self_comments', e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-3 text-sm focus:ring-4 focus:ring-amber-500/10 focus:border-amber-400 outline-none transition-all dark:text-white font-semibold" rows="3" placeholder="أضف ملاحظاتك هنا..." />
@@ -332,7 +342,7 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                             )}
 
                             {/* Self Comments Display */}
-                            {appraisal.status !== 'pending_self' && appraisal.self_comments && (
+                            {appraisal.cycle?.requires_self_appraisal && appraisal.status !== 'pending_self' && appraisal.self_comments && (
                                 <div className="p-6 border-t border-slate-100 dark:border-slate-800">
                                     <div className="bg-amber-50/50 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/10 rounded-2xl p-4">
                                         <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2">ملاحظات التقييم الذاتي</p>
@@ -530,13 +540,15 @@ export default function AppraisalsShow({ appraisal, integrationData, trendData, 
                         </div>
                         <div className="p-6">
                             <div className="flex flex-col md:flex-row gap-6">
-                                <SignatureDisplay 
-                                    signature={appraisal.employee_signature} 
-                                    title="إقرار الموظف" 
-                                    name={appraisal.employee?.user?.name} 
-                                    role="الموظف المقيَّم" 
-                                />
-                                <SignatureDisplay 
+                                {appraisal.cycle?.requires_self_appraisal && (
+                                    <SignatureDisplay 
+                                        signature={appraisal.employee_signature} 
+                                        title="إقرار الموظف" 
+                                        name={appraisal.employee?.user?.name} 
+                                        role="الموظف المقيَّم" 
+                                    />
+                                )}
+                                <SignatureDisplay  
                                     signature={appraisal.manager_signature} 
                                     title="اعتماد المدير المباشر" 
                                     name={appraisal.manager?.user?.name} 

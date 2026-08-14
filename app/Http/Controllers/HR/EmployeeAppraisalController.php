@@ -171,12 +171,14 @@ class EmployeeAppraisalController extends Controller
             return redirect()->back()->with('error', 'يوجد لديك تقييم بالفعل لهذه الدورة.');
         }
 
+        $cycle = AppraisalCycle::findOrFail($request->cycle_id);
+
         $appraisal = EmployeeAppraisal::create([
             'employee_id' => $employee->id,
             'cycle_id' => $request->cycle_id,
             'template_id' => $template->id,
             'manager_id' => $employee->manager_id,
-            'status' => 'pending_self'
+            'status' => $cycle->requires_self_appraisal ? 'pending_self' : 'pending_manager'
         ]);
 
         // Init scores
@@ -240,12 +242,14 @@ class EmployeeAppraisalController extends Controller
                 continue;
             }
 
+            $cycle = AppraisalCycle::findOrFail($cycleId);
+
             $appraisal = EmployeeAppraisal::create([
                 'employee_id' => $employee->id,
                 'cycle_id' => $cycleId,
                 'template_id' => $template->id,
                 'manager_id' => $employee->manager_id,
-                'status' => 'pending_self'
+                'status' => $cycle->requires_self_appraisal ? 'pending_self' : 'pending_manager'
             ]);
 
             foreach ($template->kpis as $kpi) {
@@ -445,6 +449,18 @@ class EmployeeAppraisalController extends Controller
             'manager_signature' => $validated['manager_signature'] ?? null
         ]);
 
+        $appraisal->load('employee.user');
+        if ($appraisal->employee && $appraisal->employee->user) {
+            $notificationService = new \App\Services\NotificationService();
+            $notificationService->sendInternalNotification(
+                $appraisal->employee->user->id,
+                'تم تقييمك من المدير المباشر',
+                "قام مديرك المباشر بتقييم أدائك، وهو الآن بانتظار الاعتماد النهائي من الموارد البشرية.",
+                'hr',
+                Auth::id()
+            );
+        }
+
         return redirect()->route('hr.appraisals.index')->with('success', 'تم اعتماد تقييم المدير بنجاح.');
     }
 
@@ -472,6 +488,18 @@ class EmployeeAppraisalController extends Controller
             'hr_id' => Auth::id(),
             'hr_signature' => $validated['hr_signature'] ?? null
         ]);
+
+        $appraisal->load('employee.user');
+        if ($appraisal->employee && $appraisal->employee->user) {
+            $notificationService = new \App\Services\NotificationService();
+            $notificationService->sendInternalNotification(
+                $appraisal->employee->user->id,
+                'الاعتماد النهائي للتقييم',
+                "تم الاعتماد النهائي لتقييم الأداء الخاص بك. يمكنك الآن الدخول للاطلاع على نتيجتك النهائية.",
+                'hr',
+                Auth::id()
+            );
+        }
 
         return redirect()->route('hr.appraisals.index')->with('success', 'تم الاعتماد النهائي للتقييم بنجاح.');
     }

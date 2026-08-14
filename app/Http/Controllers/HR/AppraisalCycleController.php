@@ -23,6 +23,7 @@ class AppraisalCycleController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'type' => 'required|in:monthly,semi-annual,annual',
+            'requires_self_appraisal' => 'boolean',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'status' => 'required|in:draft,active,closed',
@@ -42,6 +43,7 @@ class AppraisalCycleController extends Controller
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'type' => 'required|in:monthly,semi-annual,annual',
+            'requires_self_appraisal' => 'boolean',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'status' => 'required|in:draft,active,closed',
@@ -65,13 +67,18 @@ class AppraisalCycleController extends Controller
 
         foreach ($employees as $employee) {
             if ($employee->user) {
-                $notificationService->sendInternalNotification(
-                    $employee->user->id,
-                    'دورة تقييم جديدة',
-                    "تم فتح دورة تقييم جديدة ({$cycle->title})، يرجى تقديم تقييمك الذاتي.",
-                    'hr',
-                    $senderId
-                );
+                if ($cycle->requires_self_appraisal) {
+                    $notificationService->sendInternalNotification(
+                        $employee->user->id,
+                        'دورة تقييم جديدة',
+                        "تم فتح دورة تقييم جديدة ({$cycle->title})، يرجى تقديم تقييمك الذاتي.",
+                        'hr',
+                        $senderId
+                    );
+                } else {
+                    // Notify managers only or send a different message if self-appraisal is disabled.
+                    // For now, we will skip notifying the employee to do self-appraisal.
+                }
             }
         }
     }

@@ -62,6 +62,40 @@ class EmployeeRequestController extends Controller
             'updated_details'  => 'nullable|array', // Allow admin to change some details (like leave_type_id)
         ]);
 
+        if ($request->status === 'approved' && $employeeRequest->type === 'leave') {
+            $details = $request->filled('updated_details') ? array_merge($employeeRequest->details ?? [], $request->updated_details) : ($employeeRequest->details ?? []);
+            
+            $leaveTypeId = $details['leave_type_id'] ?? null;
+            $startDate = isset($details['start_date']) ? \Carbon\Carbon::parse($details['start_date']) : null;
+            $endDate = isset($details['end_date']) ? \Carbon\Carbon::parse($details['end_date']) : null;
+
+            if ($leaveTypeId && $startDate && $endDate) {
+                $requestedDays = $startDate->diffInDays($endDate) + 1;
+                
+                $academicYear = \App\Models\AcademicYear::where('is_active', true)
+                    ->where('branch_id', $employeeRequest->branch_id)
+                    ->first();
+
+                if (!$academicYear) {
+                    return back()->with('error', 'لا توجد سنة دراسية نشطة حالياً لإعتماد الطلب.');
+                }
+
+                $balance = \App\Models\LeaveBalance::where('employee_id', $employeeRequest->employee_id)
+                    ->where('academic_year_id', $academicYear->id)
+                    ->where('leave_type_id', $leaveTypeId)
+                    ->first();
+
+                if (!$balance) {
+                    return back()->with('error', 'الموظف لا يمتلك رصيد لهذا النوع من الإجازة.');
+                }
+
+                $remaining = max(0, $balance->total_days - $balance->used_days);
+                if ($requestedDays > $remaining) {
+                    return back()->with('error', "لا يمكن اعتماد الطلب. الرصيد المتبقي ({$remaining} يوم) أقل من الأيام المطلوبة ({$requestedDays} يوم).");
+                }
+            }
+        }
+
         $employeeRequest->status       = $request->status;
         $employeeRequest->manager_id   = $request->user()->id;
         $employeeRequest->manager_notes= $request->manager_notes;
@@ -81,6 +115,35 @@ class EmployeeRequestController extends Controller
         }
 
         $employeeRequest->save();
+
+        // إرسال إشعار للموظف (Notification & Email)
+        try {
+            $employeeRequest->loadMissing('employee.user');
+            if ($employeeRequest->employee && $employeeRequest->employee->user) {
+                $notificationService = app(\App\Services\NotificationService::class);
+                
+                $statusAr = $request->status === 'approved' ? 'اعتماد' : 'رفض';
+                $typeAr   = EmployeeRequest::TYPES[$employeeRequest->type] ?? 'الطلب';
+                
+                $title   = "تحديث حالة {$typeAr}";
+                $message = "تم {$statusAr} {$typeAr} الخاص بك.";
+                
+                if ($request->filled('manager_notes')) {
+                    $message .= "\nملاحظات المدير: " . $request->manager_notes;
+                }
+
+                $notificationService->sendComprehensiveNotification(
+                    $employeeRequest->employee->user,
+                    $title,
+                    $message,
+                    'leave_request',
+                    true, // تفعيل إرسال البريد الإلكتروني
+                    $request->user()->id
+                );
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('فشل إرسال إشعار تحديث طلب الموظف: ' . $e->getMessage());
+        }
 
         return back()->with('success', $request->status === 'approved' ? 'تم اعتماد الطلب بنجاح.' : 'تم رفض الطلب.');
     }
@@ -130,12 +193,108 @@ class EmployeeRequestController extends Controller
             return back()->with('error', 'لا يوجد سجل موظف مرتبط بحسابك.');
         }
 
-        $request->validate([
+        $rules = [
             'type'               => 'required|in:' . implode(',', array_keys(EmployeeRequest::TYPES)),
-            'details'            => 'nullable|array',
             'employee_notes'     => 'nullable|string|max:1000',
             'employee_signature' => 'required|string', // base64
-        ]);
+        ];
+
+        $messages = [];
+
+        if ($request->type === 'leave') {
+            $rules['details.start_date'] = 'required|date';
+            $rules['details.end_date'] = 'required|date|after_or_equal:details.start_date';
+            $rules['details.leave_type_id'] = 'required|exists:leave_types,id';
+
+            $messages['details.start_date.required'] = 'تاريخ البداية مطلوب للإجازة.';
+            $messages['details.end_date.required'] = 'تاريخ النهاية مطلوب للإجازة.';
+            $messages['details.end_date.after_or_equal'] = 'تاريخ النهاية يجب أن يكون بعد أو يساوي تاريخ البداية.';
+            $messages['details.leave_type_id.required'] = 'نوع الإجازة مطلوب.';
+        } else {
+            $rules['details'] = 'nullable|array';
+        }
+
+        $request->validate($rules, $messages);
+
+        if ($request->type === 'leave') {
+            $academicYear = \App\Models\AcademicYear::where('is_active', true)
+                ->where('branch_id', $user->branch_id)
+                ->first();
+
+            if (!$academicYear) {
+                return back()->with('error', 'لا توجد سنة دراسية نشطة حالياً في فرعك لتقديم طلب إجازة.');
+            }
+
+            $leaveTypeId = $request->details['leave_type_id'];
+            $startDate = \Carbon\Carbon::parse($request->details['start_date']);
+            $endDate = \Carbon\Carbon::parse($request->details['end_date']);
+            $requestedDays = $startDate->diffInDays($endDate) + 1;
+
+            $balance = LeaveBalance::where('employee_id', $employee->id)
+                ->where('academic_year_id', $academicYear->id)
+                ->where('leave_type_id', $leaveTypeId)
+                ->first();
+
+            if (!$balance) {
+                return back()->withErrors(['details.leave_type_id' => 'لا يوجد رصيد متاح لك من هذا النوع في السنة الدراسية الحالية.']);
+            }
+
+            // Check approved Leaves overlap
+            $hasOverlapLeave = Leave::where('employee_id', $employee->id)
+                ->where('status', 'approved')
+                ->where(function($query) use ($startDate, $endDate) {
+                    $query->whereBetween('start_date', [$startDate, $endDate])
+                        ->orWhereBetween('end_date', [$startDate, $endDate])
+                        ->orWhere(function($q) use ($startDate, $endDate) {
+                            $q->where('start_date', '<=', $startDate)
+                              ->where('end_date', '>=', $endDate);
+                        });
+                })->exists();
+
+            if ($hasOverlapLeave) {
+                return back()->withErrors(['details.start_date' => 'يوجد لديك إجازة معتمدة مسبقاً تتعارض مع التواريخ المطلوبة.']);
+            }
+
+            // Check pending/approved Requests overlap
+            $hasOverlapRequest = EmployeeRequest::where('employee_id', $employee->id)
+                ->where('type', 'leave')
+                ->whereIn('status', ['pending', 'approved'])
+                ->get()
+                ->contains(function($req) use ($startDate, $endDate) {
+                    if (empty($req->details['start_date']) || empty($req->details['end_date'])) return false;
+                    $reqStart = \Carbon\Carbon::parse($req->details['start_date'])->startOfDay();
+                    $reqEnd = \Carbon\Carbon::parse($req->details['end_date'])->startOfDay();
+                    $s = $startDate->copy()->startOfDay();
+                    $e = $endDate->copy()->startOfDay();
+                    return ($reqStart->between($s, $e) || $reqEnd->between($s, $e) || ($reqStart->lte($s) && $reqEnd->gte($e)));
+                });
+
+            if ($hasOverlapRequest) {
+                return back()->withErrors(['details.start_date' => 'يوجد لديك طلب إجازة آخر معلق أو معتمد يتعارض مع التواريخ المطلوبة.']);
+            }
+
+            // Calculate remaining balance considering other pending requests
+            $remaining = max(0, $balance->total_days - $balance->used_days);
+
+            $pendingRequestedDays = EmployeeRequest::where('employee_id', $employee->id)
+                ->where('type', 'leave')
+                ->where('status', 'pending')
+                ->get()
+                ->filter(function($req) use ($leaveTypeId) {
+                    return isset($req->details['leave_type_id']) && $req->details['leave_type_id'] == $leaveTypeId;
+                })
+                ->sum(function($req) {
+                    if (isset($req->details['start_date']) && isset($req->details['end_date'])) {
+                        return \Carbon\Carbon::parse($req->details['start_date'])->diffInDays(\Carbon\Carbon::parse($req->details['end_date'])) + 1;
+                    }
+                    return 0;
+                });
+
+            if ($requestedDays > ($remaining - $pendingRequestedDays)) {
+                $actualRemaining = $remaining - $pendingRequestedDays;
+                return back()->withErrors(['details.end_date' => "الرصيد غير كافٍ. المتبقي: {$actualRemaining} يوم (شامل الطلبات المعلقة)، والمطلوب: {$requestedDays} يوم."]);
+            }
+        }
 
         $newRequest = new EmployeeRequest();
         $newRequest->employee_id    = $employee->id;
@@ -162,21 +321,30 @@ class EmployeeRequestController extends Controller
             return;
         }
 
-        $start    = \Carbon\Carbon::parse($details['start_date']);
-        $end      = \Carbon\Carbon::parse($details['end_date']);
-        $days     = $start->diffInDays($end) + 1;
+        $academicYear = \App\Models\AcademicYear::where('is_active', true)
+            ->where('branch_id', $employeeRequest->branch_id)
+            ->first();
 
         // Create leave record
         Leave::create([
-            'employee_id'    => $employeeRequest->employee_id,
-            'leave_type_id'  => $details['leave_type_id'] ?? null,
-            'academic_year_id' => \App\Models\AcademicYear::where('is_active', true)->value('id'),
-            'start_date'     => $details['start_date'],
-            'end_date'       => $details['end_date'],
-            'days'           => $days,
-            'reason'         => $employeeRequest->employee_notes ?? 'طلب إجازة معتمد',
-            'status'         => 'approved',
+            'employee_id'      => $employeeRequest->employee_id,
+            'leave_type_id'    => $details['leave_type_id'] ?? null,
+            'academic_year_id' => $academicYear ? $academicYear->id : null,
+            'start_date'       => $details['start_date'],
+            'end_date'         => $details['end_date'],
+            'reason'           => $employeeRequest->employee_notes ?? 'طلب إجازة معتمد',
+            'status'           => 'approved',
         ]);
+
+        $this->updateAttendanceForLeave($employeeRequest->employee_id, $details['start_date'], $details['end_date']);
+    }
+
+    private function updateAttendanceForLeave(int $employeeId, string $startDate, string $endDate): void
+    {
+        \App\Models\Attendance::where('employee_id', $employeeId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereIn('status', ['absent', 'weekend', 'excused'])
+            ->update(['status' => 'leave']);
     }
 
     private function saveBase64Signature(string $base64String, string $prefix): ?string

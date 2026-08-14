@@ -183,7 +183,8 @@ export default function CyclesIndex({ cycles }) {
         type: 'monthly',
         start_date: '',
         end_date: '',
-        status: 'draft'
+        status: 'draft',
+        requires_self_appraisal: true
     });
 
     const openModal = (cycle = null) => {
@@ -194,7 +195,8 @@ export default function CyclesIndex({ cycles }) {
                 type: cycle.type,
                 start_date: cycle.start_date,
                 end_date: cycle.end_date,
-                status: cycle.status
+                status: cycle.status,
+                requires_self_appraisal: cycle.requires_self_appraisal ?? true
             });
         } else {
             setEditingId(null);
@@ -571,6 +573,25 @@ export default function CyclesIndex({ cycles }) {
                                     ]}
                                 />
                             </div>
+                        </div>
+
+                        {/* Requires Self Appraisal Toggle */}
+                        <div className="flex items-center justify-between p-4 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800/50 rounded-2xl">
+                            <div>
+                                <h4 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                    تفعيل التقييم الذاتي
+                                </h4>
+                                <p className="text-xs text-slate-500 mt-1">يُطلب من الموظف تعبئة تقييمه لنفسه قبل أن يقوم المدير بالتقييم النهائي.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only peer"
+                                    checked={data.requires_self_appraisal}
+                                    onChange={e => setData('requires_self_appraisal', e.target.checked)}
+                                />
+                                <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
+                            </label>
                         </div>
 
                         {/* Date Range */}

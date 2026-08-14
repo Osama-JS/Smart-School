@@ -10,12 +10,13 @@ class AppraisalCycle extends Model
     use \App\Traits\BelongsToBranch;
 
     protected $fillable = [
-        'branch_id', 'title', 'type', 'start_date', 'end_date', 'status'
+        'branch_id', 'title', 'type', 'requires_self_appraisal', 'start_date', 'end_date', 'status'
     ];
 
     protected $casts = [
         'start_date' => 'date:Y-m-d',
         'end_date' => 'date:Y-m-d',
+        'requires_self_appraisal' => 'boolean',
     ];
 
     public function appraisals()
