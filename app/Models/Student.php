@@ -58,4 +58,14 @@ class Student extends Model
     public function clinicVisits(): HasMany {
         return $this->hasMany(ClinicVisit::class);
     }
+
+    // المخالفات
+    public function violations(): HasMany {
+        return $this->hasMany(StudentViolation::class);
+    }
+
+    // التعهدات
+    public function pledges(): HasMany {
+        return $this->hasMany(StudentPledge::class);
+    }
 }
