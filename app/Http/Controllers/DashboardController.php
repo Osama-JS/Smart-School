@@ -20,7 +20,8 @@ class DashboardController extends Controller
         $isSystemAdmin = $roleName === 'مدير النظام';
         $branchId = $isSystemAdmin ? null : $user->branch_id;
 
-        $latestNews = \App\Models\News::where('is_published', true)
+        $latestNews = \App\Models\News::with('attachments')
+            ->where('is_published', true)
             ->where('published_at', '<=', now())
             ->when(!$isSystemAdmin, function ($query) use ($user) {
                 return $query->whereHas('author', function($q) use ($user) {
@@ -212,9 +213,102 @@ class DashboardController extends Controller
 
         // --- Other Employees Dashboard ---
         
-        $todayAttendance = Attendance::where('employee_id', optional($user->employee)->id)
+        $employeeId = optional($user->employee)->id;
+        $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+
+        $todayAttendance = Attendance::where('employee_id', $employeeId)
             ->whereDate('date', Carbon::today())
             ->first();
+
+        // 1. Performance Metrics (Real Data)
+        // Discipline Percentage
+        $totalAttendanceDays = Attendance::where('employee_id', $employeeId)
+            ->where('academic_year_id', $activeYearId)
+            ->count();
+            
+        $presentDays = Attendance::where('employee_id', $employeeId)
+            ->where('academic_year_id', $activeYearId)
+            ->whereIn('status', ['present', 'late'])
+            ->count();
+            
+        $disciplinePercentage = $totalAttendanceDays > 0 
+            ? round(($presentDays / $totalAttendanceDays) * 100) 
+            : 100;
+
+        // Leave Balance
+        $leaveBalanceQuery = \App\Models\LeaveBalance::where('employee_id', $employeeId)
+            ->where('academic_year_id', $activeYearId)
+            ->get();
+            
+        $totalLeaves = $leaveBalanceQuery->sum('total_days');
+        $usedLeaves = $leaveBalanceQuery->sum('used_days');
+        $remainingLeaves = $leaveBalanceQuery->isEmpty() ? 0 : ($totalLeaves - $usedLeaves);
+        $performanceMetrics = [
+            'discipline_percentage' => $disciplinePercentage,
+            'remaining_leaves' => $remainingLeaves,
+            'total_leaves' => $totalLeaves > 0 ? $totalLeaves : 21,
+            'used_leaves' => $usedLeaves,
+        ];
+
+        // 3. Recent Appraisal (Real Data)
+        $latestAppraisal = \App\Models\EmployeeAppraisal::with(['scores.kpi', 'cycle'])
+            ->where('employee_id', $employeeId)
+            ->where('status', 'completed')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $recentAppraisal = null;
+        if ($latestAppraisal) {
+            $scoresList = $latestAppraisal->scores->sortByDesc('manager_score');
+            
+            $strengths = [];
+            foreach($scoresList as $score) {
+                if ($score->kpi) {
+                    $strengths[] = $score->kpi->name;
+                }
+            }
+            $improvements = array_reverse($strengths);
+            
+            $recentAppraisal = [
+                'final_score' => $latestAppraisal->final_score ?? 0,
+                'cycle_name' => $latestAppraisal->cycle ? $latestAppraisal->cycle->name : 'التقييم الأخير',
+                'strengths' => array_slice($strengths, 0, 2),
+                'improvements' => array_slice($improvements, 0, 2),
+                'comments' => $latestAppraisal->manager_comments ?? 'لا توجد ملاحظات مسجلة.',
+            ];
+        }
+
+        // 2. Daily Timeline (Real Data)
+        $todaysMeetings = \App\Models\Meeting::whereHas('participants', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->whereDate('date', Carbon::today())
+            ->get()
+            ->map(function ($meeting) {
+                $startTime = Carbon::parse($meeting->time);
+                $endTime = $startTime->copy()->addHours(1);
+                return [
+                    'id' => 'meeting_' . $meeting->id,
+                    'title' => $meeting->title,
+                    'type' => 'meeting',
+                    'location' => $meeting->location ?? 'غرفة الاجتماعات',
+                    'start_time' => $startTime->format('H:i'),
+                    'end_time' => $endTime->format('H:i'),
+                    'start_datetime' => $startTime,
+                ];
+            });
+            
+        // We'll also fetch Tasks that have a due date of today to show on timeline
+        // Note: The tasks table might only have 'created_at', but if it has 'due_date' we could use it. 
+        // For safety, we'll just show today's meetings as the primary timeline events.
+        $todayTimeline = collect($todaysMeetings)
+            ->sortBy('start_datetime')
+            ->values()
+            ->map(function ($item) {
+                $item['formatted_time'] = Carbon::parse($item['start_time'])->translatedFormat('h:i A') . ' - ' . Carbon::parse($item['end_time'])->translatedFormat('h:i A');
+                unset($item['start_datetime']);
+                return $item;
+            });
 
         $upcomingMeetings = \App\Models\Meeting::whereHas('participants', function($q) use ($user) {
                 $q->where('user_id', $user->id);
@@ -232,7 +326,6 @@ class DashboardController extends Controller
             ->whereNull('employee_signature')
             ->get();
 
-        $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
         $leaderboard = \App\Models\EmployeeAchievement::selectRaw('user_id, SUM(points) as total_points')
             ->where('academic_year_id', $activeYearId)
             ->where('points', '>', 0)
@@ -258,7 +351,10 @@ class DashboardController extends Controller
             'pendingViolations' => $pendingViolations,
             'leaderboard' => $leaderboard,
             'quickTasks' => $quickTasks,
-            'latestNews' => $latestNews
+            'latestNews' => $latestNews,
+            'performanceMetrics' => $performanceMetrics,
+            'todayTimeline' => $todayTimeline,
+            'recentAppraisal' => $recentAppraisal,
         ]);
     }
 
