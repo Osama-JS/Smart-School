@@ -113,8 +113,46 @@ class DashboardController extends Controller
                 ->get();
 
             // Teacher Stats
-            $totalDivisions = \App\Models\MasterTimetable::where('teacher_id', $user->id)->distinct('division_id')->count('division_id');
+            $teacherDivisions = \App\Models\MasterTimetable::where('teacher_id', $user->id)->distinct('division_id')->pluck('division_id');
+            $totalDivisions = $teacherDivisions->count();
             $totalSubjects = \App\Models\MasterTimetable::where('teacher_id', $user->id)->distinct('subject_id')->count('subject_id');
+            $totalStudents = \App\Models\Enrollment::whereIn('division_id', $teacherDivisions)->count();
+
+            // Success Rate & Trend
+            $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
+            $activeSemester = \App\Models\Semester::where('academic_year_id', $activeYearId)->where('is_active', true)->first();
+            
+            $averageScore = 0;
+            $previousAverageScore = 0;
+            $successRateTrend = 0;
+
+            if ($activeSemester) {
+                $averageScore = \App\Models\SemesterResult::where('semester_id', $activeSemester->id)
+                    ->whereHas('enrollment', function($q) use ($teacherDivisions) {
+                        $q->whereIn('division_id', $teacherDivisions);
+                    })->avg('semester_total');
+                
+                $previousSemester = \App\Models\Semester::where('id', '<', $activeSemester->id)->orderByDesc('id')->first();
+                if ($previousSemester) {
+                    $previousAverageScore = \App\Models\SemesterResult::where('semester_id', $previousSemester->id)
+                        ->whereHas('enrollment', function($q) use ($teacherDivisions) {
+                            $q->whereIn('division_id', $teacherDivisions);
+                        })->avg('semester_total');
+                }
+            } else {
+                $averageScore = \App\Models\SemesterResult::whereHas('enrollment', function($q) use ($teacherDivisions) {
+                    $q->whereIn('division_id', $teacherDivisions);
+                })->avg('semester_total');
+            }
+
+            $successRate = $averageScore ? round($averageScore) : 0;
+            $prevSuccessRate = $previousAverageScore ? round($previousAverageScore) : 0;
+            
+            if ($prevSuccessRate > 0) {
+                $successRateTrend = round((($successRate - $prevSuccessRate) / $prevSuccessRate) * 100);
+            } else if ($successRate > 0 && $prevSuccessRate == 0) {
+                $successRateTrend = 100;
+            }
 
             // Leaderboard
             $activeYearId = \App\Models\AcademicYear::where('is_active', true)->value('id');
@@ -127,6 +165,95 @@ class DashboardController extends Controller
                 ->take(5)
                 ->get();
 
+            // Top Students
+            $topStudents = \App\Models\StudentAchievement::selectRaw('student_id, SUM(points) as total_points')
+                ->where('academic_year_id', $activeYearId)
+                ->whereHas('student.enrollments', function($q) use ($teacherDivisions) {
+                    $q->whereIn('division_id', $teacherDivisions);
+                })
+                ->groupBy('student_id')
+                ->orderByDesc('total_points')
+                ->with('student.user:id,name')
+                ->take(3)
+                ->get()
+                ->map(function($achievement) {
+                    return [
+                        'name' => $achievement->student->user->name ?? 'طالب',
+                        'score' => (int) $achievement->total_points
+                    ];
+                });
+
+            // Teacher Gamification Progress
+            $teacherPoints = \App\Models\EmployeeAchievement::where('user_id', $user->id)
+                ->where('academic_year_id', $activeYearId)
+                ->sum('points') ?? 0;
+
+            $currentTier = \App\Models\GamificationTier::where('min_points', '<=', $teacherPoints)
+                ->orderByDesc('min_points')
+                ->first();
+
+            $nextTier = \App\Models\GamificationTier::where('min_points', '>', $teacherPoints)
+                ->orderBy('min_points')
+                ->first();
+
+            $progress = 100;
+            if ($nextTier && $currentTier) {
+                $progress = (($teacherPoints - $currentTier->min_points) / max(1, $nextTier->min_points - $currentTier->min_points)) * 100;
+            } elseif ($nextTier && !$currentTier) {
+                $progress = ($teacherPoints / max(1, $nextTier->min_points)) * 100;
+            }
+
+            $teacherProgress = [
+                'points' => (int) $teacherPoints,
+                'current_tier' => $currentTier ? $currentTier->name : 'مبتدئ',
+                'next_tier' => $nextTier ? $nextTier->name : 'الحد الأقصى',
+                'min_points' => $currentTier ? $currentTier->min_points : 0,
+                'max_points' => $nextTier ? $nextTier->min_points : $teacherPoints,
+                'percentage' => min(100, max(0, $progress)),
+                'color_class' => $currentTier ? $currentTier->color_class : 'slate',
+                'points_needed' => $nextTier ? ($nextTier->min_points - $teacherPoints) : 0,
+            ];
+
+            // Class Performance Chart Data
+            $subjectId = request('subject_id');
+            $semesterId = request('semester_id');
+
+            $classPerformance = \App\Models\Division::whereIn('id', $teacherDivisions)
+                ->with('grade')
+                ->get()
+                ->map(function ($division) use ($user, $subjectId, $semesterId) {
+                    $scoreQuery = \App\Models\SemesterResult::whereHas('enrollment', function($q) use ($division) {
+                        $q->where('division_id', $division->id);
+                    });
+                    if ($subjectId) {
+                        $scoreQuery->where('subject_id', $subjectId);
+                    }
+                    if ($semesterId) {
+                        $scoreQuery->where('semester_id', $semesterId);
+                    }
+                    $score = $scoreQuery->avg('semester_total');
+                    
+                    $attendanceQuery = \App\Models\ClassAttendance::where('division_id', $division->id);
+                    // Usually ClassAttendance doesn't track semester_id directly, but maybe subject_id if it's period-based. We'll leave it as is or add subject filter if it exists.
+                    if ($subjectId && \Illuminate\Support\Facades\Schema::hasColumn('class_attendances', 'subject_id')) {
+                        $attendanceQuery->where('subject_id', $subjectId);
+                    }
+                    $totalAttendanceRecords = (clone $attendanceQuery)->count();
+                    $presentRecords = $attendanceQuery->whereIn('status', ['present', 'late'])->count();
+                        
+                    $attendance = $totalAttendanceRecords > 0 ? ($presentRecords / $totalAttendanceRecords) * 100 : 0;
+
+                    return [
+                        'name' => ($division->grade ? $division->grade->name : '') . ' - ' . $division->name,
+                        'score' => $score ? round($score, 1) : 0,
+                        'attendance' => round($attendance, 1)
+                    ];
+                });
+
+            $teacherSubjectsIds = \App\Models\MasterTimetable::where('teacher_id', $user->id)->distinct('subject_id')->pluck('subject_id');
+            $teacherSubjects = \App\Models\Subject::whereIn('id', $teacherSubjectsIds)->get(['id', 'name']);
+            $semesters = \App\Models\Semester::where('academic_year_id', $activeYearId)->get(['id', 'name']);
+
             return Inertia::render('Dashboards/TeacherDashboard', [
                 'todayTimetable' => $todayTimetable,
                 'attendanceStatus' => $todayAttendance,
@@ -134,8 +261,17 @@ class DashboardController extends Controller
                 'stats' => [
                     'divisions' => $totalDivisions,
                     'subjects' => $totalSubjects,
+                    'students' => $totalStudents,
+                    'successRate' => $successRate,
+                    'successRateTrend' => $successRateTrend,
                 ],
                 'leaderboard' => $leaderboard,
+                'topStudents' => $topStudents,
+                'teacherProgress' => $teacherProgress,
+                'classPerformance' => $classPerformance,
+                'teacherSubjects' => $teacherSubjects,
+                'semesters' => $semesters,
+                'filters' => request()->only(['subject_id', 'semester_id']),
                 'quickTasks' => $quickTasks,
                 'latestNews' => $latestNews
             ]);
