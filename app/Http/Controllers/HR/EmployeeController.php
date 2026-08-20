@@ -182,16 +182,15 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
     public function store(Request $request)
     {
         $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير النظام';
-        
-        $validated = $request->validate([
+        $autoGenerate = filter_var($request->input('auto_generate_credentials'), FILTER_VALIDATE_BOOLEAN);
+
+        $rules = [
             // بيانات الحساب
             'name'      => ['required', 'string', 'max:255'],
-            'username'  => ['required', 'string', 'max:255', 'unique:users'],
-            'password'  => ['required', 'string', 'min:8'],
             'role_id'   => ['required', 'exists:roles,id'],
             'branch_id' => [$isAdmin ? 'required' : 'nullable', $isAdmin ? 'exists:branches,id' : ''],
             'email'     => ['nullable', 'email', 'unique:users'],
-            'phone'     => ['nullable', 'string', 'max:50'],
+            'phone'     => [$autoGenerate ? 'required' : 'nullable', 'string', 'max:50'],
             'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'is_active' => ['boolean'],
 
@@ -204,25 +203,43 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             'specialization'=> ['nullable', 'string', 'max:255'],
             'job_title'     => ['nullable', 'string', 'max:255'],
             'address'       => ['nullable', 'string'],
-            'address'       => ['nullable', 'string'],
             'attachments.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'attachment_names' => ['nullable', 'array'],
             'attachment_names.*' => ['nullable', 'string'],
             'employee_shifts' => ['nullable', 'array'],
             'employee_shifts.*.shift_id' => ['nullable', 'exists:shifts,id'],
             'employee_shifts.*.working_days' => ['nullable', 'array'],
-        ]);
+        ];
+
+        if (!$autoGenerate) {
+            $rules['username'] = ['required', 'string', 'max:255', 'unique:users'];
+            $rules['password'] = ['required', 'string', 'min:8'];
+        }
+
+        $validated = $request->validate($rules);
+
+        // Check if phone is already used as a username if auto generating
+        if ($autoGenerate) {
+            $existingUser = User::where('username', $validated['phone'])->first();
+            if ($existingUser) {
+                return redirect()->back()->withErrors(['phone' => 'رقم الهاتف هذا مسجل كاسم مستخدم لموظف آخر. يرجى استخدام رقم هاتف مختلف أو إدخال بيانات الدخول يدوياً.'])->withInput();
+            }
+        }
 
         $avatarPath = null;
         if ($request->hasFile('avatar')) {
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
 
+        // إعداد بيانات الدخول
+        $username = $autoGenerate ? $validated['phone'] : $validated['username'];
+        $plainPassword = $autoGenerate ? \Illuminate\Support\Str::password(10, true, true, true, false) : $validated['password'];
+
         // إنشاء المستخدم
         $user = User::create([
             'name'      => $validated['name'],
-            'username'  => $validated['username'],
-            'password'  => Hash::make($validated['password']),
+            'username'  => $username,
+            'password'  => Hash::make($plainPassword),
             'role_id'   => $validated['role_id'],
             'branch_id' => $isAdmin ? $validated['branch_id'] : auth()->user()->branch_id,
             'is_active' => $validated['is_active'] ?? true,
@@ -269,7 +286,35 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             $employee->shifts()->sync($syncData);
         }
 
+        if ($autoGenerate) {
+            \Illuminate\Support\Facades\Session::flash('generated_credentials', [
+                'name' => $user->name,
+                'username' => $username,
+                'password' => $plainPassword
+            ]);
+        }
+
         return redirect()->route('hr.employees')->with('success', 'تم إنشاء ملف الموظف بنجاح');
+    }
+
+    public function resetPassword(Employee $employee)
+    {
+        $user = $employee->user;
+        
+        // Generate new password
+        $plainPassword = \Illuminate\Support\Str::password(10, true, true, true, false);
+        
+        $user->update([
+            'password' => Hash::make($plainPassword)
+        ]);
+
+        \Illuminate\Support\Facades\Session::flash('generated_credentials', [
+            'name' => $user->name,
+            'username' => $user->username,
+            'password' => $plainPassword
+        ]);
+
+        return redirect()->back()->with('success', 'تم إعادة تعيين كلمة المرور بنجاح');
     }
 
     public function downloadTemplate()
@@ -354,11 +399,15 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
     public function import(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
+            'file' => ['required', 'file', 'max:5120'],
         ]);
 
         $file = $request->file('file');
-        $extension = $file->getClientOriginalExtension();
+        $extension = strtolower($file->getClientOriginalExtension());
+        
+        if (!in_array($extension, ['csv', 'txt', 'xlsx', 'xls'])) {
+            return redirect()->back()->withErrors(['file' => 'يجب أن يكون الملف بصيغة csv, txt, xlsx, أو xls.']);
+        }
 
         $rows = [];
         
@@ -378,11 +427,35 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
                 fclose($handle);
             }
         } else {
-            // Handle XLSX using SimpleXLSX (already installed)
-            if ($xlsx = \Shuchkin\SimpleXLSX::parse($file->getRealPath())) {
-                $rows = $xlsx->rows();
+            $content = file_get_contents($file->getRealPath());
+            if (stripos($content, '<html') !== false && stripos($content, '<table') !== false) {
+                // Parse HTML table
+                $dom = new \DOMDocument();
+                @$dom->loadHTML('<?xml encoding="UTF-8">' . $content);
+                $tables = $dom->getElementsByTagName('table');
+                if ($tables->length > 0) {
+                    $table = $tables->item(0);
+                    $trs = $table->getElementsByTagName('tr');
+                    foreach ($trs as $tr) {
+                        $rowData = [];
+                        $tds = $tr->childNodes;
+                        foreach ($tds as $td) {
+                            if ($td->nodeName === 'td' || $td->nodeName === 'th') {
+                                $rowData[] = trim($td->textContent);
+                            }
+                        }
+                        if (!empty($rowData)) {
+                            $rows[] = $rowData;
+                        }
+                    }
+                }
             } else {
-                return redirect()->back()->withErrors(['file' => 'فشل في قراءة ملف الإكسل.']);
+                // Handle XLSX using SimpleXLSX
+                if ($xlsx = \Shuchkin\SimpleXLSX::parse($file->getRealPath())) {
+                    $rows = $xlsx->rows();
+                } else {
+                    return redirect()->back()->withErrors(['file' => 'فشل في قراءة ملف الإكسل.']);
+                }
             }
         }
 

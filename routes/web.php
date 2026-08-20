@@ -52,6 +52,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/send', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'store'])->name('admin.notifications.store');
         Route::get('/users', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'getUsers'])->name('admin.notifications.users');
         Route::get('/logs', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'logs'])->name('admin.notifications.logs');
+        Route::get('/global-monitor', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'globalMonitor'])->name('admin.notifications.global-monitor');
+        Route::get('/search-users', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'searchUsers'])->name('admin.notifications.search-users');
+        Route::get('/{notification}/read-details', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'readDetails'])->name('admin.notifications.read-details');
+        Route::post('/{notification}/resend', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'resendToUnread'])->name('admin.notifications.resend');
     });
 
     // ── Users ──
@@ -399,6 +403,7 @@ Route::middleware('auth')->group(function () {
             'update'  => 'academic.parents.update',
             'destroy' => 'academic.parents.destroy',
         ]);
+        Route::post('/academic/parents/{parent}/reset-password', [\App\Http\Controllers\Academic\ParentController::class, 'resetPassword'])->name('academic.parents.reset-password');
 
         // Students & Enrollments
         Route::resource('/academic/students', \App\Http\Controllers\Academic\StudentController::class)->names([
@@ -408,6 +413,9 @@ Route::middleware('auth')->group(function () {
             'edit'    => 'academic.students.edit',
             'destroy' => 'academic.students.destroy',
         ]);
+        Route::post('/academic/students/{student}/reset-password', [\App\Http\Controllers\Academic\StudentController::class, 'resetPassword'])->name('academic.students.reset-password');
+        Route::get('/academic/students-template', [\App\Http\Controllers\Academic\StudentController::class, 'template'])->name('academic.students.template');
+        Route::post('/academic/students-import', [\App\Http\Controllers\Academic\StudentController::class, 'import'])->name('academic.students.import');
 
         // Student Discipline System
         Route::resource('/academic/student-violation-types', \App\Http\Controllers\Academic\StudentViolationTypeController::class)->names([
@@ -548,6 +556,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/hr/employees/import/template', [\App\Http\Controllers\HR\EmployeeController::class, 'downloadTemplate'])->name('hr.employees.template');
         Route::post('/hr/employees/import', [\App\Http\Controllers\HR\EmployeeController::class, 'import'])->name('hr.employees.import');
         Route::patch('/hr/employees/{employee}/quick-update', [\App\Http\Controllers\HR\EmployeeController::class, 'quickUpdate'])->name('hr.employees.quick-update');
+        Route::post('/hr/employees/{employee}/reset-password', [\App\Http\Controllers\HR\EmployeeController::class, 'resetPassword'])->name('hr.employees.reset-password');
         Route::resource('/hr/employees', \App\Http\Controllers\HR\EmployeeController::class)->names([
             'index'   => 'hr.employees',
             'create'  => 'hr.employees.create',

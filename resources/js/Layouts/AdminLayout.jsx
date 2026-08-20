@@ -284,6 +284,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'الكتب الورقية', icon: Book, url: route('academic.library.books.index'), permission: 'عرض الكتب الورقية' },
                 { name: 'استعارة الكتب', icon: BookOpen, url: route('academic.library.borrowings.index'), permission: 'عرض الاستعارات' },
                 { name: 'إرسال إشعارات', icon: Bell, url: route('admin.notifications.send'), permission: 'إدارة النظام' },
+                { name: 'مراقبة الإشعارات', icon: Eye, url: route('admin.notifications.global-monitor'), permission: 'إدارة النظام' },
             ]
         },
         ...((isAdmin || isSystemAdmin) ? [{

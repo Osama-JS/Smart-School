@@ -78,76 +78,82 @@ export default function Index({ recentVisits, todayVisitsCount }) {
 
             <div className="p-6 space-y-6">
                 
-                {/* Header Section with Brand Colors and Geometric Accent (Shifts Style) */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
-                    {/* Brand Line Accent */}
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                {/* Header Section */}
+                <div className="relative overflow-hidden bg-white/60 dark:bg-[#121820]/60 backdrop-blur-3xl border border-white/40 dark:border-slate-800/60 rounded-[2.5rem] p-6 md:p-10 mb-8 shadow-sm">
+                    <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-400 via-primary-500 to-indigo-500" />
                     
-                    {/* Fine abstract geometric background lines */}
-                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
-                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
-                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
-                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
-                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
-                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
-                        </svg>
+                    {/* Visual geometric lines */}
+                    <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden">
+                        <div className="absolute top-1/2 left-0 w-64 h-64 bg-primary-500/20 blur-[100px] rounded-full mix-blend-multiply dark:mix-blend-screen" />
+                        <div className="absolute top-0 right-1/4 w-64 h-64 bg-indigo-500/20 blur-[100px] rounded-full mix-blend-multiply dark:mix-blend-screen" />
                     </div>
-
+                    
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3.5 bg-primary-500 text-white rounded-2xl shadow-md shadow-primary-500/20 shrink-0">
-                                <HeartPulse size={32} strokeWidth={2.5} />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">العيادة المدرسية</h1>
-                                <p className="text-primary-700/80 dark:text-primary-300/80 mt-1 text-sm font-semibold">إدارة السجلات الطبية للطلاب ومتابعة الزيارات اليومية والحالات الطارئة</p>
-                            </div>
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                                <HeartPulse size={36} className="text-primary-500" />
+                                العيادة المدرسية
+                            </h1>
+                            <p className="text-slate-500 dark:text-slate-400 mt-3 text-sm font-bold max-w-xl leading-relaxed">
+                                إدارة السجلات الطبية للطلاب ومتابعة الزيارات اليومية والحالات الطارئة.
+                            </p>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-                            <Link
-                                href={route('clinic.visits.create')}
-                                className="flex items-center gap-2 px-5 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/20 text-sm font-bold transition-all active:scale-95 shadow-md"
-                            >
-                                <Plus size={20} strokeWidth={2.5} /> 
-                                <span>تسجيل زيارة جديدة</span>
+
+                        <div className="flex gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shrink-0">
+                            <Link href={route('clinic.visits.create')} className="flex items-center gap-2 px-8 py-3 rounded-xl font-black bg-white dark:bg-slate-800 text-primary-600 shadow-md scale-105 transition-all duration-300">
+                                <Plus size={18} /> تسجيل زيارة
                             </Link>
                         </div>
                     </div>
                 </div>
                     
-                    {/* Stats Section */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-sm border border-slate-200/60 p-6 flex items-center gap-5 relative overflow-hidden group hover:shadow-md transition-all duration-300">
-                            <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-50 rounded-full group-hover:scale-150 transition-transform duration-500 ease-out opacity-50"></div>
-                            <div className="relative p-4 bg-blue-100/50 text-blue-600 rounded-2xl border border-blue-100/80 backdrop-blur-sm">
-                                <Activity size={28} strokeWidth={2} />
-                            </div>
+                    {/* Hyper-Modern Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        {/* Stat 1: Today Visits */}
+                        <div className="relative overflow-hidden bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-3xl p-6 text-white shadow-lg shadow-indigo-500/20 group hover:-translate-y-1 transition-all duration-300">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 ease-out" />
                             <div className="relative z-10">
-                                <p className="text-sm font-bold text-slate-500 mb-1">إجمالي زيارات اليوم</p>
-                                <h3 className="text-3xl font-black text-slate-800 tracking-tight">{todayVisitsCount}</h3>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md border border-white/20">
+                                        <Activity size={24} className="text-white" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-4xl font-black mb-1">{todayVisitsCount}</h3>
+                                    <p className="text-indigo-100 font-medium text-sm">إجمالي زيارات اليوم</p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-sm border border-slate-200/60 p-6 flex items-center gap-5 relative overflow-hidden group hover:shadow-md transition-all duration-300">
-                            <div className="absolute -right-6 -top-6 w-24 h-24 bg-rose-50 rounded-full group-hover:scale-150 transition-transform duration-500 ease-out opacity-50"></div>
-                            <div className="relative p-4 bg-rose-100/50 text-rose-600 rounded-2xl border border-rose-100/80 backdrop-blur-sm">
-                                <ShieldAlert size={28} strokeWidth={2} />
-                            </div>
+                        {/* Stat 2: Emergencies */}
+                        <div className="relative overflow-hidden bg-gradient-to-br from-rose-500 to-rose-600 rounded-3xl p-6 text-white shadow-lg shadow-rose-500/20 group hover:-translate-y-1 transition-all duration-300">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 ease-out" />
                             <div className="relative z-10">
-                                <p className="text-sm font-bold text-slate-500 mb-1">حالات طارئة (حديثة)</p>
-                                <h3 className="text-3xl font-black text-slate-800 tracking-tight">{emergenciesCount}</h3>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md border border-white/20">
+                                        <ShieldAlert size={24} className="text-white" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-4xl font-black mb-1">{emergenciesCount}</h3>
+                                    <p className="text-rose-100 font-medium text-sm">حالات طارئة (حديثة)</p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-sm border border-slate-200/60 p-6 flex items-center gap-5 relative overflow-hidden group hover:shadow-md transition-all duration-300">
-                            <div className="absolute -right-6 -top-6 w-24 h-24 bg-amber-50 rounded-full group-hover:scale-150 transition-transform duration-500 ease-out opacity-50"></div>
-                            <div className="relative p-4 bg-amber-100/50 text-amber-600 rounded-2xl border border-amber-100/80 backdrop-blur-sm">
-                                <ChevronLeft size={28} strokeWidth={2} />
-                            </div>
+                        {/* Stat 3: Sent Home */}
+                        <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 to-orange-500 rounded-3xl p-6 text-white shadow-lg shadow-amber-500/20 group hover:-translate-y-1 transition-all duration-300">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700 ease-out" />
                             <div className="relative z-10">
-                                <p className="text-sm font-bold text-slate-500 mb-1">غادر للمنزل (حديثة)</p>
-                                <h3 className="text-3xl font-black text-slate-800 tracking-tight">{sentHomeCount}</h3>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-md border border-white/20">
+                                        <ChevronLeft size={24} className="text-white" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-4xl font-black mb-1">{sentHomeCount}</h3>
+                                    <p className="text-amber-100 font-medium text-sm">غادر للمنزل (حديثة)</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -156,18 +162,20 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                     <div className="grid grid-cols-1 gap-8">
                         
                         {/* Search Section */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 relative z-50">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                                <Search size={20} className="text-primary-500" />
+                        <div className="bg-white/60 dark:bg-[#121820]/60 backdrop-blur-3xl rounded-[2rem] shadow-sm border border-white/40 dark:border-slate-800/60 p-6 md:p-8 relative z-50 mb-4">
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white mb-6 flex items-center gap-3">
+                                <div className="p-2.5 bg-primary-50 text-primary-600 rounded-xl shadow-sm border border-primary-100/50">
+                                    <Search size={20} strokeWidth={2.5} />
+                                </div>
                                 البحث السريع عن السجل الطبي
                             </h3>
                             <div className="relative" ref={searchRef}>
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none">
                                     <Search className="h-5 w-5 text-slate-400" />
                                 </div>
                                 <input
                                     type="text"
-                                    className="block w-full pl-4 pr-12 py-3.5 border-slate-200 rounded-xl focus:ring-primary-500 focus:border-primary-500 bg-slate-50/50 hover:bg-slate-50 transition-colors text-slate-700 placeholder-slate-400 shadow-sm text-base font-medium"
+                                    className="block w-full pl-6 pr-14 py-4 border border-slate-200/80 rounded-2xl focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 bg-white hover:bg-slate-50 transition-all text-slate-700 placeholder-slate-400 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] text-lg font-bold"
                                     placeholder="ابحث باسم الطالب، رقم الهوية..."
                                     value={searchQuery}
                                     onChange={onSearchChange}
@@ -189,38 +197,38 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                                     leaveFrom="opacity-100 translate-y-0 scale-100"
                                     leaveTo="opacity-0 translate-y-1 scale-95"
                                 >
-                                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 ring-1 ring-black ring-opacity-5">
+                                    <div className="absolute top-full left-0 right-0 mt-3 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-slate-200/60 overflow-hidden z-50">
                                         {searchResults.length > 0 ? (
-                                            <ul className="max-h-[400px] overflow-y-auto divide-y divide-slate-50">
+                                            <ul className="max-h-[400px] overflow-y-auto divide-y divide-slate-100">
                                                 {searchResults.map((student) => (
-                                                    <li key={student.id} className="p-3 hover:bg-slate-50 transition-colors group">
+                                                    <li key={student.id} className="p-4 hover:bg-primary-50/50 transition-colors group">
                                                         <div className="flex items-center justify-between">
                                                             <div className="flex items-center gap-4">
-                                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 text-primary-700 flex items-center justify-center font-bold text-base shadow-inner border border-primary-50">
+                                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-50 to-primary-100 text-primary-700 flex items-center justify-center font-bold text-lg shadow-sm border border-primary-200/50">
                                                                     {getInitials(student.name)}
                                                                 </div>
                                                                 <div>
-                                                                    <p className="font-bold text-slate-800 text-base group-hover:text-primary-600 transition-colors">{student.name}</p>
-                                                                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 mt-0.5">
-                                                                        <span>{student.grade?.name} - {student.division?.name}</span>
+                                                                    <p className="font-extrabold text-slate-900 text-base group-hover:text-primary-700 transition-colors">{student.name}</p>
+                                                                    <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 mt-1">
+                                                                        <span className="bg-slate-100 px-2 py-0.5 rounded-md">{student.grade?.name} - {student.division?.name}</span>
                                                                         <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                                                        <span className="font-mono text-slate-400">{student.national_id}</span>
+                                                                        <span className="font-mono text-slate-400 tracking-wider">{student.national_id}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
                                                             <div className="flex gap-2">
                                                                 <Link
                                                                     href={route('clinic.records.show', student.id)}
-                                                                    className="px-4 py-2 text-sm bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:border-slate-300 flex items-center gap-2 font-bold transition-all shadow-sm"
+                                                                    className="px-4 py-2.5 text-sm bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 hover:border-slate-300 flex items-center gap-2 font-bold transition-all shadow-sm hover:shadow"
                                                                 >
                                                                     <FileText size={16} />
                                                                     السجل
                                                                 </Link>
                                                                 <Link
                                                                     href={route('clinic.visits.create', { student_id: student.id })}
-                                                                    className="px-4 py-2 text-sm bg-primary-50 text-primary-700 border border-primary-100 rounded-xl hover:bg-primary-100 flex items-center gap-2 font-bold transition-all shadow-sm"
+                                                                    className="px-4 py-2.5 text-sm bg-primary-50 text-primary-700 border border-primary-200 rounded-xl hover:bg-primary-100 flex items-center gap-2 font-bold transition-all shadow-sm hover:shadow"
                                                                 >
-                                                                    <Plus size={16} />
+                                                                    <Plus size={16} strokeWidth={2.5} />
                                                                     زيارة
                                                                 </Link>
                                                             </div>
@@ -230,10 +238,12 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                                             </ul>
                                         ) : (
                                             !isSearching && (
-                                                <div className="p-8 text-center flex flex-col items-center justify-center text-slate-500 bg-slate-50/50">
-                                                    <AlertCircle size={36} className="text-slate-300 mb-3" />
-                                                    <p className="font-bold text-slate-600 text-lg">لا توجد نتائج مطابقة لبحثك</p>
-                                                    <p className="text-sm mt-1">تأكد من كتابة الاسم أو رقم الهوية بشكل صحيح.</p>
+                                                <div className="p-12 text-center flex flex-col items-center justify-center text-slate-500 bg-slate-50/30">
+                                                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                                                        <AlertCircle size={32} className="text-slate-400" />
+                                                    </div>
+                                                    <p className="font-black text-slate-700 text-xl mb-1">لا توجد نتائج مطابقة لبحثك</p>
+                                                    <p className="text-sm font-medium text-slate-500">تأكد من كتابة الاسم أو رقم الهوية بشكل صحيح.</p>
                                                 </div>
                                             )
                                         )}
@@ -243,29 +253,31 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                         </div>
 
                         {/* Recent Visits */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden z-10">
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
-                                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                    <Clock size={20} className="text-slate-400" />
+                        <div className="bg-white/60 dark:bg-[#121820]/60 backdrop-blur-3xl rounded-[2rem] shadow-sm border border-white/40 dark:border-slate-800/60 overflow-hidden z-10 mb-8">
+                            <div className="p-6 md:p-8 border-b border-white/40 dark:border-slate-800/60 flex justify-between items-center">
+                                <h3 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                                    <div className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl shadow-sm border border-slate-200/50 dark:border-slate-700/50">
+                                        <Clock size={20} strokeWidth={2.5} />
+                                    </div>
                                     أحدث الزيارات
                                 </h3>
                             </div>
                             <div className="overflow-x-auto">
-                                <table className="w-full text-right">
-                                    <thead className="bg-slate-50/50 border-b border-slate-200/80">
+                                <table className="min-w-full text-right divide-y divide-slate-200/60 dark:divide-slate-700/60">
+                                    <thead className="bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm">
                                         <tr>
-                                            <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">الطالب</th>
-                                            <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">التاريخ والوقت</th>
-                                            <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">الأعراض</th>
-                                            <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">الإجراء المتخذ</th>
-                                            <th className="px-6 py-4 text-xs font-black text-slate-500 uppercase tracking-wider">الحالة</th>
+                                            <th scope="col" className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">الطالب</th>
+                                            <th scope="col" className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">التاريخ والوقت</th>
+                                            <th scope="col" className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">الأعراض</th>
+                                            <th scope="col" className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">الإجراء المتخذ</th>
+                                            <th scope="col" className="px-6 py-4 text-[11px] font-bold text-gray-500 uppercase tracking-wider whitespace-nowrap">الحالة</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 bg-white">
+                                    <tbody className="bg-white/40 dark:bg-slate-900/40 divide-y divide-slate-100/80 dark:divide-slate-800/80">
                                         {recentVisits.length > 0 ? (
                                             recentVisits.map((visit) => (
-                                                <tr key={visit.id} className="hover:bg-slate-50/80 transition-colors group">
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                <tr key={visit.id} className="hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors group">
+                                                    <td className="px-6 py-5 whitespace-nowrap align-top">
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm shadow-inner border border-slate-200/50">
                                                                 {getInitials(visit.student?.name)}
@@ -275,32 +287,32 @@ export default function Index({ recentVisits, todayVisitsCount }) {
                                                             </Link>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-bold">
+                                                    <td className="px-6 py-5 whitespace-nowrap text-sm text-gray-500 font-bold align-top">
                                                         <div className="flex flex-col">
                                                             <span>{new Date(visit.visited_at).toLocaleDateString('ar-SA')}</span>
                                                             <span className="text-xs text-slate-400 mt-0.5">{new Date(visit.visited_at).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm font-semibold text-slate-700 max-w-xs truncate" title={visit.symptoms}>
+                                                    <td className="px-6 py-5 text-sm font-semibold text-gray-700 max-w-xs truncate align-top" title={visit.symptoms}>
                                                         {visit.symptoms}
                                                     </td>
-                                                    <td className="px-6 py-4 text-sm font-semibold text-slate-700 max-w-xs truncate" title={visit.action_taken}>
+                                                    <td className="px-6 py-5 text-sm font-semibold text-gray-700 max-w-xs truncate align-top" title={visit.action_taken}>
                                                         {visit.action_taken}
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                    <td className="px-6 py-5 whitespace-nowrap align-top">
                                                         {getStatusBadge(visit.status)}
                                                     </td>
                                                 </tr>
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan="5" className="px-6 py-16 text-center text-slate-500">
+                                                <td colSpan="5" className="px-6 py-20 text-center text-slate-500">
                                                     <div className="flex flex-col items-center justify-center">
-                                                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
-                                                            <Activity size={32} className="text-slate-300" />
+                                                        <div className="w-20 h-20 bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 rounded-full flex items-center justify-center mb-5">
+                                                            <Activity size={36} className="text-slate-300 dark:text-slate-500" strokeWidth={2} />
                                                         </div>
-                                                        <p className="font-bold text-lg text-slate-600">لا توجد زيارات مسجلة مؤخراً</p>
-                                                        <p className="text-sm mt-1 text-slate-400 font-medium">الزيارات الجديدة ستظهر هنا.</p>
+                                                        <p className="font-black text-xl text-slate-700 dark:text-slate-300 mb-1">لا توجد زيارات مسجلة مؤخراً</p>
+                                                        <p className="text-sm font-medium text-slate-400">الزيارات الجديدة ستظهر هنا فور تسجيلها.</p>
                                                     </div>
                                                 </td>
                                             </tr>

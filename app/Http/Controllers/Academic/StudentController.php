@@ -83,11 +83,11 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $isAutoGenerate = filter_var($request->input('auto_generate_credentials'), FILTER_VALIDATE_BOOLEAN);
+
+        $rules = [
             // بيانات حساب الطالب
             'name'        => 'required|string|max:255',
-            'username'    => 'required|string|max:255|unique:users',
-            'password'    => 'required|string|min:8',
             'email'       => 'nullable|email|unique:users',
             'phone'       => 'nullable|string|max:20',
             'national_id' => 'nullable|string|max:50',
@@ -101,7 +101,14 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
 
             // بيانات التسجيل الأكاديمي
             'division_id'      => 'required|exists:divisions,id',
-        ]);
+        ];
+
+        if (!$isAutoGenerate) {
+            $rules['username'] = 'required|string|max:255|unique:users';
+            $rules['password'] = 'required|string|min:8';
+        }
+
+        $validated = $request->validate($rules);
 
         DB::beginTransaction();
         try {
@@ -112,17 +119,36 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
                 return back()->withInput()->with('error', 'لا توجد سنة دراسية مفعلة حالياً في النظام.');
             }
 
+            $username = '';
+            $password = '';
+            
+            if ($isAutoGenerate) {
+                // Generate unique academic ID for username
+                do {
+                    $username = date('Y') . mt_rand(1000, 9999);
+                } while (User::where('username', $username)->exists());
+                
+                $password = \Illuminate\Support\Str::random(8);
+            } else {
+                $username = $request->input('username');
+                $password = $request->input('password');
+            }
+
+            $branchId = (auth()->user()->role && auth()->user()->role->name === 'مدير النظام' && request()->hasSession() && session()->has('active_branch_id')) 
+                ? session('active_branch_id') 
+                : auth()->user()->branch_id;
+
             // 1. إنشاء حساب المستخدم
             $user = User::create([
                 'name'        => $validated['name'],
-                'username'    => $validated['username'],
-                'password'    => Hash::make($validated['password']),
+                'username'    => $username,
+                'password'    => Hash::make($password),
                 'email'       => $validated['email'] ?? null,
                 'phone'       => $validated['phone'] ?? null,
                 'national_id' => $validated['national_id'] ?? null,
                 'address'     => $validated['address'] ?? null,
                 'role_id'     => $studentRole->id,
-                'branch_id'   => auth()->user()->branch_id,
+                'branch_id'   => $branchId,
                 'is_active'   => $validated['is_active'] ?? 1,
             ]);
 
@@ -148,7 +174,18 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
             ]);
 
             DB::commit();
-            return redirect()->route('academic.students')->with('success', 'تم تسجيل الطالب بنجاح.');
+            
+            $redirect = redirect()->route('academic.students')->with('success', 'تم تسجيل الطالب بنجاح.');
+            
+            if ($isAutoGenerate) {
+                $redirect->with('generated_credentials', [
+                    'name'     => $user->name,
+                    'username' => $username,
+                    'password' => $password,
+                ]);
+            }
+            
+            return $redirect;
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'حدث خطأ أثناء التسجيل: ' . $e->getMessage());
@@ -263,10 +300,279 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
 
     public function destroy(Student $student)
     {
-        $user = $student->user;
+        $user = clone $student->user;
         $student->delete();
-        $user->delete();
+        if ($user) {
+            $user->delete();
+        }
 
         return redirect()->route('academic.students')->with('success', 'تم حذف الطالب بنجاح.');
+    }
+
+    public function resetPassword(Student $student)
+    {
+        try {
+            $user = $student->user;
+            
+            if (!$user) {
+                return back()->with('error', 'لا يوجد حساب مستخدم مرتبط بهذا الطالب.');
+            }
+
+            $newPassword = \Illuminate\Support\Str::random(8);
+            
+            $user->update([
+                'password' => \Illuminate\Support\Facades\Hash::make($newPassword)
+            ]);
+
+            return back()->with('success', 'تم إعادة تعيين كلمة المرور بنجاح.')->with('generated_credentials', [
+                'name'     => $user->name,
+                'username' => $user->username,
+                'password' => $newPassword,
+            ]);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'حدث خطأ أثناء إعادة تعيين كلمة المرور: ' . $e->getMessage());
+        }
+    }
+
+    public function template()
+    {
+        $filename = "students_template_" . date('Y-m-d') . ".xls";
+        $headers = [
+            "Content-type"        => "application/vnd.ms-excel; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function () {
+            echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            echo '<head>';
+            echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
+            echo '</head>';
+            echo '<body dir="rtl">';
+            echo '<table border="1">';
+            echo '<tr>';
+            echo '<th style="background-color:#6b9b37;color:white;font-weight:bold;">الاسم الرباعي</th>';
+            echo '<th style="background-color:#6b9b37;color:white;font-weight:bold;">الهوية الوطنية</th>';
+            echo '<th style="background-color:#6b9b37;color:white;font-weight:bold;">الجوال</th>';
+            echo '<th style="background-color:#6b9b37;color:white;font-weight:bold;">البريد الإلكتروني</th>';
+            echo '<th style="background-color:#6b9b37;color:white;font-weight:bold;">المرحلة الدراسية</th>';
+            echo '<th style="background-color:#6b9b37;color:white;font-weight:bold;">الصف الدراسي</th>';
+            echo '<th style="background-color:#6b9b37;color:white;font-weight:bold;">الشعبة</th>';
+            echo '</tr>';
+            
+            // صف تجريبي
+            echo '<tr>';
+            echo '<td>أحمد محمد صالح</td>';
+            echo '<td style="mso-number-format:\'@\';">1000000000</td>';
+            echo '<td style="mso-number-format:\'@\';">0500000000</td>';
+            echo '<td>ahmed@example.com</td>';
+            echo '<td>ابتدائي</td>';
+            echo '<td>الصف الأول</td>';
+            echo '<td>الشعبة أ</td>';
+            echo '</tr>';
+            
+            echo '</table></body></html>';
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'max:5120'],
+        ]);
+
+        $file = $request->file('file');
+        $extension = strtolower($file->getClientOriginalExtension());
+        
+        if (!in_array($extension, ['csv', 'txt', 'xlsx', 'xls'])) {
+            return redirect()->back()->withErrors(['file' => 'يجب أن يكون الملف بصيغة csv, txt, xlsx, أو xls.']);
+        }
+
+        $rows = [];
+
+        if (in_array($extension, ['csv', 'txt'])) {
+            if (($handle = fopen($file->getRealPath(), 'r')) !== false) {
+                $firstLine = fgets($handle);
+                $bom = "\xef\xbb\xbf";
+                if (strncmp($firstLine, $bom, 3) === 0) {
+                    $firstLine = substr($firstLine, 3);
+                }
+                $rows[] = str_getcsv($firstLine);
+                while (($data = fgetcsv($handle, 1000, ",")) !== false) {
+                    $rows[] = $data;
+                }
+                fclose($handle);
+            }
+        } else {
+            $content = file_get_contents($file->getRealPath());
+            if (stripos($content, '<html') !== false && stripos($content, '<table') !== false) {
+                // Parse HTML table
+                $dom = new \DOMDocument();
+                @$dom->loadHTML('<?xml encoding="UTF-8">' . $content);
+                $tables = $dom->getElementsByTagName('table');
+                if ($tables->length > 0) {
+                    $table = $tables->item(0);
+                    $trs = $table->getElementsByTagName('tr');
+                    foreach ($trs as $tr) {
+                        $rowData = [];
+                        $tds = $tr->childNodes;
+                        foreach ($tds as $td) {
+                            if ($td->nodeName === 'td' || $td->nodeName === 'th') {
+                                $rowData[] = trim($td->textContent);
+                            }
+                        }
+                        if (!empty($rowData)) {
+                            $rows[] = $rowData;
+                        }
+                    }
+                }
+            } else {
+                if ($xlsx = \Shuchkin\SimpleXLSX::parse($file->getRealPath())) {
+                    $rows = $xlsx->rows();
+                } else {
+                    return redirect()->back()->withErrors(['file' => 'فشل في قراءة ملف الإكسل. يرجى التأكد من الصيغة.']);
+                }
+            }
+            
+            if (empty($rows)) {
+                 return redirect()->back()->withErrors(['file' => 'الملف فارغ أو لا يمكن قراءة محتواه.']);
+            }
+        }
+
+        $headerIndex = -1;
+        foreach ($rows as $index => $row) {
+            if (isset($row[0]) && str_contains($row[0], 'الاسم الرباعي')) {
+                $headerIndex = $index;
+                break;
+            }
+        }
+
+        if ($headerIndex === -1) {
+            return redirect()->back()->withErrors(['file' => 'لم يتم العثور على ترويسة الأعمدة الصحيحة. يرجى استخدام النموذج المعتمد.']);
+        }
+
+        $dataRows = array_slice($rows, $headerIndex + 1);
+
+        $activeYear = AcademicYear::where('is_active', true)->first();
+        if (!$activeYear) {
+            return redirect()->back()->withErrors(['file' => 'لا توجد سنة دراسية مفعلة حالياً في النظام.']);
+        }
+
+        $branchId = (auth()->user()->role && auth()->user()->role->name === 'مدير النظام' && request()->hasSession() && session()->has('active_branch_id')) 
+            ? session('active_branch_id') 
+            : auth()->user()->branch_id;
+
+        $divisions = \App\Models\Division::with(['grade.section'])
+            ->where('branch_id', $branchId)
+            ->where('academic_year_id', $activeYear->id)
+            ->get();
+
+        $divisionMap = [];
+        foreach ($divisions as $div) {
+            $key = mb_strtolower(trim($div->grade->section->name ?? '') . '|' . trim($div->grade->name ?? '') . '|' . trim($div->name ?? ''));
+            $divisionMap[$key] = $div->id;
+        }
+
+        $studentRole = Role::where('name', 'طالب')->first();
+        if (!$studentRole) {
+            return redirect()->back()->withErrors(['file' => 'لم يتم العثور على صلاحية (طالب) في النظام.']);
+        }
+
+        $successCount = 0;
+        $errors = [];
+        $importedCredentials = [];
+
+        foreach ($dataRows as $index => $row) {
+            if (empty(array_filter($row))) continue;
+            
+            $name = trim($row[0] ?? '');
+            $nationalId = trim($row[1] ?? '');
+            $phone = trim($row[2] ?? '');
+            $email = trim($row[3] ?? '');
+            $sectionName = trim($row[4] ?? '');
+            $gradeName = trim($row[5] ?? '');
+            $divisionName = trim($row[6] ?? '');
+
+            $rowNumber = $headerIndex + 2 + $index;
+
+            if (empty($name) || empty($sectionName) || empty($gradeName) || empty($divisionName)) {
+                $errors[] = "الصف رقم $rowNumber: الاسم، المرحلة، الصف، والشعبة بيانات مطلوبة.";
+                continue;
+            }
+
+            $divKey = mb_strtolower($sectionName . '|' . $gradeName . '|' . $divisionName);
+            $divisionId = $divisionMap[$divKey] ?? null;
+
+            if (!$divisionId) {
+                $errors[] = "الصف رقم $rowNumber: الشعبة ($divisionName) في ($gradeName - $sectionName) غير موجودة.";
+                continue;
+            }
+
+            try {
+                DB::beginTransaction();
+
+                do {
+                    $username = date('Y') . mt_rand(1000, 9999);
+                } while (User::where('username', $username)->exists());
+                
+                $password = \Illuminate\Support\Str::random(8);
+
+                $user = User::create([
+                    'name'        => $name,
+                    'username'    => $username,
+                    'password'    => Hash::make($password),
+                    'email'       => !empty($email) ? $email : null,
+                    'phone'       => !empty($phone) ? $phone : null,
+                    'national_id' => !empty($nationalId) ? $nationalId : null,
+                    'role_id'     => $studentRole->id,
+                    'branch_id'   => $branchId,
+                    'is_active'   => true,
+                ]);
+
+                $student = Student::create([
+                    'user_id' => $user->id,
+                    'transport_subscription' => 0,
+                ]);
+
+                Enrollment::create([
+                    'student_id'       => $student->id,
+                    'division_id'      => $divisionId,
+                    'academic_year_id' => $activeYear->id,
+                    'status'           => 'active',
+                ]);
+
+                DB::commit();
+                $successCount++;
+                
+                $importedCredentials[] = [
+                    'name'     => $name,
+                    'username' => $username,
+                    'password' => $password
+                ];
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $errors[] = "الصف رقم $rowNumber: خطأ تقني (" . $e->getMessage() . ").";
+            }
+        }
+
+        $message = "تم استيراد $successCount طالب بنجاح.";
+        
+        $redirect = redirect()->back()->with('success', $message);
+        
+        if (count($importedCredentials) > 0) {
+            $redirect->with('imported_credentials', $importedCredentials);
+        }
+        
+        if (count($errors) > 0) {
+            $redirect->with('import_errors', $errors);
+        }
+
+        return $redirect;
     }
 }
