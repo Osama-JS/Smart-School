@@ -39,6 +39,56 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
     const [currentStep, setCurrentStep] = useState(1);
     const totalSteps = 4;
     const [stepErrors, setStepErrors] = useState({});
+    const [lastCheckedVal, setLastCheckedVal] = useState('');
+    const [linkedBranchFound, setLinkedBranchFound] = useState(null);
+
+    const checkExistingEmployee = async (type, val) => {
+        if (!val || val.trim().length < 5 || val === lastCheckedVal) return;
+        setLastCheckedVal(val);
+
+        try {
+            const params = {};
+            params[type] = val.trim();
+            const url = route('hr.employees.check-existing', params);
+            const res = await fetch(url);
+            const json = await res.json();
+
+            if (json.exists && json.data) {
+                setLinkedBranchFound(json.data);
+                Swal.fire({
+                    title: 'تنبيه: تم العثور على سجل مسبق!',
+                    html: `
+                        <div style="text-align: right; direction: rtl; font-family: inherit; line-height: 1.8;">
+                            <div style="background-color: #f1f5f9; padding: 12px; border-radius: 12px; margin-bottom: 12px; border-right: 4px solid #4f46e5;">
+                                <p style="margin: 0; font-weight: bold; color: #1e293b;">الاسم: ${json.data.name}</p>
+                                <p style="margin: 4px 0 0; color: #4338ca; font-size: 14px;">الفرع المسجل فيه: <b>${json.data.branch_name}</b> (${json.data.job_title || json.data.role_name || 'موظف'})</p>
+                            </div>
+                            <p style="color: #475569; font-size: 13px;">هذا الموظف مسجل مسبقاً في فرع آخر. هل ترغب في استيراد بياناته الشخصية تلقائياً وإكمال إضافة حسابه الجديد لفرعك لربطهما معاً؟</p>
+                        </div>
+                    `,
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'نعم، استيراد البيانات وإكمال الإضافة',
+                    cancelButtonText: 'إلغاء والمتابعة يدوياً',
+                    confirmButtonColor: '#4f46e5',
+                    cancelButtonColor: '#64748b',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        setData(prev => ({
+                            ...prev,
+                            name: prev.name || json.data.name,
+                            phone: prev.phone || json.data.phone,
+                            email: prev.email || json.data.email,
+                            national_id: prev.national_id || json.data.national_id,
+                            specialization: prev.specialization || json.data.specialization,
+                            job_title: prev.job_title || json.data.job_title,
+                            address: prev.address || json.data.address,
+                        }));
+                    }
+                });
+            }
+        } catch (_) {}
+    };
 
     const selectedGradeLevel = jobGrades?.find(g => String(g.id) === String(data.job_grade_id))?.level;
     const filteredManagers = managerCandidates.filter(m => selectedGradeLevel && m.level < selectedGradeLevel);
@@ -128,6 +178,20 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                     </div>
                 </div>
 
+                {/* Linked Branch Notification Banner */}
+                {linkedBranchFound && (
+                    <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 p-4 rounded-2xl flex items-center justify-between gap-4 text-indigo-900 dark:text-indigo-200 animate-in fade-in duration-300">
+                        <div className="flex items-center gap-3">
+                            <UserCheck className="text-indigo-600 dark:text-indigo-400 shrink-0" size={22} />
+                            <div>
+                                <p className="text-sm font-bold">هذا الموظف مسجل مسبقاً في فرع: <span className="underline">{linkedBranchFound.branch_name}</span> ({linkedBranchFound.job_title || linkedBranchFound.role_name || 'موظف'})</p>
+                                <p className="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5">سيتم ربط الحساب الجديد بهذا الفرع تلقائياً لتمكين الموظف من التبديل بين الفرعين بهوية واحدة.</p>
+                            </div>
+                        </div>
+                        <button type="button" onClick={() => setLinkedBranchFound(null)} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 shrink-0">إغلاق</button>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                     
                     {/* Step 1: Account Info */}
@@ -184,7 +248,9 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                                         <Mail size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
                                         <input type="email" dir="ltr" placeholder="email@example.com"
                                             className={inputClass(errors.email)}
-                                            value={data.email} onChange={e => setData('email', e.target.value)} />
+                                            value={data.email}
+                                            onChange={e => setData('email', e.target.value)}
+                                            onBlur={e => checkExistingEmployee('email', e.target.value)} />
                                     </div>
                                     {errors.email && <p className="text-xs text-rose-500 mt-1">{errors.email}</p>}
                                 </div>
@@ -196,7 +262,9 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                                         <Phone size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
                                         <input type="text" dir="ltr" placeholder="05XXXXXXXX"
                                             className={inputClass(errors.phone)}
-                                            value={data.phone} onChange={e => setData('phone', e.target.value)} />
+                                            value={data.phone}
+                                            onChange={e => setData('phone', e.target.value)}
+                                            onBlur={e => checkExistingEmployee('phone', e.target.value)} />
                                     </div>
                                     {errors.phone && <p className="text-xs text-rose-500 mt-1">{errors.phone}</p>}
                                 </div>
@@ -261,7 +329,9 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                                         <CreditCard size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
                                         <input type="text" dir="ltr" placeholder="10XXXXXXXX"
                                             className={inputClass(errors.national_id)}
-                                            value={data.national_id} onChange={e => setData('national_id', e.target.value)} />
+                                            value={data.national_id}
+                                            onChange={e => setData('national_id', e.target.value)}
+                                            onBlur={e => checkExistingEmployee('national_id', e.target.value)} />
                                     </div>
                                 </div>
 

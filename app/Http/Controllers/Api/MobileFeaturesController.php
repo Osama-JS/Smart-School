@@ -593,6 +593,453 @@ class MobileFeaturesController extends Controller
         ]);
     }
 
+    // ── Teacher Study Plans ──
+
+    public function getStudyPlans(Request $request)
+    {
+        $user = $request->user();
+        
+        $query = \App\Models\StudyPlan::with(['grade', 'subject', 'template', 'academicYear', 'semester'])
+            ->where('teacher_id', $user->id)
+            ->latest();
+
+        if ($request->filled('grade_id')) {
+            $query->where('grade_id', $request->grade_id);
+        }
+        if ($request->filled('subject_id')) {
+            $query->where('subject_id', $request->subject_id);
+        }
+
+        $plans = $query->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'data' => $plans
+        ]);
+    }
+
+    public function getStudyPlanDetails(Request $request, \App\Models\StudyPlan $studyPlan)
+    {
+        $user = $request->user();
+        if ($studyPlan->teacher_id !== $user->id && !$user->hasPermission('عرض الخطط الدراسية')) {
+            return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
+        }
+
+        $studyPlan->load([
+            'grade',
+            'subject',
+            'template',
+            'rows' => fn($q) => $q->orderBy('week_number', 'asc')->orderBy('day_number', 'asc'),
+            'comments.user:id,name',
+            'academicYear',
+            'semester'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $studyPlan
+        ]);
+    }
+
+    public function storeStudyPlanComment(Request $request, \App\Models\StudyPlan $studyPlan)
+    {
+        $request->validate([
+            'comment' => 'required|string|max:1000',
+        ]);
+
+        $comment = $studyPlan->comments()->create([
+            'user_id' => $request->user()->id,
+            'comment' => $request->comment,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إضافة التعليق بنجاح',
+            'data' => $comment->load('user:id,name')
+        ]);
+    }
+
+    // ── Teacher Followup Books ──
+
+    public function getFollowupBooks(Request $request)
+    {
+        $teacherId = $request->user()->id;
+
+        $startDateInput = $request->query('start_date');
+        $endDateInput = $request->query('end_date');
+        $weekOffset = (int) $request->query('week_offset', 0);
+        
+        if ($startDateInput && $endDateInput) {
+            $startOfWeek = \Carbon\Carbon::parse($startDateInput)->startOfDay();
+            $endOfWeek = \Carbon\Carbon::parse($endDateInput)->endOfDay();
+        } else {
+            $startOfWeek = now()->addWeeks($weekOffset)->startOfWeek(\Carbon\Carbon::SUNDAY)->startOfDay();
+            $endOfWeek = $startOfWeek->copy()->endOfWeek(\Carbon\Carbon::THURSDAY)->endOfDay();
+        }
+        
+        $period = \Carbon\CarbonPeriod::create($startOfWeek, $endOfWeek);
+
+        $timetable = \App\Models\MasterTimetable::with(['subject', 'division.grade'])
+            ->where('teacher_id', $teacherId)
+            ->get();
+
+        $followups = \App\Models\FollowupBook::where('teacher_id', $teacherId)
+            ->whereBetween('date', [$startOfWeek, $endOfWeek])
+            ->get()
+            ->keyBy(function($item) {
+                return $item->date->format('Y-m-d') . '_' . $item->division_id . '_' . $item->subject_id;
+            });
+
+        $dayNames = [
+            'Saturday' => 'السبت', 'Sunday' => 'الأحد', 'Monday' => 'الاثنين',
+            'Tuesday' => 'الثلاثاء', 'Wednesday' => 'الأربعاء', 'Thursday' => 'الخميس', 'Friday' => 'الجمعة',
+        ];
+
+        $days = [];
+
+        foreach ($period as $date) {
+            $dayOfWeek = $date->format('l');
+            $lessonsForDay = $timetable->filter(function($item) use ($dayOfWeek) {
+                return strtolower($item->day_of_week) === strtolower($dayOfWeek);
+            })->unique(function ($item) {
+                return $item->subject_id . '_' . $item->division_id;
+            });
+
+            $lessons = [];
+            foreach ($lessonsForDay as $lesson) {
+                $key = $date->format('Y-m-d') . '_' . $lesson->division_id . '_' . $lesson->subject_id;
+                $followup = $followups->get($key);
+
+                $lessons[] = [
+                    'subject' => $lesson->subject,
+                    'division' => $lesson->division,
+                    'has_followup' => $followup ? true : false,
+                ];
+            }
+
+            $days[] = [
+                'date' => $date->format('Y-m-d'),
+                'day_name' => $dayNames[$dayOfWeek] ?? $dayOfWeek,
+                'lessons' => $lessons
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'days' => $days,
+                'period_start' => $startOfWeek->format('Y-m-d'),
+                'period_end' => $endOfWeek->format('Y-m-d'),
+                'week_offset' => $weekOffset
+            ]
+        ]);
+    }
+
+    public function showFollowupBook(Request $request)
+    {
+        $request->validate([
+            'division_id' => 'required|exists:divisions,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'date' => 'required|date',
+        ]);
+
+        $divisionId = $request->division_id;
+        $subjectId = $request->subject_id;
+        $date = $request->date;
+        $teacherId = $request->user()->id;
+
+        $enrollments = \App\Models\Enrollment::with('student.user')
+            ->where('division_id', $divisionId)
+            ->where('status', 'active')
+            ->get();
+
+        $followup = \App\Models\FollowupBook::with('entries')
+            ->where('teacher_id', $teacherId)
+            ->where('division_id', $divisionId)
+            ->where('subject_id', $subjectId)
+            ->whereDate('date', $date)
+            ->first();
+
+        $entriesKeyed = $followup ? $followup->entries->keyBy('student_id') : collect();
+
+        $students = $enrollments->map(function ($enrollment) use ($entriesKeyed) {
+            $studentId = $enrollment->student->user_id ?? $enrollment->student_id;
+            $entry = $entriesKeyed->get($studentId);
+
+            return [
+                'student_id' => $studentId,
+                'name' => $enrollment->student->user->name ?? $enrollment->student->name ?? 'طالب',
+                'homework' => $entry ? (bool)$entry->homework : true,
+                'participation' => $entry ? (int)$entry->participation : 5,
+                'behavior' => $entry ? (int)$entry->behavior : 5,
+                'memorization' => $entry ? (int)$entry->memorization : 5,
+                'notes' => $entry ? $entry->notes : '',
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'lesson_topic' => $followup ? $followup->lesson_topic : '',
+                'homework_assigned' => $followup ? $followup->homework_assigned : '',
+                'general_notes' => $followup ? $followup->notes : '',
+                'students' => $students,
+            ]
+        ]);
+    }
+
+    public function storeFollowupBook(Request $request)
+    {
+        $request->validate([
+            'division_id' => 'required|exists:divisions,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'date' => 'required|date',
+            'lesson_topic' => 'nullable|string',
+            'homework_assigned' => 'nullable|string',
+            'general_notes' => 'nullable|string',
+            'entries' => 'required|array',
+            'entries.*.student_id' => 'required',
+            'entries.*.homework' => 'nullable|boolean',
+            'entries.*.participation' => 'nullable|numeric',
+            'entries.*.behavior' => 'nullable|numeric',
+            'entries.*.memorization' => 'nullable|numeric',
+            'entries.*.notes' => 'nullable|string',
+        ]);
+
+        $teacherId = $request->user()->id;
+
+        $followup = \App\Models\FollowupBook::updateOrCreate(
+            [
+                'teacher_id' => $teacherId,
+                'division_id' => $request->division_id,
+                'subject_id' => $request->subject_id,
+                'date' => $request->date,
+            ],
+            [
+                'lesson_topic' => $request->lesson_topic,
+                'homework_assigned' => $request->homework_assigned,
+                'notes' => $request->general_notes,
+            ]
+        );
+
+        foreach ($request->entries as $entry) {
+            $followup->entries()->updateOrCreate(
+                [
+                    'student_id' => $entry['student_id'],
+                ],
+                [
+                    'homework' => $entry['homework'] ?? true,
+                    'participation' => $entry['participation'] ?? 5,
+                    'behavior' => $entry['behavior'] ?? 5,
+                    'memorization' => $entry['memorization'] ?? 5,
+                    'notes' => $entry['notes'] ?? null,
+                ]
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حفظ دفتر المتابعة بنجاح'
+        ]);
+    }
+
+    // ── Teacher Monthly Grades Entry ──
+
+    public function getMonthlyGradesFormData(Request $request)
+    {
+        $user = $request->user();
+        $branchId = $user->branch_id;
+
+        $periods = \App\Models\ResultPeriod::where('branch_id', $branchId)
+            ->where(function($q) {
+                $q->where('period_type', 'monthly')->orWhereNull('period_type');
+            })
+            ->orderBy('fill_start_date', 'desc')
+            ->get();
+
+        $assignments = \App\Models\DivisionSubjectTeacher::with(['division.grade', 'subject'])
+            ->where('teacher_id', $user->id)
+            ->get();
+
+        $divisions = $assignments->pluck('division')->unique('id')->values();
+        $assignedSubjects = $assignments->groupBy('division_id');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'periods' => $periods,
+                'divisions' => $divisions,
+                'assigned_subjects' => $assignedSubjects,
+            ]
+        ]);
+    }
+
+    public function getMonthlyGradesStudents(Request $request)
+    {
+        $request->validate([
+            'division_id' => 'required|exists:divisions,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'period_id' => 'required|exists:result_periods,id',
+        ]);
+
+        $divisionId = $request->division_id;
+        $subjectId = $request->subject_id;
+        $periodId = $request->period_id;
+        $period = \App\Models\ResultPeriod::findOrFail($periodId);
+
+        $enrollments = \App\Models\Enrollment::with('student.user')
+            ->where('division_id', $divisionId)
+            ->where('status', 'active')
+            ->get();
+
+        $subject = \App\Models\Subject::find($subjectId);
+
+        $existingGrades = \App\Models\MonthlyGrade::where('subject_id', $subjectId)
+            ->where('period_id', $periodId)
+            ->whereIn('enrollment_id', $enrollments->pluck('id'))
+            ->get()
+            ->keyBy('enrollment_id');
+
+        $students = $enrollments->map(function ($enrollment) use ($existingGrades) {
+            $gradeRecord = $existingGrades->get($enrollment->id);
+            return [
+                'enrollment_id' => $enrollment->id,
+                'student_id' => $enrollment->student->user_id ?? $enrollment->student_id,
+                'name' => $enrollment->student->user->name ?? $enrollment->student->name ?? 'طالب',
+                'scores' => $gradeRecord ? $gradeRecord->scores : [],
+                'notes' => $gradeRecord ? $gradeRecord->notes : '',
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'subject_name' => $subject ? $subject->name : '',
+                'students' => $students,
+            ]
+        ]);
+    }
+
+    public function storeMonthlyGrades(Request $request)
+    {
+        $request->validate([
+            'division_id' => 'required|exists:divisions,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'period_id' => 'required|exists:result_periods,id',
+            'grades' => 'required|array',
+            'grades.*.enrollment_id' => 'required|exists:enrollments,id',
+            'grades.*.scores' => 'nullable|array',
+            'grades.*.notes' => 'nullable|string',
+        ]);
+
+        $period = \App\Models\ResultPeriod::findOrFail($request->period_id);
+        $subjectId = $request->subject_id;
+
+        foreach ($request->grades as $gradeData) {
+            \App\Models\MonthlyGrade::updateOrCreate(
+                [
+                    'enrollment_id' => $gradeData['enrollment_id'],
+                    'subject_id' => $subjectId,
+                    'period_id' => $period->id,
+                ],
+                [
+                    'semester_id' => $period->semester_id,
+                    'scores' => $gradeData['scores'] ?? [],
+                    'notes' => $gradeData['notes'] ?? null,
+                ]
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حفظ ورصد الدرجات بنجاح'
+        ]);
+    }
+
+    // ── Teacher Exam Invigilation Schedules ──
+
+    public function getTeacherExamSchedules(Request $request)
+    {
+        $user = $request->user();
+
+        $schedules = \App\Models\ExamSchedule::with([
+            'period.semester.academicYear',
+            'items' => function($query) use ($user) {
+                $query->with(['subject', 'division.grade', 'proctors'])
+                      ->whereHas('proctors', function($q) use ($user) {
+                          $q->where('users.id', $user->id);
+                      })
+                      ->orderBy('exam_date')
+                      ->orderBy('start_time');
+            }
+        ])
+        ->whereHas('items.proctors', function($query) use ($user) {
+            $query->where('users.id', $user->id);
+        })
+        ->latest()
+        ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $schedules
+        ]);
+    }
+
+    // ── Teacher Class Coverages ──
+
+    public function getTeacherCoverages(Request $request)
+    {
+        $user = $request->user();
+
+        $coverages = \App\Models\ClassCoverage::with([
+            'absentTeacher:id,name',
+            'period:id,period_name,start_time,end_time',
+            'division.grade',
+            'subject:id,name',
+        ])
+        ->where('substitute_teacher_id', $user->id)
+        ->latest('coverage_date')
+        ->paginate(15);
+
+        return response()->json([
+            'success' => true,
+            'data' => $coverages
+        ]);
+    }
+
+    // ── Teacher Sign Classroom Visit ──
+
+    public function signClassroomVisit(Request $request, \App\Models\ClassroomVisit $classroomVisit)
+    {
+        $user = $request->user();
+        if ($classroomVisit->teacher_id !== $user->id) {
+            return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
+        }
+
+        $request->validate([
+            'signature' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $signaturePath = null;
+        if ($request->filled('signature') && \Illuminate\Support\Str::startsWith($request->signature, 'data:image')) {
+            $signaturePath = $this->saveBase64Signature($request->signature, 'visit_teacher');
+        }
+
+        $classroomVisit->teacher_signed_at = now();
+        $classroomVisit->teacher_signature = $signaturePath;
+        if ($request->filled('notes')) {
+            $classroomVisit->teacher_notes = $request->notes;
+        }
+        $classroomVisit->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم التوقيع وتأكيد استلام تقرير الزيارة بنجاح',
+            'data' => $classroomVisit
+        ]);
+    }
+
     private function saveBase64Signature(string $base64String, string $prefix): ?string
     {
         if (!preg_match('/^data:image\/(\w+);base64,/', $base64String, $type)) {
@@ -606,3 +1053,4 @@ class MobileFeaturesController extends Controller
         return $fileName;
     }
 }
+

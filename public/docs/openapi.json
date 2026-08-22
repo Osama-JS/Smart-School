@@ -1,0 +1,1658 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Smart School API Documentation - نظام المدرسة الذكية",
+    "version": "1.0.0",
+    "description": "توثيق شامل لكافة واجهات برمجة التطبيقات (APIs) الخاصة بنظام المدرسة الذكية (Smart School) والمترابطة مع تطبيق الهاتف المحمول (Flutter - kaim_school) ولوحة التحكم الإدارية.\n\n### خيارات المصادقة:\nجميع المسارات المحمية تتطلب تمرير **Bearer Token** عبر الترويسة:\n`Authorization: Bearer <token>`\n\n### الترويسات القياسية:\n`Accept: application/json`\n`Content-Type: application/json`",
+    "contact": {
+      "name": "فريق التطوير - Smart School",
+      "email": "support@smart-school.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "الخادم الحالي (Relative Path)"
+    },
+    {
+      "url": "http://127.0.0.1:8000/api",
+      "description": "خادم التطوير المحلي (Local Dev Server)"
+    },
+    {
+      "url": "http://192.168.0.186/Smart-School/public/api",
+      "description": "خادم الشبكة المحلية للهاتف (Mobile Local Network)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "01. المصادقة والأمان (Authentication & Security)",
+      "description": "عمليات تسجيل الدخول، الخروج، وتغيير كلمة المرور لتطبيق الهاتف"
+    },
+    {
+      "name": "02. البصمة الجغرافية والحضور (Attendance & Geolocation)",
+      "description": "تسجيل الحضور والانصراف بالبصمة الجغرافية، كشف الحضور، وشفتات الموظف"
+    },
+    {
+      "name": "03. خدمات المعلم والتحضير (Teacher & Class Attendance)",
+      "description": "جدول الحصص للمعلم، دفاتر تحضير الدروس، ورصد حضور الطلاب في الحصص"
+    },
+    {
+      "name": "04. الموارد البشرية والرقابة (HR, Visits & Discipline)",
+      "description": "الطلبات الإدارية، الزيارات الصفية، سجل المخالفات، والإنجازات"
+    },
+    {
+      "name": "05. بوابة الطالب (Student Portal)",
+      "description": "الدرجات الشهرية، النتائج الفصلية، الحضور والغياب، الجدول، الاختبارات، والواجبات"
+    },
+    {
+      "name": "06. بوابة ولي الأمر (Parent Portal)",
+      "description": "متابعة بيانات الأبناء (الدرجات، النتائج، الحضور، الجدول، الاختبارات، والواجبات)"
+    },
+    {
+      "name": "07. التقارير الميدانية والدورية (Field Reports)",
+      "description": "قوالب النماذج الدورية، النماذج الديناميكية بالبيانات المجمعة آلياً، ورفع التقارير"
+    },
+    {
+      "name": "08. الإشعارات والتنبيهات (Notifications)",
+      "description": "جلب الإشعارات، العدادات، وتحديث حالة القراءة"
+    },
+    {
+      "name": "09. إدارة المستخدمين والفروع (V1 Admin Management)",
+      "description": "واجهات إدارة مدراء الفروع والمستخدمين والصلاحيات"
+    }
+  ],
+  "paths": {
+    "/ping": {
+      "get": {
+        "tags": ["01. المصادقة والأمان (Authentication & Security)"],
+        "summary": "فحص اتصال الخادم (Health Check)",
+        "description": "التأكد من أن السيرفر يعمل واستجابة الـ API متاحة.",
+        "responses": {
+          "200": {
+            "description": "السيرفر يعمل بنجاح",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "ok",
+                  "message": "Smart School API"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/login": {
+      "post": {
+        "tags": ["01. المصادقة والأمان (Authentication & Security)"],
+        "summary": "تسجيل دخول مستخدم تطبيق الهاتف (Mobile Login)",
+        "description": "تسجيل دخول المعلمين، الطلاب، أولياء الأمور، والموظفين بالبريد الإلكتروني أو اسم المستخدم مع التحقق من الصلاحيات وaccess_type وتوليد Sanctum Token.\n\n**الترابط مع Flutter:** شاشة `LoginScreen` و `AuthProvider.login()`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              },
+              "example": {
+                "login": "teacher@school.com",
+                "password": "password123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم تسجيل الدخول بنجاح وإرجاع الـ Token وبيانات المستخدم والصلاحيات",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "بيانات الدخول غير صحيحة أو الحساب موقوف",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "بيانات الدخول غير صحيحة."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ليس للمستخدم صلاحية الدخول لتطبيق الهاتف",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "message": "ليس لديك صلاحية الدخول لتطبيق الهاتف."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "خطأ في التحقق من صحة المدخلات (Validation Error)"
+          }
+        }
+      }
+    },
+    "/mobile/logout": {
+      "post": {
+        "tags": ["01. المصادقة والأمان (Authentication & Security)"],
+        "summary": "تسجيل الخروج (Mobile Logout)",
+        "description": "إلغاء صلاحية الـ Access Token الحالي من قاعدة البيانات.\n\n**الترابط مع Flutter:** `AuthProvider.logoutCurrentAccount()` و `logoutAll()`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "تم تسجيل الخروج بنجاح",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "تم تسجيل الخروج بنجاح."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "غير مصرح (Unauthenticated)"
+          }
+        }
+      }
+    },
+    "/mobile/change-password": {
+      "post": {
+        "tags": ["01. المصادقة والأمان (Authentication & Security)"],
+        "summary": "تغيير كلمة المرور (Change Password)",
+        "description": "تغيير كلمة المرور للمستخدم المسجل حالياً بعد التحقق من كلمة المرور الحالية.\n\n**الترابط مع Flutter:** شاشة `ProfileScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordRequest"
+              },
+              "example": {
+                "current_password": "old_password",
+                "new_password": "NewSecretPassword123",
+                "new_password_confirmation": "NewSecretPassword123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم تغيير كلمة المرور بنجاح",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "تم تغيير كلمة المرور بنجاح."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "كلمة المرور الحالية غير صحيحة أو خطأ في التأكيد",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "كلمة المرور الحالية غير صحيحة."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/linked-accounts": {
+      "get": {
+        "tags": ["01. المصادقة والأمان (Authentication & Security)"],
+        "summary": "جلب حسابات المستخدم في الفروع الأخرى (Get Linked Accounts)",
+        "description": "جلب قائمة الحسابات المرتبطة بنفس رقم الهوية الوطنية/الإقامة أو الجوال أو البريد الإلكتروني في كافة فروع المدرسة.\n\n**الترابط مع Flutter:** شاشة `ProfileScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "قائمة الحسابات المرتبطة",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "id": 12,
+                      "name": "أحمد إبراهيم العلي",
+                      "username": "ahmed_branch2",
+                      "email": "ahmed@branch2.school",
+                      "role_name": "معلم",
+                      "branch_id": 2,
+                      "branch_name": "فرع الروابي",
+                      "avatar": null
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/switch-account/{id}": {
+      "post": {
+        "tags": ["01. المصادقة والأمان (Authentication & Security)"],
+        "summary": "التبديل الفوري لحساب فرع آخر (Switch to Linked Account)",
+        "description": "التبديل المباشر إلى حساب الموظف في الفرع الآخر وتوليد توكن وصول جديد (Bearer Token) دون الحاجة لإعادة كتابة كلمة المرور.\n\n**الترابط مع Flutter:** شاشة `ProfileScreen` و `AuthProvider`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "تم التبديل وتوليد التوكن بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "غير مصرح لك بالتبديل إلى هذا الحساب أو الحساب معطل"
+          }
+        }
+      }
+    },
+    "/attendance/today-shifts": {
+      "get": {
+        "tags": ["02. البصمة الجغرافية والحضور (Attendance & Geolocation)"],
+        "summary": "جلب شفتات اليوم للموظف (Today's Assigned Shifts)",
+        "description": "جلب قائمة الورديات (Shifts) المسندة للموظف مع إحداثيات الفرع الجغرافية (Latitude / Longitude / Radius) وحالة يوم الدوام الرسمي/الإضافي.\n\n**الترابط مع Flutter:** شاشة `AttendanceScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "تم جلب الشفتات بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayShiftsResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "الحساب غير مرتبط بموظف"
+          }
+        }
+      }
+    },
+    "/attendance/check-in": {
+      "post": {
+        "tags": ["02. البصمة الجغرافية والحضور (Attendance & Geolocation)"],
+        "summary": "تسجيل حضور الموظف بالبصمة الجغرافية (Check-In)",
+        "description": "تسجيل حضور الموظف مع التحقق التلقائي من:\n1. التواجد الفعلي داخل النطاق الجغرافي للفرع المعتمد (Geofence Radius).\n2. عدم انتهاء وقت الشفت.\n3. احتساب دقائق التأخير بدقة بعد انتهاء فترة السماح (Grace Period).\n4. تصنيف الحضور (حاضر في الوقت / متأخر / حضور إضافي في يوم غير رسمي).\n\n**الترابط مع Flutter:** شاشة `AttendanceScreen` (زر تسجيل الحضور).",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckInRequest"
+              },
+              "example": {
+                "employee_id": 5,
+                "shift_id": 1,
+                "latitude": 24.7136,
+                "longitude": 46.6753
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم تسجيل الحضور بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "خارج النطاق الجغرافي أو انتهى وقت الشفت أو يوجد تسجيل نشط مسبقاً",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "message": "أنت خارج النطاق الجغرافي لفرعك. تأكد من وجودك داخل المبنى."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/attendance/check-out": {
+      "post": {
+        "tags": ["02. البصمة الجغرافية والحضور (Attendance & Geolocation)"],
+        "summary": "تسجيل انصراف الموظف (Check-Out)",
+        "description": "تسجيل انصراف الموظف مع التحقق من النطاق الجغرافي وحساب إجمالي مدة ساعات الدوام اليومية.\n\n**الترابط مع Flutter:** شاشة `AttendanceScreen` (زر تسجيل الانصراف).",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckOutRequest"
+              },
+              "example": {
+                "employee_id": 5,
+                "latitude": 24.7136,
+                "longitude": 46.6753
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم تسجيل الانصراف وحساب الساعات بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckOutResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "لا يوجد تسجيل حضور نشط اليوم أو خارج النطاق الجغرافي"
+          }
+        }
+      }
+    },
+    "/attendance/report/{employeeId}": {
+      "get": {
+        "tags": ["02. البصمة الجغرافية والحضور (Attendance & Geolocation)"],
+        "summary": "كشف الحضور الشهري التفصيلي للموظف (Monthly Attendance Report)",
+        "description": "جلب تقرير كامل لأيام الشهر يوضح حالة كل يوم (حاضر، متأخر، غائب، إجازة رسمية، إجازة معتمدة، عطلة أسبوعية، حضور إضافي) مع ملخص الإحصائيات الشهرية.\n\n**الترابط مع Flutter:** شاشة `AttendanceReportScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "employeeId",
+            "in": "path",
+            "required": true,
+            "description": "معرف الموظف (Employee ID)",
+            "schema": { "type": "integer" }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "description": "رقم الشهر (1 - 12)",
+            "schema": { "type": "integer", "example": 8 }
+          },
+          {
+            "name": "year",
+            "in": "query",
+            "required": false,
+            "description": "السنة الميلادية",
+            "schema": { "type": "integer", "example": 2026 }
+          },
+          {
+            "name": "semester_id",
+            "in": "query",
+            "required": false,
+            "description": "معرف الفصل الدراسي لحساب أيام الترم",
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "تم جلب تقرير الحضور بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmployeeReportResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/timetable": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "جدول الحصص الدراسي للمعلم (Teacher Timetable)",
+        "description": "جلب جدول الحصص الأسبوعي الخاص بالمعلم المسجل حالياً مع تفاصيل الشعبة، المادة، والفترة الزمنية.\n\n**الترابط مع Flutter:** شاشة `TimetableScreen` وشاشة `ClassAttendanceScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "تم جلب الجدول بنجاح",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimetableResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/preparations": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "جلب دفاتر تحضير الدروس للمعلم (Lesson Preparations)",
+        "description": "استعراض سجلات تحضير الحصص الدراسية للمعلم مع إمكانية الفلترة بالصف والمادة ونطاق التاريخ مع الترقيم الصفحي (Paginated).\n\n**الترابط مع Flutter:** شاشة `LessonPreparationsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "grade_id", "in": "query", "schema": { "type": "integer" }, "description": "معرف الصف الدراسي" },
+          { "name": "subject_id", "in": "query", "schema": { "type": "integer" }, "description": "معرف المادة" },
+          { "name": "date_range", "in": "query", "schema": { "type": "string" }, "description": "نطاق التاريخ (مثال: 2026-08-01 to 2026-08-15)" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" }, "description": "رقم الصفحة" }
+        ],
+        "responses": {
+          "200": {
+            "description": "قائمة سجلات التحضير",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PaginatedResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "إضافة تحضير درس جديد (Create Lesson Preparation)",
+        "description": "حفظ تحضير درس جديد كـ مسودة (draft) أو منشور (published). عند النشر ووجود واجب مدرسي، يتم تلقائياً إرسال إشعار للطلاب في الشعبة المحددة.\n\n**الترابط مع Flutter:** شاشة `LessonPreparationsScreen` (نافذة الإضافة).",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LessonPreparationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم حفظ تحضير الدرس بنجاح",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "تم حفظ تحضير الدرس بنجاح",
+                  "data": { "id": 10, "lesson_title": "الاحتمالات والإحصاء" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/preparations/form-data": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "جلب بيانات نماذج التحضير (المواد والصفوف)",
+        "description": "جلب قائمة الصفوف الدراسية وشعبها والمواد لملء القوائم المنسدلة في شاشة إعداد الدرس.\n\n**الترابط مع Flutter:** شاشة `LessonPreparationsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "بيانات النماذج",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "grades": [{ "id": 1, "name": "الصف الأول الثانوي", "divisions": [{ "id": 1, "name": "أ" }] }],
+                    "subjects": [{ "id": 1, "name": "الرياضيات" }]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/preparations/{lessonPreparation}": {
+      "put": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "تحديث تحضير درس (Update Preparation)",
+        "description": "تعديل سجل تحضير درس سابق للمعلم.\n\n**الترابط مع Flutter:** شاشة `LessonPreparationsScreen` (تعديل).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "lessonPreparation", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LessonPreparationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم التحديث بنجاح" },
+          "403": { "description": "غير مصرح لك بتعديل تحضير معلم آخر" }
+        }
+      },
+      "delete": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "حذف تحضير درس (Delete Preparation)",
+        "description": "حذف سجل تحضير درس تابع للمعلم.\n\n**الترابط مع Flutter:** شاشة `LessonPreparationsScreen` (حذف).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "lessonPreparation", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم الحذف بنجاح" },
+          "403": { "description": "غير مصرح" }
+        }
+      }
+    },
+    "/mobile/features/class-attendance/students": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "جلب طلاب الشعبة لرصد الحضور (Class Attendance Students List)",
+        "description": "جلب قائمة الطلاب المسجلين في الشعبة المحددة وحالة حضورهم السابقة للحصة المحددة في تاريخ معين.\n\n**الترابط مع Flutter:** شاشة `ClassAttendanceScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "division_id", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "subject_id", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "period_id", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "date", "in": "query", "required": true, "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "قائمة الطلاب وحالاتهم (present, absent, late, excused, none)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClassAttendanceStudentsResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/class-attendance": {
+      "post": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "حفظ ورصد حضور وغياب الطلاب في الحصة (Save Class Attendance)",
+        "description": "حفظ أو تحديث سجلات حضور وغياب الطلاب في الحصة الدراسية دفعة واحدة.\n\n**الترابط مع Flutter:** شاشة `ClassAttendanceScreen` (زر حفظ التحضير).",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SaveClassAttendanceRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم حفظ التحضير بنجاح",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "message": "تم حفظ التحضير بنجاح" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/requests": {
+      "get": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "جلب الطلبات الإدارية للموظف (Employee Requests)",
+        "description": "استعراض طلبات الإجازات، الاستئذان، والسلف مع الفلترة بحالة الطلب والنوع وإرجاع ملخص الإحصائيات (إجمالي، قيد الانتظار، مقبول، مرفوض).\n\n**الترابط مع Flutter:** شاشة `RequestsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["all", "pending", "approved", "rejected"] } },
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "قائمة الطلبات مع الملخص",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EmployeeRequestsResponse" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "تقديم طلب إداري جديد (Submit Request)",
+        "description": "تقديم طلب إجازة أو استئذان مع إرفاق التوقيع الإلكتروني Base64 وتفاصيل الطلب.\n\n**الترابط مع Flutter:** شاشة `RequestsScreen` (نموذج التقديم).",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmitRequestPayload" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم تقديم الطلب بنجاح",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "message": "تم تقديم الطلب بنجاح" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/attendance-review": {
+      "get": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "مراجعة حضور وانصراف موظفي الفرع (Attendance Review - Admin)",
+        "description": "استعراض سجلات حضور وانصراف جميع موظفي الفرع في تاريخ محدد (يتطلب صلاحية مراجعة الحضور).\n\n**الترابط مع Flutter:** شاشة `AttendanceReviewScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "date", "in": "query", "schema": { "type": "string", "format": "date", "example": "2026-08-17" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة الموظفين مع سجلات حضورهم لليوم المحدد" },
+          "403": { "description": "لا تملك صلاحية مراجعة الحضور" }
+        }
+      }
+    },
+    "/mobile/features/classroom-visits/my": {
+      "get": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "زياراتي الصفية الخاصة بالمعلم (My Classroom Visits)",
+        "description": "استعراض نتائج تقييم الزيارات الميدانية والتوجيهية التي أجراها المشرفون للمعلم.\n\n**الترابط مع Flutter:** شاشة `MyClassroomVisitsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة الزيارات والتقييمات" },
+          "403": { "description": "لا تملك صلاحية عرض زياراتك الصفية" }
+        }
+      }
+    },
+    "/mobile/features/classroom-visits": {
+      "get": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "إدارة الزيارات الصفية للمشرف (Manage Classroom Visits)",
+        "description": "جلب قائمة الزيارات الميدانية التي قام بها المشرف مع بيانات المعلمين والمراحل لإجراء تقييم جديد.\n\n**الترابط مع Flutter:** شاشة `ManageClassroomVisitsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة الزيارات ونماذج المعلمين والصفوف" },
+          "403": { "description": "غير مصرح" }
+        }
+      },
+      "post": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "تسجيل تقييم زيارة صفية جديدة (Add Classroom Visit)",
+        "description": "إضافة تقييم زيارة صفية لمعلم محدد مع الدرجة (0-100) والنقاط التي تمت مناقشتها والتوصيات.\n\n**الترابط مع Flutter:** شاشة `ManageClassroomVisitsScreen` (زر إضافة تقييم).",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClassroomVisitRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم إضافة الزيارة بنجاح",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "message": "تم إضافة الزيارة بنجاح" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/infractions": {
+      "get": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "سجل مخالفات وانضباط الموظف (My Infractions)",
+        "description": "جلب قائمة المخالفات الإدارية والإنذارات المسجلة على الموظف.\n\n**الترابط مع Flutter:** شاشة `InfractionsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة المخالفات" }
+        }
+      }
+    },
+    "/mobile/features/achievements": {
+      "get": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "سجل الإنجازات وشهادات التكريم (My Achievements)",
+        "description": "جلب قائمة شهادات الشكر والتقدير والإنجازات الممنوحة للموظف.\n\n**الترابط مع Flutter:** شاشة `AchievementsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة الإنجازات" }
+        }
+      }
+    },
+    "/mobile/features/student/grades": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "الدرجات والتقييمات الشهرية للطالب (Student Monthly Grades)",
+        "description": "جلب درجات الطالب للمواد المختلفة مجمعة حسب الفترات والأشهر.\n\n**الترابط مع Flutter:** شاشة `StudentResultsScreen` (عند الدخول كطالب).",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "الدرجات مجمعة حسب الفترات" },
+          "403": { "description": "المستخدم ليس حساب طالب" }
+        }
+      }
+    },
+    "/mobile/features/student/semester-results": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "النتائج والشهادات الفصلية للطالب (Semester Results)",
+        "description": "جلب النتائج الفصلية النهائية المعتمدة ومجموع الدرجات والشهادات.\n\n**الترابط مع Flutter:** شاشة `StudentResultsScreen` (تبويب النتائج الفصلية).",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "النتائج الفصلية مجمعة بالفصل الدراسي" }
+        }
+      }
+    },
+    "/mobile/features/student/attendance": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "سجل حضور وغياب الطالب (Student Attendance)",
+        "description": "جلب سجل الحضور والغياب اليومي وتفاصيل حضور الحصص الدراسية للطالب مع فلاتر الشهر والسنة.\n\n**الترابط مع Flutter:** شاشة `StudentAttendanceScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "month", "in": "query", "schema": { "type": "integer" } },
+          { "name": "year", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "سجل الحضور اليومي والحصص" }
+        }
+      }
+    },
+    "/mobile/features/student/timetable": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "جدول الحصص الدراسي للطالب (Student Timetable)",
+        "description": "جلب جدول الحصص الأسبوعي للطالب مع فترات الاستراحة وأيام الدوام المعتمدة.\n\n**الترابط مع Flutter:** شاشة `TimetableScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "جدول الحصص الدراسي" }
+        }
+      }
+    },
+    "/mobile/features/student/exam-schedules": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "جدول الاختبارات للطالب (Student Exam Schedules)",
+        "description": "جلب جدول مواعيد وأماكن وفترات الاختبارات الدورية والفصلية.\n\n**الترابط مع Flutter:** شاشة `ExamSchedulesScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "جدول الاختبارات" }
+        }
+      }
+    },
+    "/mobile/features/student/homework": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "الواجبات المدرسية للطالب (Student Homework)",
+        "description": "جلب قائمة الواجبات المدرسية المحددة للطالب خلال الأسبوع الأخير مع تفاصيل المادة والمعلم.\n\n**الترابط مع Flutter:** شاشة `HomeworkScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة الواجبات المنزلية" }
+        }
+      }
+    },
+    "/mobile/features/parent/children": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "قائمة أبناء ولي الأمر (Parent's Children List)",
+        "description": "جلب قائمة الأبناء المرتبطين بولي الأمر مع تفاصيل الصف والشعبة وإحصائيات الإنجازات والمخالفات والتعهدات.\n\n**الترابط مع Flutter:** شاشات `ChildrenListScreen`, `HomeScreen`, `TimetableScreen`, `ExamSchedulesScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة الأبناء" }
+        }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/grades": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "درجات ابن محدد لولي الأمر (Child Monthly Grades)",
+        "description": "جلب الدرجات الشهرية لابن محدد بعد التحقق من صلة القرابة والملكية.\n\n**الترابط مع Flutter:** شاشة `StudentResultsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "الدرجات مجمعة حسب الفترات" },
+          "403": { "description": "غير مصرح (الابن لا يتبع ولي الأمر)" }
+        }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/semester-results": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "النتائج والشهادات الفصلية لابن محدد (Child Semester Results)",
+        "description": "جلب النتائج الفصلية النهائية المعتمدة لابن محدد.\n\n**الترابط مع Flutter:** شاشة `StudentResultsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "النتائج الفصلية" } }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/attendance": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "سجل حضور وغياب ابن محدد (Child Attendance)",
+        "description": "سجل حضور وغياب الابن مع تفاصيل الحصص الدراسية.\n\n**الترابط مع Flutter:** شاشة `StudentAttendanceScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "month", "in": "query", "schema": { "type": "integer" } },
+          { "name": "year", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "سجل الحضور اليومي والحصص" } }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/timetable": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "جدول الحصص الدراسي لابن محدد (Child Timetable)",
+        "description": "جلب جدول الحصص الأسبوعي لابن محدد.\n\n**الترابط مع Flutter:** شاشة `TimetableScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "جدول الحصص" } }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/exam-schedules": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "جدول الاختبارات لابن محدد (Child Exam Schedules)",
+        "description": "جلب مواعيد الاختبارات لابن محدد.\n\n**الترابط مع Flutter:** شاشة `ExamSchedulesScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "جدول الاختبارات" } }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/homework": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "الواجبات المنزلية لابن محدد (Child Homework)",
+        "description": "جلب قائمة الواجبات المدرسية المحددة لابن محدد.\n\n**الترابط مع Flutter:** شاشة `HomeworkScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "قائمة الواجبات المنزلية" } }
+      }
+    },
+    "/mobile/features/my-reports/templates": {
+      "get": {
+        "tags": ["07. التقارير الميدانية والدورية (Field Reports)"],
+        "summary": "قوالب التقارير المتاحة للموظف (Report Templates)",
+        "description": "جلب قوالب النماذج الدورية المخصصة للموظف بناءً على مسمّاه أو درجته الوظيفية.\n\n**الترابط مع Flutter:** شاشة `MyReportsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة القوالب المتاحة" }
+        }
+      }
+    },
+    "/mobile/features/my-reports/templates/{id}": {
+      "get": {
+        "tags": ["07. التقارير الميدانية والدورية (Field Reports)"],
+        "summary": "تفاصيل حقول القالب مع البيانات المجمعة آلياً (Template Details & Prefilled Data)",
+        "description": "جلب حقول نموذج التقرير الديناميكية (نصوص، اختيارات، ملفات، ومصادر بيانات مجمعة آلياً مثل الزيارات الصفية والمخالفات خلال الفترة).\n\n**الترابط مع Flutter:** شاشة `CreateReportScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "start_date", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "end_date", "in": "query", "schema": { "type": "string", "format": "date" } }
+        ],
+        "responses": {
+          "200": { "description": "تفاصيل القالب مع الحقول والبيانات المسحوبة آلياً" }
+        }
+      }
+    },
+    "/mobile/features/my-reports/submit/{id}": {
+      "post": {
+        "tags": ["07. التقارير الميدانية والدورية (Field Reports)"],
+        "summary": "رفع وإرسال تقرير دوري (Submit Report)",
+        "description": "رفع التقرير الدوري مع الملفات المرفقة والبيانات المعبأة (Multipart Form Data).\n\n**الترابط مع Flutter:** شاشة `CreateReportScreen` (زر الإرسال).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "type": "string", "description": "JSON string containing field values" },
+                  "period_start_date": { "type": "string", "format": "date" },
+                  "period_end_date": { "type": "string", "format": "date" },
+                  "period_label": { "type": "string" },
+                  "field_{field_id}": { "type": "string", "format": "binary", "description": "الملفات المرفوعة للحقول" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "تم الإرسال بنجاح",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "message": "تم الإرسال بنجاح" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/my-reports": {
+      "get": {
+        "tags": ["07. التقارير الميدانية والدورية (Field Reports)"],
+        "summary": "سجل تقاريري المرفوعة (My Submitted Reports)",
+        "description": "استعراض التقارير الدورية التي قام الموظف برفعها مسبقاً مع حالتها (pending, approved, rejected) وملاحظات المراجعين مع الترقيم الصفحي.\n\n**الترابط مع Flutter:** شاشة `MyReportsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة التقارير المرفوعة" }
+        }
+      }
+    },
+    "/mobile/features/notifications": {
+      "get": {
+        "tags": ["08. الإشعارات والتنبيهات (Notifications)"],
+        "summary": "جلب الإشعارات الحديثة وعداد غير المقروء (Header Dropdown Notifications)",
+        "description": "جلب أحدث 20 إشعار للمستخدم الحالي مع عداد الإشعارات غير المقروءة لتحديث الشارات (Badges).\n\n**الترابط مع Flutter:** شاشة `HomeScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "قائمة الإشعارات وعدد غير المقروء",
+            "content": {
+              "application/json": {
+                "example": {
+                  "notifications": [{ "id": 1, "title": "واجب جديد", "message": "تم نشر واجب الرياضيات", "is_read": false }],
+                  "unread_count": 3
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/notifications/all": {
+      "get": {
+        "tags": ["08. الإشعارات والتنبيهات (Notifications)"],
+        "summary": "قائمة الإشعارات الشاملة مع الفلاتر والترقيم (All Notifications)",
+        "description": "عرض مركز الإشعارات الكامل مع الفلترة حسب النوع (type: homework, system, warning) والحالة (read, unread) مع الترقيم الصفحي والإحصائيات.\n\n**الترابط مع Flutter:** شاشة `NotificationsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "type", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["all", "read", "unread"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "قائمة الإشعارات مع الإحصائيات",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": { "data": [], "current_page": 1, "total": 25 },
+                  "stats": { "total": 25, "unread": 3, "important": 2 }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mobile/features/notifications/{id}/read": {
+      "post": {
+        "tags": ["08. الإشعارات والتنبيهات (Notifications)"],
+        "summary": "تحديد إشعار كمقروء (Mark Notification as Read)",
+        "description": "تحديث حالة إشعار فردي إلى مقروء.\n\n**الترابط مع Flutter:** شاشة `NotificationsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم التحديث بنجاح", "content": { "application/json": { "example": { "success": true } } } }
+        }
+      }
+    },
+    "/mobile/features/notifications/read-all": {
+      "post": {
+        "tags": ["08. الإشعارات والتنبيهات (Notifications)"],
+        "summary": "تحديد جميع الإشعارات كمقروءة (Mark All as Read)",
+        "description": "تحديث كافة إشعارات المستخدم غير المقروءة دفعة واحدة.\n\n**الترابط مع Flutter:** شاشة `NotificationsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "تم التحديث بنجاح", "content": { "application/json": { "example": { "success": true } } } }
+        }
+      }
+    },
+    "/branch-managers": {
+      "get": {
+        "tags": ["09. إدارة المستخدمين والفروع (V1 Admin Management)"],
+        "summary": "جلب قائمة مدراء الفروع (Branch Managers)",
+        "description": "جلب قائمة المستخدمين الذين يملكون دور مدير فرع.",
+        "responses": {
+          "200": {
+            "description": "قائمة مدراء الفروع",
+            "content": {
+              "application/json": {
+                "example": { "status": true, "data": [] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["09. إدارة المستخدمين والفروع (V1 Admin Management)"],
+        "summary": "جلب قائمة مستخدمي الفرع (Users List)",
+        "description": "جلب مستخدمي الفرع الخاص بمدير الفرع الحالي أو كل المستخدمين لمدير النظام (يتطلب صلاحية إدارة المستخدمين).",
+        "responses": {
+          "200": { "description": "قائمة المستخدمين" }
+        }
+      },
+      "post": {
+        "tags": ["09. إدارة المستخدمين والفروع (V1 Admin Management)"],
+        "summary": "إنشاء مستخدم جديد (Create User)",
+        "description": "إضافة مستخدم جديد وتعيين دوره وفرعه وكلمة مروره.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateUserRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إنشاء المستخدم بنجاح" }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": ["09. إدارة المستخدمين والفروع (V1 Admin Management)"],
+        "summary": "عرض تفاصيل مستخدم (Get User)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "بيانات المستخدم" } }
+      },
+      "put": {
+        "tags": ["09. إدارة المستخدمين والفروع (V1 Admin Management)"],
+        "summary": "تحديث بيانات مستخدم (Update User)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateUserRequest" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "تم التحديث بنجاح" } }
+      },
+      "delete": {
+        "tags": ["09. إدارة المستخدمين والفروع (V1 Admin Management)"],
+        "summary": "حذف مستخدم (Delete User)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "تم الحذف بنجاح" } }
+      }
+    },
+    "/mobile/features/study-plans": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "قائمة الخطط الدراسية للمعلم (Teacher Study Plans)",
+        "description": "جلب قائمة الخطط الدراسية وتوزيع المنهج المعتمدة للمعلم مع الفلترة حسب المادة والصف.\n\n**الترابط مع Flutter:** شاشة `StudyPlansScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "grade_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "subject_id", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم جلب الخطط بنجاح" }
+        }
+      }
+    },
+    "/mobile/features/study-plans/{id}": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "تفاصيل الخطة الدراسية والأسابيع (Study Plan Details)",
+        "description": "جلب تفاصيل الخطة، توزيع الأسابيع والمواضيع، ونقاشات المشرف التربوي.\n\n**الترابط مع Flutter:** شاشة `StudyPlanDetailScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تفاصيل الخطة" }
+        }
+      }
+    },
+    "/mobile/features/study-plans/{id}/comments": {
+      "post": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "إضافة تعليق على الخطة الدراسية (Add Comment to Study Plan)",
+        "description": "إرسال استفسار أو ملاحظة من المعلم للمشرف الأكاديمي بخصوص الخطة.\n\n**الترابط مع Flutter:** شاشة `StudyPlanDetailScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["comment"],
+                "properties": {
+                  "comment": { "type": "string", "example": "تم استكمال خطة الوحدة الأولى بنجاح" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم إضافة التعليق بنجاح" }
+        }
+      }
+    },
+    "/mobile/features/teacher/monthly-grades/form-data": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "بيانات قوائم رصد الدرجات الشهرية (Monthly Grades Form Data)",
+        "description": "جلب الفترات التقييمية النشطة، الشعب، والمواد المسندة للمعلم.\n\n**الترابط مع Flutter:** شاشة `MonthlyGradesEntryScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "الفترات والشعب والمواد" }
+        }
+      }
+    },
+    "/mobile/features/teacher/monthly-grades/students": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "جلب كشف درجات طلاب الشعبة (Monthly Grades Students List)",
+        "description": "جلب قائمة الطلاب والدرجات المرصودة في الفترة التقييمية المحددة.\n\n**الترابط مع Flutter:** شاشة `MonthlyGradesEntryScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "division_id", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "subject_id", "in": "query", "required": true, "schema": { "type": "integer" } },
+          { "name": "period_id", "in": "query", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "كشف درجات الطلاب" }
+        }
+      }
+    },
+    "/mobile/features/teacher/monthly-grades": {
+      "post": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "حفظ ورصد درجات الطلاب الشهرية (Save Monthly Grades)",
+        "description": "حفظ وتحديث درجات كشف الطلاب للشهر أو الاختبار المحدد.\n\n**الترابط مع Flutter:** شاشة `MonthlyGradesEntryScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["division_id", "subject_id", "period_id", "grades"],
+                "properties": {
+                  "division_id": { "type": "integer", "example": 1 },
+                  "subject_id": { "type": "integer", "example": 2 },
+                  "period_id": { "type": "integer", "example": 3 },
+                  "grades": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "enrollment_id": { "type": "integer", "example": 10 },
+                        "scores": { "type": "object", "example": { "exam": 18.5, "homework": 5, "participation": 5 } },
+                        "notes": { "type": "string", "example": "ممتاز" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم حفظ الدرجات بنجاح" }
+        }
+      }
+    },
+    "/mobile/features/teacher/my-exam-schedules": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "جدول لجان مراقبة الاختبارات للمعلم (Teacher Invigilation Schedules)",
+        "description": "استعراض جدول لجان وفترات المراقبة المكلف بها المعلم خلال فترات الاختبارات.\n\n**الترابط مع Flutter:** شاشة `TeacherExamSchedulesScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "تم جلب جدول المراقبة بنجاح" }
+        }
+      }
+    },
+    "/mobile/features/teacher/my-coverages": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "حصص الاحتياط والتغطية المسندة للمعلم (Teacher Substitute Coverages)",
+        "description": "استعراض حصص الاحتياط والتغطية لتغطية غياب المعلمين الآخرين.\n\n**الترابط مع Flutter:** شاشة `ClassCoveragesScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "تم جلب حصص الاحتياط بنجاح" }
+        }
+      }
+    },
+    "/mobile/features/classroom-visits/{id}/teacher-sign": {
+      "post": {
+        "tags": ["04. الموارد البشرية والرقابة (HR, Visits & Discipline)"],
+        "summary": "توقيع المعلم وتأكيد استلام تقرير الزيارة الصفية (Teacher Sign Visit)",
+        "description": "توقيع المعلم إلكترونياً على تقرير الزيارة وتأكيد اطلاعه على توجيهات وملاحظات المشرف.\n\n**الترابط مع Flutter:** شاشة `MyClassroomVisitsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "signature": { "type": "string", "example": "data:image/png;base64,iVBORw0KGgo..." },
+                  "notes": { "type": "string", "example": "تم الاطلاع والعمل بالتوجيهات" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم تأكيد التوقيع والاستلام بنجاح" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Sanctum Token",
+        "description": "أدخل الـ Token الناتج عن تسجيل الدخول بالصيغة: Bearer <Token>"
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["login", "password"],
+        "properties": {
+          "login": {
+            "type": "string",
+            "description": "البريد الإلكتروني أو اسم المستخدم",
+            "example": "teacher@school.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "description": "كلمة المرور",
+            "example": "password123"
+          }
+        }
+      },
+      "LoginResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "تم تسجيل الدخول بنجاح." },
+          "data": {
+            "type": "object",
+            "properties": {
+              "token": { "type": "string", "example": "1|N4e5f6...plainTextToken" },
+              "user": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": "integer", "example": 5 },
+                  "name": { "type": "string", "example": "أحمد المحمدي" },
+                  "email": { "type": "string", "example": "ahmed@school.com" },
+                  "username": { "type": "string", "example": "ahmed_t" },
+                  "role_name": { "type": "string", "example": "معلم" },
+                  "role_id": { "type": "integer", "example": 3 },
+                  "is_system_role": { "type": "boolean", "example": false },
+                  "employee_id": { "type": "integer", "nullable": true, "example": 2 },
+                  "phone": { "type": "string", "nullable": true, "example": "0501234567" },
+                  "branch_id": { "type": "integer", "nullable": true, "example": 1 },
+                  "branch_name": { "type": "string", "nullable": true, "example": "الفرع الرئيسي" },
+                  "academic_year_name": { "type": "string", "nullable": true, "example": "2026/2027" },
+                  "avatar": { "type": "string", "nullable": true, "example": "http://example.com/storage/avatars/user.jpg" },
+                  "permissions": {
+                    "type": "array",
+                    "items": { "type": "string" },
+                    "example": ["تسجيل حضور", "تحضير الطلاب", "إدارة تحضيري للدروس"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ChangePasswordRequest": {
+        "type": "object",
+        "required": ["current_password", "new_password", "new_password_confirmation"],
+        "properties": {
+          "current_password": { "type": "string", "format": "password" },
+          "new_password": { "type": "string", "format": "password", "minLength": 8 },
+          "new_password_confirmation": { "type": "string", "format": "password" }
+        }
+      },
+      "CheckInRequest": {
+        "type": "object",
+        "required": ["employee_id", "shift_id", "latitude", "longitude"],
+        "properties": {
+          "employee_id": { "type": "integer", "description": "معرف الموظف" },
+          "shift_id": { "type": "integer", "description": "معرف الشفت المختار" },
+          "latitude": { "type": "number", "format": "float", "description": "خط العرض GPS" },
+          "longitude": { "type": "number", "format": "float", "description": "خط الطول GPS" }
+        }
+      },
+      "CheckInResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "تم تسجيل حضورك بنجاح في الوقت المحدد" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "attendance_id": { "type": "integer", "example": 105 },
+              "check_in": { "type": "string", "example": "07:45:12" },
+              "branch": { "type": "string", "example": "فرع البنين" },
+              "shift": { "type": "string", "example": "الدوام الصباحي" },
+              "status": { "type": "string", "enum": ["present", "late", "extra"], "example": "present" },
+              "late_minutes": { "type": "integer", "example": 0 },
+              "is_working_day": { "type": "boolean", "example": true }
+            }
+          }
+        }
+      },
+      "CheckOutRequest": {
+        "type": "object",
+        "required": ["employee_id", "latitude", "longitude"],
+        "properties": {
+          "employee_id": { "type": "integer" },
+          "latitude": { "type": "number" },
+          "longitude": { "type": "number" }
+        }
+      },
+      "CheckOutResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "تم تسجيل انصرافك بنجاح" },
+          "data": {
+            "type": "object",
+            "properties": {
+              "check_out": { "type": "string", "example": "14:02:45" },
+              "total_duration": { "type": "string", "example": "6س 17د" },
+              "total_minutes": { "type": "integer", "example": 377 }
+            }
+          }
+        }
+      },
+      "TodayShiftsResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "shift_id": { "type": "integer", "example": 1 },
+                "shift_name": { "type": "string", "example": "الدوام الصباحي" },
+                "start_time": { "type": "string", "example": "07:30:00" },
+                "end_time": { "type": "string", "example": "14:00:00" },
+                "grace_period_minutes": { "type": "integer", "example": 15 },
+                "branch_name": { "type": "string", "example": "الفرع الرئيسي" },
+                "branch_id": { "type": "integer", "example": 1 },
+                "branch_latitude": { "type": "number", "example": 24.7136 },
+                "branch_longitude": { "type": "number", "example": 46.6753 },
+                "branch_radius": { "type": "integer", "example": 250 },
+                "is_working_day": { "type": "boolean", "example": true }
+              }
+            }
+          }
+        }
+      },
+      "EmployeeReportResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": {
+            "type": "object",
+            "properties": {
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "present": { "type": "integer", "example": 18 },
+                  "late": { "type": "integer", "example": 2 },
+                  "absent": { "type": "integer", "example": 1 },
+                  "excused": { "type": "integer", "example": 0 },
+                  "holiday": { "type": "integer", "example": 2 },
+                  "leave": { "type": "integer", "example": 1 },
+                  "weekend": { "type": "integer", "example": 8 },
+                  "extra": { "type": "integer", "example": 0 }
+                }
+              },
+              "records": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": { "type": "string", "example": "2026-08-01" },
+                    "day_of_week": { "type": "integer", "example": 6 },
+                    "status": { "type": "string", "example": "present" },
+                    "notes": { "type": "string", "example": "" },
+                    "attendance": { "type": "object", "nullable": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TimetableResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "integer" },
+                "day_of_week": { "type": "string", "example": "Sunday" },
+                "subject": { "type": "object", "properties": { "id": { "type": "integer" }, "name": { "type": "string" } } },
+                "division": { "type": "object", "properties": { "id": { "type": "integer" }, "name": { "type": "string" }, "grade": { "type": "object" } } },
+                "period": { "type": "object", "properties": { "id": { "type": "integer" }, "period_name": { "type": "string" }, "start_time": { "type": "string" }, "end_time": { "type": "string" } } }
+              }
+            }
+          }
+        }
+      },
+      "LessonPreparationRequest": {
+        "type": "object",
+        "required": ["lesson_title", "subject_id", "grade_id", "preparation_date", "status"],
+        "properties": {
+          "lesson_title": { "type": "string", "example": "مقدمة في حساب التفاضل والتكامل" },
+          "subject_id": { "type": "integer", "example": 1 },
+          "grade_id": { "type": "integer", "example": 2 },
+          "division_id": { "type": "integer", "nullable": true, "example": 1 },
+          "preparation_date": { "type": "string", "format": "date", "example": "2026-08-18" },
+          "topics_covered": { "type": "string", "example": "مفهوم النهاية والاتصال" },
+          "notes": { "type": "string", "example": "ملاحظات إضافية للمعلم" },
+          "homework": { "type": "string", "example": "حل التمارين ص 45 من رقم 1 إلى 5" },
+          "status": { "type": "string", "enum": ["draft", "published"], "example": "published" }
+        }
+      },
+      "ClassAttendanceStudentsResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "student_id": { "type": "integer", "example": 25 },
+                "name": { "type": "string", "example": "عمر خالد المنصور" },
+                "status": { "type": "string", "enum": ["present", "absent", "late", "excused", "none"], "example": "present" }
+              }
+            }
+          }
+        }
+      },
+      "SaveClassAttendanceRequest": {
+        "type": "object",
+        "required": ["division_id", "subject_id", "period_id", "date", "attendances"],
+        "properties": {
+          "division_id": { "type": "integer", "example": 1 },
+          "subject_id": { "type": "integer", "example": 2 },
+          "period_id": { "type": "integer", "example": 1 },
+          "date": { "type": "string", "format": "date", "example": "2026-08-18" },
+          "attendances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["student_id", "status"],
+              "properties": {
+                "student_id": { "type": "integer", "example": 25 },
+                "status": { "type": "string", "enum": ["present", "absent", "late", "excused"], "example": "present" }
+              }
+            }
+          }
+        }
+      },
+      "EmployeeRequestsResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer", "example": 12 },
+              "pending": { "type": "integer", "example": 2 },
+              "approved": { "type": "integer", "example": 9 },
+              "rejected": { "type": "integer", "example": 1 }
+            }
+          },
+          "data": { "$ref": "#/components/schemas/PaginatedResponse" }
+        }
+      },
+      "SubmitRequestPayload": {
+        "type": "object",
+        "required": ["type", "employee_signature"],
+        "properties": {
+          "type": { "type": "string", "example": "إجازة اعتيادية" },
+          "details": { "type": "object", "example": { "start_date": "2026-08-20", "end_date": "2026-08-22", "reason": "ظرف عائلي" } },
+          "employee_notes": { "type": "string", "example": "يرجى التكرم بالموافقة" },
+          "employee_signature": { "type": "string", "description": "Base64 Image Data URI للرسم اليدوي للتوقيع" }
+        }
+      },
+      "ClassroomVisitRequest": {
+        "type": "object",
+        "required": ["teacher_id", "grade_id", "visit_date"],
+        "properties": {
+          "teacher_id": { "type": "integer", "example": 5 },
+          "grade_id": { "type": "integer", "example": 2 },
+          "division_id": { "type": "integer", "nullable": true, "example": 1 },
+          "visit_date": { "type": "string", "format": "date", "example": "2026-08-18" },
+          "score": { "type": "number", "minimum": 0, "maximum": 100, "example": 95 },
+          "notes": { "type": "string", "example": "إدارة صفية ممتازة وتفاعل طلابي رائع" },
+          "discussed_points": { "type": "string", "example": "التأكيد على استخدام الوسائل الرقمية التفاعلية" }
+        }
+      },
+      "CreateUserRequest": {
+        "type": "object",
+        "required": ["name", "username", "password", "role_id"],
+        "properties": {
+          "name": { "type": "string", "example": "سارة أحمد" },
+          "username": { "type": "string", "example": "sarah_admin" },
+          "password": { "type": "string", "format": "password", "example": "secret1234" },
+          "role_id": { "type": "integer", "example": 2 },
+          "is_active": { "type": "boolean", "example": true },
+          "branch_id": { "type": "integer", "nullable": true, "example": 1 }
+        }
+      },
+      "UpdateUserRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "username": { "type": "string" },
+          "password": { "type": "string", "format": "password" },
+          "role_id": { "type": "integer" },
+          "is_active": { "type": "boolean" },
+          "branch_id": { "type": "integer" }
+        }
+      },
+      "PaginatedResponse": {
+        "type": "object",
+        "properties": {
+          "current_page": { "type": "integer", "example": 1 },
+          "data": { "type": "array", "items": { "type": "object" } },
+          "first_page_url": { "type": "string" },
+          "from": { "type": "integer", "example": 1 },
+          "last_page": { "type": "integer", "example": 3 },
+          "last_page_url": { "type": "string" },
+          "next_page_url": { "type": "string", "nullable": true },
+          "path": { "type": "string" },
+          "per_page": { "type": "integer", "example": 15 },
+          "prev_page_url": { "type": "string", "nullable": true },
+          "to": { "type": "integer", "example": 15 },
+          "total": { "type": "integer", "example": 42 }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string", "example": "حدث خطأ أثناء معالجة الطلب." }
+        }
+      }
+    }
+  }
+}

@@ -36,6 +36,8 @@ Route::prefix('mobile')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [MobileAuthController::class, 'logout']);
         Route::post('/change-password', [MobileAuthController::class, 'changePassword']);
+        Route::get('/linked-accounts', [MobileAuthController::class, 'getLinkedAccounts']);
+        Route::post('/switch-account/{user}', [MobileAuthController::class, 'switchAccount']);
     });
 });
 
@@ -107,4 +109,23 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/my-reports/templates/{id}', [MobileFeaturesController::class, 'getReportTemplateDetails']);
     Route::post('/my-reports/submit/{id}', [MobileFeaturesController::class, 'submitReport']);
     Route::get('/my-reports', [MobileFeaturesController::class, 'getMyReports']);
+
+    // Teacher Study Plans
+    Route::get('/study-plans', [MobileFeaturesController::class, 'getStudyPlans']);
+    Route::get('/study-plans/{studyPlan}', [MobileFeaturesController::class, 'getStudyPlanDetails']);
+    Route::post('/study-plans/{studyPlan}/comments', [MobileFeaturesController::class, 'storeStudyPlanComment']);
+
+    // Teacher Monthly Grades Entry
+    Route::get('/teacher/monthly-grades/form-data', [MobileFeaturesController::class, 'getMonthlyGradesFormData']);
+    Route::get('/teacher/monthly-grades/students', [MobileFeaturesController::class, 'getMonthlyGradesStudents']);
+    Route::post('/teacher/monthly-grades', [MobileFeaturesController::class, 'storeMonthlyGrades']);
+
+    // Teacher Exam Invigilation Schedules
+    Route::get('/teacher/my-exam-schedules', [MobileFeaturesController::class, 'getTeacherExamSchedules']);
+
+    // Teacher Class Coverages / Substitutes
+    Route::get('/teacher/my-coverages', [MobileFeaturesController::class, 'getTeacherCoverages']);
+
+    // Classroom Visit Teacher Sign
+    Route::post('/classroom-visits/{classroomVisit}/teacher-sign', [MobileFeaturesController::class, 'signClassroomVisit']);
 });

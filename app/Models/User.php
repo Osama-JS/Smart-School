@@ -104,4 +104,38 @@ class User extends Authenticatable
 
         return $phone;
     }
+
+    /**
+     * جلب الحسابات المرتبطة للمستخدم في الفروع الأخرى
+     */
+    public function getLinkedAccounts()
+    {
+        $nationalId = $this->national_id ?? $this->employee?->national_id;
+        $phone = $this->phone;
+        $email = $this->email;
+
+        if (empty($nationalId) && empty($phone) && empty($email)) {
+            return collect([]);
+        }
+
+        return self::with(['branch:id,name', 'role:id,name'])
+            ->where('id', '!=', $this->id)
+            ->where('is_active', true)
+            ->where(function ($query) use ($nationalId, $phone, $email) {
+                if (!empty($nationalId)) {
+                    $query->orWhere('national_id', $nationalId)
+                          ->orWhereHas('employee', function ($eq) use ($nationalId) {
+                              $eq->where('national_id', $nationalId);
+                          });
+                }
+                if (!empty($phone)) {
+                    $query->orWhere('phone', $phone);
+                }
+                if (!empty($email)) {
+                    $query->orWhere('email', $email);
+                }
+            })
+            ->get();
+    }
 }
+

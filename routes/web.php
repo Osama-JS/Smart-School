@@ -17,6 +17,15 @@ Route::get('/debug-notifications', function() {
     return \App\Models\Notification::latest()->take(5)->get();
 });
 
+// ── API Documentation (Swagger UI) ──
+Route::get('/docs/api', function () {
+    return file_get_contents(public_path('docs/index.html'));
+})->name('api.docs');
+
+Route::get('/api/documentation', function () {
+    return redirect('/docs/api');
+});
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -27,6 +36,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // ── Linked Accounts & Branch Switcher ──
+    Route::get('/auth/linked-accounts', [\App\Http\Controllers\Auth\AccountSwitchController::class, 'getLinkedAccounts'])->name('auth.linked-accounts');
+    Route::post('/auth/switch-account/{user}', [\App\Http\Controllers\Auth\AccountSwitchController::class, 'switchAccount'])->name('auth.switch-account');
 
     // ── System Logs ──
     Route::get('/admin/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('admin.activity-logs.index');
@@ -545,6 +558,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:إدارة الموظفين')->group(function () {
+        Route::get('/hr/employees/check-existing', [\App\Http\Controllers\HR\EmployeeController::class, 'checkExisting'])->name('hr.employees.check-existing');
         Route::get('/hr/employees/import/template', [\App\Http\Controllers\HR\EmployeeController::class, 'downloadTemplate'])->name('hr.employees.template');
         Route::post('/hr/employees/import', [\App\Http\Controllers\HR\EmployeeController::class, 'import'])->name('hr.employees.import');
         Route::patch('/hr/employees/{employee}/quick-update', [\App\Http\Controllers\HR\EmployeeController::class, 'quickUpdate'])->name('hr.employees.quick-update');

@@ -121,4 +121,84 @@ class MobileAuthController extends Controller
             'message' => 'تم تغيير كلمة المرور بنجاح.'
         ]);
     }
+
+    /**
+     * جلب الحسابات المرتبطة للمستخدم الحالي (Mobile)
+     */
+    public function getLinkedAccounts(Request $request)
+    {
+        $user = $request->user();
+        $linkedAccounts = $user->getLinkedAccounts()->map(function ($account) {
+            return [
+                'id' => $account->id,
+                'name' => $account->name,
+                'username' => $account->username,
+                'email' => $account->email,
+                'role_name' => $account->role->name ?? '',
+                'branch_id' => $account->branch_id,
+                'branch_name' => $account->branch->name ?? '',
+                'avatar' => $account->avatar ? asset('storage/' . $account->avatar) : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $linkedAccounts
+        ]);
+    }
+
+    /**
+     * التبديل السريع إلى حساب مرتبط في فرع آخر (Mobile)
+     */
+    public function switchAccount(Request $request, User $user)
+    {
+        $currentUser = $request->user();
+
+        $linkedAccounts = $currentUser->getLinkedAccounts();
+        $isLinked = $linkedAccounts->contains('id', $user->id);
+
+        if (!$isLinked) {
+            return response()->json([
+                'success' => false,
+                'message' => 'غير مصرح لك بالتبديل إلى هذا الحساب.'
+            ], 403);
+        }
+
+        if (!$user->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الحساب المطلوب معطل حالياً.'
+            ], 403);
+        }
+
+        // Generate new token for the target user
+        $user->load(['role', 'employee', 'branch']);
+        $token = $user->createToken('mobile_app_token')->plainTextToken;
+        $permissions = $user->role ? $user->role->permissions()->pluck('name')->toArray() : [];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم التبديل بنجاح.',
+            'data' => [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'username' => $user->username,
+                    'role_name' => $user->role->name ?? '',
+                    'role_id' => $user->role_id,
+                    'is_system_role' => $user->role->is_system_role ?? false,
+                    'employee_id' => $user->employee->id ?? null,
+                    'phone' => $user->phone ?? null,
+                    'branch_id' => $user->branch_id ?? null,
+                    'branch_name' => $user->branch->name ?? null,
+                    'academic_year_name' => $user->branch_id ? optional(AcademicYear::currentForBranch($user->branch_id))->name : null,
+                    'avatar' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                    'permissions' => $permissions,
+                ]
+            ]
+        ]);
+    }
 }
+

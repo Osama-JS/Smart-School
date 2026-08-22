@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\FollowupBook;
+use App\Models\LessonPreparation;
 use App\Models\MasterTimetable;
 use App\Models\Setting;
 use App\Models\Subject;
@@ -19,67 +19,78 @@ class FollowupBookController extends Controller
 {
     private function getFilterData(Request $request)
     {
-        $timeLimit = Setting::where('key', 'followup_upload_time_limit')->value('value') ?: '14:00';
+        $timeLimit = Setting::where('key', 'preparation_upload_time_limit')->value('value')
+            ?: Setting::where('key', 'followup_upload_time_limit')->value('value')
+            ?: '14:00';
 
         $search = $request->input('search');
         $startDateInput = $request->input('start_date');
         $endDateInput = $request->input('end_date');
 
-        // Determine Start and End Date
+        // Determine Start and End Date (Default: Full Week from Saturday to Friday)
         if ($startDateInput && $endDateInput) {
             $startOfWeek = Carbon::parse($startDateInput)->startOfDay();
             $endOfWeek = Carbon::parse($endDateInput)->endOfDay();
         } else {
-            // Default to current week
-            $startOfWeek = now()->startOfWeek(Carbon::SUNDAY)->startOfDay();
-            $endOfWeek = now()->endOfWeek(Carbon::THURSDAY)->endOfDay();
+            $startOfWeek = now()->startOfWeek(Carbon::SATURDAY)->startOfDay();
+            $endOfWeek = $startOfWeek->copy()->addDays(6)->endOfDay();
         }
 
         $period = CarbonPeriod::create($startOfWeek, $endOfWeek);
 
-        // Get teachers
+        // Get teachers of current branch
+        $user = auth()->user();
+        $branchId = $user->branch_id;
+
         $teachersQuery = User::whereHas('role', function ($query) {
                 $query->where('name', 'معلم');
             })
             ->with(['employee']);
+
+        if ($branchId) {
+            $teachersQuery->where('branch_id', $branchId);
+        }
             
         if ($search) {
             $teachersQuery->where('name', 'like', '%' . $search . '%');
         }
         
         $teachers = $teachersQuery->get();
-
         $teacherIds = $teachers->pluck('id')->toArray();
 
-        // Eager load all followups for these teachers
-        $allFollowups = FollowupBook::whereIn('teacher_id', $teacherIds)
-                            ->whereBetween('date', [$startOfWeek, $endOfWeek])
-                            ->get()
-                            ->groupBy('teacher_id');
+        // Eager load all lesson preparations for these teachers in the date range
+        $allPreps = LessonPreparation::whereIn('teacher_id', $teacherIds)
+            ->whereBetween('preparation_date', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+            ->get()
+            ->groupBy('teacher_id');
 
-        $teachersData = $teachers->map(function ($teacher) use ($timeLimit, $allFollowups) {
-            // Get followups from collection
-            $followups = $allFollowups->get($teacher->id, collect());
-            
-            $expectedLessons = $followups->count();
-            $completedFollowups = $followups->whereNotNull('uploaded_at');
+        // Eager load timetable counts per teacher
+        $timetableCounts = MasterTimetable::whereIn('teacher_id', $teacherIds)
+            ->get()
+            ->groupBy('teacher_id')
+            ->map(fn($items) => $items->count());
 
-            $appUploads = $completedFollowups->where('upload_source', 'app')->count();
-            $dashUploads = $completedFollowups->where('upload_source', 'dashboard')->count();
-            
-            $lateUploads = $completedFollowups->filter(function ($f) use ($timeLimit) {
-                $limitTime = Carbon::parse($f->date->format('Y-m-d') . ' ' . $timeLimit);
-                return $f->uploaded_at->gt($limitTime);
+        $teachersData = $teachers->map(function ($teacher) use ($timeLimit, $allPreps, $timetableCounts) {
+            $preps = $allPreps->get($teacher->id, collect());
+            $expectedLessons = $timetableCounts->get($teacher->id, 0);
+
+            $publishedPreps = $preps->where('status', 'published');
+            $draftPreps = $preps->where('status', 'draft');
+
+            $lateUploads = $publishedPreps->filter(function ($p) use ($timeLimit) {
+                $prepDateStr = is_string($p->preparation_date) ? $p->preparation_date : $p->preparation_date->format('Y-m-d');
+                $limitTime = Carbon::parse($prepDateStr . ' ' . $timeLimit);
+                return $p->created_at && $p->created_at->gt($limitTime);
             })->count();
 
-            $negligence = max(0, $expectedLessons - $completedFollowups->count());
+            $negligence = max(0, $expectedLessons - $publishedPreps->count());
 
             return [
                 'id' => $teacher->id,
                 'name' => $teacher->name,
                 'total_weekly_lessons' => $expectedLessons,
-                'app_uploads' => $appUploads,
-                'dashboard_uploads' => $dashUploads,
+                'published_preparations' => $publishedPreps->count(),
+                'draft_preparations' => $draftPreps->count(),
                 'late_uploads' => $lateUploads,
                 'negligence' => $negligence,
             ];
@@ -115,7 +126,7 @@ class FollowupBookController extends Controller
         $data = $this->getFilterData($request);
         $teachersData = $data['teachersData'];
 
-        $fileName = 'teachers_followup_report_' . date('Y-m-d') . '.csv';
+        $fileName = 'teachers_preparations_report_' . date('Y-m-d') . '.csv';
 
         $headers = [
             "Content-type"        => "text/csv; charset=UTF-8",
@@ -127,16 +138,15 @@ class FollowupBookController extends Controller
 
         $columns = [
             'اسم المعلم',
-            'إجمالي الحصص المتوقعة',
-            'الرفع من التطبيق',
-            'الرفع من النظام',
-            'الرفع المتأخر',
-            'التقصير'
+            'إجمالي الحصص الأسبوعية',
+            'التحضيرات المنشورة',
+            'المسودات',
+            'التحضير المتأخر',
+            'الحصص غير المحضرة (التقصير)'
         ];
 
         $callback = function() use($teachersData, $columns) {
             $file = fopen('php://output', 'w');
-            // Add UTF-8 BOM for Excel
             fputs($file, "\xEF\xBB\xBF");
             fputcsv($file, $columns);
 
@@ -144,8 +154,8 @@ class FollowupBookController extends Controller
                 fputcsv($file, [
                     $row['name'],
                     $row['total_weekly_lessons'],
-                    $row['app_uploads'],
-                    $row['dashboard_uploads'],
+                    $row['published_preparations'],
+                    $row['draft_preparations'],
                     $row['late_uploads'],
                     $row['negligence']
                 ]);
@@ -159,7 +169,9 @@ class FollowupBookController extends Controller
 
     public function show(Request $request, User $teacher)
     {
-        $timeLimit = Setting::where('key', 'followup_upload_time_limit')->value('value') ?: '14:00';
+        $timeLimit = Setting::where('key', 'preparation_upload_time_limit')->value('value')
+            ?: Setting::where('key', 'followup_upload_time_limit')->value('value')
+            ?: '14:00';
         
         $startDateInput = $request->query('start_date');
         $endDateInput = $request->query('end_date');
@@ -168,37 +180,52 @@ class FollowupBookController extends Controller
             $start = Carbon::parse($startDateInput)->startOfDay();
             $end = Carbon::parse($endDateInput)->endOfDay();
         } else {
-            $start = now()->startOfWeek(Carbon::SUNDAY)->startOfDay();
-            $end = now()->endOfWeek(Carbon::THURSDAY)->endOfDay();
+            $start = now()->startOfWeek(Carbon::SATURDAY)->startOfDay();
+            $end = $start->copy()->addDays(6)->endOfDay();
         }
 
         $period = CarbonPeriod::create($start, $end);
 
-        $followups = FollowupBook::with(['subject', 'division.grade'])
+        $timetable = MasterTimetable::with(['subject', 'division.grade'])
             ->where('teacher_id', $teacher->id)
-            ->whereBetween('date', [$start, $end])
             ->get();
 
-        $followupsByDate = $followups->groupBy(function($item) {
-            return $item->date->format('Y-m-d');
-        });
+        $preparations = LessonPreparation::with(['subject', 'grade', 'division'])
+            ->where('teacher_id', $teacher->id)
+            ->whereBetween('preparation_date', [$start->format('Y-m-d'), $end->format('Y-m-d')])
+            ->get();
 
         $days = [];
         $dayNames = [
-            'Saturday' => 'السبت',
-            'Sunday' => 'الأحد',
-            'Monday' => 'الاثنين',
-            'Tuesday' => 'الثلاثاء',
+            'Saturday'  => 'السبت',
+            'Sunday'    => 'الأحد',
+            'Monday'    => 'الاثنين',
+            'Tuesday'   => 'الثلاثاء',
             'Wednesday' => 'الأربعاء',
-            'Thursday' => 'الخميس',
-            'Friday' => 'الجمعة',
+            'Thursday'  => 'الخميس',
+            'Friday'    => 'الجمعة',
+        ];
+
+        $dayAliases = [
+            'saturday'  => ['saturday', 'السبت', '6'],
+            'sunday'    => ['sunday', 'الأحد', 'الاحد', '0'],
+            'monday'    => ['monday', 'الاثنين', 'الإثنين', '1'],
+            'tuesday'   => ['tuesday', 'الثلاثاء', '2'],
+            'wednesday' => ['wednesday', 'الأربعاء', 'الاربعاء', '3'],
+            'thursday'  => ['thursday', 'الخميس', '4'],
+            'friday'    => ['friday', 'الجمعة', '5'],
         ];
 
         foreach ($period as $date) {
             $dateStr = $date->format('Y-m-d');
             $dayOfWeek = $date->format('l');
+            $lowerDay = strtolower($dayOfWeek);
+            $validDayNames = $dayAliases[$lowerDay] ?? [$lowerDay];
             
-            $lessonsForDay = $followupsByDate->get($dateStr, collect());
+            $lessonsForDay = $timetable->filter(function($item) use ($validDayNames) {
+                $itemDay = strtolower(trim($item->day_of_week ?? ''));
+                return in_array($itemDay, $validDayNames);
+            });
             
             $dayData = [
                 'date' => $dateStr,
@@ -206,26 +233,42 @@ class FollowupBookController extends Controller
                 'lessons' => []
             ];
 
-            foreach ($lessonsForDay as $followup) {
-                $status = 'missing'; // مقصر
-                if ($followup->uploaded_at) {
-                    $limitTime = Carbon::parse($dateStr . ' ' . $timeLimit);
-                    if ($followup->uploaded_at->gt($limitTime)) {
-                        $status = 'late'; // متأخر
+            foreach ($lessonsForDay as $lesson) {
+                // Find matching preparation for this subject, division, and date
+                $prep = $preparations->first(function($p) use ($dateStr, $lesson) {
+                    $prepDate = is_string($p->preparation_date) ? $p->preparation_date : $p->preparation_date->format('Y-m-d');
+                    return $prepDate === $dateStr && $p->subject_id == $lesson->subject_id && ($p->division_id == $lesson->division_id || empty($p->division_id));
+                });
+
+                $status = 'missing'; // لم يتم التحضير
+                if ($prep) {
+                    if ($prep->status === 'draft') {
+                        $status = 'draft';
                     } else {
-                        $status = 'on_time'; // تم الرفع في الوقت
+                        $limitTime = Carbon::parse($dateStr . ' ' . $timeLimit);
+                        if ($prep->created_at && $prep->created_at->gt($limitTime)) {
+                            $status = 'late'; // تحضير متأخر
+                        } else {
+                            $status = 'on_time'; // تم التحضير في الوقت
+                        }
                     }
                 }
 
                 $dayData['lessons'][] = [
-                    'subject' => $followup->subject->name ?? 'غير محدد',
-                    'division' => ($followup->division->grade->name ?? '') . ' - ' . ($followup->division->name ?? ''),
+                    'subject' => $lesson->subject->name ?? 'غير محدد',
+                    'division' => ($lesson->division->grade->name ?? '') . ' - ' . ($lesson->division->name ?? ''),
                     'status' => $status,
-                    'followup' => $followup
+                    'preparation' => $prep ? [
+                        'id' => $prep->id,
+                        'lesson_title' => $prep->lesson_title,
+                        'topics_covered' => $prep->topics_covered,
+                        'homework' => $prep->homework,
+                        'status' => $prep->status,
+                        'created_at' => $prep->created_at ? $prep->created_at->format('Y-m-d H:i') : null,
+                    ] : null
                 ];
             }
             
-            // Only add days that have lessons
             if (count($dayData['lessons']) > 0) {
                 $days[] = $dayData;
             }
@@ -237,7 +280,9 @@ class FollowupBookController extends Controller
                 'name' => $teacher->name,
             ],
             'days' => $days,
-            'timeLimit' => $timeLimit
+            'timeLimit' => $timeLimit,
+            'periodStart' => $start->format('Y-m-d'),
+            'periodEnd' => $end->format('Y-m-d'),
         ]);
     }
 
@@ -248,10 +293,10 @@ class FollowupBookController extends Controller
         ]);
 
         Setting::updateOrCreate(
-            ['key' => 'followup_upload_time_limit'],
+            ['key' => 'preparation_upload_time_limit'],
             ['value' => $request->time_limit, 'group' => 'general']
         );
 
-        return back()->with('success', 'تم حفظ إعدادات دفاتر المتابعة بنجاح.');
+        return back()->with('success', 'تم حفظ إعدادات مواعيد دفاتر التحضير بنجاح.');
     }
 }

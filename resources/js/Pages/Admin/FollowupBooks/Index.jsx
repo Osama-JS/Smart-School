@@ -4,6 +4,7 @@ import { Head, useForm, Link, router } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
+import FlatpickrInput from '@/Components/FlatpickrInput';
 import { BookOpen, Settings, Eye, Clock, Download, Filter, Search } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -71,9 +72,9 @@ export default function Index({ auth, teachers, timeLimit, filters = {}, options
                         <div>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
                                 <BookOpen size={28} className="text-primary-600" />
-                                إدارة دفاتر المتابعة
+                                متابعة انضباط تحضير الدروس
                             </h1>
-                            <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">متابعة إنجاز المعلمين للدروس وإحصائيات الرفع</p>
+                            <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">متابعة إعداد ونشر دفاتر تحضير الدروس ونسب إنجاز المعلمين</p>
                         </div>
                         <div className="flex flex-wrap items-center gap-3 shrink-0">
                             <button
@@ -88,7 +89,7 @@ export default function Index({ auth, teachers, timeLimit, filters = {}, options
                                 className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 font-bold transition-all active:scale-95"
                             >
                                 <Settings size={18} />
-                                <span>الإعدادات</span>
+                                <span>مواعيد التحضير</span>
                             </button>
                         </div>
                     </div>
@@ -98,40 +99,37 @@ export default function Index({ auth, teachers, timeLimit, filters = {}, options
                 <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 mb-6">
                     <div className="flex items-center gap-2 mb-4 text-slate-700 dark:text-slate-300 font-bold">
                         <Filter size={18} className="text-primary-500" />
-                        <h3>فلاتر البحث والإحصائيات</h3>
+                        <span>تصفية النتائج</span>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="relative">
-                            <InputLabel value="بحث باسم المعلم" className="mb-2 text-xs font-bold text-slate-500" />
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={filterData.search}
-                                    onChange={(e) => setFilterData({ ...filterData, search: e.target.value })}
-                                    placeholder="اكتب اسم المعلم هنا..."
-                                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-2.5 pl-10 font-bold focus:border-primary-500 focus:ring-primary-500 transition-all"
-                                />
-                                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            </div>
-                        </div>
-
                         <div>
-                            <InputLabel value="من تاريخ" className="mb-2 text-xs font-bold text-slate-500" />
+                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">بحث بالاسم</label>
                             <input
-                                type="date"
-                                value={filterData.start_date}
-                                onChange={(e) => setFilterData({ ...filterData, start_date: e.target.value })}
+                                type="text"
+                                placeholder="اسم المعلم..."
+                                value={filterData.search}
+                                onChange={(e) => setFilterData({ ...filterData, search: e.target.value })}
                                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-2.5 font-bold focus:border-primary-500 focus:ring-primary-500 transition-all"
                             />
                         </div>
-
                         <div>
-                            <InputLabel value="إلى تاريخ" className="mb-2 text-xs font-bold text-slate-500" />
-                            <input
+                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">من تاريخ</label>
+                            <FlatpickrInput
+                                type="date"
+                                value={filterData.start_date}
+                                onChange={(dateStr) => setFilterData({ ...filterData, start_date: dateStr })}
+                                placeholder="اختر تاريخ البداية..."
+                                className="w-full"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">إلى تاريخ</label>
+                            <FlatpickrInput
                                 type="date"
                                 value={filterData.end_date}
-                                onChange={(e) => setFilterData({ ...filterData, end_date: e.target.value })}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl px-4 py-2.5 font-bold focus:border-primary-500 focus:ring-primary-500 transition-all"
+                                onChange={(dateStr) => setFilterData({ ...filterData, end_date: dateStr })}
+                                placeholder="اختر تاريخ النهاية..."
+                                className="w-full"
                             />
                         </div>
                     </div>
@@ -155,10 +153,10 @@ export default function Index({ auth, teachers, timeLimit, filters = {}, options
                                 <tr className="bg-slate-50/80 dark:bg-slate-800/50 backdrop-blur-md border-b border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-300">
                                     <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase">المعلم</th>
                                     <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center">إجمالي الحصص</th>
-                                    <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center text-blue-600 dark:text-blue-400">التطبيق</th>
-                                    <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center text-emerald-600 dark:text-emerald-400">النظام</th>
-                                    <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center text-amber-600 dark:text-amber-400">الرفع المتأخر</th>
-                                    <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center text-red-600 dark:text-red-400">التقصير</th>
+                                    <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center text-emerald-600 dark:text-emerald-400">التحضيرات المنشورة</th>
+                                    <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center text-blue-600 dark:text-blue-400">المسودات</th>
+                                    <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center text-amber-600 dark:text-amber-400">تحضير متأخر</th>
+                                    <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center text-red-600 dark:text-red-400">غير محضر (تقصير)</th>
                                     <th className="px-6 py-5 font-extrabold text-xs tracking-wider uppercase text-center">إجراءات</th>
                                 </tr>
                             </thead>
@@ -183,13 +181,13 @@ export default function Index({ auth, teachers, timeLimit, filters = {}, options
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 text-center">
-                                                <span className={`inline-flex items-center justify-center min-w-[3rem] px-3 py-1.5 rounded-xl font-bold text-sm transition-colors ${teacher.app_uploads > 0 ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border border-slate-200 dark:border-slate-700/50'}`}>
-                                                    {teacher.app_uploads}
+                                                <span className={`inline-flex items-center justify-center min-w-[3rem] px-3 py-1.5 rounded-xl font-bold text-sm transition-colors ${teacher.published_preparations > 0 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border border-slate-200 dark:border-slate-700/50'}`}>
+                                                    {teacher.published_preparations || 0}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 text-center">
-                                                <span className={`inline-flex items-center justify-center min-w-[3rem] px-3 py-1.5 rounded-xl font-bold text-sm transition-colors ${teacher.dashboard_uploads > 0 ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border border-slate-200 dark:border-slate-700/50'}`}>
-                                                    {teacher.dashboard_uploads}
+                                                <span className={`inline-flex items-center justify-center min-w-[3rem] px-3 py-1.5 rounded-xl font-bold text-sm transition-colors ${teacher.draft_preparations > 0 ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-500/30' : 'bg-slate-50 dark:bg-slate-800/50 text-slate-400 border border-slate-200 dark:border-slate-700/50'}`}>
+                                                    {teacher.draft_preparations || 0}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-5 text-center">
@@ -247,19 +245,19 @@ export default function Index({ auth, teachers, timeLimit, filters = {}, options
 
                     <form onSubmit={submitSettings} className="space-y-4">
                         <div>
-                            <InputLabel htmlFor="time_limit" value="وقت الرفع (الحد الأقصى للتأخير)" />
-                            <div className="relative mt-1">
-                                <input
+                            <InputLabel htmlFor="time_limit" value="وقت إغلاق التحضير اليومي" />
+                            <div className="mt-1">
+                                <FlatpickrInput
                                     type="time"
                                     id="time_limit"
                                     value={data.time_limit}
-                                    onChange={(e) => setData('time_limit', e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 pl-10 text-sm font-bold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-sm"
+                                    onChange={(timeStr) => setData('time_limit', timeStr)}
+                                    placeholder="اختر وقت الإغلاق..."
+                                    className="w-full font-bold"
                                     required
                                 />
-                                <Clock className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                             </div>
-                            <p className="text-xs text-slate-500 mt-2">أي رفع بعد هذا الوقت سيُسجل كـ (رفع متأخر).</p>
+                            <p className="text-xs text-slate-500 mt-2">أي تحضير يُرفع بعد هذا الوقت سيُسجل كـ (تحضير متأخر).</p>
                             <InputError message={errors.time_limit} className="mt-2" />
                         </div>
 

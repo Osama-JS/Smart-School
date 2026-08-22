@@ -179,9 +179,75 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         return Inertia::render('HR/Employees/Create', compact('departments', 'jobGrades', 'roles', 'branches', 'isAdmin', 'managerCandidates', 'shifts'));
     }
 
+    /**
+     * فحص هل الموظف مسجل مسبقاً في فرع آخر برقم الهوية أو الجوال أو البريد
+     */
+    public function checkExisting(Request $request)
+    {
+        $nationalId = $request->query('national_id');
+        $phone = $request->query('phone');
+        $email = $request->query('email');
+
+        if (!$nationalId && !$phone && !$email) {
+            return response()->json(['exists' => false]);
+        }
+
+        $query = Employee::with(['user.branch', 'user.role', 'department', 'jobGrade'])
+            ->where(function($q) use ($nationalId, $phone, $email) {
+                if ($nationalId) {
+                    $q->orWhere('national_id', $nationalId)
+                      ->orWhereHas('user', fn($uq) => $uq->where('national_id', $nationalId));
+                }
+                if ($phone) {
+                    $q->orWhereHas('user', fn($uq) => $uq->where('phone', $phone));
+                }
+                if ($email) {
+                    $q->orWhereHas('user', fn($uq) => $uq->where('email', $email));
+                }
+            });
+
+        $existingEmployee = $query->first();
+
+        if ($existingEmployee && $existingEmployee->user) {
+            return response()->json([
+                'exists' => true,
+                'data' => [
+                    'id' => $existingEmployee->id,
+                    'user_id' => $existingEmployee->user_id,
+                    'name' => $existingEmployee->user->name ?? '',
+                    'national_id' => $existingEmployee->national_id ?? $existingEmployee->user->national_id,
+                    'phone' => $existingEmployee->user->phone ?? '',
+                    'email' => $existingEmployee->user->email ?? '',
+                    'specialization' => $existingEmployee->specialization ?? '',
+                    'job_title' => $existingEmployee->job_title ?? '',
+                    'address' => $existingEmployee->address ?? '',
+                    'branch_id' => $existingEmployee->user->branch_id ?? null,
+                    'branch_name' => $existingEmployee->user->branch->name ?? 'فرع آخر',
+                    'role_name' => $existingEmployee->user->role->name ?? '',
+                    'department_name' => $existingEmployee->department->name ?? '',
+                ]
+            ]);
+        }
+
+        return response()->json(['exists' => false]);
+    }
+
     public function store(Request $request)
     {
         $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير النظام';
+        $nationalId = $request->input('national_id');
+
+        // Allow same email if national_id matches across branches
+        $emailRules = ['nullable', 'email'];
+        if ($request->filled('email')) {
+            $existingEmailUser = User::where('email', $request->email)->first();
+            if ($existingEmailUser) {
+                $existingNatId = $existingEmailUser->national_id ?? $existingEmailUser->employee?->national_id;
+                if (!$nationalId || $existingNatId !== $nationalId) {
+                    $emailRules[] = 'unique:users';
+                }
+            }
+        }
         
         $validated = $request->validate([
             // بيانات الحساب
@@ -190,7 +256,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             'password'  => ['required', 'string', 'min:8'],
             'role_id'   => ['required', 'exists:roles,id'],
             'branch_id' => [$isAdmin ? 'required' : 'nullable', $isAdmin ? 'exists:branches,id' : ''],
-            'email'     => ['nullable', 'email', 'unique:users'],
+            'email'     => $emailRules,
             'phone'     => ['nullable', 'string', 'max:50'],
             'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'is_active' => ['boolean'],
@@ -203,7 +269,6 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             'national_id'   => ['nullable', 'string', 'max:50'],
             'specialization'=> ['nullable', 'string', 'max:255'],
             'job_title'     => ['nullable', 'string', 'max:255'],
-            'address'       => ['nullable', 'string'],
             'address'       => ['nullable', 'string'],
             'attachments.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'attachment_names' => ['nullable', 'array'],
@@ -220,15 +285,16 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
         // إنشاء المستخدم
         $user = User::create([
-            'name'      => $validated['name'],
-            'username'  => $validated['username'],
-            'password'  => Hash::make($validated['password']),
-            'role_id'   => $validated['role_id'],
-            'branch_id' => $isAdmin ? $validated['branch_id'] : auth()->user()->branch_id,
-            'is_active' => $validated['is_active'] ?? true,
-            'email'     => $validated['email'] ?? null,
-            'phone'     => $validated['phone'] ?? null,
-            'avatar'    => $avatarPath,
+            'name'        => $validated['name'],
+            'username'    => $validated['username'],
+            'password'    => Hash::make($validated['password']),
+            'role_id'     => $validated['role_id'],
+            'branch_id'   => $isAdmin ? $validated['branch_id'] : auth()->user()->branch_id,
+            'is_active'   => $validated['is_active'] ?? true,
+            'email'       => $validated['email'] ?? null,
+            'phone'       => $validated['phone'] ?? null,
+            'national_id' => $validated['national_id'] ?? null,
+            'avatar'      => $avatarPath,
         ]);
 
         $attachmentsPaths = [];
