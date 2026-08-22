@@ -10,6 +10,7 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
     const { data, setData, post, processing, errors } = useForm({
         // Account Data
         name: '',
+        auto_generate_credentials: true,
         username: '',
         password: '',
         role_id: roles?.[0]?.id || '',
@@ -97,8 +98,12 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
         const errs = {};
         if (step === 1) {
             if (!data.name.trim()) errs.name = 'الاسم الرباعي مطلوب.';
-            if (!data.username.trim()) errs.username = 'اسم المستخدم مطلوب.';
-            if (!data.password || data.password.length < 8) errs.password = 'كلمة المرور مطلوبة ولا تقل عن 8 أحرف.';
+            if (!data.auto_generate_credentials) {
+                if (!data.username.trim()) errs.username = 'اسم المستخدم مطلوب.';
+                if (!data.password || data.password.length < 8) errs.password = 'كلمة المرور مطلوبة ولا تقل عن 8 أحرف.';
+            } else {
+                if (!data.phone || !data.phone.trim()) errs.phone = 'رقم الهاتف مطلوب عند اختيار التوليد الآلي.';
+            }
             if (!data.role_id) errs.role_id = 'الصلاحية مطلوبة.';
         }
         setStepErrors(errs);
@@ -214,32 +219,48 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
                                     {(errors.name || stepErrors.name) && <p className="text-xs text-rose-500 mt-1">{errors.name || stepErrors.name}</p>}
                                 </div>
 
-                                {/* Username */}
-                                <div>
-                                    <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم المستخدم <span className="text-rose-500">*</span></label>
-                                    <div className="relative">
-                                        <UserCheck size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
-                                        <input type="text" dir="ltr" placeholder="username"
-                                            className={inputClass(errors.username || stepErrors.username)}
-                                            value={data.username} onChange={e => setData('username', e.target.value)} />
+                                {/* Auto Generate Credentials */}
+                                <div className="lg:col-span-3 flex items-center gap-4 bg-primary-50 dark:bg-primary-900/10 p-4 rounded-xl border border-primary-100 dark:border-primary-800/30">
+                                    <div className="relative flex items-center justify-center p-0.5 rounded-full overflow-hidden w-12 h-6 bg-dark-200 dark:bg-dark-700 cursor-pointer flex-shrink-0" onClick={() => setData('auto_generate_credentials', !data.auto_generate_credentials)}>
+                                        <div className={`absolute top-0 bottom-0 left-0 right-0 transition-colors duration-300 ${data.auto_generate_credentials ? 'bg-primary-500' : 'bg-dark-300 dark:bg-dark-600'}`} />
+                                        <div className={`absolute w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${data.auto_generate_credentials ? '-translate-x-3' : 'translate-x-3'}`} />
                                     </div>
-                                    {(errors.username || stepErrors.username) && <p className="text-xs text-rose-500 mt-1">{errors.username || stepErrors.username}</p>}
+                                    <div>
+                                        <h4 className="text-sm font-bold text-dark-900 dark:text-white">توليد بيانات الدخول آلياً</h4>
+                                        <p className="text-xs text-dark-500 dark:text-dark-400 font-semibold mt-0.5">جعل اسم المستخدم هو "رقم الهاتف" وتوليد كلمة مرور عشوائية واحترافية.</p>
+                                    </div>
                                 </div>
 
-                                {/* Password */}
-                                <div>
-                                    <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">كلمة المرور <span className="text-rose-500">*</span></label>
-                                    <div className="relative">
-                                        <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
-                                        <input type={showPassword ? "text" : "password"} dir="ltr" placeholder="••••••••"
-                                            className={`${inputClass(errors.password || stepErrors.password)} pl-12`}
-                                            value={data.password} onChange={e => setData('password', e.target.value)} />
-                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 p-1">
-                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
+                                {/* Username */}
+                                {!data.auto_generate_credentials && (
+                                    <div>
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم المستخدم <span className="text-rose-500">*</span></label>
+                                        <div className="relative">
+                                            <UserCheck size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
+                                            <input type="text" dir="ltr" placeholder="username"
+                                                className={inputClass(errors.username || stepErrors.username)}
+                                                value={data.username} onChange={e => setData('username', e.target.value)} />
+                                        </div>
+                                        {(errors.username || stepErrors.username) && <p className="text-xs text-rose-500 mt-1">{errors.username || stepErrors.username}</p>}
                                     </div>
-                                    {(errors.password || stepErrors.password) && <p className="text-xs text-rose-500 mt-1">{errors.password || stepErrors.password}</p>}
-                                </div>
+                                )}
+
+                                {/* Password */}
+                                {!data.auto_generate_credentials && (
+                                    <div>
+                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">كلمة المرور <span className="text-rose-500">*</span></label>
+                                        <div className="relative">
+                                            <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
+                                            <input type={showPassword ? "text" : "password"} dir="ltr" placeholder="••••••••"
+                                                className={`${inputClass(errors.password || stepErrors.password)} pl-12`}
+                                                value={data.password} onChange={e => setData('password', e.target.value)} />
+                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-600 dark:hover:text-dark-200 p-1">
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
+                                        {(errors.password || stepErrors.password) && <p className="text-xs text-rose-500 mt-1">{errors.password || stepErrors.password}</p>}
+                                    </div>
+                                )}
 
                                 {/* Email */}
                                 <div>
@@ -257,7 +278,7 @@ export default function EmployeesCreate({ departments, jobGrades, roles, branche
 
                                 {/* Phone */}
                                 <div>
-                                    <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">رقم الهاتف</label>
+                                    <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">رقم الهاتف {data.auto_generate_credentials && <span className="text-rose-500">*</span>}</label>
                                     <div className="relative">
                                         <Phone size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-dark-400 pointer-events-none" />
                                         <input type="text" dir="ltr" placeholder="05XXXXXXXX"

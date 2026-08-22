@@ -36,23 +36,40 @@ class ParentController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $autoGenerate = filter_var($request->input('auto_generate_credentials'), FILTER_VALIDATE_BOOLEAN);
+
+        $rules = [
             'name'        => 'required|string|max:255',
-            'username'    => 'required|string|max:255|unique:users',
-            'password'    => 'required|string|min:8',
             'email'       => 'nullable|email|unique:users',
-            'phone'       => 'nullable|string|max:20',
+            'phone'       => [$autoGenerate ? 'required' : 'nullable', 'string', 'max:20'],
             'national_id' => 'nullable|string|max:50',
             'address'     => 'nullable|string',
             'is_active'   => 'boolean',
-        ]);
+        ];
+
+        if (!$autoGenerate) {
+            $rules['username'] = 'required|string|max:255|unique:users';
+            $rules['password'] = 'required|string|min:8';
+        }
+
+        $validated = $request->validate($rules);
+
+        if ($autoGenerate) {
+            $existingUser = User::where('username', $validated['phone'])->first();
+            if ($existingUser) {
+                return redirect()->back()->withErrors(['phone' => 'رقم الجوال هذا مسجل كاسم مستخدم سابقاً. يرجى استخدام رقم آخر أو إدخال بيانات الدخول يدوياً.'])->withInput();
+            }
+        }
 
         $parentRole = Role::where('name', 'ولي أمر')->firstOrFail();
 
+        $username = $autoGenerate ? $validated['phone'] : $validated['username'];
+        $plainPassword = $autoGenerate ? \Illuminate\Support\Str::password(8, true, true, true, false) : $validated['password'];
+
         $user = User::create([
             'name'        => $validated['name'],
-            'username'    => $validated['username'],
-            'password'    => Hash::make($validated['password']),
+            'username'    => $username,
+            'password'    => Hash::make($plainPassword),
             'email'       => $validated['email'] ?? null,
             'phone'       => $validated['phone'] ?? null,
             'national_id' => $validated['national_id'] ?? null,
@@ -61,6 +78,14 @@ class ParentController extends Controller
             'branch_id'   => auth()->user()->branch_id,
             'is_active'   => $validated['is_active'] ?? 1,
         ]);
+
+        if ($autoGenerate) {
+            \Illuminate\Support\Facades\Session::flash('generated_credentials', [
+                'name' => $user->name,
+                'username' => $username,
+                'password' => $plainPassword
+            ]);
+        }
 
         return redirect()->route('academic.parents')->with('success', 'تم إضافة حساب ولي الأمر بنجاح.');
     }
@@ -138,6 +163,25 @@ class ParentController extends Controller
         $parent->save();
 
         return redirect()->route('academic.parents')->with('success', 'تم تحديث بيانات ولي الأمر بنجاح.');
+    }
+
+    public function resetPassword(User $parent)
+    {
+        abort_if($parent->role->name !== 'ولي أمر', 403);
+
+        $plainPassword = \Illuminate\Support\Str::password(8, true, true, true, false);
+        
+        $parent->update([
+            'password' => Hash::make($plainPassword)
+        ]);
+
+        \Illuminate\Support\Facades\Session::flash('generated_credentials', [
+            'name' => $parent->name,
+            'username' => $parent->username,
+            'password' => $plainPassword
+        ]);
+
+        return redirect()->back()->with('success', 'تم إعادة تعيين كلمة المرور بنجاح.');
     }
 
     public function destroy(User $parent)

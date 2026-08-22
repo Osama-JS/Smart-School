@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
-import { Head, router, Link, useForm } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, router, Link, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { ArrowRight, Save, User, Lock, Phone, Mail, MapPin, Eye, EyeOff, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Save, User, Lock, Phone, Mail, MapPin, Eye, EyeOff, ShieldAlert, Printer } from 'lucide-react';
+import Swal from 'sweetalert2';
 
 export default function ParentsCreate() {
+    const { flash } = usePage().props;
+    const logoUrl = usePage().props.appLogo || '/images/logo.png';
     const { data, setData, post, processing, errors } = useForm({
         name: '',
+        auto_generate_credentials: true,
         username: '',
         password: '',
         email: '',
@@ -16,6 +20,8 @@ export default function ParentsCreate() {
     });
 
     const [showPassword, setShowPassword] = useState(false);
+
+
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -57,36 +63,52 @@ export default function ParentsCreate() {
                                 {errors.name && <p className="text-xs text-rose-500 mt-1.5">{errors.name}</p>}
                             </div>
 
-                            {/* Username */}
-                            <div>
-                                <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم المستخدم <span className="text-rose-500">*</span></label>
-                                <div className="relative">
-                                    <User size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input type="text"
-                                        className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.username ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-400'} rounded-2xl pr-11 pl-4 py-3 text-sm outline-none transition-all`}
-                                        value={data.username} onChange={e => setData('username', e.target.value)} dir="ltr" placeholder="ahmed.parent" />
+                            {/* Auto Generate Credentials */}
+                            <div className="col-span-full flex items-center gap-4 bg-primary-50 dark:bg-primary-900/10 p-4 rounded-xl border border-primary-100 dark:border-primary-800/30">
+                                <div className="relative flex items-center justify-center p-0.5 rounded-full overflow-hidden w-12 h-6 bg-slate-200 dark:bg-slate-700 cursor-pointer flex-shrink-0" onClick={() => setData('auto_generate_credentials', !data.auto_generate_credentials)}>
+                                    <div className={`absolute top-0 bottom-0 left-0 right-0 transition-colors duration-300 ${data.auto_generate_credentials ? 'bg-primary-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                                    <div className={`absolute w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-300 ${data.auto_generate_credentials ? '-translate-x-3' : 'translate-x-3'}`} />
                                 </div>
-                                {errors.username && <p className="text-xs text-rose-500 mt-1.5">{errors.username}</p>}
+                                <div>
+                                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">توليد بيانات الدخول آلياً</h4>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-0.5">جعل اسم المستخدم هو "رقم الجوال" وتوليد كلمة مرور عشوائية واحترافية.</p>
+                                </div>
                             </div>
 
-                            {/* Password */}
-                            <div>
-                                <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">كلمة المرور <span className="text-rose-500">*</span></label>
-                                <div className="relative">
-                                    <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input type={showPassword ? "text" : "password"}
-                                        className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.password ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-400'} rounded-2xl pr-11 pl-12 py-3 text-sm outline-none transition-all`}
-                                        value={data.password} onChange={e => setData('password', e.target.value)} dir="ltr" placeholder="••••••••" />
-                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors">
-                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                    </button>
+                            {/* Username */}
+                            {!data.auto_generate_credentials && (
+                                <div>
+                                    <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم المستخدم <span className="text-rose-500">*</span></label>
+                                    <div className="relative">
+                                        <User size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input type="text"
+                                            className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.username ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-400'} rounded-2xl pr-11 pl-4 py-3 text-sm outline-none transition-all`}
+                                            value={data.username} onChange={e => setData('username', e.target.value)} dir="ltr" placeholder="ahmed.parent" />
+                                    </div>
+                                    {errors.username && <p className="text-xs text-rose-500 mt-1.5">{errors.username}</p>}
                                 </div>
-                                {errors.password && <p className="text-xs text-rose-500 mt-1.5">{errors.password}</p>}
-                            </div>
+                            )}
+
+                            {/* Password */}
+                            {!data.auto_generate_credentials && (
+                                <div>
+                                    <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">كلمة المرور <span className="text-rose-500">*</span></label>
+                                    <div className="relative">
+                                        <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input type={showPassword ? "text" : "password"}
+                                            className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.password ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-400'} rounded-2xl pr-11 pl-12 py-3 text-sm outline-none transition-all`}
+                                            value={data.password} onChange={e => setData('password', e.target.value)} dir="ltr" placeholder="••••••••" />
+                                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors">
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                    {errors.password && <p className="text-xs text-rose-500 mt-1.5">{errors.password}</p>}
+                                </div>
+                            )}
 
                             {/* Phone */}
                             <div>
-                                <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">رقم الجوال</label>
+                                <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">رقم الجوال {data.auto_generate_credentials && <span className="text-rose-500">*</span>}</label>
                                 <div className="relative">
                                     <Phone size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input type="text"

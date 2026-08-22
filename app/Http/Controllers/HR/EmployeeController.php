@@ -17,7 +17,7 @@ use Inertia\Inertia;
 
 class EmployeeController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
-        public static function middleware(): array
+    public static function middleware(): array
     {
         return [
             new \Illuminate\Routing\Controllers\Middleware('permission:عرض الموظفين', only: ['index', 'show']),
@@ -47,7 +47,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('users.name', 'like', "%$search%")
-                  ->orWhere('users.username', 'like', "%$search%");
+                    ->orWhere('users.username', 'like', "%$search%");
             });
         }
 
@@ -85,19 +85,19 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
         $employees = $query->paginate(12)->withQueryString()->through(function ($emp) {
             return [
-                'id'            => $emp->id,
-                'user_id'       => $emp->user_id,
-                'name'          => $emp->user->name ?? 'غير محدد',
-                'username'      => $emp->user->username ?? '',
-                'role'          => $emp->user->role->name ?? '—',
-                'branch'        => $emp->user->branch->name ?? '—',
-                'department'    => $emp->department->name ?? 'غير محدد',
+                'id' => $emp->id,
+                'user_id' => $emp->user_id,
+                'name' => $emp->user->name ?? 'غير محدد',
+                'username' => $emp->user->username ?? '',
+                'role' => $emp->user->role->name ?? '—',
+                'branch' => $emp->user->branch->name ?? '—',
+                'department' => $emp->department->name ?? 'غير محدد',
                 'department_id' => $emp->department_id,
-                'job_grade_id'  => $emp->job_grade_id,
-                'jobGrade'      => $emp->jobGrade->name ?? 'غير محدد',
-                'hire_date'     => $emp->hire_date ? \Carbon\Carbon::parse($emp->hire_date)->format('Y-m-d') : '—',
-                'is_active'     => (bool)($emp->user->is_active ?? true),
-                'avatar'        => 'https://ui-avatars.com/api/?name=' . urlencode($emp->user->name ?? 'U') . '&background=5b8a2d&color=fff&bold=true',
+                'job_grade_id' => $emp->job_grade_id,
+                'jobGrade' => $emp->jobGrade->name ?? 'غير محدد',
+                'hire_date' => $emp->hire_date ? \Carbon\Carbon::parse($emp->hire_date)->format('Y-m-d') : '—',
+                'is_active' => (bool) ($emp->user->is_active ?? true),
+                'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($emp->user->name ?? 'U') . '&background=5b8a2d&color=fff&bold=true',
             ];
         });
 
@@ -108,34 +108,34 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         }
 
         $stats = [
-            'total'    => (clone $baseStatQuery)->count(),
-            'active'   => (clone $baseStatQuery)->whereHas('user', fn($q) => $q->where('is_active', 1))->count(),
+            'total' => (clone $baseStatQuery)->count(),
+            'active' => (clone $baseStatQuery)->whereHas('user', fn($q) => $q->where('is_active', 1))->count(),
             'inactive' => (clone $baseStatQuery)->whereHas('user', fn($q) => $q->where('is_active', 0))->count(),
-            'new_hires'=> (clone $baseStatQuery)->where('hire_date', '>=', now()->subMonth())->count(),
+            'new_hires' => (clone $baseStatQuery)->where('hire_date', '>=', now()->subMonth())->count(),
         ];
 
         $departments = Department::select('id', 'name')->orderBy('name')->get();
-        $jobGrades   = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
+        $jobGrades = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
 
         return Inertia::render('HR/Employees/Index', [
-            'employees'   => $employees,
-            'stats'       => $stats,
+            'employees' => $employees,
+            'stats' => $stats,
             'departments' => $departments,
-            'jobGrades'   => $jobGrades,
-            'filters'     => (object) $request->only(['search', 'department_id', 'job_grade_id', 'status', 'hire_date_start', 'hire_date_end', 'sort_by', 'sort_dir']),
+            'jobGrades' => $jobGrades,
+            'filters' => (object) $request->only(['search', 'department_id', 'job_grade_id', 'status', 'hire_date_start', 'hire_date_end', 'sort_by', 'sort_dir']),
         ]);
     }
 
     public function quickUpdate(Request $request, Employee $employee)
     {
         $validated = $request->validate([
-            'is_active'     => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
             'department_id' => ['nullable', 'exists:departments,id'],
-            'job_grade_id'  => ['nullable', 'exists:job_grades,id'],
+            'job_grade_id' => ['nullable', 'exists:job_grades,id'],
         ]);
 
         if ($request->has('is_active') && $employee->user) {
-            $employee->user->update(['is_active' => (bool)$request->is_active]);
+            $employee->user->update(['is_active' => (bool) $request->is_active]);
         }
 
         $employee->update(array_filter($request->only(['department_id', 'job_grade_id']), function ($value) {
@@ -149,17 +149,17 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
     {
         $userAuth = auth()->user();
         $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
-        
+
         $departments = Department::select('id', 'name')->orderBy('name')->get();
-        $jobGrades   = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
-        
+        $jobGrades = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
+
         if (!$isAdmin) {
             $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع', 'طالب', 'ولي أمر', 'ولي امر'])->select('id', 'name')->get();
         } else {
             $roles = Role::whereNotIn('name', ['طالب', 'ولي أمر', 'ولي امر'])->select('id', 'name')->get();
         }
-        
-        $branches    = $isAdmin ? Branch::select('id', 'name')->get() : [];
+
+        $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];
 
         $managerCandidates = Employee::with(['user:id,name', 'jobGrade:id,name,level'])
             ->whereHas('user', fn($q) => $q->where('is_active', 1))
@@ -193,10 +193,10 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         }
 
         $query = Employee::with(['user.branch', 'user.role', 'department', 'jobGrade'])
-            ->where(function($q) use ($nationalId, $phone, $email) {
+            ->where(function ($q) use ($nationalId, $phone, $email) {
                 if ($nationalId) {
                     $q->orWhere('national_id', $nationalId)
-                      ->orWhereHas('user', fn($uq) => $uq->where('national_id', $nationalId));
+                        ->orWhereHas('user', fn($uq) => $uq->where('national_id', $nationalId));
                 }
                 if ($phone) {
                     $q->orWhereHas('user', fn($uq) => $uq->where('phone', $phone));
@@ -235,66 +235,70 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
     public function store(Request $request)
     {
         $isAdmin = auth()->user()->role && auth()->user()->role->name === 'مدير النظام';
-        $nationalId = $request->input('national_id');
+        $autoGenerate = filter_var($request->input('auto_generate_credentials'), FILTER_VALIDATE_BOOLEAN);
 
-        // Allow same email if national_id matches across branches
-        $emailRules = ['nullable', 'email'];
-        if ($request->filled('email')) {
-            $existingEmailUser = User::where('email', $request->email)->first();
-            if ($existingEmailUser) {
-                $existingNatId = $existingEmailUser->national_id ?? $existingEmailUser->employee?->national_id;
-                if (!$nationalId || $existingNatId !== $nationalId) {
-                    $emailRules[] = 'unique:users';
-                }
-            }
-        }
-        
-        $validated = $request->validate([
+        $rules = [
             // بيانات الحساب
-            'name'      => ['required', 'string', 'max:255'],
-            'username'  => ['required', 'string', 'max:255', 'unique:users'],
-            'password'  => ['required', 'string', 'min:8'],
-            'role_id'   => ['required', 'exists:roles,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'role_id' => ['required', 'exists:roles,id'],
             'branch_id' => [$isAdmin ? 'required' : 'nullable', $isAdmin ? 'exists:branches,id' : ''],
-            'email'     => $emailRules,
-            'phone'     => ['nullable', 'string', 'max:50'],
-            'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'email' => ['nullable', 'email', 'unique:users'],
+            'phone' => [$autoGenerate ? 'required' : 'nullable', 'string', 'max:50'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'is_active' => ['boolean'],
 
             // بيانات الموظف
             'department_id' => ['nullable', 'exists:departments,id'],
-            'job_grade_id'  => ['nullable', 'exists:job_grades,id'],
-            'manager_id'    => ['nullable', 'exists:employees,id'],
-            'hire_date'     => ['nullable', 'date'],
-            'national_id'   => ['nullable', 'string', 'max:50'],
-            'specialization'=> ['nullable', 'string', 'max:255'],
-            'job_title'     => ['nullable', 'string', 'max:255'],
-            'address'       => ['nullable', 'string'],
+            'job_grade_id' => ['nullable', 'exists:job_grades,id'],
+            'manager_id' => ['nullable', 'exists:employees,id'],
+            'hire_date' => ['nullable', 'date'],
+            'national_id' => ['nullable', 'string', 'max:50'],
+            'specialization' => ['nullable', 'string', 'max:255'],
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string'],
             'attachments.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'attachment_names' => ['nullable', 'array'],
             'attachment_names.*' => ['nullable', 'string'],
             'employee_shifts' => ['nullable', 'array'],
             'employee_shifts.*.shift_id' => ['nullable', 'exists:shifts,id'],
             'employee_shifts.*.working_days' => ['nullable', 'array'],
-        ]);
+        ];
+
+        if (!$autoGenerate) {
+            $rules['username'] = ['required', 'string', 'max:255', 'unique:users'];
+            $rules['password'] = ['required', 'string', 'min:8'];
+        }
+
+        $validated = $request->validate($rules);
+
+        // Check if phone is already used as a username if auto generating
+        if ($autoGenerate) {
+            $existingUser = User::where('username', $validated['phone'])->first();
+            if ($existingUser) {
+                return redirect()->back()->withErrors(['phone' => 'رقم الهاتف هذا مسجل كاسم مستخدم لموظف آخر. يرجى استخدام رقم هاتف مختلف أو إدخال بيانات الدخول يدوياً.'])->withInput();
+            }
+        }
 
         $avatarPath = null;
         if ($request->hasFile('avatar')) {
             $avatarPath = $request->file('avatar')->store('avatars', 'public');
         }
 
+        // إعداد بيانات الدخول
+        $username = $autoGenerate ? $validated['phone'] : $validated['username'];
+        $plainPassword = $autoGenerate ? \Illuminate\Support\Str::password(10, true, true, true, false) : $validated['password'];
+
         // إنشاء المستخدم
         $user = User::create([
-            'name'        => $validated['name'],
-            'username'    => $validated['username'],
-            'password'    => Hash::make($validated['password']),
-            'role_id'     => $validated['role_id'],
-            'branch_id'   => $isAdmin ? $validated['branch_id'] : auth()->user()->branch_id,
-            'is_active'   => $validated['is_active'] ?? true,
-            'email'       => $validated['email'] ?? null,
-            'phone'       => $validated['phone'] ?? null,
-            'national_id' => $validated['national_id'] ?? null,
-            'avatar'      => $avatarPath,
+            'name' => $validated['name'],
+            'username' => $username,
+            'password' => Hash::make($plainPassword),
+            'role_id' => $validated['role_id'],
+            'branch_id' => $isAdmin ? $validated['branch_id'] : auth()->user()->branch_id,
+            'is_active' => $validated['is_active'] ?? true,
+            'email' => $validated['email'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'avatar' => $avatarPath,
         ]);
 
         $attachmentsPaths = [];
@@ -309,16 +313,16 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
         // إنشاء الموظف المرتبط
         $employee = Employee::create([
-            'user_id'       => $user->id,
+            'user_id' => $user->id,
             'department_id' => $validated['department_id'] ?? null,
-            'job_grade_id'  => $validated['job_grade_id'] ?? null,
-            'manager_id'    => $validated['manager_id'] ?? null,
-            'hire_date'     => $validated['hire_date'] ?? null,
-            'national_id'   => $validated['national_id'] ?? null,
-            'specialization'=> $validated['specialization'] ?? null,
-            'job_title'     => $validated['job_title'] ?? null,
-            'address'       => $validated['address'] ?? null,
-            'attachments'   => !empty($attachmentsPaths) ? $attachmentsPaths : null,
+            'job_grade_id' => $validated['job_grade_id'] ?? null,
+            'manager_id' => $validated['manager_id'] ?? null,
+            'hire_date' => $validated['hire_date'] ?? null,
+            'national_id' => $validated['national_id'] ?? null,
+            'specialization' => $validated['specialization'] ?? null,
+            'job_title' => $validated['job_title'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'attachments' => !empty($attachmentsPaths) ? $attachmentsPaths : null,
         ]);
 
         if (!empty($validated['employee_shifts'])) {
@@ -335,7 +339,35 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             $employee->shifts()->sync($syncData);
         }
 
+        if ($autoGenerate) {
+            \Illuminate\Support\Facades\Session::flash('generated_credentials', [
+                'name' => $user->name,
+                'username' => $username,
+                'password' => $plainPassword
+            ]);
+        }
+
         return redirect()->route('hr.employees')->with('success', 'تم إنشاء ملف الموظف بنجاح');
+    }
+
+    public function resetPassword(Employee $employee)
+    {
+        $user = $employee->user;
+
+        // Generate new password
+        $plainPassword = \Illuminate\Support\Str::password(10, true, true, true, false);
+
+        $user->update([
+            'password' => Hash::make($plainPassword)
+        ]);
+
+        \Illuminate\Support\Facades\Session::flash('generated_credentials', [
+            'name' => $user->name,
+            'username' => $user->username,
+            'password' => $plainPassword
+        ]);
+
+        return redirect()->back()->with('success', 'تم إعادة تعيين كلمة المرور بنجاح');
     }
 
     public function downloadTemplate()
@@ -360,13 +392,13 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             echo '</style>';
             echo '</head>';
             echo '<body>';
-            
+
             echo '<table>';
-            
+
             // Row 1: Instructions
             echo '<tr><td colspan="10" class="instructions">تعليمات هامة: يرجى عدم تغيير أسماء الأعمدة. يجب كتابة (اسم القسم، اسم الدرجة الوظيفية، الصلاحية) مطابقة تماماً لما هو موجود في النظام. كلمة المرور الافتراضية ستكون 1234567 ما لم يتم تعديلها بعد الاستيراد.</td></tr>';
             echo '<tr><td colspan="10"></td></tr>';
-            
+
             // Header Row
             echo '<tr>';
             echo '<th width="150">الاسم الرباعي</th>';
@@ -420,14 +452,18 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
     public function import(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:5120'],
+            'file' => ['required', 'file', 'max:5120'],
         ]);
 
         $file = $request->file('file');
-        $extension = $file->getClientOriginalExtension();
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        if (!in_array($extension, ['csv', 'txt', 'xlsx', 'xls'])) {
+            return redirect()->back()->withErrors(['file' => 'يجب أن يكون الملف بصيغة csv, txt, xlsx, أو xls.']);
+        }
 
         $rows = [];
-        
+
         // Handle CSV
         if (in_array($extension, ['csv', 'txt'])) {
             if (($handle = fopen($file->getRealPath(), 'r')) !== false) {
@@ -444,11 +480,35 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
                 fclose($handle);
             }
         } else {
-            // Handle XLSX using SimpleXLSX (already installed)
-            if ($xlsx = \Shuchkin\SimpleXLSX::parse($file->getRealPath())) {
-                $rows = $xlsx->rows();
+            $content = file_get_contents($file->getRealPath());
+            if (stripos($content, '<html') !== false && stripos($content, '<table') !== false) {
+                // Parse HTML table
+                $dom = new \DOMDocument();
+                @$dom->loadHTML('<?xml encoding="UTF-8">' . $content);
+                $tables = $dom->getElementsByTagName('table');
+                if ($tables->length > 0) {
+                    $table = $tables->item(0);
+                    $trs = $table->getElementsByTagName('tr');
+                    foreach ($trs as $tr) {
+                        $rowData = [];
+                        $tds = $tr->childNodes;
+                        foreach ($tds as $td) {
+                            if ($td->nodeName === 'td' || $td->nodeName === 'th') {
+                                $rowData[] = trim($td->textContent);
+                            }
+                        }
+                        if (!empty($rowData)) {
+                            $rows[] = $rowData;
+                        }
+                    }
+                }
             } else {
-                return redirect()->back()->withErrors(['file' => 'فشل في قراءة ملف الإكسل.']);
+                // Handle XLSX using SimpleXLSX
+                if ($xlsx = \Shuchkin\SimpleXLSX::parse($file->getRealPath())) {
+                    $rows = $xlsx->rows();
+                } else {
+                    return redirect()->back()->withErrors(['file' => 'فشل في قراءة ملف الإكسل.']);
+                }
             }
         }
 
@@ -468,10 +528,13 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         $dataRows = array_slice($rows, $headerIndex + 1);
 
         // Pre-fetch related data mapping (to avoid N+1 queries)
-        $departments = Department::pluck('id', 'name')->mapWithKeys(function ($id, $name) { return [trim(mb_strtolower($name)) => $id]; })->toArray();
-        $jobGrades = JobGrade::pluck('id', 'name')->mapWithKeys(function ($id, $name) { return [trim(mb_strtolower($name)) => $id]; })->toArray();
-        $roles = Role::pluck('id', 'name')->mapWithKeys(function ($id, $name) { return [trim(mb_strtolower($name)) => $id]; })->toArray();
-        
+        $departments = Department::pluck('id', 'name')->mapWithKeys(function ($id, $name) {
+            return [trim(mb_strtolower($name)) => $id]; })->toArray();
+        $jobGrades = JobGrade::pluck('id', 'name')->mapWithKeys(function ($id, $name) {
+            return [trim(mb_strtolower($name)) => $id]; })->toArray();
+        $roles = Role::pluck('id', 'name')->mapWithKeys(function ($id, $name) {
+            return [trim(mb_strtolower($name)) => $id]; })->toArray();
+
         $userAuth = auth()->user();
         $isAdmin = $userAuth->role && $userAuth->role->name === 'مدير النظام';
         $branchId = $userAuth->branch_id; // Default branch for non-admins
@@ -481,8 +544,9 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
         foreach ($dataRows as $index => $row) {
             // Skip empty rows
-            if (empty(array_filter($row))) continue;
-            
+            if (empty(array_filter($row)))
+                continue;
+
             // Expected columns matching the template:
             // 0: الاسم, 1: اسم المستخدم, 2: البريد, 3: الهاتف, 4: الصلاحية, 5: القسم, 6: الدرجة, 7: المسمى الوظيفي, 8: تاريخ التعيين, 9: الهوية
             $name = trim($row[0] ?? '');
@@ -533,23 +597,23 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
                 \DB::beginTransaction();
 
                 $user = User::create([
-                    'name'      => $name,
-                    'username'  => $username,
-                    'password'  => \Hash::make('1234567'), // Default password
-                    'role_id'   => $roleId,
+                    'name' => $name,
+                    'username' => $username,
+                    'password' => \Hash::make('1234567'), // Default password
+                    'role_id' => $roleId,
                     'branch_id' => $branchId,
                     'is_active' => true,
-                    'email'     => !empty($email) ? $email : null,
-                    'phone'     => !empty($phone) ? $phone : null,
+                    'email' => !empty($email) ? $email : null,
+                    'phone' => !empty($phone) ? $phone : null,
                 ]);
 
                 Employee::create([
-                    'user_id'       => $user->id,
+                    'user_id' => $user->id,
                     'department_id' => $departmentId,
-                    'job_grade_id'  => $jobGradeId,
-                    'hire_date'     => !empty($hireDate) ? date('Y-m-d', strtotime($hireDate)) : null,
-                    'national_id'   => !empty($nationalId) ? $nationalId : null,
-                    'job_title'     => !empty($jobTitle) ? $jobTitle : null,
+                    'job_grade_id' => $jobGradeId,
+                    'hire_date' => !empty($hireDate) ? date('Y-m-d', strtotime($hireDate)) : null,
+                    'national_id' => !empty($nationalId) ? $nationalId : null,
+                    'job_title' => !empty($jobTitle) ? $jobTitle : null,
                 ]);
 
                 \DB::commit();
@@ -569,26 +633,25 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
     }
 
     public function edit(Employee $employee)
-
     {
         $employee->load(['user', 'shifts']);
-        
+
         $userAuth = auth()->user();
         $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
-        
+
         if (!$isAdmin && $employee->user->branch_id !== $userAuth->branch_id) {
             abort(403, 'لا يمكنك تعديل موظف خارج فرعك');
         }
 
         $departments = Department::select('id', 'name')->orderBy('name')->get();
-        $jobGrades   = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
-        
+        $jobGrades = JobGrade::select('id', 'name', 'level')->orderBy('level', 'desc')->get();
+
         if (!$isAdmin) {
             $roles = Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع', 'طالب', 'ولي أمر', 'ولي امر'])->select('id', 'name')->get();
         } else {
             $roles = Role::whereNotIn('name', ['طالب', 'ولي أمر', 'ولي امر'])->select('id', 'name')->get();
         }
-        $branches    = $isAdmin ? Branch::select('id', 'name')->get() : [];
+        $branches = $isAdmin ? Branch::select('id', 'name')->get() : [];
 
         $managerCandidates = Employee::with(['user:id,name', 'jobGrade:id,name,level'])
             ->where('id', '!=', $employee->id) // لا يمكن للموظف أن يكون مديراً لنفسه
@@ -613,32 +676,32 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
     {
         $userAuth = auth()->user();
         $isAdmin = $userAuth && $userAuth->role && $userAuth->role->name === 'مدير النظام';
-        
+
         if (!$isAdmin && $employee->user->branch_id !== $userAuth->branch_id) {
             abort(403, 'لا يمكنك تعديل موظف خارج فرعك');
         }
 
         $validated = $request->validate([
             // بيانات الحساب
-            'name'      => ['required', 'string', 'max:255'],
-            'username'  => ['required', 'string', 'max:255', Rule::unique('users')->ignore($employee->user_id)],
-            'password'  => ['nullable', 'string', 'min:8'],
-            'role_id'   => ['required', 'exists:roles,id'],
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($employee->user_id)],
+            'password' => ['nullable', 'string', 'min:8'],
+            'role_id' => ['required', 'exists:roles,id'],
             'branch_id' => [$isAdmin ? 'required' : 'nullable', $isAdmin ? 'exists:branches,id' : ''],
-            'email'     => ['nullable', 'email', Rule::unique('users')->ignore($employee->user_id)],
-            'phone'     => ['nullable', 'string', 'max:50'],
-            'avatar'    => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'email' => ['nullable', 'email', Rule::unique('users')->ignore($employee->user_id)],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'is_active' => ['boolean'],
 
             // بيانات الموظف
             'department_id' => ['nullable', 'exists:departments,id'],
-            'job_grade_id'  => ['nullable', 'exists:job_grades,id'],
-            'manager_id'    => ['nullable', 'exists:employees,id'],
-            'hire_date'     => ['nullable', 'date'],
-            'national_id'   => ['nullable', 'string', 'max:50'],
-            'specialization'=> ['nullable', 'string', 'max:255'],
-            'job_title'     => ['nullable', 'string', 'max:255'],
-            'address'       => ['nullable', 'string'],
+            'job_grade_id' => ['nullable', 'exists:job_grades,id'],
+            'manager_id' => ['nullable', 'exists:employees,id'],
+            'hire_date' => ['nullable', 'date'],
+            'national_id' => ['nullable', 'string', 'max:50'],
+            'specialization' => ['nullable', 'string', 'max:255'],
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string'],
             'kept_attachments' => ['nullable', 'array'],
             'attachments.*' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'attachment_names' => ['nullable', 'array'],
@@ -649,12 +712,12 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         ]);
 
         $userData = [
-            'name'      => $validated['name'],
-            'username'  => $validated['username'],
-            'role_id'   => $validated['role_id'],
+            'name' => $validated['name'],
+            'username' => $validated['username'],
+            'role_id' => $validated['role_id'],
             'is_active' => $validated['is_active'] ?? $employee->user->is_active,
-            'email'     => $validated['email'] ?? null,
-            'phone'     => $validated['phone'] ?? null,
+            'email' => $validated['email'] ?? null,
+            'phone' => $validated['phone'] ?? null,
         ];
 
         if ($isAdmin) {
@@ -688,7 +751,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         }
 
         $oldAttachments = $employee->attachments ?? [];
-        $oldPaths = array_map(function($att) {
+        $oldPaths = array_map(function ($att) {
             return is_array($att) ? ($att['path'] ?? null) : (is_string($att) ? $att : null);
         }, $oldAttachments);
         $oldPaths = array_filter($oldPaths);
@@ -709,14 +772,14 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
         $employee->update([
             'department_id' => $validated['department_id'] ?? null,
-            'job_grade_id'  => $validated['job_grade_id'] ?? null,
-            'manager_id'    => $validated['manager_id'] ?? null,
-            'hire_date'     => $validated['hire_date'] ?? null,
-            'national_id'   => $validated['national_id'] ?? null,
-            'specialization'=> $validated['specialization'] ?? null,
-            'job_title'     => $validated['job_title'] ?? null,
-            'address'       => $validated['address'] ?? null,
-            'attachments'   => !empty($attachmentsPaths) ? $attachmentsPaths : null,
+            'job_grade_id' => $validated['job_grade_id'] ?? null,
+            'manager_id' => $validated['manager_id'] ?? null,
+            'hire_date' => $validated['hire_date'] ?? null,
+            'national_id' => $validated['national_id'] ?? null,
+            'specialization' => $validated['specialization'] ?? null,
+            'job_title' => $validated['job_title'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'attachments' => !empty($attachmentsPaths) ? $attachmentsPaths : null,
         ]);
 
         if (array_key_exists('employee_shifts', $validated)) {
@@ -744,23 +807,24 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
     {
         $userAuth = auth()->user();
         $isAdmin = $userAuth->role && $userAuth->role->name === 'مدير النظام';
-        
+
         if (!$isAdmin && $employee->user->branch_id !== $userAuth->branch_id) {
             abort(403, 'لا يمكنك حذف موظف خارج فرعك');
         }
-        
+
         if ($employee->user_id === $userAuth->id) {
             abort(403, 'لا يمكنك حذف حسابك الشخصي');
         }
 
         // Delete user (cascade will delete employee)
-        if ($employee->user->avatar) Storage::disk('public')->delete($employee->user->avatar);
+        if ($employee->user->avatar)
+            Storage::disk('public')->delete($employee->user->avatar);
         if ($employee->attachments) {
             foreach ($employee->attachments as $att) {
                 Storage::disk('public')->delete($att);
             }
         }
-        
+
         $employee->user->delete();
 
         return redirect()->route('hr.employees')->with('success', 'تم حذف الموظف بنجاح');

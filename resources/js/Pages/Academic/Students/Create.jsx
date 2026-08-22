@@ -20,7 +20,9 @@ export default function StudentsCreate({ parents, academicYears, sections }) {
         transport_subscription: false,
         parent_id: '',
         relationship_type: 'أب',
+        relationship_type: 'أب',
         division_id: '',
+        auto_generate_credentials: true,
     });
 
     const [showPassword, setShowPassword] = useState(false);
@@ -118,7 +120,7 @@ export default function StudentsCreate({ parents, academicYears, sections }) {
                         
                         <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
                             <div>
-                                <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">القسم <span className="text-rose-500">*</span></label>
+                                <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">المرحلة الدراسية <span className="text-rose-500">*</span></label>
                                 <SelectInput
                                     options={sections.map(s => ({ value: s.id, label: s.name }))}
                                     value={selectedSection}
@@ -157,9 +159,18 @@ export default function StudentsCreate({ parents, academicYears, sections }) {
                         {/* Student Account Data */}
                         <div className="lg:col-span-2 space-y-6">
                             <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4 flex items-center gap-3">
-                                    <User className="text-primary-500" size={20} />
-                                    <h2 className="text-lg font-bold text-slate-900 dark:text-white">بيانات الطالب ومعلومات الدخول</h2>
+                                <div className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 px-6 py-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <User className="text-primary-500" size={20} />
+                                        <h2 className="text-lg font-bold text-slate-900 dark:text-white">بيانات الطالب ومعلومات الدخول</h2>
+                                    </div>
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <span className="text-sm font-bold text-slate-600 dark:text-slate-300">توليد بيانات الدخول آلياً (رقم أكاديمي عشوائي)</span>
+                                        <div className="relative">
+                                            <input type="checkbox" className="sr-only peer" checked={data.auto_generate_credentials} onChange={e => setData('auto_generate_credentials', e.target.checked)} />
+                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-primary-500"></div>
+                                        </div>
+                                    </label>
                                 </div>
                                 
                                 <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -173,31 +184,35 @@ export default function StudentsCreate({ parents, academicYears, sections }) {
                                     </div>
 
                                     {/* Username */}
-                                    <div>
-                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم المستخدم <span className="text-rose-500">*</span></label>
-                                        <div className="relative">
-                                            <User size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input type="text"
-                                                className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.username ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-400'} rounded-2xl pr-11 pl-4 py-3 text-sm outline-none transition-all`}
-                                                value={data.username} onChange={e => setData('username', e.target.value)} dir="ltr" />
-                                        </div>
-                                        {errors.username && <p className="text-xs text-rose-500 mt-1.5">{errors.username}</p>}
-                                    </div>
+                                    {!data.auto_generate_credentials && (
+                                        <>
+                                            <div>
+                                                <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">اسم المستخدم <span className="text-rose-500">*</span></label>
+                                                <div className="relative">
+                                                    <User size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                    <input type="text"
+                                                        className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.username ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-400'} rounded-2xl pr-11 pl-4 py-3 text-sm outline-none transition-all`}
+                                                        value={data.username} onChange={e => setData('username', e.target.value)} dir="ltr" />
+                                                </div>
+                                                {errors.username && <p className="text-xs text-rose-500 mt-1.5">{errors.username}</p>}
+                                            </div>
 
-                                    {/* Password */}
-                                    <div>
-                                        <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">كلمة المرور <span className="text-rose-500">*</span></label>
-                                        <div className="relative">
-                                            <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input type={showPassword ? "text" : "password"}
-                                                className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.password ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-400'} rounded-2xl pr-11 pl-12 py-3 text-sm outline-none transition-all`}
-                                                value={data.password} onChange={e => setData('password', e.target.value)} dir="ltr" />
-                                            <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors">
-                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                            </button>
-                                        </div>
-                                        {errors.password && <p className="text-xs text-rose-500 mt-1.5">{errors.password}</p>}
-                                    </div>
+                                            {/* Password */}
+                                            <div>
+                                                <label className="block text-sm font-bold text-dark-900 dark:text-white mb-2">كلمة المرور <span className="text-rose-500">*</span></label>
+                                                <div className="relative">
+                                                    <Lock size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                                    <input type={showPassword ? "text" : "password"}
+                                                        className={`w-full bg-slate-50 dark:bg-slate-900 border ${errors.password ? 'border-rose-300 focus:border-rose-500' : 'border-slate-200 dark:border-slate-700 focus:border-primary-400'} rounded-2xl pr-11 pl-12 py-3 text-sm outline-none transition-all`}
+                                                        value={data.password} onChange={e => setData('password', e.target.value)} dir="ltr" />
+                                                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary-600 transition-colors">
+                                                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                                    </button>
+                                                </div>
+                                                {errors.password && <p className="text-xs text-rose-500 mt-1.5">{errors.password}</p>}
+                                            </div>
+                                        </>
+                                    )}
 
                                     {/* Phone & National ID */}
                                     <div>
