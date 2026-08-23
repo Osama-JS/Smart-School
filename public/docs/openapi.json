@@ -11,8 +11,8 @@
   },
   "servers": [
     {
-      "url": "/api",
-      "description": "الخادم الحالي (Relative Path)"
+      "url": "/Smart-School/public/api",
+      "description": "الخادم الحالي (XAMPP localhost)"
     },
     {
       "url": "http://127.0.0.1:8000/api",
@@ -818,6 +818,60 @@
         }
       }
     },
+    "/mobile/features/student/library": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "المكتبة الرقمية للطالب (Student Library)",
+        "description": "استعراض المكتبة الرقمية والملفات التعليمية الخاصة بالصف الدراسي للطالب، مع إمكانية التصفية (الفلترة) برقم المادة `subject_id` أو بنوع التصنيف `category` (مثلاً: pdf، فيديو).\n\n**الترابط مع Flutter:** شاشة `LibraryScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "subject_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "category", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة الملفات في المكتبة" }
+        }
+      }
+    },
+    "/mobile/features/student/discipline": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "النظام السلوكي للطالب (Student Discipline)",
+        "description": "جلب قائمة المخالفات والتعهدات السلوكية المقيدة على الطالب.\n\n**الترابط مع Flutter:** شاشة `MyDisciplineScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة المخالفات والتعهدات" }
+        }
+      }
+    },
+    "/mobile/features/student/pledges/{pledge}/sign": {
+      "post": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "توقيع الطالب على تعهد (Student Sign Pledge)",
+        "description": "يتيح للطالب توقيع التعهد السلوكي إلكترونياً والموافقة عليه.\n\n**الترابط مع Flutter:** شاشة `MyDisciplineScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "pledge", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم التوقيع بنجاح" },
+          "400": { "description": "تم توقيع هذا التعهد مسبقاً" },
+          "403": { "description": "غير مصرح لك بتوقيع هذا التعهد" },
+          "404": { "description": "التعهد غير موجود" }
+        }
+      }
+    },
+    "/mobile/features/student/achievements": {
+      "get": {
+        "tags": ["05. بوابة الطالب (Student Portal)"],
+        "summary": "الإنجازات الأكاديمية والأوسمة للطالب (Student Achievements)",
+        "description": "جلب قائمة الأوسمة والنقاط التي حققها الطالب (Gamification).\n\n**الترابط مع Flutter:** شاشة `MyAchievementsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة الإنجازات" }
+        }
+      }
+    },
     "/mobile/features/parent/children": {
       "get": {
         "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
@@ -906,6 +960,150 @@
         "responses": { "200": { "description": "قائمة الواجبات المنزلية" } }
       }
     },
+    "/mobile/features/parent/children/{student_id}/medical-record": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "الملف الطبي لابن محدد (Child Medical Record)",
+        "description": "جلب الملف الطبي الشامل لابن محدد بما في ذلك الحساسية والأمراض المزمنة ومؤشر كتلة الجسم.\n\n**الترابط مع Flutter:** شاشة `MedicalRecordScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "تفاصيل الملف الطبي" } }
+      },
+      "put": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "تحديث الملف الطبي والإقرار (Update Medical Record)",
+        "description": "تحديث بيانات الملف الطبي للطالب (مثل الحساسية، الموافقة الإلكترونية على الأدوية، إلخ).\n\n**الترابط مع Flutter:** شاشة `UpdateMedicalRecordScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "height": { "type": "number", "example": 140 },
+                  "weight": { "type": "number", "example": 35.5 },
+                  "blood_type": { "type": "string", "example": "O+" },
+                  "allergies": { "type": "string", "example": "حساسية من البنسلين والفول السوداني" },
+                  "chronic_diseases": { "type": "string", "example": "الربو" },
+                  "regular_medications": { "type": "string", "example": "بخاخ للربو عند اللزوم" },
+                  "past_surgeries": { "type": "string", "example": "عملية لوزتين" },
+                  "consent_given": { "type": "boolean", "example": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "تم التحديث بنجاح" } }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/clinic-visits": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "سجل زيارات العيادة لابن محدد (Child Clinic Visits)",
+        "description": "جلب السجل التاريخي لزيارات العيادة المدرسية لابن محدد.\n\n**الترابط مع Flutter:** شاشة `ClinicVisitsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "قائمة زيارات العيادة" } }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/discipline": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "النظام السلوكي للابن (Child Discipline)",
+        "description": "جلب قائمة المخالفات والتعهدات السلوكية المقيدة على ابن محدد.\n\n**الترابط مع Flutter:** شاشة `ChildDisciplineScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة المخالفات والتعهدات" }
+        }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/pledges/{pledge}/sign": {
+      "post": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "توقيع ولي الأمر على تعهد (Parent Sign Pledge)",
+        "description": "يتيح لولي الأمر توقيع التعهد السلوكي إلكترونياً والموافقة عليه نيابة عن ابنه.\n\n**الترابط مع Flutter:** شاشة `ChildDisciplineScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "pledge", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم التوقيع بنجاح" },
+          "400": { "description": "تم توقيع هذا التعهد مسبقاً" },
+          "403": { "description": "غير مصرح لك بتوقيع هذا التعهد" },
+          "404": { "description": "التعهد غير موجود" }
+        }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/achievements": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "الإنجازات الأكاديمية والأوسمة للابن (Child Achievements)",
+        "description": "جلب قائمة الأوسمة والنقاط التي حققها ابن محدد (Gamification).\n\n**الترابط مع Flutter:** شاشة `ChildAchievementsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة الإنجازات" }
+        }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/summons": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "طلبات استدعاء ولي الأمر (Parent Summons)",
+        "description": "استعراض طلبات الاستدعاء والمقابلات الموجهة لولي الأمر بخصوص ابنه، متضمنةً السبب وتفاصيل المخالفة المرتبطة إن وُجدت.\n\n**الترابط مع Flutter:** شاشة `ParentSummonsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة طلبات الاستدعاء" }
+        }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/visits": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "سجل زيارات ولي الأمر (Parent Visits)",
+        "description": "استعراض سجل زيارات ولي الأمر للمدرسة بخصوص هذا الابن، متضمنةً وقت وتاريخ الزيارة والموظف الذي تم مقابلته ونتائج الزيارة والملاحظات.\n\n**الترابط مع Flutter:** شاشة `ParentVisitsScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "سجل زيارات ولي الأمر" }
+        }
+      }
+    },
+    "/mobile/features/parent/children/{student_id}/library": {
+      "get": {
+        "tags": ["06. بوابة ولي الأمر (Parent Portal)"],
+        "summary": "المكتبة الرقمية للابن (Child Library)",
+        "description": "استعراض المكتبة الرقمية والملفات التعليمية الخاصة بالصف الدراسي للابن، مع إمكانية التصفية برقم المادة أو التصنيف (pdf، فيديو)، وذلك ليتمكن ولي الأمر من مساعدة ابنه.\n\n**الترابط مع Flutter:** شاشة `ChildLibraryScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "student_id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "subject_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "category", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة الملفات في المكتبة" }
+        }
+      }
+    },
     "/mobile/features/my-reports/templates": {
       "get": {
         "tags": ["07. التقارير الميدانية والدورية (Field Reports)"],
@@ -982,6 +1180,152 @@
         ],
         "responses": {
           "200": { "description": "قائمة التقارير المرفوعة" }
+        }
+      }
+    },
+    "/mobile/features/news": {
+      "get": {
+        "tags": ["09. الأخبار التفاعلية للجميع (News & Announcements)"],
+        "summary": "حائط أخبار وإعلانات المدرسة (News Feed)",
+        "description": "جلب قائمة الأخبار والإعلانات المدرسية مع عدد الإعجابات والتعليقات لكل خبر. **(متاح لجميع أنواع المستخدمين)**.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "category", "in": "query", "required": false, "schema": { "type": "string" }, "description": "فلترة بنوع الخبر (مثال: عاجل، عام)" },
+          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "قائمة الأخبار" }
+        }
+      }
+    },
+    "/mobile/features/news/{id}": {
+      "get": {
+        "tags": ["09. الأخبار التفاعلية للجميع (News & Announcements)"],
+        "summary": "تفاصيل الخبر والتعليقات (News Details & Comments)",
+        "description": "جلب تفاصيل خبر معين مع جميع التعليقات الخاصة به، وتسجيل قراءة للخبر (View).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تفاصيل الخبر مع التعليقات" }
+        }
+      }
+    },
+    "/mobile/features/news/{id}/like": {
+      "post": {
+        "tags": ["09. الأخبار التفاعلية للجميع (News & Announcements)"],
+        "summary": "الإعجاب / إلغاء الإعجاب بالخبر (Toggle Like)",
+        "description": "وضع إعجاب على الخبر أو إلغاؤه (Toggle).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تمت العملية بنجاح، وترجع عدد الإعجابات الجديد" }
+        }
+      }
+    },
+    "/mobile/features/news/{id}/comment": {
+      "post": {
+        "tags": ["09. الأخبار التفاعلية للجميع (News & Announcements)"],
+        "summary": "إضافة تعليق على الخبر (Add Comment)",
+        "description": "كتابة تعليق جديد على خبر.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string", "example": "شكراً جزيلاً لجهود إدارة المدرسة!" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تم إضافة التعليق ويرجع بيانات التعليق الجديد" }
+        }
+      }
+    },
+    "/mobile/features/news/{id}/comment/{commentId}": {
+      "delete": {
+        "tags": ["09. الأخبار التفاعلية للجميع (News & Announcements)"],
+        "summary": "حذف تعليق (Delete Comment)",
+        "description": "حذف تعليق معين (يجب أن يكون المستخدم هو صاحب التعليق).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "commentId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم الحذف بنجاح" }
+        }
+      }
+    },
+    "/mobile/features/quick-tasks": {
+      "get": {
+        "tags": ["10. المفكرة الشخصية والمهام السريعة (Quick Tasks)"],
+        "summary": "جلب المهام السريعة (Get Quick Tasks)",
+        "description": "استعراض المهام الشخصية الخاصة بالمستخدم الحالي. **(متاح لجميع أنواع المستخدمين)**.",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "قائمة المهام السريعة" }
+        }
+      },
+      "post": {
+        "tags": ["10. المفكرة الشخصية والمهام السريعة (Quick Tasks)"],
+        "summary": "إضافة مهمة سريعة (Add Quick Task)",
+        "description": "إضافة مهمة شخصية جديدة.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": { "type": "string", "example": "تجهيز أوراق العمل غداً" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "تم إضافة المهمة" }
+        }
+      }
+    },
+    "/mobile/features/quick-tasks/{id}/toggle": {
+      "patch": {
+        "tags": ["10. المفكرة الشخصية والمهام السريعة (Quick Tasks)"],
+        "summary": "تغيير حالة المهمة (Toggle Task Status)",
+        "description": "تبديل حالة المهمة بين 'غير مكتملة' (todo) و 'مكتملة' (completed).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم تحديث حالة المهمة" }
+        }
+      }
+    },
+    "/mobile/features/quick-tasks/{id}": {
+      "delete": {
+        "tags": ["10. المفكرة الشخصية والمهام السريعة (Quick Tasks)"],
+        "summary": "حذف المهمة السريعة (Delete Quick Task)",
+        "description": "حذف المهمة الخاصة بالمستخدم.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم حذف المهمة" }
         }
       }
     },
@@ -1304,6 +1648,55 @@
         },
         "responses": {
           "200": { "description": "تم تأكيد التوقيع والاستلام بنجاح" }
+        }
+      }
+    },
+    "/mobile/features/teacher/library": {
+      "get": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "جلب ملفات المكتبة للمعلم (Teacher Library Items)",
+        "description": "جلب الملفات والفيديوهات التعليمية التي قام المعلم برفعها للمكتبة الرقمية.\n\n**الترابط مع Flutter:** شاشة `TeacherLibraryScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "subject_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "grade_id", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "category", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "تم جلب البيانات بنجاح" }
+        }
+      },
+      "post": {
+        "tags": ["03. خدمات المعلم والتحضير (Teacher & Class Attendance)"],
+        "summary": "إضافة مورد تعليمي للمكتبة (Add Library Item)",
+        "description": "رفع ملف جديد، فيديو، أو رابط خارجي وإضافته للمكتبة الرقمية.\n\n**الترابط مع Flutter:** شاشة `UploadLibraryItemScreen`.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string", "example": "ملخص الوحدة الأولى" },
+                  "grade_id": { "type": "integer", "example": 1 },
+                  "subject_id": { "type": "integer", "example": 2 },
+                  "item_type": { "type": "string", "example": "pdf" },
+                  "category": { "type": "string", "example": "document" },
+                  "target_audience": { "type": "string", "example": "students" },
+                  "file": { "type": "string", "format": "binary" },
+                  "external_url": { "type": "string" },
+                  "thumbnail": { "type": "string", "format": "binary" }
+                },
+                "required": ["title", "grade_id", "subject_id", "item_type", "target_audience"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "تمت إضافة المورد التعليمي بنجاح" },
+          "422": { "description": "خطأ في البيانات المدخلة" }
         }
       }
     }

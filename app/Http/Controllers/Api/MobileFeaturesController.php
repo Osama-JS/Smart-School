@@ -1052,5 +1052,117 @@ class MobileFeaturesController extends Controller
         Storage::disk('public')->put($fileName, $decoded);
         return $fileName;
     }
+
+    // ── Teacher Digital Library (View and Upload Only) ──
+
+    public function getTeacherLibraryItems(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Only allow teachers or admins
+        if (!$user->role || !in_array($user->role->name, ['معلم', 'مدير النظام', 'مشرف أكاديمي', 'مدير عام'])) {
+             return response()->json(['message' => 'Unauthorized access'], 403);
+        }
+
+        $query = \App\Models\LibraryItem::with(['subject', 'grade', 'uploader'])
+            ->where('uploader_id', $user->id);
+
+        if ($request->has('subject_id')) {
+            $query->where('subject_id', $request->input('subject_id'));
+        }
+
+        if ($request->has('grade_id')) {
+            $query->where('grade_id', $request->input('grade_id'));
+        }
+
+        if ($request->has('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        $items = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        $items->getCollection()->transform(function ($item) {
+            return [
+                'id' => $item->id,
+                'title' => $item->title,
+                'category' => $item->category,
+                'item_type' => $item->item_type,
+                'file_url' => $item->file_url,
+                'thumbnail_url' => $item->thumbnail_url,
+                'subject_name' => $item->subject?->name ?? 'عام',
+                'grade_name' => $item->grade?->name ?? 'عام',
+                'views_count' => $item->views_count,
+                'downloads_count' => $item->downloads_count,
+                'created_at_formatted' => $item->created_at->format('Y-m-d'),
+                'average_rating' => $item->average_rating,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $items
+        ]);
+    }
+
+    public function storeLibraryItem(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Only allow teachers or admins to upload
+        if (!$user->role || !in_array($user->role->name, ['معلم', 'مدير النظام', 'مشرف أكاديمي', 'مدير عام'])) {
+             return response()->json(['message' => 'Unauthorized access'], 403);
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'grade_id' => 'required|exists:grades,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'file' => 'required_without:external_url|nullable|file|max:20480', // 20MB max
+            'external_url' => 'required_without:file|nullable|url|max:1000',
+            'item_type' => 'required|string',
+            'category' => 'nullable|string',
+            'target_audience' => 'required|string|in:all,students,teachers',
+            'thumbnail' => 'nullable|image|max:5120', // 5MB max
+        ]);
+
+        $path = null;
+        if ($request->hasFile('file')) {
+            $path = $request->file('file')->store('library_items', 'public');
+        }
+        
+        $thumbnailPath = null;
+        if ($request->hasFile('thumbnail')) {
+            $thumbnailPath = $request->file('thumbnail')->store('library_thumbnails', 'public');
+        }
+
+        $item = \App\Models\LibraryItem::create([
+            'title' => $request->title,
+            'grade_id' => $request->grade_id,
+            'subject_id' => $request->subject_id,
+            'item_type' => $request->item_type,
+            'category' => $request->category,
+            'target_audience' => $request->target_audience,
+            'uploader_id' => $user->id,
+            'file_path' => $path,
+            'external_url' => $request->external_url,
+            'thumbnail_path' => $thumbnailPath,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إضافة المورد التعليمي للمكتبة بنجاح.',
+            'data' => [
+                'id' => $item->id,
+                'title' => $item->title,
+                'file_url' => $item->file_url,
+            ]
+        ]);
+    }
 }
 

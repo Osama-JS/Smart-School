@@ -8,7 +8,13 @@ use App\Models\MonthlyGrade;
 use App\Models\AttendanceLog;
 use App\Models\ClassAttendance;
 use App\Models\Enrollment;
-
+use App\Models\StudentViolation;
+use App\Models\StudentPledge;
+use App\Models\StudentAchievement;
+use App\Models\ParentSummon;
+use App\Models\ParentVisit;
+use App\Models\LibraryItem;
+use Illuminate\Support\Carbon;
 class ParentAppController extends Controller
 {
     /**
@@ -383,7 +389,7 @@ class ParentAppController extends Controller
     public function getChildTimetable(Request $request, $student_id)
     {
         $user = $request->user();
-        if (!$user->parentRecord) {
+        if (!$user || $user->role->name !== 'ولي أمر') {
             return response()->json(['message' => 'User is not a parent'], 403);
         }
 
@@ -453,7 +459,7 @@ class ParentAppController extends Controller
     public function getChildExamSchedules(Request $request, $student_id)
     {
         $user = $request->user();
-        if (!$user->parentRecord) {
+        if (!$user || $user->role->name !== 'ولي أمر') {
             return response()->json(['message' => 'User is not a parent'], 403);
         }
 
@@ -490,7 +496,7 @@ class ParentAppController extends Controller
     public function getChildHomework(Request $request, $student_id)
     {
         $user = $request->user();
-        if (!$user->parentRecord) {
+        if (!$user || $user->role->name !== 'ولي أمر') {
             return response()->json(['message' => 'User is not a parent'], 403);
         }
 
@@ -520,4 +526,431 @@ class ParentAppController extends Controller
         ]);
     }
 
+    /**
+     * Get the student's medical record (Allergies, Chronic Diseases, etc.)
+     */
+    public function getChildMedicalRecord(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user || $user->role->name !== 'ولي أمر') {
+            return response()->json(['message' => 'User is not a parent'], 403);
+        }
+
+        // 1. Security Check: Ensure the child belongs to this parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized access to child data'], 403);
+        }
+
+        $medicalRecord = \App\Models\StudentMedicalRecord::where('student_id', $student_id)->first();
+
+        if (!$medicalRecord) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'لا يوجد ملف طبي مسجل لهذا الطالب',
+                'data' => null
+            ]);
+        }
+
+        // Add BMI dynamically to the response (accessing the accessor)
+        $medicalRecord->bmi = $medicalRecord->bmi;
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $medicalRecord
+        ]);
+    }
+
+    /**
+     * Get the student's clinic visits log
+     */
+    public function getChildClinicVisits(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user || $user->role->name !== 'ولي أمر') {
+            return response()->json(['message' => 'User is not a parent'], 403);
+        }
+
+        // 1. Security Check: Ensure the child belongs to this parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized access to child data'], 403);
+        }
+
+        $visits = \App\Models\ClinicVisit::with('nurse:id,name')
+            ->where('student_id', $student_id)
+            ->orderBy('visited_at', 'desc')
+            ->get()
+            ->map(function ($visit) {
+                return [
+                    'id' => $visit->id,
+                    'visited_at' => clone $visit->visited_at,
+                    'formatted_date' => $visit->visited_at ? $visit->visited_at->format('Y-m-d g:i A') : null,
+                    'symptoms' => $visit->symptoms,
+                    'action_taken' => $visit->action_taken,
+                    'status' => $visit->status,
+                    'nurse_name' => $visit->nurse->name ?? 'غير محدد',
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $visits
+        ]);
+    }
+
+    /**
+     * Update the student's medical record (Allergies, Consent, etc.)
+     */
+    public function updateChildMedicalRecord(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify child belongs to parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // 2. Validate the incoming data
+        $validated = $request->validate([
+            'height' => 'nullable|numeric|min:30|max:250',
+            'weight' => 'nullable|numeric|min:10|max:200',
+            'blood_type' => 'nullable|string|max:10',
+            'allergies' => 'nullable|string',
+            'chronic_diseases' => 'nullable|string',
+            'regular_medications' => 'nullable|string',
+            'past_surgeries' => 'nullable|string',
+            'consent_given' => 'boolean',
+        ]);
+
+        // 3. Update or Create the medical record
+        $medicalRecord = \App\Models\StudentMedicalRecord::updateOrCreate(
+            ['student_id' => $student_id],
+            $validated
+        );
+
+        // Add BMI dynamically to the response (accessing the accessor)
+        $medicalRecord->bmi = $medicalRecord->bmi;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم تحديث الملف الطبي بنجاح',
+            'data' => $medicalRecord
+        ]);
+    }
+
+    /**
+     * Get the child's discipline records (Violations & Pledges).
+     */
+    public function getChildDiscipline(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify child belongs to parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Get Violations
+        $violations = StudentViolation::with(['violationType', 'supervisor'])
+            ->where('student_id', $student_id)
+            ->orderBy('violation_date', 'desc')
+            ->get()
+            ->map(function ($violation) {
+                return [
+                    'id' => $violation->id,
+                    'type' => $violation->violationType ? $violation->violationType->name : 'مخالفة',
+                    'degree' => $violation->violationType ? $violation->violationType->degree : null,
+                    'date' => Carbon::parse($violation->violation_date)->format('Y-m-d'),
+                    'supervisor' => $violation->supervisor ? $violation->supervisor->name : null,
+                    'details' => $violation->details,
+                    'action_taken' => $violation->action_taken,
+                    'status' => $violation->status,
+                ];
+            });
+
+        // Get Pledges
+        $pledges = StudentPledge::with('violation.violationType')
+            ->where('student_id', $student_id)
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function ($pledge) {
+                return [
+                    'id' => $pledge->id,
+                    'violation_type' => $pledge->violation && $pledge->violation->violationType ? $pledge->violation->violationType->name : null,
+                    'pledge_text' => $pledge->pledge_text,
+                    'date' => Carbon::parse($pledge->date)->format('Y-m-d'),
+                    'is_signed_by_student' => (bool)$pledge->is_signed_by_student,
+                    'is_signed_by_parent' => (bool)$pledge->is_signed_by_parent,
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'violations' => $violations,
+                'pledges' => $pledges,
+                'stats' => [
+                    'totalViolations' => $violations->count(),
+                    'pendingPledges' => $pledges->where('is_signed_by_parent', false)->count(),
+                    'resolvedViolations' => $violations->where('status', 'resolved')->count(),
+                ],
+            ]
+        ]);
+    }
+
+    /**
+     * Parent signs a child's pledge.
+     */
+    public function signChildPledge(Request $request, $student_id, $pledgeId)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify child belongs to parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $pledge = StudentPledge::find($pledgeId);
+
+        if (!$pledge) {
+            return response()->json(['message' => 'التعهد غير موجود'], 404);
+        }
+
+        if ($pledge->student_id != $student_id) {
+            return response()->json(['message' => 'التعهد لا يخص هذا الطالب'], 403);
+        }
+
+        if ($pledge->is_signed_by_parent) {
+            return response()->json(['message' => 'تم توقيع هذا التعهد مسبقاً'], 400);
+        }
+
+        $pledge->update([
+            'is_signed_by_parent' => true,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم توقيع التعهد بنجاح'
+        ]);
+    }
+
+    /**
+     * Get the child's achievements.
+     */
+    public function getChildAchievements(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify child belongs to parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $achievements = StudentAchievement::with(['type', 'awardedBy'])
+            ->where('student_id', $student_id)
+            ->where('status', 'approved')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($achievement) {
+                return [
+                    'id' => $achievement->id,
+                    'title' => $achievement->type ? $achievement->type->name : 'إنجاز',
+                    'category' => $achievement->type ? $achievement->type->category : 'عام',
+                    'points' => (int) $achievement->points,
+                    'date' => Carbon::parse($achievement->created_at)->format('Y-m-d'),
+                    'awarded_by' => $achievement->awardedBy ? $achievement->awardedBy->name : 'النظام',
+                    'description' => $achievement->description,
+                ];
+            });
+
+        // Group achievements by category
+        $groupedAchievements = $achievements->groupBy('category');
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'achievements' => $achievements,
+                'grouped_achievements' => $groupedAchievements,
+                'stats' => [
+                    'totalPoints' => $achievements->sum('points'),
+                    'totalCount' => $achievements->count(),
+                ],
+            ]
+        ]);
+    }
+
+    /**
+     * Get the parent summons for a specific child.
+     */
+    public function getChildSummons(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify child belongs to parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $summons = ParentSummon::with(['violation.violationType'])
+            ->where('student_id', $student_id)
+            ->orderBy('summon_date', 'desc')
+            ->get()
+            ->map(function ($summon) {
+                return [
+                    'id' => $summon->id,
+                    'summon_date' => Carbon::parse($summon->summon_date)->format('Y-m-d'),
+                    'reason' => $summon->reason,
+                    'status' => $summon->status,
+                    'notes' => $summon->notes,
+                    'violation' => $summon->violation ? [
+                        'id' => $summon->violation->id,
+                        'name' => $summon->violation->violationType ? $summon->violation->violationType->name : 'مخالفة',
+                        'date' => Carbon::parse($summon->violation->violation_date)->format('Y-m-d'),
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $summons
+        ]);
+    }
+
+    /**
+     * Get the digital library items for a specific child's grade.
+     */
+    public function getChildLibraryItems(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify child belongs to parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $enrollment = Enrollment::with('division')->where('student_id', $student_id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$enrollment || !$enrollment->division) {
+            return response()->json(['message' => 'No active enrollment or division found'], 404);
+        }
+
+        $gradeId = $enrollment->division->grade_id;
+
+        $query = LibraryItem::with(['subject', 'uploader'])
+            ->where(function($q) use ($gradeId) {
+                // Show items specifically for their grade, or items available for all grades (grade_id = null)
+                $q->where('grade_id', $gradeId)
+                  ->orWhereNull('grade_id');
+            })
+            ->where(function($q) {
+                // Target audience can be null, 'all', 'students', or 'parents'
+                $q->whereNull('target_audience')
+                  ->orWhere('target_audience', 'all')
+                  ->orWhere('target_audience', 'students')
+                  ->orWhere('target_audience', 'parents');
+            });
+
+        // Filter by subject if requested
+        if ($request->has('subject_id')) {
+            $query->where('subject_id', $request->input('subject_id'));
+        }
+
+        // Filter by category (e.g., video, document)
+        if ($request->has('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        $items = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        // Transform pagination items cleanly
+        $items->getCollection()->transform(function ($item) {
+            return [
+                'id' => $item->id,
+                'title' => $item->title,
+                'category' => $item->category,
+                'item_type' => $item->item_type,
+                'file_url' => $item->file_url,
+                'thumbnail_url' => $item->thumbnail_url,
+                'subject_name' => $item->subject?->name ?? 'عام',
+                'uploader_name' => $item->uploader?->name ?? 'إدارة المدرسة',
+                'views_count' => $item->views_count,
+                'created_at_formatted' => $item->created_at->format('Y-m-d'),
+                'description' => $item->description,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $items
+        ]);
+    }
+
+    /**
+     * Get the parent's visits for a specific child.
+     */
+    public function getChildVisits(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify child belongs to parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $visits = ParentVisit::with(['employee:id,name'])
+            ->where('student_id', $student_id)
+            ->orderBy('visit_date', 'desc')
+            ->orderBy('visit_time', 'desc')
+            ->get()
+            ->map(function ($visit) {
+                return [
+                    'id' => $visit->id,
+                    'visit_date' => Carbon::parse($visit->visit_date)->format('Y-m-d'),
+                    'visit_time' => Carbon::parse($visit->visit_time)->format('H:i'),
+                    'visitor_name' => $visit->visitor_name,
+                    'visitor_relation' => $visit->visitor_relation,
+                    'purpose_category' => $visit->purpose_category,
+                    'purpose' => $visit->purpose,
+                    'status' => $visit->status,
+                    'notes' => $visit->notes,
+                    'met_with_employee' => $visit->employee ? $visit->employee->name : null,
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $visits
+        ]);
+    }
 }

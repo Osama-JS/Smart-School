@@ -8,7 +8,10 @@ use App\Models\MonthlyGrade;
 use App\Models\AttendanceLog;
 use App\Models\ClassAttendance;
 use App\Models\Enrollment;
-
+use App\Models\StudentViolation;
+use App\Models\StudentPledge;
+use App\Models\StudentAchievement;
+use Illuminate\Support\Carbon;
 class StudentAppController extends Controller
 {
     /**
@@ -454,6 +457,214 @@ class StudentAppController extends Controller
         return response()->json([
             'status' => 'success',
             'data' => $homework
+        ]);
+    }
+
+    /**
+     * Get the authenticated student's digital library items.
+     */
+    public function getLibraryItems(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->student) {
+            return response()->json(['message' => 'User is not a student'], 403);
+        }
+
+        $enrollment = Enrollment::with('division')->where('student_id', $user->student->id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$enrollment || !$enrollment->division) {
+            return response()->json(['message' => 'No active enrollment or division found'], 404);
+        }
+
+        $gradeId = $enrollment->division->grade_id;
+
+        $query = \App\Models\LibraryItem::with(['subject', 'uploader'])
+            ->where(function($q) use ($gradeId) {
+                // Show items specifically for their grade, or items available for all grades (grade_id = null)
+                $q->where('grade_id', $gradeId)
+                  ->orWhereNull('grade_id');
+            })
+            ->where(function($q) {
+                // Target audience can be null, 'all', or 'students'
+                $q->whereNull('target_audience')
+                  ->orWhere('target_audience', 'all')
+                  ->orWhere('target_audience', 'students');
+            });
+
+        // Filter by subject if requested
+        if ($request->has('subject_id')) {
+            $query->where('subject_id', $request->input('subject_id'));
+        }
+
+        // Filter by category (e.g., video, document)
+        if ($request->has('category')) {
+            $query->where('category', $request->input('category'));
+        }
+
+        $items = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        // We can use transform to format the pagination items cleanly
+        $items->getCollection()->transform(function ($item) {
+            return [
+                'id' => $item->id,
+                'title' => $item->title,
+                'category' => $item->category,
+                'item_type' => $item->item_type,
+                'file_url' => $item->file_url,
+                'thumbnail_url' => $item->thumbnail_url,
+                'subject_name' => $item->subject?->name ?? 'عام',
+                'uploader_name' => $item->uploader?->name ?? 'إدارة المدرسة',
+                'views_count' => $item->views_count,
+                'created_at_formatted' => $item->created_at->format('Y-m-d'),
+                'is_bookmarked' => $item->is_bookmarked_by_user,
+                'average_rating' => $item->average_rating,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $items
+        ]);
+    }
+
+    /**
+     * Get the authenticated student's discipline records (Violations & Pledges).
+     */
+    public function getDiscipline(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->student) {
+            return response()->json(['message' => 'User is not a student'], 403);
+        }
+
+        $studentId = $user->student->id;
+
+        // Get Violations
+        $violations = StudentViolation::with(['violationType', 'supervisor'])
+            ->where('student_id', $studentId)
+            ->orderBy('violation_date', 'desc')
+            ->get()
+            ->map(function ($violation) {
+                return [
+                    'id' => $violation->id,
+                    'type' => $violation->violationType ? $violation->violationType->name : 'مخالفة',
+                    'degree' => $violation->violationType ? $violation->violationType->degree : null,
+                    'date' => Carbon::parse($violation->violation_date)->format('Y-m-d'),
+                    'supervisor' => $violation->supervisor ? $violation->supervisor->name : null,
+                    'details' => $violation->details,
+                    'action_taken' => $violation->action_taken,
+                    'status' => $violation->status,
+                ];
+            });
+
+        // Get Pledges
+        $pledges = StudentPledge::with('violation.violationType')
+            ->where('student_id', $studentId)
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function ($pledge) {
+                return [
+                    'id' => $pledge->id,
+                    'violation_type' => $pledge->violation && $pledge->violation->violationType ? $pledge->violation->violationType->name : null,
+                    'pledge_text' => $pledge->pledge_text,
+                    'date' => Carbon::parse($pledge->date)->format('Y-m-d'),
+                    'is_signed_by_student' => (bool)$pledge->is_signed_by_student,
+                    'is_signed_by_parent' => (bool)$pledge->is_signed_by_parent,
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'violations' => $violations,
+                'pledges' => $pledges,
+                'stats' => [
+                    'totalViolations' => $violations->count(),
+                    'pendingPledges' => $pledges->where('is_signed_by_student', false)->count(),
+                    'resolvedViolations' => $violations->where('status', 'resolved')->count(),
+                ],
+            ]
+        ]);
+    }
+
+    /**
+     * Student signs a pledge.
+     */
+    public function signPledge(Request $request, $pledgeId)
+    {
+        $user = $request->user();
+        if (!$user->student) {
+            return response()->json(['message' => 'User is not a student'], 403);
+        }
+
+        $pledge = StudentPledge::find($pledgeId);
+
+        if (!$pledge) {
+            return response()->json(['message' => 'التعهد غير موجود'], 404);
+        }
+
+        if ($pledge->student_id !== $user->student->id) {
+            return response()->json(['message' => 'غير مصرح لك بتوقيع هذا التعهد'], 403);
+        }
+
+        if ($pledge->is_signed_by_student) {
+            return response()->json(['message' => 'تم توقيع هذا التعهد مسبقاً'], 400);
+        }
+
+        $pledge->update([
+            'is_signed_by_student' => true,
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'تم توقيع التعهد بنجاح'
+        ]);
+    }
+
+    /**
+     * Get the authenticated student's achievements.
+     */
+    public function getAchievements(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->student) {
+            return response()->json(['message' => 'User is not a student'], 403);
+        }
+
+        $studentId = $user->student->id;
+
+        $achievements = StudentAchievement::with(['type', 'awardedBy'])
+            ->where('student_id', $studentId)
+            ->where('status', 'approved')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($achievement) {
+                return [
+                    'id' => $achievement->id,
+                    'title' => $achievement->type ? $achievement->type->name : 'إنجاز',
+                    'category' => $achievement->type ? $achievement->type->category : 'عام',
+                    'points' => (int) $achievement->points,
+                    'date' => Carbon::parse($achievement->created_at)->format('Y-m-d'),
+                    'awarded_by' => $achievement->awardedBy ? $achievement->awardedBy->name : 'النظام',
+                    'description' => $achievement->description,
+                ];
+            });
+
+        // Group achievements by category for easier UI rendering
+        $groupedAchievements = $achievements->groupBy('category');
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'achievements' => $achievements,
+                'grouped_achievements' => $groupedAchievements,
+                'stats' => [
+                    'totalPoints' => $achievements->sum('points'),
+                    'totalCount' => $achievements->count(),
+                ],
+            ]
         ]);
     }
 }

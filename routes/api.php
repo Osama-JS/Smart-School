@@ -51,6 +51,20 @@ Route::middleware('auth:sanctum')->prefix('attendance')->group(function () {
 
 // Mobile Features API
 Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () {
+    // Shared: News & Announcements
+    Route::get('/news', [\App\Http\Controllers\Api\MobileNewsController::class, 'index']);
+    Route::get('/news/{id}', [\App\Http\Controllers\Api\MobileNewsController::class, 'show']);
+    Route::post('/news/{id}/like', [\App\Http\Controllers\Api\MobileNewsController::class, 'toggleLike']);
+    Route::post('/news/{id}/comment', [\App\Http\Controllers\Api\MobileNewsController::class, 'addComment']);
+    Route::delete('/news/{id}/comment/{commentId}', [\App\Http\Controllers\Api\MobileNewsController::class, 'deleteComment']);
+
+    // Shared: Quick Tasks (To-Do List)
+    Route::get('/quick-tasks', [\App\Http\Controllers\Api\MobileQuickTaskController::class, 'index']);
+    Route::post('/quick-tasks', [\App\Http\Controllers\Api\MobileQuickTaskController::class, 'store']);
+    Route::patch('/quick-tasks/{id}/toggle', [\App\Http\Controllers\Api\MobileQuickTaskController::class, 'toggle']);
+    Route::delete('/quick-tasks/{id}', [\App\Http\Controllers\Api\MobileQuickTaskController::class, 'destroy']);
+
+
     // Teacher
     Route::get('/timetable', [MobileFeaturesController::class, 'getTimetable']);
     Route::get('/preparations', [MobileFeaturesController::class, 'getPreparations']);
@@ -88,7 +102,10 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/student/timetable', [\App\Http\Controllers\Api\StudentAppController::class, 'getTimetable']);
     Route::get('/student/exam-schedules', [\App\Http\Controllers\Api\StudentAppController::class, 'getExamSchedules']);
     Route::get('/student/homework', [\App\Http\Controllers\Api\StudentAppController::class, 'getHomework']);
-
+    Route::get('/student/library', [\App\Http\Controllers\Api\StudentAppController::class, 'getLibraryItems']);
+    Route::get('/student/discipline', [\App\Http\Controllers\Api\StudentAppController::class, 'getDiscipline']);
+    Route::post('/student/pledges/{pledge}/sign', [\App\Http\Controllers\Api\StudentAppController::class, 'signPledge']);
+    Route::get('/student/achievements', [\App\Http\Controllers\Api\StudentAppController::class, 'getAchievements']);
     // Parent App Routes
     Route::get('/parent/children', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildren']);
     Route::get('/parent/children/{student_id}/grades', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildGrades']);
@@ -97,7 +114,15 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/parent/children/{student_id}/timetable', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildTimetable']);
     Route::get('/parent/children/{student_id}/exam-schedules', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildExamSchedules']);
     Route::get('/parent/children/{student_id}/homework', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildHomework']);
-
+    Route::get('/parent/children/{student_id}/medical-record', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildMedicalRecord']);
+    Route::put('/parent/children/{student_id}/medical-record', [\App\Http\Controllers\Api\ParentAppController::class, 'updateChildMedicalRecord']);
+    Route::get('/parent/children/{student_id}/clinic-visits', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildClinicVisits']);
+    Route::get('/parent/children/{student_id}/discipline', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildDiscipline']);
+    Route::post('/parent/children/{student_id}/pledges/{pledge}/sign', [\App\Http\Controllers\Api\ParentAppController::class, 'signChildPledge']);
+    Route::get('/parent/children/{student_id}/achievements', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildAchievements']);
+    Route::get('/parent/children/{student_id}/summons', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildSummons']);
+    Route::get('/parent/children/{student_id}/visits', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildVisits']);
+    Route::get('/parent/children/{student_id}/library', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildLibraryItems']);
     // Notifications (reusing NotificationController JSON responses)
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::get('/notifications/all', [\App\Http\Controllers\NotificationController::class, 'myNotifications']);
@@ -128,4 +153,8 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
 
     // Classroom Visit Teacher Sign
     Route::post('/classroom-visits/{classroomVisit}/teacher-sign', [MobileFeaturesController::class, 'signClassroomVisit']);
+
+    // Teacher Digital Library
+    Route::get('/teacher/library', [MobileFeaturesController::class, 'getTeacherLibraryItems']);
+    Route::post('/teacher/library', [MobileFeaturesController::class, 'storeLibraryItem']);
 });
