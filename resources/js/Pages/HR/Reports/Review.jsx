@@ -1,13 +1,37 @@
-import React from 'react';
-import { Head, useForm, Link } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { CheckCircle, CornerUpLeft, ArrowRight, User, Calendar, Briefcase, FileText, Download, Image as ImageIcon, Eye, File, Clock, AlertCircle, Database } from 'lucide-react';
+import { CheckCircle, CornerUpLeft, ArrowRight, User, Calendar, Briefcase, FileText, Download, Image as ImageIcon, Eye, File, Clock, AlertCircle, Database, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { exportReportToPDF, exportReportToExcel } from '@/Utils/ExportReport';
 
 export default function ReviewReport({ auth, report }) {
     const { data, setData, post, processing, errors } = useForm({
         status: report.status === 'pending' ? 'reviewed' : report.status,
         manager_notes: report.manager_notes || ''
     });
+
+    const [isExportingPDF, setIsExportingPDF] = useState(false);
+    const [isExportingExcel, setIsExportingExcel] = useState(false);
+
+    const handleExportPDF = async () => {
+        setIsExportingPDF(true);
+        try {
+            await exportReportToPDF('printable-report', `تقرير_${report.submitter?.name || 'موظف'}`);
+        } finally {
+            setIsExportingPDF(false);
+        }
+    };
+
+    const { logo_url } = usePage().props;
+
+    const handleExportExcel = async () => {
+        setIsExportingExcel(true);
+        try {
+            await exportReportToExcel(report, logo_url);
+        } finally {
+            setIsExportingExcel(false);
+        }
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -273,9 +297,30 @@ export default function ReviewReport({ auth, report }) {
                         </div>
                         
                         <div className="relative z-10">
-                            <Link href={auth.user.id === report.submitter_id ? route('hr.reports.my-reports.index') : route('reports.index')} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-colors mb-6 bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 px-4 py-2 rounded-xl border border-slate-200/50 dark:border-slate-700 w-fit backdrop-blur-sm">
-                                <ArrowRight size={16} /> العودة للقائمة
-                            </Link>
+                            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                                <Link href={auth.user.id === report.submitter_id ? route('hr.reports.my-reports.index') : route('reports.index')} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-colors bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 px-4 py-2 rounded-xl border border-slate-200/50 dark:border-slate-700 backdrop-blur-sm">
+                                    <ArrowRight size={16} /> العودة للقائمة
+                                </Link>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={handleExportExcel}
+                                        disabled={isExportingExcel}
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 transition-all disabled:opacity-50"
+                                    >
+                                        {isExportingExcel ? <Loader2 size={16} className="animate-spin" /> : <FileSpreadsheet size={16} />}
+                                        تصدير Excel
+                                    </button>
+                                    <button
+                                        onClick={handleExportPDF}
+                                        disabled={isExportingPDF}
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20 transition-all disabled:opacity-50"
+                                    >
+                                        {isExportingPDF ? <Loader2 size={16} className="animate-spin" /> : <FileText size={16} />}
+                                        تصدير PDF
+                                    </button>
+                                </div>
+                            </div>
                             
                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                                 <div>
@@ -457,6 +502,237 @@ export default function ReviewReport({ auth, report }) {
 
                 </div>
             </div>
+
+            {/* ==================== PRINTABLE PDF LAYOUT ==================== */}
+            {/* Hidden on screen via positioning behind the main content. Revealed in print via @media print. */}
+            <div id="printable-report-wrapper" className="print-only-wrapper">
+                <div id="printable-report" style={{ background: '#fff', color: '#1e293b', direction: 'rtl', fontFamily: 'Tajawal, "Segoe UI", Arial, sans-serif', position: 'relative', width: '210mm', minHeight: '297mm', boxSizing: 'border-box' }}>
+                    
+                    {/* ─── TOP BRAND BAR ─── */}
+                    <div style={{ display: 'flex', height: '6px' }}>
+                        <div style={{ flex: 1, background: '#6B9D1F' }} />
+                        <div style={{ flex: 1, background: '#E2202C' }} />
+                        <div style={{ flex: 1, background: '#2D2D2D' }} />
+                    </div>
+
+                    {/* ─── WATERMARK ─── */}
+                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.03, pointerEvents: 'none', zIndex: 0 }}>
+                        <img src="/images/school_logo.png" alt="" loading="eager" style={{ width: '400px', height: '400px', objectFit: 'contain' }} />
+                    </div>
+
+                    {/* ─── MAIN CONTENT ─── */}
+                    <div style={{ position: 'relative', zIndex: 1, padding: '0 36px' }}>
+
+                        {/* ══════════ HEADER ══════════ */}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: '3px solid #6B9D1F', marginBottom: '0' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ padding: '28px 0 20px 0', verticalAlign: 'middle', width: '110px' }}>
+                                        <img src="/images/school_logo.png" alt="مدارس القيم الأهلية" loading="eager" 
+                                            style={{ width: '90px', height: '90px', objectFit: 'contain', display: 'block' }} />
+                                    </td>
+                                    <td style={{ padding: '28px 16px 20px 0', verticalAlign: 'middle' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#6B9D1F', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '4px' }}>ALQIAM CIVIL SCHOOLS</div>
+                                        <div style={{ fontSize: '26px', fontWeight: 900, color: '#1e293b', lineHeight: 1.3, marginBottom: '2px' }}>التقرير الإداري</div>
+                                        <div style={{ fontSize: '16px', fontWeight: 600, color: '#64748b' }}>{report.template?.name}</div>
+                                    </td>
+                                    <td style={{ padding: '28px 0 20px 0', verticalAlign: 'middle', textAlign: 'left', width: '200px' }}>
+                                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 16px', textAlign: 'center' }}>
+                                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>الرقم المرجعي</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 900, color: '#1e293b', fontFamily: '"Courier New", monospace', letterSpacing: '1px' }}>
+                                                REF-{report.id.toString().padStart(6, '0')}
+                                            </div>
+                                            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
+                                                {new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        {/* ══════════ METADATA ══════════ */}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', margin: '20px 0', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ padding: '14px 18px', background: '#f8fafc', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
+                                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>مُقدّم التقرير</div>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{report.submitter?.name || '-'}</div>
+                                    </td>
+                                    <td style={{ padding: '14px 18px', background: '#ffffff', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
+                                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>الدرجة الوظيفية</div>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{report.submitter?.employee?.job_grade?.name || '-'}</div>
+                                    </td>
+                                    <td style={{ padding: '14px 18px', background: '#f8fafc', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
+                                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>تاريخ التقديم</div>
+                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{new Date(report.created_at).toLocaleDateString('ar-EG')}</div>
+                                    </td>
+                                    <td style={{ padding: '14px 18px', background: '#ffffff', width: '25%' }}>
+                                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>حالة الاعتماد</div>
+                                        <div style={{ fontSize: '14px', fontWeight: 900, color: report.status === 'reviewed' ? '#16a34a' : (report.status === 'returned' ? '#dc2626' : '#d97706') }}>
+                                            {report.status === 'reviewed' ? '✓ مُعتمد رسمياً' : (report.status === 'returned' ? '✗ مُعاد' : '⏳ قيد المراجعة')}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        {/* ══════════ SECTION DIVIDER ══════════ */}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', margin: '24px 0 12px 0' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ width: '4px', verticalAlign: 'middle' }}>
+                                        <div style={{ width: '4px', height: '20px', background: '#6B9D1F', borderRadius: '2px' }} />
+                                    </td>
+                                    <td style={{ padding: '0 10px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                        <span style={{ fontSize: '14px', fontWeight: 900, color: '#475569' }}>محتوى التقرير</span>
+                                    </td>
+                                    <td style={{ verticalAlign: 'middle', width: '100%' }}>
+                                        <div style={{ height: '1px', background: '#e2e8f0' }} />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        {/* ══════════ REPORT FIELDS ══════════ */}
+                        {report.template?.fields?.sort((a,b) => a.order - b.order).map((field, idx) => (
+                            <div key={field.id} style={{ marginBottom: '22px', pageBreakInside: 'avoid' }}>
+                                {/* Field Title */}
+                                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8px' }}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ width: '26px', verticalAlign: 'middle', paddingLeft: '8px' }}>
+                                                <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#6B9D1F', color: '#fff', fontSize: '12px', fontWeight: 900, textAlign: 'center', lineHeight: '26px' }}>
+                                                    {idx + 1}
+                                                </div>
+                                            </td>
+                                            <td style={{ verticalAlign: 'middle', paddingRight: '4px' }}>
+                                                <span style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{field.name}</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                {/* Field Value */}
+                                <div style={{ padding: '10px 18px', borderRight: '3px solid #6B9D1F', background: '#fafbfc', borderRadius: '0 6px 6px 0', fontSize: '13px', lineHeight: 1.8, color: '#334155' }} className="printable-field-content">
+                                    {renderFieldValue(field, report.data ? report.data[field.name] : null)}
+                                </div>
+                            </div>
+                        ))}
+
+                        {/* ══════════ SIGNATURES ══════════ */}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '40px', borderTop: '2px solid #e2e8f0', pageBreakInside: 'avoid' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ width: '50%', padding: '30px 20px 20px 20px', textAlign: 'center', verticalAlign: 'top' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '40px' }}>توقيع مُعدّ التقرير</div>
+                                        <div style={{ fontSize: '15px', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #cbd5e1', paddingBottom: '6px', display: 'inline-block', minWidth: '200px' }}>
+                                            {report.submitter?.name}
+                                        </div>
+                                    </td>
+                                    <td style={{ width: '50%', padding: '30px 20px 20px 20px', textAlign: 'center', verticalAlign: 'top', borderRight: '1px solid #e2e8f0' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '40px' }}>اعتماد المشرف / مدير المدرسة</div>
+                                        <div style={{ fontSize: '15px', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #cbd5e1', paddingBottom: '6px', display: 'inline-block', minWidth: '200px' }}>
+                                            {report.reviewer ? report.reviewer.name : '..................................'}
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        {/* ══════════ FOOTER ══════════ */}
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '32px', borderTop: '1px solid #e2e8f0', pageBreakInside: 'avoid' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ padding: '12px 0', fontSize: '9px', color: '#94a3b8', lineHeight: 1.6, verticalAlign: 'middle' }}>
+                                        وثيقة إدارية مُصدرة إلكترونياً من نظام المدرسة الذكية — مدارس القيم الأهلية. لا يحتاج هذا المستند إلى توقيع حي في حال اعتماده من خلال النظام.
+                                    </td>
+                                    <td style={{ padding: '12px 0', textAlign: 'left', width: '50px', verticalAlign: 'middle' }}>
+                                        <img src="/images/school_logo.png" alt="" loading="eager" style={{ width: '36px', height: '36px', objectFit: 'contain', opacity: 0.25 }} />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* ─── BOTTOM BRAND BAR ─── */}
+                    <div style={{ display: 'flex', height: '4px', position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+                        <div style={{ flex: 1, background: '#6B9D1F' }} />
+                        <div style={{ flex: 1, background: '#E2202C' }} />
+                        <div style={{ flex: 1, background: '#2D2D2D' }} />
+                    </div>
+                </div>
+            </div>
+            
+            {/* ==================== PRINT CSS ==================== */}
+            <style>{`
+                /* Hide from screen but keep in DOM so images preload */
+                .print-only-wrapper {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100vh;
+                    z-index: -9999;
+                    opacity: 0.001;
+                    pointer-events: none;
+                    overflow: hidden;
+                }
+
+                @media print {
+                    @page { size: A4; margin: 0; }
+                    body > *,
+                    body * { visibility: hidden !important; }
+                    #printable-report-wrapper,
+                    #printable-report-wrapper * {
+                        visibility: visible !important;
+                    }
+                    #printable-report-wrapper {
+                        position: absolute !important;
+                        left: 0 !important; top: 0 !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        z-index: 99999 !important;
+                        opacity: 1 !important;
+                        pointer-events: auto !important;
+                    }
+                    #printable-report {
+                        width: 100% !important;
+                        min-height: auto !important;
+                    }
+                    #printable-report table {
+                        border-collapse: collapse !important;
+                    }
+                    #printable-report th {
+                        background-color: #f1f5f9 !important;
+                        color: #0f172a !important;
+                        font-weight: 800 !important;
+                        border: 1px solid #cbd5e1 !important;
+                        padding: 8px 12px !important;
+                        text-align: right !important;
+                        font-size: 12px !important;
+                    }
+                    #printable-report td {
+                        font-size: 12px !important;
+                    }
+                    #printable-report .printable-field-content table td {
+                        border: 1px solid #e2e8f0 !important;
+                        padding: 8px 12px !important;
+                        color: #334155 !important;
+                    }
+                    #printable-report .printable-field-content table tr:nth-child(even) td {
+                        background-color: #f8fafc !important;
+                    }
+                    * {
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+                    .page-break-inside-avoid {
+                        page-break-inside: avoid;
+                    }
+                }
+            `}</style>
+
         </AdminLayout>
     );
 }
