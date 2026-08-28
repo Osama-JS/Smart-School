@@ -221,15 +221,25 @@ class NotificationController extends Controller
 
     public function saveFcmToken(Request $request)
     {
-        $request->validate([
-            'token' => 'required|string',
-        ]);
+        $token = $request->input('fcm_token') ?? $request->input('token');
+
+        if (!$token || !is_string($token)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'رمز الجهاز (fcm_token) مطلوب'
+            ], 422);
+        }
 
         $user = auth()->user();
-        $user->fcm_token = $request->token;
-        $user->fcm_token_updated_at = now();
-        $user->save();
+        if ($user) {
+            $user->fcm_token = $token;
+            $user->fcm_token_updated_at = now();
+            $user->save();
+        }
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حفظ وتحديث رمز جهاز الإشعارات بنجاح'
+        ]);
     }
 }

@@ -118,8 +118,12 @@ class LessonPreparationController extends Controller
 
     public function update(Request $request, LessonPreparation $lessonPreparation)
     {
-        if ($lessonPreparation->teacher_id !== Auth::id()) {
+        if ($lessonPreparation->teacher_id !== Auth::id() && !Auth::user()->hasPermission('إدارة النظام')) {
             abort(403);
+        }
+
+        if ($lessonPreparation->status === 'published' && !Auth::user()->hasPermission('إدارة النظام') && !Auth::user()->is_super_admin) {
+            return redirect()->back()->with('error', 'لا يمكن تعديل سجل تحضير تم اعتماده ونشره مسبقاً.');
         }
 
         $validated = $request->validate([
@@ -146,8 +150,12 @@ class LessonPreparationController extends Controller
 
     public function destroy(LessonPreparation $lessonPreparation)
     {
-        if ($lessonPreparation->teacher_id !== Auth::id()) {
+        if ($lessonPreparation->teacher_id !== Auth::id() && !Auth::user()->hasPermission('إدارة النظام')) {
             abort(403);
+        }
+
+        if ($lessonPreparation->status === 'published' && !Auth::user()->hasPermission('إدارة النظام') && !Auth::user()->is_super_admin) {
+            return redirect()->back()->with('error', 'لا يمكن حذف سجل تحضير تم اعتماده ونشره مسبقاً.');
         }
 
         $lessonPreparation->delete();

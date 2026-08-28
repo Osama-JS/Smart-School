@@ -61,8 +61,14 @@ class User extends Authenticatable
     /**
      * دالة برمجية للتحقق من امتلاك المستخدم لصلاحية معينة
      */
-    public function hasPermission($permissionName): bool
+    public function hasPermission(string $permissionName): bool
     {
+        if (!$this->role) {
+            return false;
+        }
+        if ($this->role->name === 'مدير النظام' || $this->role->name === 'مدير عام') {
+            return true;
+        }
         if ($this->role->name === 'طالب' && $permissionName === 'عرض المكتبة الرقمية') {
             return true;
         }

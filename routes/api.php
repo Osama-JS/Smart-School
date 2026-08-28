@@ -38,6 +38,7 @@ Route::prefix('mobile')->group(function () {
         Route::post('/change-password', [MobileAuthController::class, 'changePassword']);
         Route::get('/linked-accounts', [MobileAuthController::class, 'getLinkedAccounts']);
         Route::post('/switch-account/{user}', [MobileAuthController::class, 'switchAccount']);
+        Route::post('/user/device-token', [\App\Http\Controllers\NotificationController::class, 'saveFcmToken']);
     });
 });
 
@@ -74,8 +75,24 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::delete('/preparations/{lessonPreparation}', [MobileFeaturesController::class, 'deletePreparation']);
     
     // Teacher Class Attendance
+    Route::get('/class-attendance/form-data', [ClassAttendanceController::class, 'getFormData']);
     Route::get('/class-attendance/students', [ClassAttendanceController::class, 'getStudents']);
     Route::post('/class-attendance', [ClassAttendanceController::class, 'store']);
+    Route::get('/teacher/class-attendances/today', [ClassAttendanceController::class, 'getTeacherTodaySchedule']);
+    Route::get('/mobile/features/teacher/class-attendances/today', [ClassAttendanceController::class, 'getTeacherTodaySchedule']);
+    Route::post('/teacher/class-attendances/get-students', [ClassAttendanceController::class, 'getStudents']);
+    Route::post('/mobile/features/teacher/class-attendances/get-students', [ClassAttendanceController::class, 'getStudents']);
+    Route::post('/mobile/features/teacher/class-attendances/save', [ClassAttendanceController::class, 'store']);
+
+    // Academic Daily Student Attendance (matching academic/attendances)
+    Route::get('/academic/attendances', [MobileFeaturesController::class, 'getDailyAttendancesList']);
+    Route::get('/mobile/features/academic/attendances', [MobileFeaturesController::class, 'getDailyAttendancesList']);
+    Route::get('/academic/attendances/form-data', [MobileFeaturesController::class, 'getDailyAttendanceFormData']);
+    Route::get('/mobile/features/academic/attendances/form-data', [MobileFeaturesController::class, 'getDailyAttendanceFormData']);
+    Route::get('/academic/attendances/students', [MobileFeaturesController::class, 'getDailyAttendanceStudents']);
+    Route::get('/mobile/features/academic/attendances/students', [MobileFeaturesController::class, 'getDailyAttendanceStudents']);
+    Route::post('/academic/attendances/save', [MobileFeaturesController::class, 'saveDailyAttendance']);
+    Route::post('/mobile/features/academic/attendances/save', [MobileFeaturesController::class, 'saveDailyAttendance']);
 
     // HR / Employee Requests
     Route::get('/requests', [MobileFeaturesController::class, 'getEmployeeRequests']);
@@ -91,9 +108,11 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
 
     // Employee Violations / Infractions
     Route::get('/infractions', [MobileFeaturesController::class, 'getInfractions']);
+    Route::post('/infractions/{id}/sign', [MobileFeaturesController::class, 'signInfraction']);
 
     // Employee Achievements
     Route::get('/achievements', [MobileFeaturesController::class, 'getAchievements']);
+    Route::post('/achievements/{id}/sign', [MobileFeaturesController::class, 'signAchievement']);
 
     // Student App Routes
     Route::get('/student/grades', [\App\Http\Controllers\Api\StudentAppController::class, 'getMonthlyGrades']);
@@ -128,6 +147,9 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/notifications/all', [\App\Http\Controllers\NotificationController::class, 'myNotifications']);
     Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead']);
+    Route::post('/mobile/user/device-token', [\App\Http\Controllers\NotificationController::class, 'saveFcmToken']);
+    Route::post('/user/device-token', [\App\Http\Controllers\NotificationController::class, 'saveFcmToken']);
+    Route::post('/notifications/fcm-token', [\App\Http\Controllers\NotificationController::class, 'saveFcmToken']);
 
     // My Reports
     Route::get('/my-reports/templates', [MobileFeaturesController::class, 'getMyReportTemplates']);
@@ -144,6 +166,8 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/teacher/monthly-grades/form-data', [MobileFeaturesController::class, 'getMonthlyGradesFormData']);
     Route::get('/teacher/monthly-grades/students', [MobileFeaturesController::class, 'getMonthlyGradesStudents']);
     Route::post('/teacher/monthly-grades', [MobileFeaturesController::class, 'storeMonthlyGrades']);
+    Route::post('/teacher/monthly-grades/weekly', [MobileFeaturesController::class, 'saveWeeklyMonthlyGrades']);
+    Route::post('/teacher/monthly-grades/submit', [MobileFeaturesController::class, 'submitFinalMonthlyGrades']);
 
     // Teacher Exam Invigilation Schedules
     Route::get('/teacher/my-exam-schedules', [MobileFeaturesController::class, 'getTeacherExamSchedules']);
@@ -151,10 +175,75 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     // Teacher Class Coverages / Substitutes
     Route::get('/teacher/my-coverages', [MobileFeaturesController::class, 'getTeacherCoverages']);
 
-    // Classroom Visit Teacher Sign
+    // Classroom Visits Management (Supervisor & Academic)
+    Route::get('/classroom-visits', [MobileFeaturesController::class, 'getClassroomVisits']);
+    Route::get('/mobile/features/classroom-visits', [MobileFeaturesController::class, 'getClassroomVisits']);
+    Route::get('/classroom-visits/form-data', [MobileFeaturesController::class, 'getClassroomVisitsFormData']);
+    Route::get('/mobile/features/classroom-visits/form-data', [MobileFeaturesController::class, 'getClassroomVisitsFormData']);
+    Route::post('/classroom-visits', [MobileFeaturesController::class, 'storeClassroomVisit']);
+    Route::post('/mobile/features/classroom-visits', [MobileFeaturesController::class, 'storeClassroomVisit']);
+    Route::put('/classroom-visits/{classroomVisit}', [MobileFeaturesController::class, 'updateClassroomVisit']);
+    Route::post('/classroom-visits/{classroomVisit}/update', [MobileFeaturesController::class, 'updateClassroomVisit']);
+    Route::delete('/classroom-visits/{classroomVisit}', [MobileFeaturesController::class, 'destroyClassroomVisit']);
+    Route::post('/classroom-visits/{classroomVisit}/delete', [MobileFeaturesController::class, 'destroyClassroomVisit']);
+    Route::post('/classroom-visits/{classroomVisit}/approve', [MobileFeaturesController::class, 'approveClassroomVisit']);
+
+    // Teacher's Classroom Visits (My Visits)
+    Route::get('/classroom-visits/my', [MobileFeaturesController::class, 'getMyClassroomVisits']);
+    Route::get('/mobile/features/classroom-visits/my', [MobileFeaturesController::class, 'getMyClassroomVisits']);
     Route::post('/classroom-visits/{classroomVisit}/teacher-sign', [MobileFeaturesController::class, 'signClassroomVisit']);
+    Route::post('/mobile/features/classroom-visits/{classroomVisit}/teacher-sign', [MobileFeaturesController::class, 'signClassroomVisit']);
 
     // Teacher Digital Library
     Route::get('/teacher/library', [MobileFeaturesController::class, 'getTeacherLibraryItems']);
+    Route::get('/mobile/features/teacher/library', [MobileFeaturesController::class, 'getTeacherLibraryItems']);
     Route::post('/teacher/library', [MobileFeaturesController::class, 'storeLibraryItem']);
+    Route::post('/mobile/features/teacher/library', [MobileFeaturesController::class, 'storeLibraryItem']);
+    Route::post('/teacher/library/{id}/bookmark', [MobileFeaturesController::class, 'toggleLibraryBookmark']);
+    Route::post('/mobile/features/teacher/library/{id}/bookmark', [MobileFeaturesController::class, 'toggleLibraryBookmark']);
+
+    // Leave Balances (Employee)
+    Route::get('/leave-balances', [MobileFeaturesController::class, 'getLeaveBalances']);
+
+    // Digital Signing on Infractions & Achievements
+    Route::post('/infractions/{id}/sign', [MobileFeaturesController::class, 'signInfraction']);
+    Route::post('/achievements/{id}/sign', [MobileFeaturesController::class, 'signAchievement']);
+
+    // Employee Appraisals & KPIs
+    Route::get('/appraisals', [MobileFeaturesController::class, 'getAppraisals']);
+    Route::get('/mobile/features/appraisals', [MobileFeaturesController::class, 'getAppraisals']);
+    Route::get('/appraisals/{id}', [MobileFeaturesController::class, 'getAppraisalDetails']);
+    Route::get('/mobile/features/appraisals/{id}', [MobileFeaturesController::class, 'getAppraisalDetails']);
+    Route::post('/appraisals/{id}/submit-self', [MobileFeaturesController::class, 'submitAppraisalSelf']);
+    Route::post('/mobile/features/appraisals/{id}/submit-self', [MobileFeaturesController::class, 'submitAppraisalSelf']);
+    Route::post('/appraisals/{id}/submit-manager', [MobileFeaturesController::class, 'submitAppraisalManager']);
+    Route::post('/mobile/features/appraisals/{id}/submit-manager', [MobileFeaturesController::class, 'submitAppraisalManager']);
+    Route::post('/appraisals/{id}/scores/{score}/goals', [MobileFeaturesController::class, 'storeAppraisalGoal']);
+    Route::post('/mobile/features/appraisals/{id}/scores/{score}/goals', [MobileFeaturesController::class, 'storeAppraisalGoal']);
+    Route::post('/appraisals/{id}/goals/{goal}/progress', [MobileFeaturesController::class, 'updateAppraisalGoalProgress']);
+    Route::put('/appraisals/{id}/goals/{goal}/progress', [MobileFeaturesController::class, 'updateAppraisalGoalProgress']);
+    Route::post('/mobile/features/appraisals/{id}/goals/{goal}/progress', [MobileFeaturesController::class, 'updateAppraisalGoalProgress']);
+    Route::put('/mobile/features/appraisals/{id}/goals/{goal}/progress', [MobileFeaturesController::class, 'updateAppraisalGoalProgress']);
+    Route::delete('/appraisals/{id}/goals/{goal}', [MobileFeaturesController::class, 'destroyAppraisalGoal']);
+    Route::delete('/mobile/features/appraisals/{id}/goals/{goal}', [MobileFeaturesController::class, 'destroyAppraisalGoal']);
+
+    // Staff & Teacher Meetings
+    Route::get('/meetings', [MobileFeaturesController::class, 'getMeetings']);
+    Route::post('/meetings/{id}/attendance', [MobileFeaturesController::class, 'confirmMeetingAttendance']);
+    Route::post('/meetings/{id}/complete', [MobileFeaturesController::class, 'completeMeetingFromMobile']);
+
+    // Teacher Parent Interactions (Summons & Visits)
+    Route::get('/teacher/parent-summons', [MobileFeaturesController::class, 'getTeacherParentSummons']);
+    Route::post('/teacher/parent-summons', [MobileFeaturesController::class, 'storeTeacherParentSummon']);
+    Route::get('/teacher/parent-visits/form-data', [MobileFeaturesController::class, 'getParentVisitsFormData']);
+    Route::get('/teacher/parent-visits', [MobileFeaturesController::class, 'getTeacherParentVisits']);
+    Route::post('/teacher/parent-visits', [MobileFeaturesController::class, 'storeTeacherParentVisit']);
+    Route::put('/teacher/parent-visits/{id}', [MobileFeaturesController::class, 'updateTeacherParentVisit']);
+    Route::post('/teacher/parent-visits/{id}/update', [MobileFeaturesController::class, 'updateTeacherParentVisit']);
+    Route::delete('/teacher/parent-visits/{id}', [MobileFeaturesController::class, 'destroyTeacherParentVisit']);
+    Route::post('/teacher/parent-visits/{id}/delete', [MobileFeaturesController::class, 'destroyTeacherParentVisit']);
+    Route::post('/teacher/parent-visits/{id}/convert-achievement', [MobileFeaturesController::class, 'convertParentVisitToAchievement']);
+    Route::post('/teacher/parent-visits/{id}/convert-violation', [MobileFeaturesController::class, 'convertParentVisitToViolation']);
+    Route::get('/teacher/students-list', [MobileFeaturesController::class, 'getTeacherStudentsList']);
 });
+

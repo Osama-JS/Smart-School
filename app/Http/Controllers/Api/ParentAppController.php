@@ -407,12 +407,17 @@ class ParentAppController extends Controller
             return response()->json(['message' => 'No active enrollment or division found'], 404);
         }
 
-        $activeSemester = \App\Models\Semester::where('is_active', true)->first();
+        $activeSemester = \App\Models\Semester::where('is_active', true)
+            ->orWhere(function($q) {
+                $q->whereDate('start_date', '<=', now())->whereDate('end_date', '>=', now());
+            })->first();
 
         $schedules = \App\Models\MasterTimetable::with(['teacher', 'subject', 'period', 'division.grade'])
             ->where('division_id', $enrollment->division_id)
             ->when($activeSemester, function ($q) use ($activeSemester) {
-                return $q->where('semester_id', $activeSemester->id);
+                return $q->where(function($sq) use ($activeSemester) {
+                    $sq->where('semester_id', $activeSemester->id)->orWhereNull('semester_id');
+                });
             })
             ->get();
 

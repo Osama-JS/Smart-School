@@ -273,57 +273,71 @@ class AttendanceApiController extends Controller
     }
 
     /**
-     * جلب تقرير حضور موظف لشهر محدد (مع احتساب الإجازات والعطلات)
+     * جلب تقرير حضور موظف لشهر محدد (مع دعم الشفتات المتعددة والإجازات والعطلات)
      */
     public function employeeReport(Request $request, int $employeeId): JsonResponse
     {
-        $monthNum = $request->get('month', Carbon::now()->month);
-        $yearNum  = $request->get('year', Carbon::now()->year);
+        $monthNum = (int) $request->get('month', Carbon::now()->month);
+        $yearNum  = (int) $request->get('year', Carbon::now()->year);
         $semesterId = $request->get('semester_id');
+        $filterShiftId = $request->get('shift_id');
         
         $month = Carbon::createFromDate($yearNum, $monthNum, 1)->startOfDay();
         $daysInMonth = $month->daysInMonth;
 
         $employee = Employee::with(['shifts', 'user'])->findOrFail($employeeId);
-        
         $semester = $semesterId ? \App\Models\Semester::find($semesterId) : null;
-        
-        $workingDays = [];
-        if ($employee->shifts->isNotEmpty()) {
-            foreach ($employee->shifts as $shift) {
-                if ($shift->pivot && $shift->pivot->working_days) {
-                    $shiftDays = json_decode($shift->pivot->working_days, true);
-                    if (is_array($shiftDays)) {
-                        $workingDays = array_merge($workingDays, $shiftDays);
-                    }
-                }
-            }
-            $workingDays = array_unique($workingDays);
-        } else {
-            $workingDays = [0,1,2,3,4]; // Default if no shift is assigned
-        }
 
-        // 1. Get actual attendance records
-        $actualAttendances = Attendance::where('employee_id', $employeeId)
+        // 1. Get all assigned shifts for employee with working days
+        $employeeShifts = \DB::table('branch_employee_shift')
+            ->join('shifts', 'branch_employee_shift.shift_id', '=', 'shifts.id')
+            ->join('branches', 'branch_employee_shift.branch_id', '=', 'branches.id')
+            ->where('branch_employee_shift.employee_id', $employee->id)
+            ->where('shifts.is_active', true)
+            ->select(
+                'shifts.id as shift_id',
+                'shifts.name as shift_name',
+                'shifts.start_time',
+                'shifts.end_time',
+                'shifts.grace_period_minutes',
+                'branches.id as branch_id',
+                'branches.name as branch_name',
+                'branch_employee_shift.working_days'
+            )
+            ->get()
+            ->map(function ($s) {
+                $days = json_decode($s->working_days ?? '[]', true);
+                $s->working_days = (is_array($days) && !empty($days)) ? $days : [0, 1, 2, 3, 4];
+                return $s;
+            });
+
+        // 2. Get actual attendance records grouped by date
+        $attendancesQuery = Attendance::where('employee_id', $employeeId)
             ->whereMonth('date', $monthNum)
             ->whereYear('date', $yearNum)
-            ->with(['branch:id,name', 'shift:id,name,start_time,end_time'])
-            ->get()
-            ->keyBy(fn($item) => $item->date->format('Y-m-d'));
+            ->with(['branch:id,name', 'shift:id,name,start_time,end_time']);
 
-        // 2. Get Leaves
+        if ($filterShiftId) {
+            $attendancesQuery->where('shift_id', $filterShiftId);
+        }
+
+        $actualAttendances = $attendancesQuery->get()
+            ->groupBy(fn($item) => $item->date->format('Y-m-d'));
+
+        // 3. Get Leaves
+        $monthStart = Carbon::createFromDate($yearNum, $monthNum, 1)->startOfMonth();
+        $monthEnd = Carbon::createFromDate($yearNum, $monthNum, 1)->endOfMonth();
+
         $leaves = \App\Models\Leave::with('leaveType')
             ->where('employee_id', $employeeId)
             ->where('status', 'approved')
-            ->where(function($q) use ($monthNum, $yearNum) {
-                $monthStart = Carbon::createFromDate($yearNum, $monthNum, 1)->startOfMonth();
-                $monthEnd = Carbon::createFromDate($yearNum, $monthNum, 1)->endOfMonth();
+            ->where(function($q) use ($monthStart, $monthEnd) {
                 $q->where('start_date', '<=', $monthEnd)
                   ->where('end_date', '>=', $monthStart);
             })
             ->get();
 
-        // 3. Get Holidays
+        // 4. Get Holidays
         $branchId = $employee->user ? $employee->user->branch_id : null;
         $holidays = \App\Models\Holiday::where(function($q) use ($branchId) {
                 if ($branchId) {
@@ -341,9 +355,19 @@ class AttendanceApiController extends Controller
         $todayDate = Carbon::now()->startOfDay();
         $records = [];
         $summary = [
-            'present' => 0, 'late' => 0, 'absent' => 0, 'excused' => 0, 
-            'holiday' => 0, 'leave' => 0, 'weekend' => 0, 'future' => 0,
-            'out_of_term' => 0, 'extra' => 0,
+            'present' => 0,
+            'late' => 0,
+            'absent' => 0,
+            'excused' => 0,
+            'leave' => 0,
+            'holiday' => 0,
+            'weekend' => 0,
+            'future' => 0,
+            'partial' => 0,
+            'extra' => 0,
+            'total_shifts_scheduled' => 0,
+            'total_shifts_attended' => 0,
+            'total_late_minutes' => 0,
         ];
 
         for ($d = 1; $d <= $daysInMonth; $d++) {
@@ -351,7 +375,7 @@ class AttendanceApiController extends Controller
             $currentDate->day($d);
             $dateString = $currentDate->toDateString();
             $dayOfWeek = $currentDate->dayOfWeek; // 0=Sun, 6=Sat
-            
+
             // Check Holiday
             $isHoliday = false;
             $holidayName = '';
@@ -374,9 +398,7 @@ class AttendanceApiController extends Controller
                 }
             }
 
-            $actualRecord = $actualAttendances->get($dateString);
-
-            // Check if day is out of semester bounds
+            // Check Term bounds
             $isOutOfTerm = false;
             if ($semester) {
                 if ($currentDate->isBefore($semester->start_date) || $currentDate->isAfter($semester->end_date)) {
@@ -384,45 +406,199 @@ class AttendanceApiController extends Controller
                 }
             }
 
-            if ($isOutOfTerm && !$actualRecord) {
-                $status = 'out_of_term';
-                $notes = 'خارج الفترة الأكاديمية';
-            } elseif ($isHoliday) {
-                $status = 'holiday';
-                $notes = $holidayName;
-            } elseif ($isLeave) {
-                $status = 'leave';
-                $notes = 'إجازة: ' . $leaveType;
-            } else {
-                $isWorkingDay = in_array($dayOfWeek, $workingDays);
-                
-                if (!$isWorkingDay) {
+            $dayAttendances = $actualAttendances->get($dateString, collect());
+            $isFuture = $currentDate->isAfter($todayDate);
+
+            $dayShifts = [];
+            $shiftsToProcess = $employeeShifts;
+            if ($filterShiftId) {
+                $shiftsToProcess = $employeeShifts->where('shift_id', $filterShiftId);
+            }
+
+            if ($shiftsToProcess->isEmpty()) {
+                // If no shifts are assigned in DB, create a default shift placeholder
+                $defaultWorkingDays = [0, 1, 2, 3, 4];
+                $isWorking = in_array($dayOfWeek, $defaultWorkingDays);
+                $actual = $dayAttendances->first();
+
+                $status = 'absent';
+                $notes = '';
+                if ($isOutOfTerm && !$actual) {
+                    $status = 'out_of_term';
+                    $notes = 'خارج الفترة الأكاديمية';
+                } elseif ($isHoliday) {
+                    $status = 'holiday';
+                    $notes = $holidayName;
+                } elseif ($isLeave) {
+                    $status = 'leave';
+                    $notes = 'إجازة: ' . $leaveType;
+                } elseif (!$isWorking) {
                     $status = 'weekend';
-                    $notes = 'إجازة أسبوعية';
+                    $notes = 'عطلة أسبوعية';
+                } elseif ($actual) {
+                    $status = $actual->status;
+                    $notes = '';
+                } elseif ($isFuture) {
+                    $status = 'future';
+                    $notes = '-';
                 } else {
-                    if ($actualRecord) {
-                        $status = $actualRecord->status;
-                        $notes = '';
-                    } else {
-                        if ($currentDate->isAfter($todayDate)) {
-                            $status = 'future';
-                            $notes = '-';
-                        } else {
-                            $status = 'absent';
-                            $notes = $currentDate->isSameDay($todayDate) ? 'لم يحضر (اليوم)' : 'غياب بدون عذر';
-                        }
+                    $status = 'absent';
+                    $notes = $currentDate->isSameDay($todayDate) ? 'لم يسجل دخول اليوم' : 'غياب بدون عذر';
+                }
+
+                $durationText = '';
+                if ($actual && $actual->check_in && $actual->check_out) {
+                    $in = Carbon::parse($actual->check_in);
+                    $out = Carbon::parse($actual->check_out);
+                    $mins = $in->diffInMinutes($out);
+                    $durationText = floor($mins / 60) . 'س ' . ($mins % 60) . 'د';
+                }
+
+                $dayShifts[] = [
+                    'shift_id' => null,
+                    'shift_name' => 'الدوام الرسمي',
+                    'start_time' => '07:30',
+                    'end_time' => '13:30',
+                    'is_working_day' => $isWorking,
+                    'status' => $status,
+                    'notes' => $notes,
+                    'check_in' => $actual?->check_in,
+                    'check_out' => $actual?->check_out,
+                    'check_in_lat' => $actual?->check_in_lat,
+                    'check_in_lng' => $actual?->check_in_lng,
+                    'check_out_lat' => $actual?->check_out_lat,
+                    'check_out_lng' => $actual?->check_out_lng,
+                    'late_minutes' => $actual?->late_minutes ?? 0,
+                    'duration' => $durationText,
+                    'attendance' => $actual,
+                ];
+            } else {
+                foreach ($shiftsToProcess as $s) {
+                    $isWorkingDay = in_array($dayOfWeek, $s->working_days);
+                    
+                    // Match attendance by shift_id, or if only 1 attendance exists on this day
+                    $actual = $dayAttendances->firstWhere('shift_id', $s->shift_id);
+                    if (!$actual && $dayAttendances->count() === 1 && $shiftsToProcess->count() === 1) {
+                        $actual = $dayAttendances->first();
                     }
+
+                    $status = 'absent';
+                    $notes = '';
+
+                    if ($isOutOfTerm && !$actual) {
+                        $status = 'out_of_term';
+                        $notes = 'خارج الفترة الأكاديمية';
+                    } elseif ($isHoliday) {
+                        $status = 'holiday';
+                        $notes = $holidayName;
+                    } elseif ($isLeave) {
+                        $status = 'leave';
+                        $notes = 'إجازة: ' . $leaveType;
+                    } elseif (!$isWorkingDay && !$actual) {
+                        $status = 'weekend';
+                        $notes = 'عطلة أسبوعية';
+                    } elseif ($actual) {
+                        $status = $actual->status;
+                        $notes = $actual->notes ?? '';
+                    } elseif ($isFuture) {
+                        $status = 'future';
+                        $notes = '-';
+                    } else {
+                        $status = 'absent';
+                        $notes = $currentDate->isSameDay($todayDate) ? 'لم يسجل دخول' : 'غياب';
+                    }
+
+                    $durationText = '';
+                    if ($actual && $actual->check_in && $actual->check_out) {
+                        $in = Carbon::parse($actual->check_in);
+                        $out = Carbon::parse($actual->check_out);
+                        $mins = $in->diffInMinutes($out);
+                        $durationText = floor($mins / 60) . 'س ' . ($mins % 60) . 'د';
+                    }
+
+                    $dayShifts[] = [
+                        'shift_id' => $s->shift_id,
+                        'shift_name' => $s->shift_name,
+                        'start_time' => $s->start_time ? substr($s->start_time, 0, 5) : '',
+                        'end_time' => $s->end_time ? substr($s->end_time, 0, 5) : '',
+                        'is_working_day' => $isWorkingDay,
+                        'status' => $status,
+                        'notes' => $notes,
+                        'check_in' => $actual?->check_in,
+                        'check_out' => $actual?->check_out,
+                        'check_in_lat' => $actual?->check_in_lat,
+                        'check_in_lng' => $actual?->check_in_lng,
+                        'check_out_lat' => $actual?->check_out_lat,
+                        'check_out_lng' => $actual?->check_out_lng,
+                        'late_minutes' => $actual?->late_minutes ?? 0,
+                        'duration' => $durationText,
+                        'attendance' => $actual,
+                    ];
                 }
             }
 
-            $summary[$status]++;
+            // Determine overall day status
+            $workingShifts = array_filter($dayShifts, fn($s) => $s['is_working_day']);
+            $presentCount = count(array_filter($dayShifts, fn($s) => in_array($s['status'], ['present', 'late', 'extra'])));
+            $lateCount = count(array_filter($dayShifts, fn($s) => $s['status'] === 'late'));
+            $absentCount = count(array_filter($dayShifts, fn($s) => $s['status'] === 'absent'));
+
+            if ($isHoliday) {
+                $overallStatus = 'holiday';
+                $overallNotes = $holidayName;
+            } elseif ($isLeave) {
+                $overallStatus = 'leave';
+                $overallNotes = 'إجازة: ' . $leaveType;
+            } elseif (empty($workingShifts) && $presentCount === 0) {
+                $overallStatus = 'weekend';
+                $overallNotes = 'عطلة أسبوعية';
+            } elseif ($isFuture && $presentCount === 0) {
+                $overallStatus = 'future';
+                $overallNotes = '-';
+            } elseif ($presentCount > 0 && $absentCount > 0) {
+                $overallStatus = 'partial'; // Partially attended
+                $overallNotes = "حضور {$presentCount} من أصل " . count($dayShifts) . " شفت";
+            } elseif ($lateCount > 0) {
+                $overallStatus = 'late';
+                $overallNotes = 'تأخر في الحضور';
+            } elseif ($presentCount > 0) {
+                $overallStatus = 'present';
+                $overallNotes = 'حاضر كافة الشفتات';
+            } elseif ($absentCount > 0) {
+                $overallStatus = 'absent';
+                $overallNotes = $currentDate->isSameDay($todayDate) ? 'لم يسجل دخول اليوم' : 'غائب';
+            } else {
+                $overallStatus = $dayShifts[0]['status'] ?? 'weekend';
+                $overallNotes = $dayShifts[0]['notes'] ?? '';
+            }
+
+            // Summary metrics
+            if (isset($summary[$overallStatus])) {
+                $summary[$overallStatus]++;
+            }
+
+            foreach ($dayShifts as $ds) {
+                if ($ds['is_working_day'] && !$isFuture && !$isHoliday && !$isLeave) {
+                    $summary['total_shifts_scheduled']++;
+                }
+                if (in_array($ds['status'], ['present', 'late', 'extra'])) {
+                    $summary['total_shifts_attended']++;
+                }
+                if (!empty($ds['late_minutes'])) {
+                    $summary['total_late_minutes'] += (int) $ds['late_minutes'];
+                }
+            }
+
+            $primaryAttendance = $dayAttendances->first();
 
             $records[] = [
                 'date' => $dateString,
                 'day_of_week' => $dayOfWeek,
-                'status' => $status,
-                'notes' => $notes,
-                'attendance' => $actualRecord,
+                'status' => $overallStatus,
+                'notes' => $overallNotes,
+                'shifts_count' => count($dayShifts),
+                'shifts' => $dayShifts,
+                'attendance' => $primaryAttendance,
             ];
         }
 
@@ -431,6 +607,8 @@ class AttendanceApiController extends Controller
             'data'    => [
                 'records' => $records,
                 'summary' => $summary,
+                'employee_shifts' => $employeeShifts,
+                'has_multiple_shifts' => $employeeShifts->count() > 1,
             ],
         ]);
     }
