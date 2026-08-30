@@ -193,4 +193,102 @@ class SemesterResultController extends Controller implements \Illuminate\Routing
 
         return redirect()->back()->with('success', 'تم قفل واعتماد نتائج الفصل بنجاح.');
     }
+
+    /**
+     * كشف درجات ونتائج الطلاب المجمع (Class Report)
+     */
+    public function classReport(Request $request)
+    {
+        $user = auth()->user();
+        $branchId = $user->branch_id;
+
+        $academicYears = \App\Models\AcademicYear::where('branch_id', $branchId)->orderBy('start_date', 'desc')->get();
+        $activeYear = \App\Models\AcademicYear::currentForBranch($branchId);
+
+        $yearId = $request->query('academic_year_id') ?: ($activeYear->id ?? null);
+        $semesters = $yearId ? Semester::where('academic_year_id', $yearId)->orderBy('start_date', 'asc')->get() : collect();
+        $semesterId = $request->query('semester_id') ?: ($semesters->first()->id ?? null);
+
+        $divisions = Division::where('branch_id', $branchId)->with('grade')->get();
+        $divisionId = $request->query('division_id');
+
+        $studentsData = [];
+        $subjects = [];
+        $division = null;
+        $semester = Semester::find($semesterId);
+
+        if ($divisionId && $semester) {
+            $division = Division::with('grade.subjects')->find($divisionId);
+            if ($division && $division->grade) {
+                $subjects = $division->grade->subjects;
+            }
+
+            $enrollments = Enrollment::with('student.user')
+                ->where('division_id', $divisionId)
+                ->where('academic_year_id', $semester->academic_year_id)
+                ->where('status', 'active')
+                ->get();
+
+            // Load existing semester results for all students in this division for all subjects
+            $existingResults = SemesterResult::where('semester_id', $semester->id)
+                ->whereIn('enrollment_id', $enrollments->pluck('id'))
+                ->get()
+                ->groupBy('enrollment_id');
+
+            foreach ($enrollments as $enroll) {
+                $studentResults = $existingResults->get($enroll->id) ? $existingResults->get($enroll->id)->keyBy('subject_id') : collect();
+                
+                $subjectScores = [];
+                $totalScore = 0;
+                $maxPossibleTotal = 0;
+
+                foreach ($subjects as $subject) {
+                    $result = $studentResults->get($subject->id);
+                    $score = $result ? (float)$result->semester_total : 0;
+                    
+                    // We need the max score for percentage. Assuming semester_aggregate_max + final_exam_max
+                    // or just 100 for default.
+                    $subjectMax = ($subject->semester_aggregate_max ?? 0) + ($subject->final_exam_max ?? 0);
+                    if ($subjectMax == 0) $subjectMax = 100; // Fallback
+
+                    $subjectScores[$subject->id] = $score;
+                    $totalScore += $score;
+                    $maxPossibleTotal += $subjectMax;
+                }
+
+                $percentage = $maxPossibleTotal > 0 ? ($totalScore / $maxPossibleTotal) * 100 : 0;
+
+                $studentsData[] = [
+                    'enrollment_id' => $enroll->id,
+                    'student_name' => $enroll->student->user->name,
+                    'student_id_number' => $enroll->student->user->id_number,
+                    'scores' => $subjectScores,
+                    'total_score' => $totalScore,
+                    'max_total' => $maxPossibleTotal,
+                    'percentage' => round($percentage, 2),
+                ];
+            }
+
+            // Default sorting: Alphabetical (since that's what the user prefers for lists typically)
+            // But we'll do it by name
+            usort($studentsData, function($a, $b) {
+                return strcmp($a['student_name'], $b['student_name']);
+            });
+        }
+
+        return Inertia::render('Academic/SemesterResults/ClassReport', [
+            'academicYears' => $academicYears,
+            'semesters' => $semesters,
+            'divisions' => $divisions,
+            'subjects' => $subjects,
+            'studentsData' => $studentsData,
+            'divisionInfo' => $division,
+            'semesterInfo' => $semester,
+            'filters' => [
+                'academic_year_id' => $yearId,
+                'semester_id' => $semesterId,
+                'division_id' => $divisionId,
+            ]
+        ]);
+    }
 }

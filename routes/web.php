@@ -484,6 +484,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'storeClassAttendance'])->name('academic.attendances.classes.store');
         Route::post('/academic/class-attendances/bulk', [\App\Http\Controllers\StudentAttendanceController::class, 'storeBulkClassAttendance'])->name('academic.attendances.classes.storeBulk');
 
+        // Parent Summons
+        Route::get('/academic/parent-summons/report', [\App\Http\Controllers\Academic\ParentSummonController::class, 'report'])->name('academic.parent-summons.report');
         Route::resource('/academic/parent-summons', \App\Http\Controllers\Academic\ParentSummonController::class)->names([
             'index'   => 'academic.parent-summons.index',
             'store'   => 'academic.parent-summons.store',
@@ -519,6 +521,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/academic/attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'index'])->name('academic.attendances.index');
         Route::get('/academic/attendances/create', [\App\Http\Controllers\StudentAttendanceController::class, 'create'])->name('academic.attendances.create');
         Route::post('/academic/attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'store'])->name('academic.attendances.store');
+        Route::get('/academic/attendances/weekly-report', [\App\Http\Controllers\StudentAttendanceController::class, 'weeklyReport'])->name('academic.attendances.weekly-report');
         // Result Periods
         Route::resource('/academic/result-periods', \App\Http\Controllers\Academic\ResultPeriodController::class)->names([
             'index'   => 'academic.result-periods.index',
@@ -539,6 +542,7 @@ Route::middleware('auth')->group(function () {
 
         // Semester Results
         Route::get('/academic/semester-results', [\App\Http\Controllers\Academic\SemesterResultController::class, 'index'])->name('academic.semester-results.index');
+        Route::get('/academic/semester-results/report', [\App\Http\Controllers\Academic\SemesterResultController::class, 'classReport'])->name('academic.semester-results.report');
         Route::post('/academic/semester-results', [\App\Http\Controllers\Academic\SemesterResultController::class, 'store'])->name('academic.semester-results.store');
         Route::post('/academic/semester-results/lock', [\App\Http\Controllers\Academic\SemesterResultController::class, 'lock'])->name('academic.semester-results.lock');
 
@@ -709,6 +713,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('auth')->group(function () {
         Route::get('/hr/appraisals/dashboard', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'dashboard'])->name('hr.appraisals.dashboard');
+        Route::get('/hr/appraisals/report', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'report'])->name('hr.appraisals.report');
         Route::get('/hr/appraisals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'index'])->name('hr.appraisals.index');
         Route::post('/hr/appraisals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'store'])->name('hr.appraisals.store');
         Route::get('/hr/appraisals/{appraisal}', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'show'])->name('hr.appraisals.show');
@@ -774,9 +779,18 @@ Route::middleware('auth')->group(function () {
     // Employee side - accessible to all authenticated users with an employee record
     Route::get('/hr/my-requests', [\App\Http\Controllers\HR\EmployeeRequestController::class, 'myRequests'])->name('hr.my-requests.index');
     Route::post('/hr/my-requests', [\App\Http\Controllers\HR\EmployeeRequestController::class, 'store'])->name('hr.my-requests.store');
+    
+    // ── Reports Center ──
+    Route::middleware('permission:إدارة التقارير')->group(function () {
+        Route::get('/reports-center', [\App\Http\Controllers\Admin\ReportCenterController::class, 'index'])->name('reports.center');
+        Route::get('/reports-center/custom', [\App\Http\Controllers\Admin\ReportCenterController::class, 'customBuilder'])->name('reports.custom');
+        Route::post('/reports-center/custom/generate', [\App\Http\Controllers\Admin\ReportCenterController::class, 'generateCustomReport'])->name('reports.custom.generate');
+    });
+
     // ── Clinic Routes ──
     Route::middleware('permission:إدارة العيادة')->prefix('clinic')->name('clinic.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Clinic\ClinicController::class, 'index'])->name('index');
+        Route::get('/report', [\App\Http\Controllers\Clinic\ClinicController::class, 'report'])->name('report');
         Route::get('/search-students', [\App\Http\Controllers\Clinic\ClinicController::class, 'searchStudents'])->name('search-students');
         
         // Medical Records

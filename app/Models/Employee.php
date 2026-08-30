@@ -53,4 +53,39 @@ class Employee extends Model
     {
         return $this->hasMany(Attendance::class);
     }
+
+    public function requests()
+    {
+        return $this->hasMany(EmployeeRequest::class);
+    }
+
+    public function violations()
+    {
+        return $this->hasMany(EmployeeViolation::class, 'user_id', 'user_id');
+    }
+
+    public function achievements()
+    {
+        return $this->hasMany(EmployeeAchievement::class, 'user_id', 'user_id');
+    }
+
+    public function masterTimetables()
+    {
+        return $this->hasMany(MasterTimetable::class, 'teacher_id', 'user_id');
+    }
+
+    public function substituteCoverages()
+    {
+        return $this->hasMany(ClassCoverage::class, 'substitute_teacher_id', 'user_id');
+    }
+
+    public function lessonPreparations()
+    {
+        return $this->hasMany(LessonPreparation::class, 'teacher_id', 'user_id');
+    }
+
+    public function meetingParticipations()
+    {
+        return $this->hasMany(MeetingParticipant::class, 'user_id', 'user_id');
+    }
 }

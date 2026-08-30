@@ -199,6 +199,107 @@ class StudentAttendanceController extends Controller
     }
 
     /**
+     * تقرير كشف الحضور والغياب الأسبوعي (Weekly Report)
+     */
+    public function weeklyReport(Request $request)
+    {
+        $grades = Grade::with('divisions')->get();
+        $divisions = Division::with('grade')->get();
+        
+        $date = $request->filled('date') ? $request->date : today()->toDateString();
+        $divisionId = $request->division_id ?? ($divisions->first()->id ?? null);
+        $gradeId = $request->grade_id ?? ($divisions->where('id', $divisionId)->first()->grade_id ?? null);
+
+        // Calculate the week's Sunday and Thursday
+        $selectedDate = \Carbon\Carbon::parse($date);
+        
+        // In Middle East, week usually starts on Sunday. 
+        // We'll manually adjust to find the Sunday of the current week.
+        $dayOfWeek = $selectedDate->dayOfWeek; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        $sunday = $selectedDate->copy()->subDays($dayOfWeek);
+        $thursday = $sunday->copy()->addDays(4);
+
+        $weekDays = [
+            'sunday'    => ['date' => $sunday->toDateString(), 'name' => 'الأحد'],
+            'monday'    => ['date' => $sunday->copy()->addDays(1)->toDateString(), 'name' => 'الإثنين'],
+            'tuesday'   => ['date' => $sunday->copy()->addDays(2)->toDateString(), 'name' => 'الثلاثاء'],
+            'wednesday' => ['date' => $sunday->copy()->addDays(3)->toDateString(), 'name' => 'الأربعاء'],
+            'thursday'  => ['date' => $thursday->toDateString(), 'name' => 'الخميس'],
+        ];
+
+        if (!$divisionId) {
+            return Inertia::render('Academic/Attendances/WeeklyReport', [
+                'students' => [],
+                'weekDays' => $weekDays,
+                'grades' => $grades,
+                'divisions' => $divisions,
+                'filters' => $request->only(['date', 'grade_id', 'division_id']),
+            ]);
+        }
+
+        $division = Division::with('grade')->find($divisionId);
+
+        // 2. Fetch Students
+        $students = User::with([
+            'student.currentEnrollment.division.grade',
+            // Fetch daily logs for the 5 days
+            'attendanceLogs' => function($q) use ($sunday, $thursday) {
+                $q->whereBetween('attendance_date', [$sunday->toDateString(), $thursday->toDateString()]);
+            }
+        ])->whereHas('student.currentEnrollment', function($q) use ($divisionId) {
+            $q->where('division_id', $divisionId);
+        })->whereHas('role', function($q) {
+            $q->where('name', 'طالب');
+        })->orderBy('name')->get();
+
+        // 3. Map Data
+        $mappedStudents = $students->map(function ($user) use ($weekDays) {
+            $studentLogs = $user->attendanceLogs->keyBy('attendance_date');
+            
+            $daysData = [];
+            $totalAbsences = 0;
+            $totalLates = 0;
+
+            foreach ($weekDays as $key => $day) {
+                $log = $studentLogs->get($day['date']);
+                $status = $log ? $log->status : 'present'; // Default to present if no explicit absence
+                
+                $daysData[$key] = [
+                    'status' => $status,
+                    'date' => $day['date']
+                ];
+
+                if ($status === 'absent') $totalAbsences++;
+                if ($status === 'late') $totalLates++;
+            }
+
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'id_number' => $user->id_number,
+                'days' => $daysData,
+                'stats' => [
+                    'absences' => $totalAbsences,
+                    'lates' => $totalLates
+                ]
+            ];
+        });
+
+        return Inertia::render('Academic/Attendances/WeeklyReport', [
+            'students' => $mappedStudents,
+            'weekDays' => $weekDays,
+            'divisionInfo' => $division,
+            'grades' => $grades,
+            'divisions' => $divisions,
+            'filters' => [
+                'date' => $date,
+                'grade_id' => $gradeId,
+                'division_id' => $divisionId,
+            ],
+        ]);
+    }
+
+    /**
      * تقارير الغياب التفصيلية في الحصص (Matrix View)
      */
     public function classReports(Request $request)
