@@ -333,6 +333,99 @@ class ParentAppController extends Controller
 
 
     /**
+     * Get a specific child's monthly grades.
+     */
+    public function getChildGrades(Request $request, $student_id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        // Verify child belongs to parent
+        $isChild = $user->children()->where('students.id', $student_id)->exists();
+        if (!$isChild) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $enrollment = Enrollment::where('student_id', $student_id)
+            ->where('status', 'active')
+            ->first();
+
+        if (!$enrollment) {
+            return response()->json(['message' => 'No active enrollment found'], 404);
+        }
+
+        $grades = \App\Models\MonthlyGrade::with(['subject', 'period', 'semester'])
+            ->where('enrollment_id', $enrollment->id)
+            ->orderBy('period_id', 'desc')
+            ->get();
+
+        $labelMap = [
+            'oral_total'     => 'الشفهي والأنشطة',
+            'homework_total' => 'الواجبات المنزلية',
+            'behavior'       => 'المواظبة والسلوك',
+            'monthly_exam'   => 'اختبار الشهر',
+            'oral'           => 'الشفهي',
+            'homework'       => 'الواجبات',
+            'exam'           => 'الاختبار التحريري',
+            'activities'     => 'الأنشطة الصفية',
+            'attendance'     => 'الحضور والغياب',
+        ];
+
+        $data = $grades->map(function ($grade) use ($labelMap) {
+            $rawScores = is_array($grade->scores) ? $grade->scores : [];
+            $total = 0;
+            $breakdown = [];
+
+            if (isset($rawScores['grand_total']) && is_numeric($rawScores['grand_total'])) {
+                $total = (float)$rawScores['grand_total'];
+            }
+
+            foreach ($rawScores as $key => $val) {
+                if ($key === 'grand_total' || $key === 'total') continue;
+                if (is_numeric($val)) {
+                    $breakdown[$labelMap[$key] ?? $key] = (float)$val;
+                    if (!isset($rawScores['grand_total'])) {
+                        $total += (float)$val;
+                    }
+                }
+            }
+
+            $maxScore = 50.0;
+            if ($total > 50 || count($breakdown) > 4) {
+                $maxScore = 100.0;
+            }
+            $percentage = $maxScore > 0 ? round(($total / $maxScore) * 100, 1) : 0;
+
+            $rating = 'ممتاز 🌟';
+            if ($percentage < 50) $rating = 'راسب ⚠️';
+            elseif ($percentage < 65) $rating = 'مقبول';
+            elseif ($percentage < 75) $rating = 'جيد';
+            elseif ($percentage < 85) $rating = 'جيد جداً';
+
+            return [
+                'id' => $grade->id,
+                'subject_name' => $grade->subject?->name ?? 'غير محدد',
+                'period_name' => $grade->period?->month_name ?? ($grade->period?->title ?? 'فترة رصد'),
+                'semester_name' => $grade->semester?->name ?? 'الفصل الدراسي',
+                'scores' => $breakdown,
+                'total_score' => round($total, 2),
+                'max_score' => $maxScore,
+                'percentage' => $percentage,
+                'rating' => $rating,
+            ];
+        });
+
+        $grouped = $data->groupBy('period_name')->toArray();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => (object)$grouped
+        ]);
+    }
+
+    /**
      * Get a specific child's semester results.
      */
     public function getChildSemesterResults(Request $request, $student_id)
@@ -358,28 +451,42 @@ class ParentAppController extends Controller
 
         $results = \App\Models\SemesterResult::with(['subject', 'semester'])
             ->where('enrollment_id', $enrollment->id)
-            ->where('status', 'locked') // Only show final results to parents
             ->orderBy('semester_id', 'desc')
             ->get();
 
         $data = $results->map(function ($result) {
+            $monthlyAggregate = (float)($result->monthly_aggregate ?? 0);
+            $finalExamScore   = (float)($result->final_exam_score ?? 0);
+            $semesterTotal    = (float)($result->semester_total ?? ($monthlyAggregate + $finalExamScore));
+
+            $maxScore = 100.0;
+            $percentage = round(($semesterTotal / $maxScore) * 100, 1);
+
+            $statusText = $semesterTotal >= 50 ? 'ناجح ✓' : 'دور ثانٍ ⚠️';
+            $rating = 'ممتاز 🌟';
+            if ($percentage < 50) $rating = 'راسب ⚠️';
+            elseif ($percentage < 65) $rating = 'مقبول';
+            elseif ($percentage < 75) $rating = 'جيد';
+            elseif ($percentage < 85) $rating = 'جيد جداً';
+
             return [
                 'id' => $result->id,
                 'subject_name' => $result->subject?->name ?? 'غير محدد',
-                'semester_name' => $result->semester?->name ?? 'غير محدد',
-                'monthly_aggregate' => $result->monthly_aggregate,
-                'final_exam_score' => $result->final_exam_score,
-                'semester_total' => $result->semester_total,
-                'notes' => $result->notes,
-                'attachment_url' => $result->attachment_path ? asset('storage/' . $result->attachment_path) : null,
+                'semester_name' => $result->semester?->name ?? 'الفصل الدراسي',
+                'monthly_aggregate' => round($monthlyAggregate, 2),
+                'final_exam_score' => round($finalExamScore, 2),
+                'semester_total' => round($semesterTotal, 2),
+                'percentage' => $percentage,
+                'status_text' => $statusText,
+                'rating' => $rating,
             ];
         });
 
-        $grouped = $data->groupBy('semester_name');
+        $grouped = $data->groupBy('semester_name')->toArray();
 
         return response()->json([
             'status' => 'success',
-            'data' => $grouped
+            'data' => (object)$grouped
         ]);
     }
 
@@ -519,10 +626,19 @@ class ParentAppController extends Controller
             return response()->json(['message' => 'No active enrollment found'], 404);
         }
 
-        $homework = \App\Models\LessonPreparation::with(['subject', 'teacher'])
-            ->where('division_id', $enrollment->division_id)
-            ->whereDate('preparation_date', '>=', now()->subDays(7))
-            ->orderBy('preparation_date', 'desc')
+        $query = \App\Models\LessonPreparation::with(['subject', 'teacher'])
+            ->where('division_id', $enrollment->division_id);
+
+        if ($request->filled('date')) {
+            $query->whereDate('preparation_date', $request->date);
+        } elseif ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('preparation_date', [$request->start_date, $request->end_date]);
+        } else {
+            $query->whereDate('preparation_date', '>=', now()->subDays(30));
+        }
+
+        $homework = $query->orderBy('preparation_date', 'desc')
+            ->orderBy('id', 'desc')
             ->get();
 
         return response()->json([

@@ -36,6 +36,7 @@ Route::prefix('mobile')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [MobileAuthController::class, 'logout']);
         Route::post('/change-password', [MobileAuthController::class, 'changePassword']);
+        Route::get('/profile', [MobileAuthController::class, 'getProfile']);
         Route::get('/linked-accounts', [MobileAuthController::class, 'getLinkedAccounts']);
         Route::post('/switch-account/{user}', [MobileAuthController::class, 'switchAccount']);
         Route::post('/user/device-token', [\App\Http\Controllers\NotificationController::class, 'saveFcmToken']);
