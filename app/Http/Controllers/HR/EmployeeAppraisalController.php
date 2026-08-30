@@ -16,20 +16,47 @@ use Illuminate\Support\Facades\Auth;
 
 class EmployeeAppraisalController extends Controller
 {
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $user = Auth::user();
         $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         $branchId = $user->branch_id ?? session('branch_id');
 
-        $cacheKey = "appraisal_dashboard_branch_{$branchId}";
+        $cycleId = $request->cycle_id;
+        $departmentId = $request->department_id;
+        $employeeId = $request->employee_id;
+        $dateFrom = $request->date_from;
+        $dateTo = $request->date_to;
 
-        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 3600, function () use ($isSystemAdmin, $branchId) {
-            $baseQuery = function($query) use ($isSystemAdmin, $branchId) {
+        $cacheKey = "appraisal_dashboard_branch_{$branchId}_cycle_{$cycleId}_dept_{$departmentId}_emp_{$employeeId}_from_{$dateFrom}_to_{$dateTo}";
+
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($isSystemAdmin, $branchId, $cycleId, $departmentId, $employeeId, $dateFrom, $dateTo) {
+            $baseQuery = function($query) use ($isSystemAdmin, $branchId, $cycleId, $departmentId, $employeeId, $dateFrom, $dateTo) {
+                $query->join('employees as emp_filter', 'employee_appraisals.employee_id', '=', 'emp_filter.id')
+                      ->join('users as usr_filter', 'emp_filter.user_id', '=', 'usr_filter.id');
+
                 if (!$isSystemAdmin && $branchId) {
-                    $query->join('employees as emp_filter', 'employee_appraisals.employee_id', '=', 'emp_filter.id')
-                          ->join('users as usr_filter', 'emp_filter.user_id', '=', 'usr_filter.id')
-                          ->where('usr_filter.branch_id', $branchId);
+                    $query->where('usr_filter.branch_id', $branchId);
+                }
+                
+                if ($cycleId) {
+                    $query->where('employee_appraisals.cycle_id', $cycleId);
+                }
+                
+                if ($departmentId) {
+                    $query->where('emp_filter.department_id', $departmentId);
+                }
+                
+                if ($employeeId) {
+                    $query->where('employee_appraisals.employee_id', $employeeId);
+                }
+                
+                if ($dateFrom) {
+                    $query->whereDate('employee_appraisals.created_at', '>=', $dateFrom);
+                }
+                
+                if ($dateTo) {
+                    $query->whereDate('employee_appraisals.created_at', '<=', $dateTo);
                 }
             };
 
@@ -45,6 +72,21 @@ class EmployeeAppraisalController extends Controller
                 $deptQuery->join('users', 'employees.user_id', '=', 'users.id')
                           ->where('users.branch_id', $branchId);
             }
+            if ($cycleId) {
+                $deptQuery->where('employee_appraisals.cycle_id', $cycleId);
+            }
+            if ($departmentId) {
+                $deptQuery->where('employees.department_id', $departmentId);
+            }
+            if ($employeeId) {
+                $deptQuery->where('employee_appraisals.employee_id', $employeeId);
+            }
+            if ($dateFrom) {
+                $deptQuery->whereDate('employee_appraisals.created_at', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $deptQuery->whereDate('employee_appraisals.created_at', '<=', $dateTo);
+            }
             $departmentPerformance = $deptQuery->get();
 
             // 2. Score Distribution
@@ -53,6 +95,23 @@ class EmployeeAppraisalController extends Controller
                 $completedAppraisalsQuery->whereHas('employee.user', function($q) use ($branchId) {
                     $q->where('branch_id', $branchId);
                 });
+            }
+            if ($cycleId) {
+                $completedAppraisalsQuery->where('cycle_id', $cycleId);
+            }
+            if ($departmentId) {
+                $completedAppraisalsQuery->whereHas('employee', function($q) use ($departmentId) {
+                    $q->where('department_id', $departmentId);
+                });
+            }
+            if ($employeeId) {
+                $completedAppraisalsQuery->where('employee_id', $employeeId);
+            }
+            if ($dateFrom) {
+                $completedAppraisalsQuery->whereDate('created_at', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $completedAppraisalsQuery->whereDate('created_at', '<=', $dateTo);
             }
             $completedAppraisals = $completedAppraisalsQuery->get();
             
@@ -82,6 +141,27 @@ class EmployeeAppraisalController extends Controller
                 $branchFilter($topQuery);
                 $branchFilter($bottomQuery);
             }
+            if ($cycleId) {
+                $topQuery->where('cycle_id', $cycleId);
+                $bottomQuery->where('cycle_id', $cycleId);
+            }
+            if ($departmentId) {
+                $deptFilter = function($q) use ($departmentId) { $q->whereHas('employee', function($sq) use ($departmentId) { $sq->where('department_id', $departmentId); }); };
+                $deptFilter($topQuery);
+                $deptFilter($bottomQuery);
+            }
+            if ($employeeId) {
+                $topQuery->where('employee_id', $employeeId);
+                $bottomQuery->where('employee_id', $employeeId);
+            }
+            if ($dateFrom) {
+                $topQuery->whereDate('created_at', '>=', $dateFrom);
+                $bottomQuery->whereDate('created_at', '>=', $dateFrom);
+            }
+            if ($dateTo) {
+                $topQuery->whereDate('created_at', '<=', $dateTo);
+                $bottomQuery->whereDate('created_at', '<=', $dateTo);
+            }
 
             return [
                 'departmentPerformance' => $departmentPerformance,
@@ -91,8 +171,104 @@ class EmployeeAppraisalController extends Controller
                 'bottomEmployees' => $bottomQuery->get()
             ];
         });
+        
+        // Load filter lookups
+        $data['cycles'] = AppraisalCycle::orderBy('start_date', 'desc')->get(['id', 'title', 'start_date', 'end_date']);
+        $data['departments'] = \App\Models\Department::all(['id', 'name']);
+        
+        // Fetch employees
+        $employeesQuery = Employee::with('user:id,name');
+        if (!$isSystemAdmin && $branchId) {
+            $employeesQuery->whereHas('user', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+        $data['employees'] = $employeesQuery->get()->map(function($emp) {
+            return [
+                'id' => $emp->id,
+                'name' => $emp->user ? $emp->user->name : 'غير معروف'
+            ];
+        });
+        
+        $data['filters'] = $request->only(['cycle_id', 'department_id', 'employee_id', 'date_from', 'date_to']);
 
         return Inertia::render('HR/Appraisals/Dashboard', $data);
+    }
+
+    // Report Sheet for Employee Appraisals
+    public function report(Request $request)
+    {
+        $user = Auth::user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $branchId = $user->branch_id ?? session('branch_id');
+
+        if (!$user->hasPermission('عرض التقييمات الإدارية')) {
+            abort(403, 'ليس لديك صلاحية الوصول لكشف التقييمات.');
+        }
+
+        $query = EmployeeAppraisal::with(['employee.user', 'employee.department', 'cycle', 'manager.user', 'template'])
+            ->whereNotNull('final_score'); // Only show completed appraisals in the report
+
+        if (!$isSystemAdmin && $branchId) {
+            $query->whereHas('employee.user', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+
+        // Filters
+        if ($request->filled('cycle_id')) {
+            $query->where('cycle_id', $request->cycle_id);
+        }
+        if ($request->filled('department_id')) {
+            $query->whereHas('employee', function($q) use ($request) {
+                $q->where('department_id', $request->department_id);
+            });
+        }
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
+        }
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        // Search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('employee.user', function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('id_number', 'like', "%{$search}%");
+            });
+        }
+
+        $appraisals = $query->latest()->paginate(15)->withQueryString();
+
+        // Load filter lookups
+        $cycles = AppraisalCycle::orderBy('start_date', 'desc')->get(['id', 'title']);
+        $departments = \App\Models\Department::all(['id', 'name']);
+        
+        $employeesQuery = Employee::with('user:id,name');
+        if (!$isSystemAdmin && $branchId) {
+            $employeesQuery->whereHas('user', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+        $employees = $employeesQuery->get()->map(function($emp) {
+            return [
+                'id' => $emp->id,
+                'name' => $emp->user ? $emp->user->name : 'غير معروف'
+            ];
+        });
+
+        return Inertia::render('HR/Appraisals/Report', [
+            'appraisals' => $appraisals,
+            'cycles' => $cycles,
+            'departments' => $departments,
+            'employees' => $employees,
+            'filters' => $request->all()
+        ]);
     }
 
     // List appraisals for an employee (Self), Manager, or HR

@@ -81,4 +81,36 @@ class ParentSummonController extends Controller
         $parentSummon->delete();
         return redirect()->back()->with('success', 'تم الحذف بنجاح');
     }
+
+    public function report(Request $request)
+    {
+        $branchId = auth()->user()->branch_id;
+        $query = ParentSummon::with(['student.user', 'student.activeEnrollment.division.grade', 'violation.violationType'])
+            ->where('branch_id', $branchId);
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $status = $request->query('status');
+
+        if ($startDate) {
+            $query->whereDate('summon_date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('summon_date', '<=', $endDate);
+        }
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $summons = $query->orderBy('summon_date', 'desc')->get();
+
+        return Inertia::render('Academic/StudentDiscipline/Summons/Report', [
+            'summons' => $summons,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => $status,
+            ]
+        ]);
+    }
 }

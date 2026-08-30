@@ -1,10 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { BarChart as BarChartIcon, TrendingUp, TrendingDown, Users, Target, Activity } from 'lucide-react';
+import { BarChart as BarChartIcon, TrendingUp, TrendingDown, Users, Target, Activity, Filter, RefreshCw } from 'lucide-react';
 
-export default function AppraisalsDashboard({ departmentPerformance, distribution, selfVsManager, topEmployees, bottomEmployees }) {
+export default function AppraisalsDashboard({ departmentPerformance, distribution, selfVsManager, topEmployees, bottomEmployees, cycles = [], departments = [], employees = [], filters = {} }) {
+    // Filter State
+    const [filterData, setFilterData] = useState({
+        cycle_id: filters.cycle_id || '',
+        department_id: filters.department_id || '',
+        employee_id: filters.employee_id || '',
+        date_from: filters.date_from || '',
+        date_to: filters.date_to || ''
+    });
+
+    const handleFilter = (e) => {
+        e.preventDefault();
+        router.get(route('hr.appraisals.dashboard'), filterData, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    const clearFilters = () => {
+        setFilterData({ cycle_id: '', department_id: '', employee_id: '', date_from: '', date_to: '' });
+        router.get(route('hr.appraisals.dashboard'), {}, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
     // Colors for pie chart
     const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#f43f5e'];
     
@@ -17,7 +42,6 @@ export default function AppraisalsDashboard({ departmentPerformance, distributio
     ].filter(d => d.value > 0);
 
     // Prepare data for Radar Chart (Self vs Manager)
-    // We only have the overall average right now, so we can display it as a simple bar or radial chart, but let's make a dual bar chart.
     const comparisonData = [
         { name: 'متوسط التقييم (من 5)', الذاتي: selfVsManager?.avg_self || 0, المدير: selfVsManager?.avg_manager || 0 }
     ];
@@ -44,10 +68,10 @@ export default function AppraisalsDashboard({ departmentPerformance, distributio
             <Head title="لوحة بيانات التقييم | النظام الإداري" />
 
             <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
-                {/* Header */}
+                {/* Header & Filters */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6 border-b border-primary-100 dark:border-primary-500/10 pb-6">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
                                 <Activity size={28} className="text-primary-600" />
@@ -56,6 +80,82 @@ export default function AppraisalsDashboard({ departmentPerformance, distributio
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">تحليل شامل لنتائج تقييمات الأداء عبر الأقسام والموظفين</p>
                         </div>
                     </div>
+                    
+                    {/* Filter Bar */}
+                    <form onSubmit={handleFilter} className="relative z-10 bg-white/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-primary-50 dark:border-primary-500/10 backdrop-blur-sm">
+                        <div className="flex items-center gap-2 mb-4 text-primary-600 dark:text-primary-400 font-bold text-sm">
+                            <Filter size={18} /> خيارات التصفية
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div className="col-span-1">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">دورة التقييم</label>
+                                <select 
+                                    value={filterData.cycle_id} 
+                                    onChange={e => setFilterData({...filterData, cycle_id: e.target.value})}
+                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                >
+                                    <option value="">جميع دورات التقييم</option>
+                                    {cycles.map(cycle => (
+                                        <option key={cycle.id} value={cycle.id}>{cycle.title}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-span-1">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">القسم</label>
+                                <select 
+                                    value={filterData.department_id} 
+                                    onChange={e => setFilterData({...filterData, department_id: e.target.value})}
+                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                >
+                                    <option value="">جميع الأقسام</option>
+                                    {departments.map(dept => (
+                                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-span-1">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">الموظف</label>
+                                <select 
+                                    value={filterData.employee_id} 
+                                    onChange={e => setFilterData({...filterData, employee_id: e.target.value})}
+                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                >
+                                    <option value="">جميع الموظفين</option>
+                                    {employees.map(emp => (
+                                        <option key={emp.id} value={emp.id}>{emp.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-span-1">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">من تاريخ</label>
+                                <input 
+                                    type="date"
+                                    value={filterData.date_from} 
+                                    onChange={e => setFilterData({...filterData, date_from: e.target.value})}
+                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                />
+                            </div>
+                            <div className="col-span-1">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">إلى تاريخ</label>
+                                <input 
+                                    type="date"
+                                    value={filterData.date_to} 
+                                    onChange={e => setFilterData({...filterData, date_to: e.target.value})}
+                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end items-center gap-2 mt-5 pt-4 border-t border-primary-50 dark:border-primary-500/10">
+                            {(filters.cycle_id || filters.department_id || filters.employee_id || filters.date_from || filters.date_to) && (
+                                <button type="button" onClick={clearFilters} className="bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2" title="مسح الفلاتر">
+                                    <RefreshCw size={16} /> مسح
+                                </button>
+                            )}
+                            <button type="submit" className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2">
+                                عرض النتائج
+                            </button>
+                        </div>
+                    </form>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -68,4 +68,29 @@ class Student extends Model
     public function pledges(): HasMany {
         return $this->hasMany(StudentPledge::class);
     }
+
+    // استدعاءات أولياء الأمور
+    public function parentSummons(): HasMany {
+        return $this->hasMany(ParentSummon::class);
+    }
+
+    // زيارات أولياء الأمور
+    public function parentVisits(): HasMany {
+        return $this->hasMany(ParentVisit::class);
+    }
+
+    // الدرجات الشهرية
+    public function monthlyGrades() {
+        return $this->hasManyThrough(MonthlyGrade::class, Enrollment::class);
+    }
+
+    // نتائج الفصول
+    public function semesterResults() {
+        return $this->hasManyThrough(SemesterResult::class, Enrollment::class);
+    }
+
+    // سجلات الحضور
+    public function attendanceLogs() {
+        return $this->hasMany(AttendanceLog::class, 'user_id', 'user_id');
+    }
 }

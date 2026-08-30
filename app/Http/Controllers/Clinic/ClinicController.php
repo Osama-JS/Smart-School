@@ -94,4 +94,37 @@ class ClinicController extends Controller
             ]);
         }
     }
+
+    /**
+     * تقرير السجلات الطبية والزيارات اليومية
+     */
+    public function report(Request $request)
+    {
+        $query = ClinicVisit::with(['student.user', 'student.currentEnrollment.division.grade', 'student.medicalRecord']);
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $status = $request->query('status'); // روتيني، طارئ، محول
+
+        if ($startDate) {
+            $query->whereDate('visited_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('visited_at', '<=', $endDate);
+        }
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $visits = $query->orderBy('visited_at', 'desc')->get();
+
+        return Inertia::render('Clinic/Report', [
+            'visits' => $visits,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => $status,
+            ]
+        ]);
+    }
 }

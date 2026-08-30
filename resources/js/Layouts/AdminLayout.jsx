@@ -140,6 +140,9 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'التقارير والإحصائيات',
             items: [
+                { name: 'التقارير المرفوعة', icon: FileText, url: route('reports.index') },
+                { name: 'مركز التقارير', icon: FileText, url: route('reports.center') },
+                { name: 'مُنشئ التقارير', icon: Sliders, url: route('reports.custom') },
                 { name: 'تقارير الأداء', icon: BarChart, url: route('admin.performance.index') },
                 { name: 'إحصائيات المرور', icon: Users, url: route('admin.traffic.index') },
                 { name: 'سجلات النظام', icon: Activity, url: route('admin.activity-logs.index') },
@@ -216,6 +219,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'طلبات الموظفين', icon: Layers, url: route('hr.requests.index'), permission: 'إدارة طلبات الموظفين' },
                 { name: 'طلباتي', icon: FileText, url: route('hr.my-requests.index'), permission: null },
                 { name: 'التقارير', icon: FileText, url: route('reports.index'), permission: 'إدارة التقارير' },
+                { name: 'مركز التقارير', icon: FileText, url: route('reports.center'), permission: 'إدارة التقارير' },
                 { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates'), permission: 'إدارة قوالب التقارير' },
                 { name: 'تقاريري', icon: FileText, url: route('hr.reports.my-reports.index'), permission: null },
                 { name: 'مخالفاتي', icon: AlertCircle, url: route('hr.my-violations'), permission: 'عرض مخالفاتي' },
