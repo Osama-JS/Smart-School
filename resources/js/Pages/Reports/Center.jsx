@@ -226,36 +226,29 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     name: 'تقرير غياب المعلمين',
                     description: 'متابعة سجلات الحضور والانصراف والغياب للمعلمين',
                     icon: Clock,
-                    url: route('hr.attendance.report'),
+                    url: route('hr.reports.teacher-absences'),
                     permission: 'إدارة الحضور والانصراف',
                 },
                 {
                     name: 'تقارير رفع دفتر المتابعة',
                     description: 'متابعة انضباط المعلمين في رفع دفاتر التحضير والمتابعة',
                     icon: BookOpen,
-                    url: route('admin.followup-books.index'),
+                    url: route('hr.reports.followup-books'),
                     permission: 'إدارة دفاتر المتابعة',
                 },
                 {
                     name: 'تقارير الخطط الدراسية',
                     description: 'متابعة الخطط الدراسية المرفوعة من قبل المعلمين',
                     icon: Map,
-                    url: route('academic.study-plans.index'),
+                    url: route('hr.reports.study-plans'),
                     permission: 'إدارة الخطط الدراسية',
                 },
                 {
                     name: 'الزيارات الصفية (المشرف)',
                     description: 'تقارير وسجلات الزيارات الصفية للمشرفين الأكاديميين',
                     icon: Eye,
-                    url: route('academic.classroom-visits'),
+                    url: route('hr.reports.classroom-visits'),
                     permission: 'إدارة الزيارات الصفية',
-                },
-                {
-                    name: 'تقييمات الأداء',
-                    description: 'لوحة بيانات تحليلية لنتائج تقييم الأداء للموظفين',
-                    icon: Star,
-                    url: route('hr.appraisals.dashboard'),
-                    permission: null,
                 },
                 {
                     name: 'كشف تقييمات الموظفين',
@@ -432,21 +425,6 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                 }
             ]
 
-        },
-        {
-            title: 'تقارير نظام التحفيز (النقاط والأوسمة) 🏆',
-            icon: Trophy,
-            color: 'from-primary-500 to-primary-600',
-            bgGlow: 'bg-primary-500/10',
-            reports: [
-                {
-                    name: 'لوحة الشرف والأوسمة',
-                    description: 'تقرير بالطلاب الذين حصلوا على أعلى النقاط والأوسمة لتحفيز التنافس',
-                    icon: Trophy,
-                    url: route('academic.gamification.index'),
-                    permission: null,
-                }
-            ]
         },
         {
             title: 'تقارير الاجتماعات والمجالس 🤝',
@@ -745,7 +723,7 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                                                 fill="#f97316" 
                                                 radius={[6, 6, 0, 0]} 
                                                 barSize={20} 
-                                                onClick={() => window.location.href = route('hr.attendance.report')}
+                                                onClick={() => window.location.href = route('hr.reports.teacher-absences')}
                                                 cursor="pointer"
                                                 className="hover:opacity-80 transition-opacity"
                                             />

@@ -225,6 +225,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:إدارة الزيارات الصفية')->group(function () {
+        Route::get('/hr/reports/classroom-visits', [\App\Http\Controllers\Academic\ClassroomVisitReportController::class, 'report'])->name('hr.reports.classroom-visits');
         Route::resource('/academic/classroom-visits', \App\Http\Controllers\Academic\ClassroomVisitController::class)->names([
             'index'   => 'academic.classroom-visits',
             'store'   => 'academic.classroom-visits.store',
@@ -244,6 +245,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:إدارة الخطط الدراسية')->group(function () {
+        Route::get('/hr/reports/study-plans', [\App\Http\Controllers\Academic\StudyPlanReportController::class, 'report'])->name('hr.reports.study-plans');
         Route::get('/academic/study-plans/analytics', [\App\Http\Controllers\Academic\StudyPlanAnalyticsController::class, 'index'])->name('academic.study-plans.analytics');
         Route::get('/academic/study-plans', [\App\Http\Controllers\Academic\StudyPlanController::class, 'index'])->name('academic.study-plans.index');
         Route::get('/academic/study-plans/{studyPlan}', [\App\Http\Controllers\Academic\StudyPlanController::class, 'show'])->name('academic.study-plans.show');
@@ -401,6 +403,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:إدارة دفاتر المتابعة')->group(function () {
         Route::get('/admin/followup-books/export', [\App\Http\Controllers\Admin\FollowupBookController::class, 'export'])->name('admin.followup-books.export');
         Route::get('/admin/followup-books', [\App\Http\Controllers\Admin\FollowupBookController::class, 'index'])->name('admin.followup-books.index');
+        Route::get('/hr/reports/followup-books', [\App\Http\Controllers\Admin\FollowupBookController::class, 'report'])->name('hr.reports.followup-books');
         Route::get('/admin/followup-books/{teacher}', [\App\Http\Controllers\Admin\FollowupBookController::class, 'show'])->name('admin.followup-books.show');
         Route::post('/admin/followup-books/settings', [\App\Http\Controllers\Admin\FollowupBookController::class, 'updateSettings'])->name('admin.followup-books.settings');
     });
@@ -685,6 +688,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:إدارة الحضور والانصراف')->group(function () {
         Route::get('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'index'])->name('hr.attendance');
         Route::get('/hr/attendance/report', [\App\Http\Controllers\HR\AttendanceController::class, 'report'])->name('hr.attendance.report');
+        Route::get('/hr/reports/teacher-absences', [\App\Http\Controllers\HR\AttendanceController::class, 'teacherAbsencesReport'])->name('hr.reports.teacher-absences');
         Route::get('/hr/attendance/employee-report/{employeeId}', [\App\Http\Controllers\Api\AttendanceApiController::class, 'employeeReport'])->name('hr.attendance.employee-report');
         Route::post('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'store'])->name('hr.attendance.store');
         Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');

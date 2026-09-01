@@ -335,6 +335,127 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
         return back()->with('success', 'تم حفظ سجل الحضور بنجاح');
     }
 
+    public function teacherAbsencesReport(Request $request)
+    {
+        $user = $request->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $userBranchId = $isSystemAdmin ? null : $user->branch_id;
+
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->get('end_date', Carbon::today()->toDateString());
+        $departmentId = $request->get('department_id');
+        $employeeId = $request->get('employee_id');
+        $statuses = $request->get('statuses');
+        $violatorsOnly = filter_var($request->get('violators_only', false), FILTER_VALIDATE_BOOLEAN);
+
+        if (empty($statuses)) {
+            $statuses = ['absent', 'late', 'excused', 'leave'];
+        } else if (is_string($statuses)) {
+            $statuses = explode(',', $statuses);
+        }
+
+        // Base Query
+        $query = \App\Models\Attendance::with(['employee.user', 'employee.department'])
+            ->whereHas('employee.user', function($q) use ($userBranchId) {
+                $q->where(function($subQ) {
+                    $subQ->where('name', 'like', '%معلم%')
+                         ->orWhere('name', 'like', '%مدرس%');
+                });
+                if ($userBranchId) {
+                    $q->where('branch_id', $userBranchId);
+                }
+            })
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereIn('status', $statuses);
+
+        if ($departmentId) {
+            $query->whereHas('employee', function($q) use ($departmentId) {
+                $q->where('department_id', $departmentId);
+            });
+        }
+
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        }
+
+        $absencesRaw = $query->orderBy('date', 'desc')->get();
+
+        $absences = $absencesRaw->map(function($att) {
+            return [
+                'id' => $att->id,
+                'employee_name' => $att->employee->user->name ?? 'غير محدد',
+                'department_name' => $att->employee->department->name ?? 'غير محدد',
+                'date' => $att->date,
+                'day' => Carbon::parse($att->date)->locale('ar')->isoFormat('dddd'),
+                'status_code' => $att->status,
+                'status' => match($att->status) {
+                    'absent' => 'غياب بدون عذر',
+                    'late' => 'تأخير',
+                    'excused' => 'استئذان',
+                    'leave' => 'إجازة / مرضي',
+                    default => 'غير معروف'
+                },
+                'late_minutes' => $att->late_minutes,
+                'notes' => $att->notes,
+            ];
+        });
+
+        // Kpis
+        $total_absent = $absencesRaw->where('status', 'absent')->count();
+        $total_late = $absencesRaw->where('status', 'late')->count();
+        $unique_teachers = $absencesRaw->pluck('employee_id')->unique()->count();
+
+        // Department Chart
+        $deptStats = [];
+        foreach($absencesRaw as $att) {
+            $deptName = $att->employee->department->name ?? 'غير محدد';
+            if (!isset($deptStats[$deptName])) {
+                $deptStats[$deptName] = ['name' => $deptName, 'absent' => 0, 'late' => 0, 'excused' => 0, 'leave' => 0];
+            }
+            if ($att->status == 'absent') $deptStats[$deptName]['absent']++;
+            if ($att->status == 'late') $deptStats[$deptName]['late']++;
+            if ($att->status == 'excused') $deptStats[$deptName]['excused']++;
+            if ($att->status == 'leave') $deptStats[$deptName]['leave']++;
+        }
+        $departmentChartData = array_values($deptStats);
+        usort($departmentChartData, fn($a, $b) => ($b['absent'] + $b['late']) - ($a['absent'] + $a['late']));
+
+        // Dropdowns
+        $allTeachersQuery = \App\Models\Employee::with('user:id,name')
+            ->whereHas('user', function($q) use ($userBranchId) {
+                $q->where(function($subQ) {
+                    $subQ->where('name', 'like', '%معلم%')
+                         ->orWhere('name', 'like', '%مدرس%');
+                });
+                if ($userBranchId) {
+                    $q->where('branch_id', $userBranchId);
+                }
+            });
+        $teachers = $allTeachersQuery->get()->map(fn($t) => ['id' => $t->id, 'name' => $t->user->name ?? '']);
+        $departments = \App\Models\Department::when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->select('id', 'name')->get();
+
+        return inertia('HR/Reports/TeacherAbsences', [
+            'absences' => $absences,
+            'kpis' => [
+                'total_absent' => $total_absent,
+                'total_late' => $total_late,
+                'unique_teachers' => $unique_teachers
+            ],
+            'departmentChartData' => $departmentChartData,
+            'teachers' => $teachers,
+            'departments' => $departments,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'department_id' => $departmentId,
+                'employee_id' => $employeeId,
+                'statuses' => $request->get('statuses', ''),
+                'violators_only' => $violatorsOnly
+            ]
+        ]);
+    }
+
+
     /**
      * Auto-generate missing attendance records based on shifts, holidays, and leaves.
      */

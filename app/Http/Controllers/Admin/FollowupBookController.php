@@ -9,6 +9,7 @@ use App\Models\MasterTimetable;
 use App\Models\Setting;
 use App\Models\Subject;
 use App\Models\Grade;
+use App\Models\Department;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -23,9 +24,21 @@ class FollowupBookController extends Controller
             ?: Setting::where('key', 'followup_upload_time_limit')->value('value')
             ?: '14:00';
 
-        $search = $request->input('search');
+        $search = $request->input('search', '');
         $startDateInput = $request->input('start_date');
         $endDateInput = $request->input('end_date');
+        $departmentId = $request->input('department_id');
+        $employeeId = $request->input('employee_id');
+        $statuses = $request->input('statuses');
+        $violatorsOnly = filter_var($request->input('violators_only', false), FILTER_VALIDATE_BOOLEAN);
+
+        if (is_string($statuses) && !empty($statuses)) {
+            $statusesList = explode(',', $statuses);
+        } else if (is_array($statuses)) {
+            $statusesList = $statuses;
+        } else {
+            $statusesList = ['published', 'late', 'draft', 'missing'];
+        }
 
         // Determine Start and End Date (Default: Full Week from Saturday to Friday)
         if ($startDateInput && $endDateInput) {
@@ -38,66 +51,282 @@ class FollowupBookController extends Controller
 
         $period = CarbonPeriod::create($startOfWeek, $endOfWeek);
 
-        // Get teachers of current branch
+        // Get user branch
         $user = auth()->user();
-        $branchId = $user->branch_id;
+        $branchId = $user ? $user->branch_id : null;
 
+        // Fetch departments list
+        $departments = Department::when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->select('id', 'name')
+            ->get();
+
+        // Base Query for Teachers (supports role names like معلم, معلم أول, Teacher)
         $teachersQuery = User::whereHas('role', function ($query) {
-                $query->where('name', 'معلم');
+                $query->where('name', 'like', '%معلم%')
+                      ->orWhere('name', 'Teacher')
+                      ->orWhere('name', 'مشرف تربوي');
             })
-            ->with(['employee']);
+            ->with(['employee.department']);
 
         if ($branchId) {
-            $teachersQuery->where('branch_id', $branchId);
+            $teachersQuery->where(function($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            });
         }
             
         if ($search) {
             $teachersQuery->where('name', 'like', '%' . $search . '%');
         }
+
+        if ($employeeId) {
+            $teachersQuery->where('id', $employeeId);
+        }
+
+        if ($departmentId) {
+            $teachersQuery->whereHas('employee', function($q) use ($departmentId) {
+                $q->where('department_id', $departmentId);
+            });
+        }
         
         $teachers = $teachersQuery->get();
         $teacherIds = $teachers->pluck('id')->toArray();
 
-        // Eager load all lesson preparations for these teachers in the date range
-        $allPreps = LessonPreparation::whereIn('teacher_id', $teacherIds)
+        // Eager load lesson preparations
+        $allPreps = LessonPreparation::with(['subject', 'grade', 'division'])
+            ->whereIn('teacher_id', $teacherIds)
             ->whereBetween('preparation_date', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
             ->get()
             ->groupBy('teacher_id');
 
-        // Eager load timetable counts per teacher
-        $timetableCounts = MasterTimetable::whereIn('teacher_id', $teacherIds)
+        // Eager load master timetables
+        $timetables = MasterTimetable::with(['subject', 'division.grade'])
+            ->whereIn('teacher_id', $teacherIds)
             ->get()
-            ->groupBy('teacher_id')
-            ->map(fn($items) => $items->count());
+            ->groupBy('teacher_id');
 
-        $teachersData = $teachers->map(function ($teacher) use ($timeLimit, $allPreps, $timetableCounts) {
+        $dayNames = [
+            'Saturday'  => 'السبت',
+            'Sunday'    => 'الأحد',
+            'Monday'    => 'الاثنين',
+            'Tuesday'   => 'الثلاثاء',
+            'Wednesday' => 'الأربعاء',
+            'Thursday'  => 'الخميس',
+            'Friday'    => 'الجمعة',
+        ];
+
+        $dayAliases = [
+            'saturday'  => ['saturday', 'السبت', '6'],
+            'sunday'    => ['sunday', 'الأحد', 'الاحد', '0'],
+            'monday'    => ['monday', 'الاثنين', 'الإثنين', '1'],
+            'tuesday'   => ['tuesday', 'الثلاثاء', '2'],
+            'wednesday' => ['wednesday', 'الأربعاء', 'الاربعاء', '3'],
+            'thursday'  => ['thursday', 'الخميس', '4'],
+            'friday'    => ['friday', 'الجمعة', '5'],
+        ];
+
+        $statusLabels = [
+            'published' => 'تم التحضير',
+            'late'      => 'تحضير متأخر',
+            'draft'     => 'مسودة',
+            'missing'   => 'لم يتم التحضير'
+        ];
+
+        $teachersData = [];
+        $deptStatsMap = [];
+
+        $totalExpectedAll = 0;
+        $totalPublishedAll = 0;
+        $totalLateAll = 0;
+        $totalDraftAll = 0;
+        $totalNegligenceAll = 0;
+        $violatorTeachersCount = 0;
+
+        foreach ($teachers as $teacher) {
+            $deptName = $teacher->employee && $teacher->employee->department 
+                ? $teacher->employee->department->name 
+                : 'القسم الأكاديمي';
+
             $preps = $allPreps->get($teacher->id, collect());
-            $expectedLessons = $timetableCounts->get($teacher->id, 0);
+            $teacherTimetable = $timetables->get($teacher->id, collect());
+            $expectedLessonsCount = $teacherTimetable->count();
 
-            $publishedPreps = $preps->where('status', 'published');
-            $draftPreps = $preps->where('status', 'draft');
+            $records = [];
+            $publishedCount = 0;
+            $lateCount = 0;
+            $draftCount = 0;
+            $missingCount = 0;
 
-            $lateUploads = $publishedPreps->filter(function ($p) use ($timeLimit) {
+            // Iterate over each date in period
+            foreach ($period as $date) {
+                $dateStr = $date->format('Y-m-d');
+                $dayOfWeek = $date->format('l');
+                $lowerDay = strtolower($dayOfWeek);
+                $validDayNames = $dayAliases[$lowerDay] ?? [$lowerDay];
+
+                $lessonsForDay = $teacherTimetable->filter(function($item) use ($validDayNames) {
+                    $itemDay = strtolower(trim($item->day_of_week ?? ''));
+                    return in_array($itemDay, $validDayNames);
+                });
+
+                foreach ($lessonsForDay as $lesson) {
+                    $prep = $preps->first(function($p) use ($dateStr, $lesson) {
+                        $prepDate = is_string($p->preparation_date) ? $p->preparation_date : $p->preparation_date->format('Y-m-d');
+                        return $prepDate === $dateStr 
+                            && $p->subject_id == $lesson->subject_id 
+                            && ($p->division_id == $lesson->division_id || empty($p->division_id));
+                    });
+
+                    $statusCode = 'missing';
+                    if ($prep) {
+                        if ($prep->status === 'draft') {
+                            $statusCode = 'draft';
+                        } else {
+                            $limitTime = Carbon::parse($dateStr . ' ' . $timeLimit);
+                            if ($prep->created_at && $prep->created_at->gt($limitTime)) {
+                                $statusCode = 'late';
+                            } else {
+                                $statusCode = 'published';
+                            }
+                        }
+                    }
+
+                    if (!in_array($statusCode, $statusesList)) {
+                        continue;
+                    }
+
+                    if ($statusCode === 'published') $publishedCount++;
+                    if ($statusCode === 'late') $lateCount++;
+                    if ($statusCode === 'draft') $draftCount++;
+                    if ($statusCode === 'missing') $missingCount++;
+
+                    $records[] = [
+                        'id' => $prep ? $prep->id : 'm_' . $teacher->id . '_' . $dateStr . '_' . $lesson->id,
+                        'date' => $dateStr,
+                        'day' => $dayNames[$dayOfWeek] ?? $dayOfWeek,
+                        'subject_name' => $prep->subject->name ?? $lesson->subject->name ?? 'مادة',
+                        'grade_name' => $prep->grade->name ?? ($lesson->division && $lesson->division->grade ? $lesson->division->grade->name : ''),
+                        'division_name' => $prep->division->name ?? ($lesson->division ? $lesson->division->name : ''),
+                        'lesson_title' => $prep ? ($prep->lesson_title ?: 'بدون عنوان') : 'غير محضر',
+                        'status_code' => $statusCode,
+                        'status' => $statusLabels[$statusCode] ?? $statusCode,
+                        'created_at' => $prep && $prep->created_at ? $prep->created_at->format('H:i') : '-',
+                    ];
+                }
+            }
+
+            // Also check any standalone preparations not matched to timetables
+            $unmatchedPreps = $preps->filter(function($p) use ($records) {
+                return !collect($records)->pluck('id')->contains($p->id);
+            });
+
+            foreach ($unmatchedPreps as $p) {
                 $prepDateStr = is_string($p->preparation_date) ? $p->preparation_date : $p->preparation_date->format('Y-m-d');
-                $limitTime = Carbon::parse($prepDateStr . ' ' . $timeLimit);
-                return $p->created_at && $p->created_at->gt($limitTime);
-            })->count();
+                $pDate = Carbon::parse($prepDateStr);
+                $dayOfWeek = $pDate->format('l');
+                $statusCode = $p->status === 'draft' ? 'draft' : 'published';
+                if ($statusCode === 'published') {
+                    $limitTime = Carbon::parse($prepDateStr . ' ' . $timeLimit);
+                    if ($p->created_at && $p->created_at->gt($limitTime)) {
+                        $statusCode = 'late';
+                    }
+                }
 
-            $negligence = max(0, $expectedLessons - $publishedPreps->count());
+                if (!in_array($statusCode, $statusesList)) {
+                    continue;
+                }
 
-            return [
+                if ($statusCode === 'published') $publishedCount++;
+                if ($statusCode === 'late') $lateCount++;
+                if ($statusCode === 'draft') $draftCount++;
+
+                $records[] = [
+                    'id' => $p->id,
+                    'date' => $prepDateStr,
+                    'day' => $dayNames[$dayOfWeek] ?? $dayOfWeek,
+                    'subject_name' => $p->subject->name ?? 'مادة',
+                    'grade_name' => $p->grade->name ?? '',
+                    'division_name' => $p->division->name ?? '',
+                    'lesson_title' => $p->lesson_title ?: 'بدون عنوان',
+                    'status_code' => $statusCode,
+                    'status' => $statusLabels[$statusCode] ?? $statusCode,
+                    'created_at' => $p->created_at ? $p->created_at->format('H:i') : '-',
+                ];
+            }
+
+            $totalTeacherExpected = max($expectedLessonsCount, count($records));
+            $teacherNegligence = $missingCount;
+
+            if ($violatorsOnly && $teacherNegligence == 0 && $lateCount == 0) {
+                continue;
+            }
+
+            if ($teacherNegligence > 0 || $lateCount > 0) {
+                $violatorTeachersCount++;
+            }
+
+            $totalExpectedAll += $totalTeacherExpected;
+            $totalPublishedAll += $publishedCount;
+            $totalLateAll += $lateCount;
+            $totalDraftAll += $draftCount;
+            $totalNegligenceAll += $teacherNegligence;
+
+            // Department aggregations
+            if (!isset($deptStatsMap[$deptName])) {
+                $deptStatsMap[$deptName] = [
+                    'name' => $deptName,
+                    'published' => 0,
+                    'late' => 0,
+                    'draft' => 0,
+                    'missing' => 0,
+                ];
+            }
+            $deptStatsMap[$deptName]['published'] += $publishedCount;
+            $deptStatsMap[$deptName]['late'] += $lateCount;
+            $deptStatsMap[$deptName]['draft'] += $draftCount;
+            $deptStatsMap[$deptName]['missing'] += $teacherNegligence;
+
+            $teachersData[] = [
                 'id' => $teacher->id,
                 'name' => $teacher->name,
-                'total_weekly_lessons' => $expectedLessons,
-                'published_preparations' => $publishedPreps->count(),
-                'draft_preparations' => $draftPreps->count(),
-                'late_uploads' => $lateUploads,
-                'negligence' => $negligence,
+                'employee_name' => $teacher->name,
+                'department' => $deptName,
+                'total_weekly_lessons' => $totalTeacherExpected,
+                'published_preparations' => $publishedCount,
+                'draft_preparations' => $draftCount,
+                'late_uploads' => $lateCount,
+                'negligence' => $teacherNegligence,
+                'records' => $records,
             ];
-        });
+        }
+
+        $departmentChartData = array_values($deptStatsMap);
+
+        $kpis = [
+            'total_expected' => $totalExpectedAll,
+            'total_published' => $totalPublishedAll,
+            'total_late' => $totalLateAll,
+            'total_draft' => $totalDraftAll,
+            'total_negligence' => $totalNegligenceAll,
+            'unique_teachers' => $violatorTeachersCount,
+            'compliance_rate' => $totalExpectedAll > 0 ? round(($totalPublishedAll / $totalExpectedAll) * 100) : 100,
+        ];
+
+        // All teachers list for filter dropdown
+        $allTeachersList = User::whereHas('role', function ($query) {
+                $query->where('name', 'like', '%معلم%')
+                      ->orWhere('name', 'Teacher')
+                      ->orWhere('name', 'مشرف تربوي');
+            })
+            ->when($branchId, fn($q) => $q->where(fn($sub) => $sub->where('branch_id', $branchId)->orWhereNull('branch_id')))
+            ->select('id', 'name')
+            ->get();
 
         return [
             'teachersData' => $teachersData,
+            'kpis' => $kpis,
+            'departmentChartData' => $departmentChartData,
+            'departments' => $departments,
+            'allTeachersList' => $allTeachersList,
             'timeLimit' => $timeLimit,
             'periodStart' => $startOfWeek->format('Y-m-d'),
             'periodEnd' => $endOfWeek->format('Y-m-d'),
@@ -110,6 +339,10 @@ class FollowupBookController extends Controller
 
         return Inertia::render('Admin/FollowupBooks/Index', [
             'teachers' => $data['teachersData'],
+            'kpis' => $data['kpis'],
+            'departmentChartData' => $data['departmentChartData'],
+            'departments' => $data['departments'],
+            'allTeachers' => $data['allTeachersList'],
             'timeLimit' => $data['timeLimit'],
             'periodStart' => $data['periodStart'],
             'periodEnd' => $data['periodEnd'],
@@ -117,6 +350,35 @@ class FollowupBookController extends Controller
                 'search' => $request->input('search', ''),
                 'start_date' => $request->input('start_date', $data['periodStart']),
                 'end_date' => $request->input('end_date', $data['periodEnd']),
+                'department_id' => $request->input('department_id', ''),
+                'employee_id' => $request->input('employee_id', ''),
+                'statuses' => $request->input('statuses', ''),
+                'violators_only' => filter_var($request->input('violators_only', false), FILTER_VALIDATE_BOOLEAN),
+            ]
+        ]);
+    }
+
+    public function report(Request $request)
+    {
+        $data = $this->getFilterData($request);
+
+        return Inertia::render('HR/Reports/FollowupBooks', [
+            'teachers' => $data['teachersData'],
+            'kpis' => $data['kpis'],
+            'departmentChartData' => $data['departmentChartData'],
+            'departments' => $data['departments'],
+            'allTeachers' => $data['allTeachersList'],
+            'timeLimit' => $data['timeLimit'],
+            'periodStart' => $data['periodStart'],
+            'periodEnd' => $data['periodEnd'],
+            'filters' => [
+                'search' => $request->input('search', ''),
+                'start_date' => $request->input('start_date', $data['periodStart']),
+                'end_date' => $request->input('end_date', $data['periodEnd']),
+                'department_id' => $request->input('department_id', ''),
+                'employee_id' => $request->input('employee_id', ''),
+                'statuses' => $request->input('statuses', ''),
+                'violators_only' => filter_var($request->input('violators_only', false), FILTER_VALIDATE_BOOLEAN),
             ]
         ]);
     }
