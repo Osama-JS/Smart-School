@@ -16,6 +16,61 @@ use Inertia\Inertia;
 class ClassCoverageController extends Controller
 {
     /** لوحة سجلات التغطية */
+    public function reportIndex(Request $request)
+    {
+        $user     = auth()->user();
+        $branchId = $user->branch_id;
+
+        $query = ClassCoverage::with([
+            'absentTeacher:id,name',
+            'substituteTeacher:id,name',
+            'period:id,period_name,start_time,end_time',
+            'division.grade.section',
+            'subject:id,name',
+            'semester:id,name',
+            'recordedBy:id,name',
+        ])->where('branch_id', $branchId);
+
+        // Filters
+        if ($request->filled('date')) {
+            $query->whereDate('coverage_date', $request->date);
+        }
+        if ($request->filled('absent_teacher_id')) {
+            $query->where('absent_teacher_id', $request->absent_teacher_id);
+        }
+        if ($request->filled('substitute_teacher_id')) {
+            $query->where('substitute_teacher_id', $request->substitute_teacher_id);
+        }
+
+        $coverages = $query->orderBy('coverage_date', 'desc')->get();
+
+        // Stats
+        $today     = Carbon::today();
+        $weekStart = Carbon::now()->startOfWeek(Carbon::SATURDAY);
+        $monthStart = Carbon::now()->startOfMonth();
+
+        $statsBase = ClassCoverage::where('branch_id', $branchId);
+
+        $stats = [
+            'today'       => (clone $statsBase)->whereDate('coverage_date', $today)->count(),
+            'this_week'   => (clone $statsBase)->whereBetween('coverage_date', [$weekStart, Carbon::now()])->count(),
+            'this_month'  => (clone $statsBase)->whereBetween('coverage_date', [$monthStart, Carbon::now()])->count(),
+            'total'       => (clone $statsBase)->count(),
+        ];
+
+        // Lists for filters
+        $teachers = User::where('branch_id', $branchId)
+            ->whereHas('role', fn($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']))
+            ->get(['id', 'name']);
+
+        return Inertia::render('Academic/Coverage/ReportIndex', [
+            'coverages' => $coverages,
+            'stats'     => $stats,
+            'teachers'  => $teachers,
+            'filters'   => $request->only('date', 'absent_teacher_id', 'substitute_teacher_id'),
+        ]);
+    }
+
     public function index(Request $request)
     {
         $user     = auth()->user();

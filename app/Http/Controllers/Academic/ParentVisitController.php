@@ -334,4 +334,53 @@ class ParentVisitController extends Controller
 
         return redirect()->back()->with('success', 'تم حذف الزيارة بنجاح.');
     }
+
+    /**
+     * Report for parent visits with filters and printable view.
+     */
+    public function report(Request $request)
+    {
+        $branchId = auth()->user()->branch_id;
+        $query = ParentVisit::with(['student.user', 'student.currentEnrollment.division.grade', 'employee:id,name'])
+            ->where('branch_id', $branchId);
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $status = $request->query('status');
+        $purposeCategory = $request->query('purpose_category');
+
+        if ($startDate) {
+            $query->whereDate('visit_date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('visit_date', '<=', $endDate);
+        }
+        if ($status) {
+            $query->where('status', $status);
+        }
+        if ($purposeCategory) {
+            $query->where('purpose_category', $purposeCategory);
+        }
+
+        $visits = $query->orderBy('visit_date', 'desc')->orderBy('visit_time', 'desc')->get();
+
+        $stats = [
+            'total' => $visits->count(),
+            'completed' => $visits->where('status', 'مكتملة')->count(),
+            'scheduled' => $visits->where('status', 'مجدولة')->count(),
+            'in_progress' => $visits->where('status', 'جارية')->count(),
+            'cancelled' => $visits->where('status', 'ملغاة')->count(),
+        ];
+
+        return Inertia::render('Academic/ParentVisits/Report', [
+            'visits' => $visits,
+            'stats' => $stats,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => $status,
+                'purpose_category' => $purposeCategory,
+            ]
+        ]);
+    }
 }

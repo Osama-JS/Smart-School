@@ -71,6 +71,95 @@ class MonthlyGradeController extends Controller implements \Illuminate\Routing\C
         ]);
     }
 
+    public function reportIndex(Request $request)
+    {
+        $user = auth()->user();
+        $isTeacher = $user && $user->role && $user->role->name === 'معلم';
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير النظام', 'مدير الفرع']);
+
+        $periods = ResultPeriod::where('branch_id', $user->branch_id)
+            ->where(function($q) {
+                $q->where('period_type', 'monthly')->orWhereNull('period_type');
+            })
+            ->orderBy('fill_start_date', 'desc')
+            ->get();
+
+        $divisionsQuery = Division::with(['grade', 'branch'])->where('branch_id', $user->branch_id);
+        
+        $assignedSubjects = [];
+
+        if ($isTeacher) {
+            $assignments = DivisionSubjectTeacher::with(['division.grade', 'subject'])
+                ->where('teacher_id', $user->id)
+                ->get();
+            
+            $assignedSubjects = $assignments->groupBy('division_id');
+            $divisionsQuery->whereIn('id', $assignments->pluck('division_id')->unique());
+            $divisions = $divisionsQuery->get();
+        } else {
+            $divisions = $divisionsQuery->with('grade.subjects')->get();
+            foreach ($divisions as $division) {
+                if ($division->grade && $division->grade->subjects) {
+                    $assignedSubjects[$division->id] = $division->grade->subjects->map(function($subject) {
+                        return (object)[
+                            'id' => 'admin_' . $subject->id,
+                            'subject_id' => $subject->id,
+                            'subject' => $subject
+                        ];
+                    });
+                }
+            }
+        }
+
+        return Inertia::render('Teacher/MonthlyGrades/ReportIndex', [
+            'periods' => $periods,
+            'divisions' => $divisions,
+            'assignedSubjects' => $assignedSubjects,
+            'isAdmin' => $isAdmin,
+            'isTeacher' => $isTeacher,
+        ]);
+    }
+
+    public function reportView(Request $request, Division $division, $subject_id, ResultPeriod $period)
+    {
+        $user = auth()->user();
+        $isTeacher = $user && $user->role && $user->role->name === 'معلم';
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير النظام', 'مدير الفرع']);
+
+        if ($isTeacher) {
+            $isAssigned = DivisionSubjectTeacher::where('division_id', $division->id)
+                ->where('subject_id', $subject_id)
+                ->where('teacher_id', $user->id)
+                ->exists();
+            if (!$isAssigned) {
+                abort(403, 'غير مصرح لك برصد الدرجات لهذه المادة والشعبة.');
+            }
+        }
+
+        $subject = \App\Models\Subject::find($subject_id);
+        $gradeSetting = $subject;
+
+        $enrollments = Enrollment::with('student.user')
+            ->where('division_id', $division->id)
+            ->where('academic_year_id', $period->semester->academic_year_id)
+            ->where('status', 'active')
+            ->get();
+
+        $existingGrades = MonthlyGrade::where('period_id', $period->id)
+            ->where('subject_id', $subject_id)
+            ->whereIn('enrollment_id', $enrollments->pluck('id'))
+            ->get()->keyBy('enrollment_id');
+
+        return Inertia::render('Teacher/MonthlyGrades/ReportView', [
+            'division' => $division->load('grade'),
+            'subject' => $subject,
+            'period' => $period,
+            'gradeSetting' => $gradeSetting,
+            'enrollments' => $enrollments,
+            'existingGrades' => $existingGrades,
+        ]);
+    }
+
     public function gradeEntry(Request $request, Division $division, $subject_id, ResultPeriod $period)
     {
         $user = auth()->user();

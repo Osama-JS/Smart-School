@@ -1,0 +1,21 @@
+$content = [System.IO.File]::ReadAllText("C:\xampp\htdocs\Smart-School\resources\js\Pages\HR\Reports\EmployeeAchievements.jsx", [System.Text.Encoding]::UTF8)
+$content = $content.Replace('EmployeeAchievements', 'EmployeeLeaves')
+$content = $content.Replace('employee-achievements', 'employee-leaves')
+$content = $content.Replace('achievements', 'leaves')
+$content = $content.Replace('Achievements', 'Leaves')
+$content = $content.Replace('achievement', 'leave')
+$content = $content.Replace('Achievement', 'Leave')
+$content = $content.Replace('إنجازات', 'إجازات')
+$content = $content.Replace('الإنجازات', 'الإجازات')
+$content = $content.Replace('إنجاز', 'إجازة')
+$content = $content.Replace('المنجزين', 'المجازين')
+
+# Custom KPI Variables
+$content = $content.Replace('total_achievements', 'total_leaves')
+$content = $content.Replace('total_points', 'total_leave_days')
+$content = $content.Replace('unique_achievers', 'unique_employees_on_leave')
+$content = $content.Replace('totalAchievements', 'totalLeaves')
+$content = $content.Replace('totalPoints', 'totalPoints')
+$content = $content.Replace('uniqueAchievers', 'uniqueEmployeesOnLeave')
+
+[System.IO.File]::WriteAllText("C:\xampp\htdocs\Smart-School\resources\js\Pages\HR\Reports\EmployeeLeaves.jsx", $content, [System.Text.Encoding]::UTF8)

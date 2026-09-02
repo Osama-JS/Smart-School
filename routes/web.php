@@ -202,11 +202,13 @@ Route::middleware('auth')->group(function () {
         Route::delete('/academic/timetable-groups/{group}', [\App\Http\Controllers\Academic\TimetableGroupController::class, 'destroy'])->name('academic.timetable-groups.destroy');
 
         Route::get('/academic/timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'index'])->name('academic.timetable');
+        Route::get('/academic/timetable-report', [\App\Http\Controllers\Academic\TimetableController::class, 'reportIndex'])->name('academic.timetable.report');
         Route::post('/academic/timetable/assign', [\App\Http\Controllers\Academic\TimetableController::class, 'assign'])->name('academic.timetable.assign');
         Route::post('/academic/timetable/unassign', [\App\Http\Controllers\Academic\TimetableController::class, 'unassign'])->name('academic.timetable.unassign');
         
         // Class Coverage (Absence & Substitution)
         Route::get('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'index'])->name('academic.coverage.index');
+        Route::get('/academic/coverage-report', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'reportIndex'])->name('academic.coverage.report');
         Route::get('/academic/coverage/create', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'create'])->name('academic.coverage.create');
         Route::get('/academic/coverage/teacher-periods', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'getTeacherPeriods'])->name('academic.coverage.teacher-periods');
         Route::post('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'store'])->name('academic.coverage.store');
@@ -483,6 +485,8 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:إدارة الطلاب')->group(function () {
         // Class Attendances (Admins only)
+        Route::get('/academic/attendances-report', [\App\Http\Controllers\StudentAttendanceController::class, 'attendanceReport'])->name('academic.attendances.report');
+        Route::get('/academic/class-attendances-report', [\App\Http\Controllers\StudentAttendanceController::class, 'classAttendanceReport'])->name('academic.attendances.class-report');
         Route::get('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'classReports'])->name('academic.attendances.classes');
         Route::post('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'storeClassAttendance'])->name('academic.attendances.classes.store');
         Route::post('/academic/class-attendances/bulk', [\App\Http\Controllers\StudentAttendanceController::class, 'storeBulkClassAttendance'])->name('academic.attendances.classes.storeBulk');
@@ -496,6 +500,7 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'academic.parent-summons.destroy',
         ])->except(['create', 'show', 'edit']);
 
+        Route::get('/academic/parent-visits/report', [\App\Http\Controllers\Academic\ParentVisitController::class, 'report'])->name('academic.parent-visits.report');
         Route::get('/academic/parent-visits/analytics', [\App\Http\Controllers\Academic\ParentVisitController::class, 'analytics'])->name('academic.parent-visits.analytics');
         Route::post('/academic/parent-visits/{parentVisit}/achievement', [\App\Http\Controllers\Academic\ParentVisitController::class, 'convertToAchievement'])->name('academic.parent-visits.achievement');
         Route::post('/academic/parent-visits/{parentVisit}/violation', [\App\Http\Controllers\Academic\ParentVisitController::class, 'convertToViolation'])->name('academic.parent-visits.violation');
@@ -506,6 +511,7 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'academic.parent-visits.destroy',
         ])->except(['create', 'show', 'edit']);
 
+        Route::get('/academic/student-pledges/report', [\App\Http\Controllers\Academic\StudentPledgeController::class, 'report'])->name('academic.student-pledges.report');
         Route::post('/academic/student-pledges/{student_pledge}/sign', [\App\Http\Controllers\Academic\StudentPledgeController::class, 'sign'])->name('academic.student-pledges.sign');
         Route::resource('/academic/student-pledges', \App\Http\Controllers\Academic\StudentPledgeController::class)->names([
             'index'   => 'academic.student-pledges.index',
@@ -539,6 +545,8 @@ Route::middleware('auth')->group(function () {
         
         // Monthly Grades for Teachers & Admin
         Route::get('/academic/monthly-grades', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'index'])->name('academic.monthly-grades.index');
+        Route::get('/academic/monthly-grades-report', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'reportIndex'])->name('academic.monthly-grades.report.index');
+        Route::get('/academic/monthly-grades-report/division/{division}/subject/{subject_id}/period/{period}', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'reportView'])->name('academic.monthly-grades.report.view');
         Route::get('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'gradeEntry'])->name('academic.monthly-grades.entry');
         Route::post('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}/save-weekly', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'saveWeeklyScores'])->name('academic.monthly-grades.save-weekly');
         Route::post('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}/submit-month', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'submitMonth'])->name('academic.monthly-grades.submit-month');
@@ -600,6 +608,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:إدارة المخالفات')->group(function () {
+        Route::get('/hr/reports/employee-violations', [\App\Http\Controllers\HR\EmployeeViolationReportController::class, 'report'])->name('hr.reports.employee-violations');
         Route::resource('/hr/employee-violations', \App\Http\Controllers\HR\EmployeeViolationController::class)->names([
             'index'   => 'hr.employee-violations',
             'store'   => 'hr.employee-violations.store',
@@ -628,6 +637,9 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:عرض الإنجازات')->group(function () {
+        Route::get('/hr/reports/employee-achievements', [\App\Http\Controllers\HR\EmployeeAchievementReportController::class, 'report'])->name('hr.reports.employee-achievements');
+        Route::get('/hr/reports/employee-leaves', [\App\Http\Controllers\HR\EmployeeLeavesReportController::class, 'report'])->name('hr.reports.employee-leaves');
+        Route::get('/hr/reports/administrative-requests', [\App\Http\Controllers\HR\AdministrativeRequestsReportController::class, 'report'])->name('hr.reports.administrative-requests');
         Route::resource('/hr/employee-achievements', \App\Http\Controllers\HR\EmployeeAchievementController::class)->names([
             'index'   => 'hr.employee-achievements',
             'store'   => 'hr.employee-achievements.store',
@@ -758,6 +770,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // ── Meetings ──
+        Route::get('/meetings/report', [\App\Http\Controllers\HR\MeetingController::class, 'reportIndex'])->name('meetings.report');
     Route::middleware('permission:إدارة الاجتماعات')->group(function () {
         Route::resource('/meetings', \App\Http\Controllers\HR\MeetingController::class)->names([
             'index'   => 'meetings.index',

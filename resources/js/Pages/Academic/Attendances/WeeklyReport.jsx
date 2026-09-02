@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { Printer, Filter, RefreshCw, CalendarDays, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 
 export default function WeeklyReport({ students, weekDays = {}, divisionInfo, grades = [], divisions = [], filters = {} }) {
     const [filterData, setFilterData] = useState({
@@ -9,6 +10,36 @@ export default function WeeklyReport({ students, weekDays = {}, divisionInfo, gr
         division_id: filters.division_id || '',
         date: filters.date || ''
     });
+
+    const [printSettings, setPrintSettings] = useState(() => {
+        const defaultSettings = {
+            title: 'كشف حضور وغياب الطلاب الأسبوعي',
+            showKPIs: true,
+            showDetails: true,
+            orientation: 'portrait',
+            ecoMode: false,
+            watermark: 'none',
+            paperSize: 'A4',
+            margins: 'normal',
+            scale: 1,
+            pagesPerSheet: 1,
+            brandColor: '#2563eb', // blue-600
+        };
+        try {
+            const saved = localStorage.getItem('WeeklyReportPrintSettings');
+            if (saved) return { ...defaultSettings, ...JSON.parse(saved) };
+        } catch (e) {}
+        return defaultSettings;
+    });
+
+    React.useEffect(() => {
+        localStorage.setItem('WeeklyReportPrintSettings', JSON.stringify(printSettings));
+    }, [printSettings]);
+
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const handleDownloadPDF = () => {
+        alert('سيتم تفعيل تصدير PDF قريباً');
+    };
 
     const handleFilter = (e) => {
         e.preventDefault();
@@ -147,22 +178,24 @@ export default function WeeklyReport({ students, weekDays = {}, divisionInfo, gr
                     </form>
                 </div>
 
-                {/* Print Header */}
-                <div className="hidden print:block text-center mb-8 pb-4 border-b-2 border-slate-800">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-2">كشف حضور وغياب الطلاب الأسبوعي</h2>
-                    <p className="text-lg font-bold text-slate-800 mt-2">
-                        {divisionInfo ? `المرحلة: ${divisionInfo.grade.name} | الصف/الشعبة: ${divisionInfo.name}` : ''}
-                    </p>
-                    <p className="text-sm text-slate-600 mt-2">
-                        الأسبوع: من الأحد {weekDays?.sunday?.date} إلى الخميس {weekDays?.thursday?.date}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-2">تاريخ الطباعة: {new Date().toLocaleDateString('ar-SA')}</p>
-                </div>
-
                 {/* Data Table */}
                 {divisionInfo && students.length > 0 ? (
-                    <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden print:border-none print:shadow-none print:bg-transparent">
-                        <div className="overflow-x-auto">
+                    <ReportPrintLayout 
+                        title={printSettings.title} 
+                        printSettings={printSettings} 
+                        setPrintSettings={setPrintSettings} 
+                        onPrint={handlePrint} 
+                        onDownloadPdf={handleDownloadPDF} 
+                        isGeneratingPdf={isGeneratingPdf} 
+                        startDate={weekDays?.sunday?.date} 
+                        endDate={weekDays?.thursday?.date}
+                    >
+                        <div className="mb-6 flex flex-col gap-1 items-start text-sm font-bold text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200 print:bg-transparent print:border-none print:p-0 print:mb-4">
+                            <span>المرحلة: {divisionInfo.grade.name}</span>
+                            <span>الصف/الشعبة: {divisionInfo.name}</span>
+                        </div>
+
+                        <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-none">
                             <table className="w-full text-center print:text-sm border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50 dark:bg-slate-800/50 print:bg-slate-100">
@@ -225,14 +258,13 @@ export default function WeeklyReport({ students, weekDays = {}, divisionInfo, gr
                                 </div>
                             </div>
 
-                            {/* Signatures for Print */}
                             <div className="hidden print:flex justify-between items-end mt-12 text-center text-sm font-bold text-slate-800">
                                 <div className="w-40 border-t border-slate-400 pt-2">المرشد الطلابي</div>
                                 <div className="w-40 border-t border-slate-400 pt-2">وكيل الشؤون الطلابية</div>
                                 <div className="w-40 border-t border-slate-400 pt-2">مدير المدرسة</div>
                             </div>
                         </div>
-                    </div>
+                    </ReportPrintLayout>
                 ) : (
                     <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center shadow-sm print:hidden">
                         <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">

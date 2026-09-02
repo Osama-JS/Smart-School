@@ -142,4 +142,61 @@ class StudentPledgeController extends Controller
 
         return redirect()->back()->with('success', 'تم حفظ التوقيع الإلكتروني بنجاح');
     }
+
+    /**
+     * Display a printable report for student pledges.
+     */
+    public function report(Request $request)
+    {
+        $branchId = auth()->user()->branch_id;
+        
+        $query = StudentPledge::with(['student.user', 'student.currentEnrollment.division.grade', 'violation.violationType'])
+            ->where('branch_id', $branchId);
+
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
+        $status = $request->query('status'); // fully_signed, partially_signed, unsigned
+
+        if ($startDate) {
+            $query->whereDate('date', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->whereDate('date', '<=', $endDate);
+        }
+        if ($status === 'fully_signed') {
+            $query->where('is_signed_by_student', true)->where('is_signed_by_parent', true);
+        } elseif ($status === 'partially_signed') {
+            $query->where(function($q) {
+                $q->where(function($sub) {
+                    $sub->where('is_signed_by_student', true)->where('is_signed_by_parent', false);
+                })->orWhere(function($sub) {
+                    $sub->where('is_signed_by_student', false)->where('is_signed_by_parent', true);
+                });
+            });
+        } elseif ($status === 'unsigned') {
+            $query->where('is_signed_by_student', false)->where('is_signed_by_parent', false);
+        }
+
+        $pledges = $query->orderBy('date', 'desc')->get();
+
+        $allBranchPledges = StudentPledge::where('branch_id', $branchId)->get();
+        $stats = [
+            'total' => $allBranchPledges->count(),
+            'fully_signed' => $allBranchPledges->where('is_signed_by_student', true)->where('is_signed_by_parent', true)->count(),
+            'partially_signed' => $allBranchPledges->filter(function($p) {
+                return ($p->is_signed_by_student xor $p->is_signed_by_parent);
+            })->count(),
+            'unsigned' => $allBranchPledges->where('is_signed_by_student', false)->where('is_signed_by_parent', false)->count(),
+        ];
+
+        return Inertia::render('Academic/StudentDiscipline/Pledges/Report', [
+            'pledges' => $pledges,
+            'stats' => $stats,
+            'filters' => [
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'status' => $status,
+            ]
+        ]);
+    }
 }

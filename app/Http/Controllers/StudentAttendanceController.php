@@ -18,6 +18,72 @@ class StudentAttendanceController extends Controller
     /**
      * تقارير الغياب اليومي للمدرسة
      */
+    public function attendanceReport(Request $request)
+    {
+        $date = $request->filled('date') ? $request->date : today()->toDateString();
+        
+        $query = User::with([
+            'student.currentEnrollment.division', 
+            'attendanceLogs' => function($q) use ($date) {
+                $q->whereDate('attendance_date', $date);
+            }
+        ])->whereHas('role', function($q) {
+            $q->where('name', 'طالب');
+        });
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('division_id')) {
+            $query->whereHas('student.currentEnrollment', function($q) use ($request) {
+                $q->where('division_id', $request->division_id);
+            });
+        }
+
+        if ($request->filled('status')) {
+             if ($request->status === 'غائب') {
+                 $query->whereDoesntHave('attendanceLogs', function($q) use ($date) {
+                     $q->whereDate('attendance_date', $date);
+                 });
+             } else {
+                 $query->whereHas('attendanceLogs', function($q) use ($date, $request) {
+                     $q->whereDate('attendance_date', $date)->where('status', $request->status);
+                 });
+             }
+        }
+
+        $users = $query->get();
+
+        $mappedData = $users->map(function($user) use ($date) {
+            $log = $user->attendanceLogs->first();
+            $division = $user->student?->currentEnrollment?->division?->name ?? 'غير محدد';
+            
+            return [
+                'id' => $user->id,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'avatar' => $user->avatar,
+                    'division' => $division
+                ],
+                'attendance_date' => $date,
+                'check_in_time' => $log ? $log->check_in_time : null,
+                'check_out_time' => $log ? $log->check_out_time : null,
+                'location' => $log ? $log->location : null,
+                'status' => $log ? $log->status : 'غائب'
+            ];
+        });
+
+        $divisions = Division::with('grade')->get();
+
+        return Inertia::render('Academic/Attendances/AttendanceReport', [
+            'logs' => $mappedData,
+            'divisions' => $divisions,
+            'filters' => $request->only(['date', 'search', 'division_id', 'status']),
+        ]);
+    }
+
     public function index(Request $request)
     {
         $date = $request->filled('date') ? $request->date : today()->toDateString();
@@ -302,6 +368,126 @@ class StudentAttendanceController extends Controller
     /**
      * تقارير الغياب التفصيلية في الحصص (Matrix View)
      */
+    public function classAttendanceReport(Request $request)
+    {
+        $grades = Grade::with('divisions')->get();
+        $divisions = Division::with('grade')->get();
+        
+        $date = $request->filled('date') ? $request->date : today()->toDateString();
+        $divisionId = $request->division_id ?? ($divisions->first()->id ?? null);
+        $gradeId = $request->grade_id ?? ($divisions->where('id', $divisionId)->first()->grade_id ?? null);
+
+        // إذا لم يتم تحديد شعبة (ولم نجد واحدة افتراضية)، نعود بواجهة فارغة
+        if (!$divisionId) {
+            return Inertia::render('Academic/Attendances/ClassAttendanceReport', [
+                'students' => [],
+                'periods' => [],
+                'grades' => $grades,
+                'divisions' => $divisions,
+                'filters' => $request->only(['date', 'grade_id', 'division_id']),
+            ]);
+        }
+
+        // 1. جلب الحصص الدراسية
+        // نجلب الحصص الخاصة بالمجموعة (TimetableGroup) التي تتبع لها الشعبة، أو كل الحصص إذا لم يتوفر
+        $division = Division::with('grade')->find($divisionId);
+        $periodsQuery = DailyPeriod::where('is_break', false)->orderBy('start_time');
+        $periods = $periodsQuery->get();
+
+        // 2. جلب جميع الطلاب في هذه الشعبة
+        $students = User::with([
+            'student.currentEnrollment.division.grade',
+            // البصمة اليومية
+            'attendanceLogs' => function($q) use ($date) {
+                $q->whereDate('attendance_date', $date);
+            },
+            // حضور الحصص
+            'classAttendances' => function($q) use ($date, $divisionId) {
+                $q->whereDate('date', $date)
+                  ->where('division_id', $divisionId)
+                  ->with(['subject', 'recorder', 'teacher']);
+            }
+        ])->whereHas('student.currentEnrollment', function($q) use ($divisionId) {
+            $q->where('division_id', $divisionId);
+        })->whereHas('role', function($q) {
+            $q->where('name', 'طالب');
+        })->orderBy('name')->get();
+
+        // 3. بناء المصفوفة
+        $mappedStudents = $students->map(function ($user) use ($periods) {
+            // الاستنتاج الذكي للبصمة اليومية
+            // إذا لم يكن له سجل، فهو غائب
+            $dailyRecord = $user->attendanceLogs->first();
+            $dailyStatus = ($dailyRecord && $dailyRecord->status === 'present') ? 'present' : 'absent';
+            
+            // تحويل سجلات الحصص إلى Key-Value لتسهيل البحث
+            $classRecords = $user->classAttendances->keyBy('period_id');
+
+            $periodsData = $periods->map(function ($period) use ($classRecords, $dailyStatus) {
+                $classRecord = $classRecords->get($period->id);
+
+                if ($classRecord) {
+                    return [
+                        'period_id' => $period->id,
+                        'status' => $classRecord->status,
+                        'notes' => $classRecord->notes,
+                        'subject_name' => $classRecord->subject ? $classRecord->subject->name : null,
+                        'recorder_name' => $classRecord->recorder ? $classRecord->recorder->name : ($classRecord->teacher ? $classRecord->teacher->name : null),
+                    ];
+                }
+
+                // إذا لم يكن هناك سجل للحصة، نعتمد الاستنتاج اليومي
+                return [
+                    'period_id' => $period->id,
+                    'status' => $dailyStatus,
+                    'notes' => null,
+                    'subject_name' => null,
+                    'recorder_name' => null,
+                ];
+            });
+
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'daily_status' => $dailyStatus,
+                'periods' => $periodsData->keyBy('period_id'),
+            ];
+        });
+
+        $activeYear = \App\Models\AcademicYear::with('semesters')->where('is_active', true)->first() 
+                   ?? \App\Models\AcademicYear::with('semesters')->latest()->first();
+        
+        $workingDays = $activeYear && $activeYear->working_days ? $activeYear->working_days : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+
+        $dayOfWeek = \Carbon\Carbon::parse($date)->englishDayOfWeek;
+        
+        $activeSemester = null;
+        if ($activeYear) {
+            $activeSemester = $activeYear->semesters->where('is_active', true)->first() 
+                           ?? $activeYear->semesters->first();
+        }
+        
+        $timetable = collect();
+        if ($divisionId && $activeSemester) {
+            $timetable = \App\Models\MasterTimetable::with(['subject:id,name', 'teacher:id,name'])
+                ->where('division_id', $divisionId)
+                ->where('semester_id', $activeSemester->id)
+                ->where('day_of_week', $dayOfWeek)
+                ->get()
+                ->keyBy('period_id');
+        }
+
+        return Inertia::render('Academic/Attendances/ClassAttendanceReport', [
+            'students' => $mappedStudents,
+            'periods' => $periods,
+            'grades' => $grades,
+            'divisions' => $divisions,
+            'filters' => $request->only(['date', 'grade_id', 'division_id']),
+            'workingDays' => $workingDays,
+            'timetable' => $timetable,
+        ]);
+    }
+
     public function classReports(Request $request)
     {
         $grades = Grade::with('divisions')->get();

@@ -23,6 +23,72 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
             new \Illuminate\Routing\Controllers\Middleware('permission:إسناد المعلمين', only: ['assign', 'unassign']),
         ];
     }
+    public function reportIndex(Request $request)
+    {
+        $branchId = auth()->user()->branch_id;
+
+        $academicYears = AcademicYear::with('semesters')->latest()->get();
+        
+        $sections = Section::with(['grades.divisions' => function($q) use ($branchId) {
+            $q->where('branch_id', $branchId);
+        }])
+        ->where('branch_id', $branchId)
+        ->get();
+
+        $selectedDivisionId = $request->division_id;
+        $selectedSemesterId = $request->semester_id;
+
+        $periodsQuery = DailyPeriod::where('branch_id', $branchId);
+        
+        if ($selectedDivisionId) {
+            $division = Division::find($selectedDivisionId);
+            $gradeId = $division ? $division->grade_id : null;
+            if ($gradeId) {
+                $periodsQuery->where(function($q) use ($gradeId) {
+                    $q->whereNull('timetable_group_id')
+                      ->orWhereHas('group.grades', function($q2) use ($gradeId) {
+                          $q2->where('grades.id', $gradeId);
+                      });
+                });
+            }
+        }
+        
+        $periods = $periodsQuery->orderBy('start_time')->get();
+
+        $timetable = [];
+        if ($selectedDivisionId && $selectedSemesterId) {
+            $timetable = MasterTimetable::with(['subject', 'teacher'])
+                ->where('division_id', $selectedDivisionId)
+                ->where('semester_id', $selectedSemesterId)
+                ->get();
+        }
+
+        $semester = Semester::with('academicYear')->find($selectedSemesterId);
+        $workingDays = $semester && $semester->academicYear->working_days 
+            ? $semester->academicYear->working_days 
+            : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+
+        $daysTranslation = [
+            'Sunday'    => 'الأحد',
+            'Monday'    => 'الإثنين',
+            'Tuesday'   => 'الثلاثاء',
+            'Wednesday' => 'الأربعاء',
+            'Thursday'  => 'الخميس',
+            'Friday'    => 'الجمعة',
+            'Saturday'  => 'السبت',
+        ];
+
+        return Inertia::render('Academic/Timetables/ReportIndex', [
+            'academicYears' => $academicYears,
+            'sections' => $sections,
+            'periods' => $periods,
+            'timetable' => $timetable,
+            'workingDays' => $workingDays,
+            'daysTranslation' => $daysTranslation,
+            'filters' => $request->only('academic_year_id', 'semester_id', 'section_id', 'grade_id', 'division_id'),
+        ]);
+    }
+
     public function index(Request $request)
     {
         $branchId = auth()->user()->branch_id;

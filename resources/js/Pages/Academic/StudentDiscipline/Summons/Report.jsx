@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import ReportPrintLayout from "@/Components/Reports/ReportPrintLayout";
 import {
-    Printer,
     Search,
     Megaphone,
     AlertCircle,
@@ -15,16 +15,13 @@ export default function Report({ summons, filters }) {
     const [endDate, setEndDate] = useState(filters.end_date || '');
     const [status, setStatus] = useState(filters.status || '');
 
-    const handleFilter = () => {
+    const handleFilter = (e) => {
+        if (e) e.preventDefault();
         router.get(route('academic.parent-summons.report'), {
             start_date: startDate,
             end_date: endDate,
             status: status
         }, { preserveState: true });
-    };
-
-    const handlePrint = () => {
-        window.print();
     };
 
     const getStatusBadge = (status) => {
@@ -35,229 +32,206 @@ export default function Report({ summons, filters }) {
             'cancelled': { label: 'ملغى', className: 'bg-slate-100 text-slate-800 border-slate-200' }
         };
         const s = statuses[status] || { label: status, className: 'bg-gray-100 text-gray-800' };
-        return <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${s.className}`}>{s.label}</span>;
+        return <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${s.className} print:bg-transparent print:p-0 print:border-none print:text-black`}>{s.label}</span>;
     };
 
+    const [printSettings, setPrintSettings] = useState(() => {
+        try {
+            const saved = localStorage.getItem('ParentSummonsReportPrintSettings');
+            if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return {
+            title: 'كشف استدعاء أولياء الأمور',
+            orientation: 'portrait',
+            paperSize: 'A4',
+            margins: 'normal',
+            scale: 0.9,
+            pagesPerSheet: 1,
+            showKPIs: true,
+            showDetails: true,
+            ecoMode: false,
+            brandColor: '#1e293b' // slate-800
+        };
+    });
+
+    useEffect(() => {
+        localStorage.setItem('ParentSummonsReportPrintSettings', JSON.stringify(printSettings));
+    }, [printSettings]);
+
+    const handlePrint = () => window.print();
+
     return (
-        <AdminLayout>
+        <AdminLayout activeMenu="استدعاء أولياء الأمور">
             <Head title="كشف استدعاء أولياء الأمور" />
 
-            <style>
-                {`
-                @media print {
-                    body * {
-                        visibility: hidden;
-                    }
-                    .print-area, .print-area * {
-                        visibility: visible;
-                    }
-                    .print-area {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                    }
-                    .no-print {
-                        display: none !important;
-                    }
-                    @page {
-                        size: portrait;
-                        margin: 1cm;
-                    }
-                }
-                `}
-            </style>
-
-            <div className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                
-                {/* Header */}
-                <div className="flex justify-between items-center mb-6 no-print">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-slate-800/10 p-3 rounded-xl">
-                            <Megaphone className="w-6 h-6 text-slate-800" />
-                        </div>
-                        <div>
-                            <h2 className="text-2xl font-bold text-slate-800">كشف استدعاء أولياء الأمور</h2>
-                            <p className="text-slate-500 text-sm mt-1">تقرير مخصص للمتابعة والطباعة للاستدعاءات الموجهة لأولياء الأمور</p>
-                        </div>
-                    </div>
+            <div className="p-6">
+                <div className="max-w-7xl mx-auto space-y-6">
                     
-                    {summons.length > 0 && (
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
-                        >
-                            <Printer className="w-4 h-4" />
-                            <span>طباعة الكشف</span>
-                        </button>
-                    )}
+                    {/* Header */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-slate-50/70 via-white to-white dark:from-slate-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-slate-100 dark:border-slate-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
+                        <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-slate-600 via-slate-700 to-slate-800" />
+                        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-2xl flex items-center justify-center shadow border border-slate-100 dark:border-slate-700">
+                                    <Megaphone size={28} strokeWidth={1.5} />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">كشف استدعاء أولياء الأمور</h1>
+                                    <p className="text-slate-600/80 dark:text-slate-300/80 mt-2 text-sm font-semibold">تقرير مخصص للمتابعة والطباعة للاستدعاءات الموجهة لأولياء الأمور</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="bg-white/90 dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm relative z-20">
+                        <div className="flex items-center gap-2 mb-4 text-slate-700 dark:text-slate-300 font-bold">
+                            <Filter className="w-4 h-4" />
+                            <span>تصفية الكشف</span>
+                        </div>
+                        <form onSubmit={handleFilter} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">من تاريخ</label>
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-slate-500 outline-none transition-all dark:text-white"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">إلى تاريخ</label>
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-slate-500 outline-none transition-all dark:text-white"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">حالة الاستدعاء</label>
+                                <select
+                                    value={status}
+                                    onChange={(e) => setStatus(e.target.value)}
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-slate-500 outline-none transition-all dark:text-white"
+                                >
+                                    <option value="">الكل</option>
+                                    <option value="scheduled">مجدول</option>
+                                    <option value="attended">تم الحضور</option>
+                                    <option value="no_show">لم يحضر</option>
+                                    <option value="cancelled">ملغى</option>
+                                </select>
+                            </div>
+
+                            <div className="flex items-end">
+                                <button
+                                    type="submit"
+                                    className="w-full flex items-center justify-center gap-2 bg-slate-800 text-white px-4 py-2.5 rounded-xl hover:bg-slate-900 transition-all font-bold shadow-sm dark:bg-slate-700 dark:hover:bg-slate-600"
+                                >
+                                    <Search className="w-5 h-5" />
+                                    <span>عرض التقرير</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <ReportPrintLayout 
+                        title={printSettings.title} 
+                        printSettings={printSettings} 
+                        setPrintSettings={setPrintSettings} 
+                        onPrint={handlePrint}
+                        subtitle={startDate && endDate ? `الفترة: ${startDate} إلى ${endDate}` : 'قسم التوجيه والإرشاد الطلابي'}
+                    >
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm relative z-10 print:border-none print:shadow-none print:rounded-none">
+                            {summons.length === 0 ? (
+                                <div className="p-12 text-center">
+                                    <AlertCircle className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">لا توجد استدعاءات</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto">
+                                        لا يوجد استدعاءات لأولياء الأمور تطابق الفلاتر المحددة.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto custom-scrollbar">
+                                    <table className="w-full text-sm text-right print:border-collapse">
+                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-black border-b border-slate-200 dark:border-slate-800 print:bg-slate-100 print:border-black/30 print:text-slate-800">
+                                            <tr>
+                                                <th className="w-12 px-4 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30 print:rounded-none">م</th>
+                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">تاريخ الاستدعاء</th>
+                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">اسم الطالب</th>
+                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">الصف / الشعبة</th>
+                                                <th className="w-64 px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">سبب الاستدعاء</th>
+                                                <th className="px-4 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30">الحالة</th>
+                                                <th className="w-32 px-4 py-4 text-center hidden print:table-cell print:border-black/30">توقيع ولي الأمر</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 font-medium print:divide-black/20">
+                                            {summons.map((summon, idx) => (
+                                                <tr key={summon.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors print:hover:bg-transparent">
+                                                    <td className="px-4 py-4 whitespace-nowrap text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
+                                                        {idx + 1}
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap border-l border-slate-200 dark:border-slate-800 print:border-black/30">
+                                                        <div className="flex items-center gap-2 text-slate-900 dark:text-white print:text-black font-bold">
+                                                            <Calendar className="w-4 h-4 text-slate-400 print:hidden" />
+                                                            {new Date(summon.summon_date).toLocaleDateString('ar-SA')}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 border-l border-slate-200 dark:border-slate-800 print:border-black/30">
+                                                        <div className="text-sm font-bold text-slate-900 dark:text-white print:text-black">
+                                                            {summon.student?.user?.name || 'غير معروف'}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 print:hidden">
+                                                            {summon.student?.user?.id_number}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
+                                                        {summon.student?.active_enrollment ? 
+                                                            `${summon.student.active_enrollment.division?.grade?.name || ''} - ${summon.student.active_enrollment.division?.name || ''}`
+                                                        : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
+                                                        {summon.violation && (
+                                                            <div className="text-xs font-bold text-rose-600 dark:text-rose-400 mb-1 print:text-black">
+                                                                مخالفة: {summon.violation.violation_type?.name}
+                                                            </div>
+                                                        )}
+                                                        <p className="line-clamp-2 print:line-clamp-none">{summon.reason}</p>
+                                                    </td>
+                                                    <td className="px-4 py-4 whitespace-nowrap text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30">
+                                                        {getStatusBadge(summon.status)}
+                                                    </td>
+                                                    <td className="px-4 py-4 text-center hidden print:table-cell print:border-black/30">
+                                                        {/* Empty cell for signature in print mode */}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {/* Print Footer / Signatures - Only visible in print mode */}
+                            {summons.length > 0 && (
+                                <div className="hidden print:flex justify-between items-end p-8 mt-12 w-full">
+                                    <div className="text-center w-48">
+                                        <h4 className="font-bold text-slate-800 mb-8">المرشد الطلابي</h4>
+                                        <div className="border-b border-black w-full mb-2"></div>
+                                        <p className="text-sm text-slate-600">الاسم والتوقيع</p>
+                                    </div>
+                                    
+                                    <div className="text-center w-48">
+                                        <h4 className="font-bold text-slate-800 mb-8">مدير المدرسة</h4>
+                                        <div className="border-b border-black w-full mb-2"></div>
+                                        <p className="text-sm text-slate-600">الاسم والتوقيع</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </ReportPrintLayout>
                 </div>
-
-                {/* Filters */}
-                <div className="bg-white/70 backdrop-blur-xl border border-slate-200/60 rounded-2xl p-5 mb-6 shadow-sm no-print">
-                    <div className="flex items-center gap-2 mb-4 text-slate-700 font-medium">
-                        <Filter className="w-4 h-4" />
-                        <span>تصفية الكشف</span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">من تاريخ</label>
-                            <input
-                                type="date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                                className="w-full border-slate-200 rounded-xl focus:ring-slate-500 focus:border-slate-500 bg-slate-50/50"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">إلى تاريخ</label>
-                            <input
-                                type="date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                                className="w-full border-slate-200 rounded-xl focus:ring-slate-500 focus:border-slate-500 bg-slate-50/50"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">حالة الاستدعاء</label>
-                            <select
-                                value={status}
-                                onChange={(e) => setStatus(e.target.value)}
-                                className="w-full border-slate-200 rounded-xl focus:ring-slate-500 focus:border-slate-500 bg-slate-50/50"
-                            >
-                                <option value="">الكل</option>
-                                <option value="scheduled">مجدول</option>
-                                <option value="attended">تم الحضور</option>
-                                <option value="no_show">لم يحضر</option>
-                                <option value="cancelled">ملغى</option>
-                            </select>
-                        </div>
-
-                        <div className="flex items-end">
-                            <button
-                                onClick={handleFilter}
-                                className="w-full flex items-center justify-center gap-2 bg-slate-800 text-white px-4 py-2.5 rounded-xl hover:bg-slate-900 transition-colors"
-                            >
-                                <Search className="w-5 h-5" />
-                                <span>عرض التقرير</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Print Area */}
-                {summons.length > 0 ? (
-                    <div className="print-area bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                        
-                        {/* Print Header */}
-                        <div className="hidden print:block p-8 border-b-2 border-slate-800 mb-4">
-                            <div className="flex justify-between items-center">
-                                <div className="text-right">
-                                    <h1 className="text-2xl font-bold text-slate-900 mb-1">المملكة العربية السعودية</h1>
-                                    <h2 className="text-xl text-slate-800">وزارة التعليم</h2>
-                                    <h3 className="text-lg text-slate-700">إدارة التعليم بمنطقة ...........</h3>
-                                </div>
-                                <div className="text-center">
-                                    <h1 className="text-3xl font-bold text-slate-900 mb-2">كشف استدعاء أولياء الأمور</h1>
-                                    <h2 className="text-lg font-semibold text-slate-700">
-                                        قسم التوجيه والإرشاد الطلابي
-                                    </h2>
-                                </div>
-                                <div className="text-left">
-                                    <h3 className="text-lg text-slate-700">التاريخ: {new Date().toLocaleDateString('ar-SA')}</h3>
-                                    {startDate && endDate && (
-                                        <h3 className="text-sm text-slate-600 mt-1">
-                                            الفترة: {startDate} إلى {endDate}
-                                        </h3>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Data Table */}
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-slate-200">
-                                <thead>
-                                    <tr className="bg-slate-50 print:bg-slate-100">
-                                        <th scope="col" className="w-12 px-4 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider border-l border-slate-200">م</th>
-                                        <th scope="col" className="px-4 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider border-l border-slate-200">تاريخ الاستدعاء</th>
-                                        <th scope="col" className="px-4 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider border-l border-slate-200">اسم الطالب</th>
-                                        <th scope="col" className="px-4 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider border-l border-slate-200">الصف / الشعبة</th>
-                                        <th scope="col" className="w-64 px-4 py-4 text-right text-xs font-bold text-slate-500 uppercase tracking-wider border-l border-slate-200">سبب الاستدعاء</th>
-                                        <th scope="col" className="px-4 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider border-l border-slate-200">الحالة</th>
-                                        <th scope="col" className="w-32 px-4 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider hidden print:table-cell">توقيع ولي الأمر</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-slate-200">
-                                    {summons.map((summon, idx) => (
-                                        <tr key={summon.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-500 text-center border-l border-slate-200">
-                                                {idx + 1}
-                                            </td>
-                                            <td className="px-4 py-4 whitespace-nowrap border-l border-slate-200">
-                                                <div className="flex items-center gap-2 text-sm text-slate-900 font-medium">
-                                                    <Calendar className="w-4 h-4 text-slate-400 no-print" />
-                                                    {new Date(summon.summon_date).toLocaleDateString('ar-SA')}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4 border-l border-slate-200">
-                                                <div className="text-sm font-semibold text-slate-900">
-                                                    {summon.student?.user?.name || 'غير معروف'}
-                                                </div>
-                                                <div className="text-xs text-slate-500 no-print mt-1">
-                                                    {summon.student?.user?.id_number}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 border-l border-slate-200">
-                                                {summon.student?.active_enrollment ? 
-                                                    `${summon.student.active_enrollment.division?.grade?.name || ''} - ${summon.student.active_enrollment.division?.name || ''}`
-                                                : '-'}
-                                            </td>
-                                            <td className="px-4 py-4 text-sm text-slate-700 border-l border-slate-200">
-                                                {summon.violation && (
-                                                    <div className="text-xs font-bold text-rose-600 mb-1">
-                                                        مخالفة: {summon.violation.violation_type?.name}
-                                                    </div>
-                                                )}
-                                                <p className="line-clamp-2 print:line-clamp-none">{summon.reason}</p>
-                                            </td>
-                                            <td className="px-4 py-4 whitespace-nowrap text-center border-l border-slate-200">
-                                                {getStatusBadge(summon.status)}
-                                            </td>
-                                            <td className="px-4 py-4 text-center border-slate-200 hidden print:table-cell">
-                                                {/* Empty cell for signature in print mode */}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* Print Footer / Signatures */}
-                        <div className="hidden print:flex justify-between items-end p-8 mt-12">
-                            <div className="text-center w-48">
-                                <h4 className="font-bold text-slate-800 mb-8">المرشد الطلابي</h4>
-                                <div className="border-b border-slate-400 w-full mb-2"></div>
-                                <p className="text-sm text-slate-600">الاسم والتوقيع</p>
-                            </div>
-                            
-                            <div className="text-center w-48">
-                                <h4 className="font-bold text-slate-800 mb-8">مدير المدرسة</h4>
-                                <div className="border-b border-slate-400 w-full mb-2"></div>
-                                <p className="text-sm text-slate-600">الاسم والتوقيع</p>
-                            </div>
-                        </div>
-
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-12 text-center no-print">
-                        <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-slate-900 mb-1">لا توجد استدعاءات</h3>
-                        <p className="text-slate-500">لا يوجد استدعاءات لأولياء الأمور تطابق الفلاتر المحددة.</p>
-                    </div>
-                )}
             </div>
         </AdminLayout>
     );

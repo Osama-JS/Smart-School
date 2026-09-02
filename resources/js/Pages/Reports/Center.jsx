@@ -258,31 +258,31 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     permission: 'عرض التقييمات الإدارية',
                 },
                 {
-                    name: 'الإجازات والأرصدة',
+                    name: 'تقارير إجازات الموظفين',
                     description: 'تقارير الإجازات (مرضي، اعتيادي) والرصيد المتبقي للموظفين',
                     icon: CalendarDays,
-                    url: route('hr.leaves'),
+                    url: route('hr.reports.employee-leaves'),
                     permission: null,
                 },
                 {
                     name: 'الطلبات الإدارية',
                     description: 'طلبات الاستئذان، خطابات التعريف، وحالتها',
                     icon: ClipboardList,
-                    url: route('hr.requests.index'),
+                    url: route('hr.reports.administrative-requests'),
                     permission: null,
                 },
                 {
                     name: 'مخالفات الموظفين',
                     description: 'حالات لفت النظر والإنذارات الموجهة للكادر',
                     icon: AlertOctagon,
-                    url: route('hr.employee-violations'),
+                    url: route('hr.reports.employee-violations'),
                     permission: null,
                 },
                 {
                     name: 'إنجازات الموظفين',
                     description: 'سجلات الدورات التدريبية والتميز في الأداء',
                     icon: Trophy,
-                    url: route('hr.employee-achievements'),
+                    url: route('hr.reports.employee-achievements'),
                     permission: null,
                 }
             ]
@@ -297,14 +297,14 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     name: 'تقرير غياب الطلاب',
                     description: 'سجلات الغياب اليومي وحسب الحصص للطلاب',
                     icon: AlertTriangle,
-                    url: route('academic.attendances.index'),
+                    url: route('academic.attendances.report'),
                     permission: 'إدارة الطلاب',
                 },
                 {
-                    name: 'الغياب المدرسي',
-                    description: 'تقارير الغياب المجمعة على مستوى الفصول والمدرسة',
-                    icon: CheckSquare,
-                    url: route('academic.attendances.classes'),
+                    name: 'تقرير الغياب بالحصص',
+                    description: 'تقرير تفصيلي لغياب الطلاب بالحصص مخصص للطباعة',
+                    icon: FileText,
+                    url: route('academic.attendances.class-report'),
                     permission: 'إدارة الطلاب',
                 },
                 {
@@ -348,14 +348,14 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     name: 'زيارات أولياء الأمور',
                     description: 'سجل توثيق الآباء الذين حضروا للمدرسة لمتابعة أبنائهم',
                     icon: UserCheck,
-                    url: route('academic.parent-visits.index'),
+                    url: route('academic.parent-visits.report'),
                     permission: null,
                 },
                 {
-                    name: 'المخالفات والتعهدات',
-                    description: 'تقارير للمخالفات السلوكية والتعهدات الموقعة',
+                    name: 'كشف تعهدات الطلاب',
+                    description: 'كشف موحد لتوثيق التعهدات السلوكية وحالة توقيع الطلاب وأولياء الأمور',
                     icon: ShieldAlert,
-                    url: route('academic.student-pledges.index'),
+                    url: route('academic.student-pledges.report'),
                     permission: null,
                 }
             ]
@@ -370,7 +370,7 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     name: 'الدرجات الشهرية',
                     description: 'تقارير تفصيلية لمستوى الطلاب خلال الفترات',
                     icon: BarChart3,
-                    url: route('academic.monthly-grades.index'),
+                    url: route('academic.monthly-grades.report.index'),
                     permission: 'إدارة الدرجات',
                 },
                 {
@@ -387,13 +387,6 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     url: route('academic.semester-results.report'),
                     permission: 'إدارة الدرجات',
                 },
-                {
-                    name: 'جداول الاختبارات',
-                    description: 'تقرير يعرض الجداول الموزعة للمراحل',
-                    icon: CalendarDays,
-                    url: route('academic.exam-schedules.index'),
-                    permission: 'إدارة الدرجات',
-                }
             ]
         },
         {
@@ -406,23 +399,16 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     name: 'الجدول المدرسي العام',
                     description: 'تقرير شامل يعرض نصاب كل معلم من الحصص',
                     icon: Table,
-                    url: route('academic.timetable'),
+                    url: route('academic.timetable.report'),
                     permission: null,
                 },
                 {
                     name: 'حصص الانتظار والاحتياط',
                     description: 'تقرير يوضح المعلمين الذين غطوا الحصص الاحتياطية',
                     icon: RefreshCcw,
-                    url: route('academic.coverage.index'),
+                    url: route('academic.coverage.report'),
                     permission: null,
                 },
-                {
-                    name: 'تحضير الدروس',
-                    description: 'لمتابعة المعلمين في رفع تحضيراتهم اليومية',
-                    icon: BookOpen,
-                    url: route('academic.lesson-preparations'),
-                    permission: null,
-                }
             ]
 
         },
@@ -436,7 +422,7 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     name: 'محاضر الاجتماعات',
                     description: 'تقرير يوثق المجالس المدرسية، حضورها وغيابها ومقرراتها',
                     icon: Users,
-                    url: route('meetings.index'),
+                    url: route('meetings.report'),
                     permission: null,
                 }
             ]

@@ -3,6 +3,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { Printer, Filter, RefreshCw, FileText, Download, ChevronRight, ChevronLeft, Search } from 'lucide-react';
 import Pagination from '@/Components/Pagination'; // Adjust import based on the actual Pagination component
+import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 
 export default function AppraisalsReport({ appraisals, cycles = [], departments = [], employees = [], filters = {} }) {
     const [filterData, setFilterData] = useState({
@@ -13,6 +14,37 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
         date_to: filters.date_to || '',
         search: filters.search || ''
     });
+
+    const [printSettings, setPrintSettings] = useState(() => {
+        const defaultSettings = {
+            title: 'كشف تقييمات أداء الموظفين',
+            showKPIs: true,
+            showDetails: true,
+            orientation: 'portrait',
+            ecoMode: false,
+            watermark: 'none',
+            paperSize: 'A4',
+            margins: 'normal',
+            scale: 1,
+            pagesPerSheet: 1,
+            brandColor: '#1e293b', // slate-800
+        };
+        try {
+            const saved = localStorage.getItem('AppraisalsPrintSettings');
+            if (saved) return { ...defaultSettings, ...JSON.parse(saved) };
+        } catch (e) {}
+        return defaultSettings;
+    });
+
+    React.useEffect(() => {
+        localStorage.setItem('AppraisalsPrintSettings', JSON.stringify(printSettings));
+    }, [printSettings]);
+
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const handleDownloadPDF = () => {
+        // PDF generation not implemented for paginated appraisals yet
+        alert('سيتم تفعيل تصدير PDF قريباً');
+    };
 
     const handleFilter = (e) => {
         e.preventDefault();
@@ -147,19 +179,18 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                     </form>
                 </div>
 
-                {/* Print Header */}
-                <div className="hidden print:block text-center mb-8 pb-4 border-b-2 border-slate-800">
-                    <h2 className="text-2xl font-bold text-slate-900 mb-2">كشف تقييمات أداء الموظفين</h2>
-                    <p className="text-sm text-slate-600">
-                        {filters.cycle_id ? `الدورة: ${cycles.find(c => c.id == filters.cycle_id)?.title}` : 'جميع الدورات'} | 
-                        {filters.department_id ? ` القسم: ${departments.find(d => d.id == filters.department_id)?.name}` : ' جميع الأقسام'}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-2">تاريخ الطباعة: {new Date().toLocaleDateString('ar-SA')}</p>
-                </div>
-
                 {/* Data Table */}
-                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden print:border-none print:shadow-none print:bg-transparent">
-                    <div className="overflow-x-auto">
+                <ReportPrintLayout 
+                    title={printSettings.title} 
+                    printSettings={printSettings} 
+                    setPrintSettings={setPrintSettings} 
+                    onPrint={handlePrint} 
+                    onDownloadPdf={handleDownloadPDF} 
+                    isGeneratingPdf={isGeneratingPdf} 
+                    startDate={filterData.date_from} 
+                    endDate={filterData.date_to}
+                >
+                    <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-none">
                         <table className="w-full text-right print:text-sm">
                             <thead>
                                 <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 print:bg-slate-100 print:border-black">
@@ -222,7 +253,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </ReportPrintLayout>
 
                 {/* Pagination (Hidden in Print) */}
                 {appraisals.last_page > 1 && (

@@ -23,6 +23,49 @@ class MeetingController extends Controller implements \Illuminate\Routing\Contro
             new \Illuminate\Routing\Controllers\Middleware('permission:تحضير الاجتماع', only: ['updateAttendance', 'completeMeeting']),
         ];
     }
+    public function reportIndex(Request $request)
+    {
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير الفرع', 'مدير النظام']);
+        $branchId = $isAdmin ? session('active_branch_id', $user->branch_id) : $user->branch_id;
+
+        $query = Meeting::with(['supervisor', 'participants.user'])
+            ->where(function($q) use ($branchId) {
+                if ($branchId) {
+                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+                }
+            });
+
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $meetings = $query->orderBy('date', 'desc')->orderBy('time', 'desc')->get();
+
+        $users = User::with('employee.jobGrade')->where(function($q) use ($branchId) {
+                if ($branchId) {
+                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+                }
+            })->where('id', '!=', $user->id)
+            ->where('is_active', 1)
+            ->get(['id', 'name']);
+
+        return Inertia::render('HR/Meetings/ReportIndex', [
+            'meetings' => $meetings,
+            'users' => $users,
+            'filters' => $request->only(['search', 'status']),
+            'stats' => [
+                'total' => (clone $query)->count(),
+                'scheduled' => (clone $query)->where('status', 'scheduled')->count(),
+                'completed' => (clone $query)->where('status', 'completed')->count(),
+            ]
+        ]);
+    }
+
     public function index(Request $request)
     {
         $user = auth()->user();
