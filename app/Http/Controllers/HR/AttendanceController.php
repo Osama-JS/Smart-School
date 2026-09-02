@@ -11,6 +11,7 @@ use App\Models\AcademicYear;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class AttendanceController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
@@ -453,6 +454,194 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
                 'violators_only' => $violatorsOnly
             ]
         ]);
+    }
+
+    /**
+     * تنزيل تقرير الغياب والتأخير كملف PDF
+     */
+    public function downloadTeacherAbsencesPdf(Request $request)
+    {
+        $user = $request->user();
+        $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $userBranchId = $isSystemAdmin ? null : $user->branch_id;
+
+        $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->get('end_date', Carbon::today()->toDateString());
+        $departmentId = $request->get('department_id');
+        $employeeId = $request->get('employee_id');
+        $statuses = $request->get('statuses');
+        
+        if (empty($statuses)) {
+            $statuses = ['absent', 'late', 'excused', 'leave'];
+        } else if (is_string($statuses)) {
+            $statuses = explode(',', $statuses);
+        }
+
+        $query = \App\Models\Attendance::with(['employee.user', 'employee.department'])
+            ->whereHas('employee.user', function($q) use ($userBranchId) {
+                $q->where(function($subQ) {
+                    $subQ->where('name', 'like', '%معلم%')
+                         ->orWhere('name', 'like', '%مدرس%');
+                });
+                if ($userBranchId) {
+                    $q->where('branch_id', $userBranchId);
+                }
+            })
+            ->whereBetween('date', [$startDate, $endDate])
+            ->whereIn('status', $statuses);
+
+        if ($departmentId) {
+            $query->whereHas('employee', function($q) use ($departmentId) {
+                $q->where('department_id', $departmentId);
+            });
+        }
+
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        }
+
+        $absencesRaw = $query->orderBy('date', 'desc')->get();
+
+        $total_absent = $absencesRaw->where('status', 'absent')->count();
+        $total_late = $absencesRaw->where('status', 'late')->count();
+
+        // Group absences by teacher
+        $groupedByTeacher = [];
+        foreach ($absencesRaw as $att) {
+            $empName = $att->employee->user->name ?? 'غير محدد';
+            if (!isset($groupedByTeacher[$empName])) {
+                $groupedByTeacher[$empName] = [
+                    'employee_name' => $empName,
+                    'department' => $att->employee->department->name ?? '-',
+                    'records' => []
+                ];
+            }
+            $groupedByTeacher[$empName]['records'][] = [
+                'date' => $att->date,
+                'day' => Carbon::parse($att->date)->locale('ar')->isoFormat('dddd'),
+                'status' => match($att->status) {
+                    'absent' => 'غياب بدون عذر',
+                    'late' => 'تأخير',
+                    'excused' => 'استئذان',
+                    'leave' => 'إجازة / مرضي',
+                    default => 'غير معروف'
+                },
+                'status_code' => $att->status,
+                'late_minutes' => $att->late_minutes
+            ];
+        }
+
+        // Apply Violators Only filter
+        $violatorsOnly = filter_var($request->get('violators_only', false), FILTER_VALIDATE_BOOLEAN);
+        $sortedGroupedAbsences = array_values($groupedByTeacher);
+        
+        usort($sortedGroupedAbsences, function($a, $b) {
+            $aViolations = count(array_filter($a['records'], fn($r) => in_array($r['status_code'], ['absent', 'late'])));
+            $bViolations = count(array_filter($b['records'], fn($r) => in_array($r['status_code'], ['absent', 'late'])));
+            return $bViolations - $aViolations;
+        });
+
+        if ($violatorsOnly) {
+            $sortedGroupedAbsences = array_filter($sortedGroupedAbsences, function($data) {
+                $absentCount = count(array_filter($data['records'], fn($r) => $r['status_code'] === 'absent'));
+                $lateCount = count(array_filter($data['records'], fn($r) => $r['status_code'] === 'late'));
+                return $absentCount >= 3 || $lateCount >= 3;
+            });
+        }
+
+        $printSettings = json_decode($request->get('printSettings', '{}'), true);
+        
+        $brandColor = $printSettings['brandColor'] ?? '#63a22f';
+        $title = $printSettings['title'] ?? 'تقرير غياب وتأخير المعلمين';
+        $paperSize = $printSettings['paperSize'] ?? 'a4';
+        $orientation = $printSettings['orientation'] ?? 'portrait';
+        $marginsStr = $printSettings['margins'] ?? 'normal';
+        
+        $margins = match($marginsStr) {
+            'none' => [0, 0, 0, 0],
+            '1cm' => [10, 10, 10, 10],
+            '2cm' => [20, 20, 20, 20],
+            default => [15, 15, 15, 15] // normal
+        };
+
+        $showKPIs = $printSettings['showKPIs'] ?? true;
+        
+        $uniqueTeachers = 0;
+        $mostAbsentDept = 'لا يوجد';
+        
+        if ($showKPIs) {
+            $uniqueTeachers = $absencesRaw->pluck('employee_id')->unique()->count();
+            
+            $deptStats = [];
+            foreach($absencesRaw as $att) {
+                $deptName = $att->employee->department->name ?? 'غير محدد';
+                if (!isset($deptStats[$deptName])) {
+                    $deptStats[$deptName] = ['absent' => 0, 'late' => 0];
+                }
+                if ($att->status == 'absent') $deptStats[$deptName]['absent']++;
+                if ($att->status == 'late') $deptStats[$deptName]['late']++;
+            }
+            
+            arsort($deptStats);
+            $maxViolations = 0;
+            foreach ($deptStats as $deptName => $stats) {
+                $total = $stats['absent'] + $stats['late'];
+                if ($total > $maxViolations) {
+                    $maxViolations = $total;
+                    $mostAbsentDept = $deptName;
+                }
+            }
+        }
+
+        $data = [
+            'groupedAbsences' => $sortedGroupedAbsences,
+            'totalAbsences' => $total_absent,
+            'totalLates' => $total_late,
+            'uniqueTeachers' => $uniqueTeachers,
+            'mostAbsentDept' => $mostAbsentDept,
+            'showKPIs' => $showKPIs,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'title' => $title,
+            'brandColor' => $brandColor,
+            'watermark' => $printSettings['watermark'] ?? 'none',
+        ];
+
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 40px 10px 40px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">نظام الإدارة الذكية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $pdf = Pdf::view('pdf.hr.teacher-absences', $data)
+            ->format($paperSize)
+            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+            ->footerHtml($footerHtml)
+            ->withBrowsershot(function ($browsershot) {
+                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
+                           ->noSandbox()
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(2000);
+            });
+
+        if ($orientation === 'landscape') {
+            $pdf->landscape();
+        }
+
+        return $pdf->download('teacher_absences.pdf');
     }
 
 

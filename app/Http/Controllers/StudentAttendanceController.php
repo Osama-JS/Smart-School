@@ -12,13 +12,14 @@ use App\Models\DailyPeriod;
 use App\Models\User;
 use App\Models\Enrollment;
 use Carbon\Carbon;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class StudentAttendanceController extends Controller
 {
     /**
      * تقارير الغياب اليومي للمدرسة
      */
-    public function attendanceReport(Request $request)
+    public function getAttendanceReportFilterData(Request $request)
     {
         $date = $request->filled('date') ? $request->date : today()->toDateString();
         
@@ -77,11 +78,87 @@ class StudentAttendanceController extends Controller
 
         $divisions = Division::with('grade')->get();
 
-        return Inertia::render('Academic/Attendances/AttendanceReport', [
+        return [
             'logs' => $mappedData,
             'divisions' => $divisions,
             'filters' => $request->only(['date', 'search', 'division_id', 'status']),
+            'date' => $date
+        ];
+    }
+
+    public function attendanceReport(Request $request)
+    {
+        $data = $this->getAttendanceReportFilterData($request);
+
+        return Inertia::render('Academic/Attendances/AttendanceReport', [
+            'logs' => $data['logs'],
+            'divisions' => $data['divisions'],
+            'filters' => $data['filters'],
         ]);
+    }
+
+    public function downloadAttendanceReportPdf(Request $request)
+    {
+        $data = $this->getAttendanceReportFilterData($request);
+        
+        $printSettings = json_decode($request->input('printSettings', '{}'), true);
+        $paperSize = $printSettings['paperSize'] ?? 'A4';
+        $brandColor = $printSettings['brandColor'] ?? '#63a22f';
+        $orientation = $printSettings['orientation'] ?? 'portrait';
+        $marginSetting = $printSettings['margins'] ?? 'normal';
+        
+        $margins = match ($marginSetting) {
+            'none' => [0, 0, 0, 0],
+            '1cm' => [10, 10, 10, 10],
+            '2cm' => [20, 20, 20, 20],
+            default => [15, 15, 15, 15],
+        };
+
+        if ($orientation === 'landscape') {
+            $paperSize = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
+            $margins = [$margins[0], $margins[1], $margins[2], $margins[3]];
+        }
+
+        $data['printSettings'] = $printSettings;
+        $data['brandColor'] = $brandColor;
+        $data['watermark'] = $printSettings['watermark'] ?? 'none';
+        $data['orientation'] = $orientation;
+
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 40px 10px 40px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">نظام الإدارة الذكية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $pdf = Pdf::view('pdf.academic.student-absences', $data)
+            ->format($paperSize)
+            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+            ->footerHtml($footerHtml);
+
+        if ($orientation === 'landscape') {
+            $pdf->landscape();
+        }
+
+        return $pdf->withBrowsershot(function ($browsershot) {
+                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
+                           ->noSandbox()
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(2000);
+            })
+            ->download('student_absences_report.pdf');
     }
 
     public function index(Request $request)
@@ -267,7 +344,7 @@ class StudentAttendanceController extends Controller
     /**
      * تقرير كشف الحضور والغياب الأسبوعي (Weekly Report)
      */
-    public function weeklyReport(Request $request)
+    public function getWeeklyAttendanceReportFilterData(Request $request)
     {
         $grades = Grade::with('divisions')->get();
         $divisions = Division::with('grade')->get();
@@ -294,13 +371,14 @@ class StudentAttendanceController extends Controller
         ];
 
         if (!$divisionId) {
-            return Inertia::render('Academic/Attendances/WeeklyReport', [
+            return [
                 'students' => [],
                 'weekDays' => $weekDays,
                 'grades' => $grades,
                 'divisions' => $divisions,
+                'divisionInfo' => null,
                 'filters' => $request->only(['date', 'grade_id', 'division_id']),
-            ]);
+            ];
         }
 
         $division = Division::with('grade')->find($divisionId);
@@ -351,7 +429,7 @@ class StudentAttendanceController extends Controller
             ];
         });
 
-        return Inertia::render('Academic/Attendances/WeeklyReport', [
+        return [
             'students' => $mappedStudents,
             'weekDays' => $weekDays,
             'divisionInfo' => $division,
@@ -362,13 +440,83 @@ class StudentAttendanceController extends Controller
                 'grade_id' => $gradeId,
                 'division_id' => $divisionId,
             ],
-        ]);
+        ];
+    }
+
+    public function weeklyReport(Request $request)
+    {
+        $data = $this->getWeeklyAttendanceReportFilterData($request);
+        return Inertia::render('Academic/Attendances/WeeklyReport', $data);
+    }
+
+    public function downloadWeeklyAttendanceReportPdf(Request $request)
+    {
+        $data = $this->getWeeklyAttendanceReportFilterData($request);
+        
+        $printSettings = json_decode($request->input('printSettings', '{}'), true);
+        $paperSize = $printSettings['paperSize'] ?? 'A4';
+        $brandColor = $printSettings['brandColor'] ?? '#63a22f';
+        $orientation = $printSettings['orientation'] ?? 'portrait';
+        $marginSetting = $printSettings['margins'] ?? 'normal';
+        
+        $margins = match ($marginSetting) {
+            'none' => [0, 0, 0, 0],
+            '1cm' => [10, 10, 10, 10],
+            '2cm' => [20, 20, 20, 20],
+            default => [15, 15, 15, 15],
+        };
+
+        if ($orientation === 'landscape') {
+            $paperSize = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
+            $margins = [$margins[0], $margins[1], $margins[2], $margins[3]];
+        }
+
+        $data['printSettings'] = $printSettings;
+        $data['brandColor'] = $brandColor;
+        $data['watermark'] = $printSettings['watermark'] ?? 'none';
+        $data['orientation'] = $orientation;
+
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 40px 10px 40px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">نظام الإدارة الذكية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $pdf = Pdf::view('pdf.academic.student-weekly-absences', $data)
+            ->format($paperSize)
+            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+            ->footerHtml($footerHtml);
+
+        if ($orientation === 'landscape') {
+            $pdf->landscape();
+        }
+
+        return $pdf->withBrowsershot(function ($browsershot) {
+                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
+                           ->noSandbox()
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(2000);
+            })
+            ->download('student_weekly_absences_report.pdf');
     }
 
     /**
      * تقارير الغياب التفصيلية في الحصص (Matrix View)
      */
-    public function classAttendanceReport(Request $request)
+    public function getClassAttendanceReportFilterData(Request $request)
     {
         $grades = Grade::with('divisions')->get();
         $divisions = Division::with('grade')->get();
@@ -377,31 +525,27 @@ class StudentAttendanceController extends Controller
         $divisionId = $request->division_id ?? ($divisions->first()->id ?? null);
         $gradeId = $request->grade_id ?? ($divisions->where('id', $divisionId)->first()->grade_id ?? null);
 
-        // إذا لم يتم تحديد شعبة (ولم نجد واحدة افتراضية)، نعود بواجهة فارغة
         if (!$divisionId) {
-            return Inertia::render('Academic/Attendances/ClassAttendanceReport', [
+            return [
                 'students' => [],
                 'periods' => [],
                 'grades' => $grades,
                 'divisions' => $divisions,
                 'filters' => $request->only(['date', 'grade_id', 'division_id']),
-            ]);
+                'workingDays' => [],
+                'timetable' => collect(),
+            ];
         }
 
-        // 1. جلب الحصص الدراسية
-        // نجلب الحصص الخاصة بالمجموعة (TimetableGroup) التي تتبع لها الشعبة، أو كل الحصص إذا لم يتوفر
         $division = Division::with('grade')->find($divisionId);
         $periodsQuery = DailyPeriod::where('is_break', false)->orderBy('start_time');
         $periods = $periodsQuery->get();
 
-        // 2. جلب جميع الطلاب في هذه الشعبة
         $students = User::with([
             'student.currentEnrollment.division.grade',
-            // البصمة اليومية
             'attendanceLogs' => function($q) use ($date) {
                 $q->whereDate('attendance_date', $date);
             },
-            // حضور الحصص
             'classAttendances' => function($q) use ($date, $divisionId) {
                 $q->whereDate('date', $date)
                   ->where('division_id', $divisionId)
@@ -413,14 +557,10 @@ class StudentAttendanceController extends Controller
             $q->where('name', 'طالب');
         })->orderBy('name')->get();
 
-        // 3. بناء المصفوفة
         $mappedStudents = $students->map(function ($user) use ($periods) {
-            // الاستنتاج الذكي للبصمة اليومية
-            // إذا لم يكن له سجل، فهو غائب
             $dailyRecord = $user->attendanceLogs->first();
             $dailyStatus = ($dailyRecord && $dailyRecord->status === 'present') ? 'present' : 'absent';
             
-            // تحويل سجلات الحصص إلى Key-Value لتسهيل البحث
             $classRecords = $user->classAttendances->keyBy('period_id');
 
             $periodsData = $periods->map(function ($period) use ($classRecords, $dailyStatus) {
@@ -436,7 +576,6 @@ class StudentAttendanceController extends Controller
                     ];
                 }
 
-                // إذا لم يكن هناك سجل للحصة، نعتمد الاستنتاج اليومي
                 return [
                     'period_id' => $period->id,
                     'status' => $dailyStatus,
@@ -477,7 +616,7 @@ class StudentAttendanceController extends Controller
                 ->keyBy('period_id');
         }
 
-        return Inertia::render('Academic/Attendances/ClassAttendanceReport', [
+        return [
             'students' => $mappedStudents,
             'periods' => $periods,
             'grades' => $grades,
@@ -485,7 +624,77 @@ class StudentAttendanceController extends Controller
             'filters' => $request->only(['date', 'grade_id', 'division_id']),
             'workingDays' => $workingDays,
             'timetable' => $timetable,
-        ]);
+        ];
+    }
+
+    public function classAttendanceReport(Request $request)
+    {
+        $data = $this->getClassAttendanceReportFilterData($request);
+        return Inertia::render('Academic/Attendances/ClassAttendanceReport', $data);
+    }
+
+    public function downloadClassAttendanceReportPdf(Request $request)
+    {
+        $data = $this->getClassAttendanceReportFilterData($request);
+        
+        $printSettings = json_decode($request->input('printSettings', '{}'), true);
+        $paperSize = $printSettings['paperSize'] ?? 'A4';
+        $brandColor = $printSettings['brandColor'] ?? '#63a22f';
+        $orientation = $printSettings['orientation'] ?? 'landscape'; // Default to landscape for this report
+        $marginSetting = $printSettings['margins'] ?? 'normal';
+        
+        $margins = match ($marginSetting) {
+            'none' => [0, 0, 0, 0],
+            '1cm' => [10, 10, 10, 10],
+            '2cm' => [20, 20, 20, 20],
+            default => [15, 15, 15, 15],
+        };
+
+        if ($orientation === 'landscape') {
+            $paperSize = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
+            $margins = [$margins[0], $margins[1], $margins[2], $margins[3]];
+        }
+
+        $data['printSettings'] = $printSettings;
+        $data['brandColor'] = $brandColor;
+        $data['watermark'] = $printSettings['watermark'] ?? 'none';
+        $data['orientation'] = $orientation;
+
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 40px 10px 40px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">نظام الإدارة الذكية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $pdf = Pdf::view('pdf.academic.student-class-absences', $data)
+            ->format($paperSize)
+            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+            ->footerHtml($footerHtml);
+
+        if ($orientation === 'landscape') {
+            $pdf->landscape();
+        }
+
+        return $pdf->withBrowsershot(function ($browsershot) {
+                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
+                           ->noSandbox()
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(2000);
+            })
+            ->download('student_class_absences_report.pdf');
     }
 
     public function classReports(Request $request)

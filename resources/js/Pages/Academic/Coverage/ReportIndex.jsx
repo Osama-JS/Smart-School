@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Head, router, Link } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
-import FlatpickrInput from '@/Components/FlatpickrInput';
 import SelectInput from '@/Components/SelectInput';
 import {
     ShieldCheck, CalendarDays, User, Clock,
-    AlertCircle, TrendingUp, BookOpen, Search, X, CheckCircle2
+    AlertCircle, TrendingUp, BookOpen, Search, X, CheckCircle2, Filter, FileDown, Loader2
 } from 'lucide-react';
 
 const COVERAGE_TYPE_LABELS = {
@@ -16,28 +15,88 @@ const COVERAGE_TYPE_LABELS = {
 };
 
 export default function CoverageReportIndex({ coverages, stats, teachers, filters }) {
-    const [dateFilter, setDateFilter]       = useState(filters.date || '');
-    const [absentFilter, setAbsentFilter]   = useState(filters.absent_teacher_id || '');
-    const [subFilter, setSubFilter]         = useState(filters.substitute_teacher_id || '');
+    const [startDate, setStartDate]       = useState(filters.start_date || filters.date || '');
+    const [endDate, setEndDate]           = useState(filters.end_date || '');
+    const [absentFilter, setAbsentFilter] = useState(filters.absent_teacher_id || '');
+    const [subFilter, setSubFilter]       = useState(filters.substitute_teacher_id || '');
+    const [typeFilter, setTypeFilter]     = useState(filters.coverage_type || '');
+    const [showFilters, setShowFilters]   = useState(false);
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-    const applyFilters = () => {
+    const applyFilters = (e) => {
+        if (e) e.preventDefault();
         router.get(route('academic.coverage.report'), {
-            date: dateFilter || undefined,
+            start_date: startDate || undefined,
+            end_date: endDate || undefined,
             absent_teacher_id: absentFilter || undefined,
             substitute_teacher_id: subFilter || undefined,
+            coverage_type: typeFilter || undefined,
         }, { preserveState: true });
     };
 
     const clearFilters = () => {
-        setDateFilter('');
+        setStartDate('');
+        setEndDate('');
         setAbsentFilter('');
         setSubFilter('');
+        setTypeFilter('');
         router.get(route('academic.coverage.report'));
     };
 
-    const hasFilters = dateFilter || absentFilter || subFilter;
+    const removeFilter = (filterId) => {
+        let params = {
+            start_date: startDate,
+            end_date: endDate,
+            absent_teacher_id: absentFilter,
+            substitute_teacher_id: subFilter,
+            coverage_type: typeFilter,
+        };
+        if (filterId === 'date') { params.start_date = ''; params.end_date = ''; setStartDate(''); setEndDate(''); }
+        if (filterId === 'absent') { params.absent_teacher_id = ''; setAbsentFilter(''); }
+        if (filterId === 'sub') { params.substitute_teacher_id = ''; setSubFilter(''); }
+        if (filterId === 'type') { params.coverage_type = ''; setTypeFilter(''); }
+        router.get(route('academic.coverage.report'), params, { preserveState: true });
+    };
 
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+    const getAbsentTeacherName = (id) => teachers.find(t => t.id == id)?.name || id;
+    const getSubTeacherName = (id) => teachers.find(t => t.id == id)?.name || id;
+    const getTypeName = (type) => COVERAGE_TYPE_LABELS[type]?.label || type;
+
+    const activeFilters = [];
+    if (startDate || endDate) activeFilters.push({ id: 'date', label: `التاريخ: ${startDate || 'الكل'} إلى ${endDate || 'الكل'}` });
+    if (absentFilter) activeFilters.push({ id: 'absent', label: `الغائب: ${getAbsentTeacherName(absentFilter)}` });
+    if (subFilter) activeFilters.push({ id: 'sub', label: `البديل: ${getSubTeacherName(subFilter)}` });
+    if (typeFilter) activeFilters.push({ id: 'type', label: `النوع: ${getTypeName(typeFilter)}` });
+
+    const setPresetDate = (preset) => {
+        const today = new Date();
+        let start = new Date(today);
+        let end = new Date(today);
+        if (preset === 'week') {
+            start.setDate(today.getDate() - today.getDay());
+        } else if (preset === 'month') {
+            start.setDate(1);
+        } else if (preset === 'last_month') {
+            start.setMonth(today.getMonth() - 1);
+            start.setDate(1);
+            end = new Date(today.getFullYear(), today.getMonth(), 0);
+        } else if (preset === 'semester') {
+            start.setMonth(today.getMonth() - 4);
+        }
+        const fmt = (d) => {
+            let m = '' + (d.getMonth() + 1);
+            let dy = '' + d.getDate();
+            if (m.length < 2) m = '0' + m;
+            if (dy.length < 2) dy = '0' + dy;
+            return [d.getFullYear(), m, dy].join('-');
+        };
+        setStartDate(fmt(start));
+        setEndDate(fmt(end));
+    };
+
+    const formatDate = (d) => d
+        ? new Date(d).toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : '-';
 
     const [printSettings, setPrintSettings] = useState(() => {
         try {
@@ -54,6 +113,7 @@ export default function CoverageReportIndex({ coverages, stats, teachers, filter
             showKPIs: true,
             showDetails: true,
             ecoMode: false,
+            watermark: 'none',
             brandColor: '#2563eb'
         };
     });
@@ -64,88 +124,217 @@ export default function CoverageReportIndex({ coverages, stats, teachers, filter
 
     const handlePrint = () => window.print();
 
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                start_date: startDate || '',
+                end_date: endDate || '',
+                absent_teacher_id: absentFilter || '',
+                substitute_teacher_id: subFilter || '',
+                coverage_type: typeFilter || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+            const url = route('academic.coverage.report.pdf') + '?' + params.toString();
+            window.location.href = url;
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
     return (
         <AdminLayout activeMenu="التغطية والاحتياط">
             <Head title="تقرير التغطية والاحتياط" />
 
-            <div className="max-w-7xl mx-auto space-y-6 pb-12">
+            <div className="space-y-6 pb-12">
 
                 {/* Header */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
-                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none">
-                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
-                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
-                            <circle cx="600" cy="150" r="6" className="fill-primary-400" />
-                        </svg>
-                    </div>
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center shadow border border-slate-100 dark:border-slate-700">
-                                <ShieldCheck size={28} strokeWidth={1.5} />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-1">تقارير التغطية والاحتياط</h1>
-                                <p className="text-sm font-semibold text-primary-700/80 dark:text-primary-300/80">عرض وطباعة سجلات التغطية وحصص الاحتياط</p>
-                            </div>
+                <div className="print:hidden relative overflow-hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-600 to-primary-400 z-20"></div>
+                    <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-primary-50 to-transparent pointer-events-none"></div>
+
+                    <div className="flex items-center gap-4 relative z-10">
+                        <div className="p-3.5 bg-white border border-primary-100 shadow-sm rounded-xl text-primary-600 flex-shrink-0 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-primary-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <ShieldCheck size={28} strokeWidth={2} className="relative z-10" />
                         </div>
+                        <div>
+                            <h1 className="text-[22px] font-black text-slate-800 tracking-tight mb-1">
+                                تقارير التغطية والاحتياط
+                            </h1>
+                            <p className="text-[13.5px] font-bold text-slate-500">عرض وطباعة سجلات التغطية وحصص الاحتياط</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 relative z-10 w-full sm:w-auto">
+                        <button
+                            onClick={handlePrint}
+                            className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
+                        >
+                            طباعة التقرير
+                        </button>
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden relative z-20">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-400 flex items-center justify-center">
-                                <Search size={16} strokeWidth={2.5} />
+                {/* Filters Panel */}
+                <div className="print:hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-600 to-primary-400"></div>
+
+                    <div className="p-5">
+                        {/* Top bar: toggle + date presets */}
+                        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 w-full xl:w-auto">
+                                <button
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`flex items-center gap-3 font-bold px-6 py-3 rounded-xl transition-all duration-300 w-full xl:w-auto ${
+                                        showFilters
+                                            ? 'bg-primary-50 text-primary-700 shadow-inner'
+                                            : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                                    }`}
+                                >
+                                    <div className={`p-1.5 rounded-lg transition-colors ${showFilters ? 'bg-primary-100 text-primary-600' : 'bg-white shadow-sm text-slate-500'}`}>
+                                        <Filter size={18} strokeWidth={2.5} />
+                                    </div>
+                                    <span className="text-[15px]">خيارات التصفية المتقدمة</span>
+                                    {activeFilters.length > 0 && (
+                                        <span className="flex items-center justify-center bg-primary-500 text-white text-xs font-black w-6 h-6 rounded-full shadow-sm">
+                                            {activeFilters.length}
+                                        </span>
+                                    )}
+                                    <svg className={`w-5 h-5 mr-auto transition-transform duration-300 ${showFilters ? 'rotate-180 text-primary-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
                             </div>
-                            <h2 className="text-base font-black text-slate-800 dark:text-white">تصفية التقرير</h2>
+
+                            {/* Date Presets */}
+                            <div className="flex bg-slate-100/80 p-1.5 rounded-xl border border-slate-200 overflow-x-auto hide-scrollbar w-full xl:w-auto shadow-inner">
+                                <button onClick={() => setPresetDate('today')} className="whitespace-nowrap px-5 py-2 text-sm font-bold rounded-lg text-slate-600 hover:text-primary-700 hover:bg-white hover:shadow-sm transition-all focus:bg-white focus:shadow-sm focus:text-primary-700">اليوم</button>
+                                <button onClick={() => setPresetDate('week')} className="whitespace-nowrap px-5 py-2 text-sm font-bold rounded-lg text-slate-600 hover:text-primary-700 hover:bg-white hover:shadow-sm transition-all focus:bg-white focus:shadow-sm focus:text-primary-700">هذا الأسبوع</button>
+                                <button onClick={() => setPresetDate('month')} className="whitespace-nowrap px-5 py-2 text-sm font-bold rounded-lg text-slate-600 hover:text-primary-700 hover:bg-white hover:shadow-sm transition-all focus:bg-white focus:shadow-sm focus:text-primary-700">هذا الشهر</button>
+                                <button onClick={() => setPresetDate('last_month')} className="whitespace-nowrap px-5 py-2 text-sm font-bold rounded-lg text-slate-600 hover:text-primary-700 hover:bg-white hover:shadow-sm transition-all focus:bg-white focus:shadow-sm focus:text-primary-700">الشهر الماضي</button>
+                                <button onClick={() => setPresetDate('semester')} className="whitespace-nowrap px-5 py-2 text-sm font-bold rounded-lg text-slate-600 hover:text-primary-700 hover:bg-white hover:shadow-sm transition-all focus:bg-white focus:shadow-sm focus:text-primary-700">الفصل الدراسي</button>
+                            </div>
                         </div>
-                        {hasFilters && (
-                            <button onClick={clearFilters} className="text-xs font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 flex items-center gap-1.5 transition-colors">
-                                <X size={14} strokeWidth={2.5} /> مسح التصفية
-                            </button>
+
+                        {/* Active filter chips */}
+                        {activeFilters.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-slate-100">
+                                <span className="text-sm font-bold text-slate-500 ml-2">الفلاتر النشطة:</span>
+                                {activeFilters.map(filter => (
+                                    <span key={filter.id} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-primary-200 text-primary-700 text-sm font-bold shadow-sm group">
+                                        {filter.label}
+                                        <button type="button" onClick={() => removeFilter(filter.id)} className="p-0.5 rounded-full hover:bg-red-50 text-slate-400 group-hover:text-red-500 transition-colors">
+                                            <X size={14} strokeWidth={2.5} />
+                                        </button>
+                                    </span>
+                                ))}
+                                <button onClick={clearFilters} className="text-sm text-slate-400 hover:text-red-600 font-bold px-3 transition-colors mr-auto flex items-center gap-1">
+                                    <X size={14} strokeWidth={2.5} /> مسح جميع الفلاتر
+                                </button>
+                            </div>
                         )}
-                    </div>
-                    <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-5 items-end">
-                        <div>
-                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">التاريخ</label>
-                            <FlatpickrInput type="date" value={dateFilter} onChange={setDateFilter} placeholder="حدد التاريخ..." />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">المعلم الغائب</label>
-                            <SelectInput
-                                options={[{ value: '', label: 'الكل' }, ...teachers.map(t => ({ value: t.id, label: t.name }))]}
-                                value={absentFilter}
-                                onChange={setAbsentFilter}
-                                isSearchable={true}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wide">المعلم البديل</label>
-                            <SelectInput
-                                options={[{ value: '', label: 'الكل' }, ...teachers.map(t => ({ value: t.id, label: t.name }))]}
-                                value={subFilter}
-                                onChange={setSubFilter}
-                                isSearchable={true}
-                            />
-                        </div>
-                        <div>
-                            <button onClick={applyFilters} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white h-[42px] rounded-2xl font-bold transition-all shadow-md shadow-primary-500/20 active:scale-[0.98]">
-                                عرض التقرير
-                            </button>
+
+                        {/* Collapsible form */}
+                        <div className={`grid transition-all duration-300 ease-in-out ${showFilters ? 'grid-rows-[1fr] opacity-100 mt-6 pt-6 border-t border-slate-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                            <div className="overflow-hidden">
+                                <form onSubmit={applyFilters} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+
+                                    {/* Start Date */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">من تاريخ</label>
+                                        <input
+                                            type="date"
+                                            className="w-full border-slate-200 bg-slate-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm h-[42px] px-3"
+                                            value={startDate}
+                                            onChange={(e) => setStartDate(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* End Date */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">إلى تاريخ</label>
+                                        <input
+                                            type="date"
+                                            className="w-full border-slate-200 bg-slate-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm h-[42px] px-3"
+                                            value={endDate}
+                                            onChange={(e) => setEndDate(e.target.value)}
+                                        />
+                                    </div>
+
+                                    {/* Coverage Type */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">نوع التغطية</label>
+                                        <select
+                                            value={typeFilter}
+                                            onChange={(e) => setTypeFilter(e.target.value)}
+                                            className="w-full border-slate-200 bg-slate-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm h-[42px] px-3"
+                                        >
+                                            <option value="">جميع الأنواع</option>
+                                            <option value="substitution">نيابة عن</option>
+                                            <option value="free">حصة حرة</option>
+                                            <option value="merged">دمج فصل</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Absent Teacher */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">المعلم الغائب</label>
+                                        <SelectInput
+                                            options={[{ value: '', label: 'الكل' }, ...teachers.map(t => ({ value: t.id, label: t.name }))]}
+                                            value={absentFilter}
+                                            onChange={setAbsentFilter}
+                                            isSearchable={true}
+                                        />
+                                    </div>
+
+                                    {/* Substitute Teacher */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">المعلم البديل</label>
+                                        <SelectInput
+                                            options={[{ value: '', label: 'الكل' }, ...teachers.map(t => ({ value: t.id, label: t.name }))]}
+                                            value={subFilter}
+                                            onChange={setSubFilter}
+                                            isSearchable={true}
+                                        />
+                                    </div>
+
+                                    {/* Buttons */}
+                                    <div className="flex gap-3 items-end">
+                                        <button
+                                            type="submit"
+                                            className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl hover:bg-primary-700 transition-all font-bold shadow-sm"
+                                        >
+                                            <Search size={16} strokeWidth={2.5} />
+                                            <span>تطبيق الفلترة</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={clearFilters}
+                                            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition-all"
+                                        >
+                                            <X size={16} strokeWidth={2.5} />
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <ReportPrintLayout 
-                    title={printSettings.title} 
-                    printSettings={printSettings} 
-                    setPrintSettings={setPrintSettings} 
+                {/* Report Layout */}
+                <ReportPrintLayout
+                    title={printSettings.title}
+                    printSettings={printSettings}
+                    setPrintSettings={setPrintSettings}
                     onPrint={handlePrint}
+                    onDownloadPdf={handleDownloadPDF}
+                    isGeneratingPdf={isGeneratingPdf}
+                    subtitle={startDate && endDate ? `الفترة: ${startDate} إلى ${endDate}` : 'سجل التغطية والاحتياط'}
                 >
-                    {/* Stats inside print if kpis enabled */}
+                    {/* KPIs */}
                     {printSettings.showKPIs && (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             {[

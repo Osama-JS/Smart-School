@@ -35,6 +35,7 @@
         "html2pdf.js": "^0.14.0",
         "lucide-react": "^1.14.0",
         "pdfmake": "^0.3.11",
+        "puppeteer": "^25.9.0",
         "react-flatpickr": "^4.0.11",
         "react-hot-toast": "^2.6.0",
         "react-qr-code": "^2.0.12",

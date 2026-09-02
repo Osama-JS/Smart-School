@@ -59,6 +59,28 @@ export default function Report({ pledges = [], stats = {}, filters = {} }) {
         localStorage.setItem('StudentPledgesReportPrintSettings', JSON.stringify(printSettings));
     }, [printSettings]);
 
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                start_date: startDate || '',
+                end_date: endDate || '',
+                status: status || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+
+            const url = route('academic.student-pledges.report.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
     const handlePrint = () => window.print();
 
     return (
@@ -142,6 +164,8 @@ export default function Report({ pledges = [], stats = {}, filters = {} }) {
                         printSettings={printSettings} 
                         setPrintSettings={setPrintSettings} 
                         onPrint={handlePrint}
+                        onDownloadPdf={handleDownloadPDF}
+                        isGeneratingPdf={isGeneratingPdf}
                         subtitle={startDate && endDate ? `الفترة: ${startDate} إلى ${endDate}` : 'قسم التوجيه والإرشاد والضبط السلوكي'}
                     >
                         {/* KPI Summary Cards */}

@@ -6,7 +6,11 @@ import {
     Search,
     Award,
     AlertCircle,
-    Filter
+    Filter,
+    X,
+    Layers,
+    BookOpen,
+    Calendar
 } from 'lucide-react';
 
 export default function ClassReport({
@@ -22,7 +26,8 @@ export default function ClassReport({
     const [selectedYear, setSelectedYear] = useState(filters.academic_year_id || '');
     const [selectedSemester, setSelectedSemester] = useState(filters.semester_id || '');
     const [selectedDivision, setSelectedDivision] = useState(filters.division_id || '');
-    
+    const [showFilters, setShowFilters] = useState(true);
+
     useEffect(() => {
         if (filters.academic_year_id && !selectedYear) setSelectedYear(filters.academic_year_id);
         if (filters.semester_id && !selectedSemester) setSelectedSemester(filters.semester_id);
@@ -36,6 +41,34 @@ export default function ClassReport({
             division_id: selectedDivision,
         }, { preserveState: true });
     };
+
+    const clearFilters = () => {
+        setSelectedYear('');
+        setSelectedSemester('');
+        setSelectedDivision('');
+        router.get(route('academic.semester-results.report'));
+    };
+
+    const removeFilter = (filterId) => {
+        let params = {
+            academic_year_id: selectedYear,
+            semester_id: selectedSemester,
+            division_id: selectedDivision,
+        };
+        if (filterId === 'year')     { params.academic_year_id = ''; params.semester_id = ''; params.division_id = ''; setSelectedYear(''); setSelectedSemester(''); setSelectedDivision(''); }
+        if (filterId === 'semester') { params.semester_id = ''; params.division_id = ''; setSelectedSemester(''); setSelectedDivision(''); }
+        if (filterId === 'division') { params.division_id = ''; setSelectedDivision(''); }
+        router.get(route('academic.semester-results.report'), params, { preserveState: true });
+    };
+
+    const getYearName    = (id) => academicYears.find(y => y.id == id)?.name || id;
+    const getSemesterName = (id) => semesters.find(s => s.id == id)?.name || id;
+    const getDivisionName = (id) => { const d = divisions.find(d => d.id == id); return d ? `${d.grade?.name} - ${d.name}` : id; };
+
+    const activeFilters = [];
+    if (selectedYear)     activeFilters.push({ id: 'year',     label: `العام: ${getYearName(selectedYear)}` });
+    if (selectedSemester) activeFilters.push({ id: 'semester', label: `الفصل: ${getSemesterName(selectedSemester)}` });
+    if (selectedDivision) activeFilters.push({ id: 'division', label: `الشعبة: ${getDivisionName(selectedDivision)}` });
 
     const getGradeEstimation = (percentage) => {
         if (percentage >= 90) return { text: 'ممتاز', color: 'text-green-600 print:text-black' };
@@ -68,6 +101,28 @@ export default function ClassReport({
         localStorage.setItem('ClassReportPrintSettings', JSON.stringify(printSettings));
     }, [printSettings]);
 
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                academic_year_id: selectedYear || '',
+                semester_id: selectedSemester || '',
+                division_id: selectedDivision || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+
+            const url = route('academic.semester-results.report.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
     const handlePrint = () => window.print();
 
     // Prepare subtitle
@@ -80,91 +135,166 @@ export default function ClassReport({
         <AdminLayout activeMenu="كشف العلامات المجمع">
             <Head title="كشف درجات ونتائج الطلاب" />
 
-            <div className="p-6">
-                <div className="max-w-7xl mx-auto space-y-6">
-                    
+            <div className="space-y-6">
+
                     {/* Header */}
-                    <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
-                        <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center shadow border border-slate-100 dark:border-slate-700">
-                                    <Award size={28} strokeWidth={1.5} />
-                                </div>
-                                <div>
-                                    <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">كشف درجات ونتائج الطلاب</h1>
-                                    <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">كشف مجمع لدرجات الطلاب في جميع المواد نهاية الفصل الدراسي</p>
-                                </div>
+                    <div className="print:hidden relative overflow-hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-600 to-primary-400 z-20"></div>
+                        <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-primary-50 to-transparent pointer-events-none"></div>
+                        <div className="flex items-center gap-4 relative z-10">
+                            <div className="p-3.5 bg-white border border-primary-100 shadow-sm rounded-xl text-primary-600 flex-shrink-0 relative overflow-hidden group">
+                                <div className="absolute inset-0 bg-primary-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <Award size={28} strokeWidth={2} className="relative z-10" />
                             </div>
+                            <div>
+                                <h1 className="text-[22px] font-black text-slate-800 tracking-tight mb-1">كشف درجات ونتائج الطلاب</h1>
+                                <p className="text-[13.5px] font-bold text-slate-500">كشف مجمع لدرجات الطلاب في جميع المواد نهاية الفصل الدراسي</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3 relative z-10 w-full sm:w-auto">
+                            <button
+                                onClick={handlePrint}
+                                className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
+                            >
+                                طباعة الكشف
+                            </button>
                         </div>
                     </div>
 
-                    {/* Filters */}
-                    <div className="bg-white/90 dark:bg-slate-900/90 rounded-3xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm relative z-20">
-                        <div className="flex items-center gap-2 mb-4 text-slate-700 dark:text-slate-300 font-bold">
-                            <Filter className="w-4 h-4" />
-                            <span>خيارات عرض الكشف</span>
-                        </div>
-                        <form onSubmit={handleFilter} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">العام الدراسي</label>
-                                <select
-                                    value={selectedYear}
-                                    onChange={(e) => {
-                                        setSelectedYear(e.target.value);
-                                        setSelectedSemester('');
-                                    }}
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
-                                >
-                                    <option value="">اختر العام الدراسي...</option>
-                                    {academicYears.map(year => (
-                                        <option key={year.id} value={year.id}>{year.name}</option>
-                                    ))}
-                                </select>
-                            </div>
+                    {/* Filter Panel */}
+                    <div className="print:hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
+                        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-600 to-primary-400"></div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الفصل الدراسي</label>
-                                <select
-                                    value={selectedSemester}
-                                    onChange={(e) => setSelectedSemester(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
-                                    disabled={!selectedYear}
-                                >
-                                    <option value="">اختر الفصل الدراسي...</option>
-                                    {semesters.map(term => (
-                                        <option key={term.id} value={term.id}>{term.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">الصف / الشعبة</label>
-                                <select
-                                    value={selectedDivision}
-                                    onChange={(e) => setSelectedDivision(e.target.value)}
-                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-primary-500 outline-none transition-all dark:text-white"
-                                >
-                                    <option value="">اختر الشعبة...</option>
-                                    {divisions.map(div => (
-                                        <option key={div.id} value={div.id}>
-                                            {div.grade?.name} - {div.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="flex items-end">
+                        <div className="p-5">
+                            {/* Toggle button + current selection summary */}
+                            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
                                 <button
-                                    type="submit"
-                                    disabled={!selectedSemester || !selectedDivision}
-                                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-2.5 rounded-xl hover:from-primary-700 hover:to-primary-800 transition-all font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={() => setShowFilters(!showFilters)}
+                                    className={`flex items-center gap-3 font-bold px-6 py-3 rounded-xl transition-all duration-300 w-full xl:w-auto ${
+                                        showFilters
+                                            ? 'bg-primary-50 text-primary-700 shadow-inner'
+                                            : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                                    }`}
                                 >
-                                    <Search className="w-5 h-5" />
-                                    <span>عرض الكشف</span>
+                                    <div className={`p-1.5 rounded-lg transition-colors ${showFilters ? 'bg-primary-100 text-primary-600' : 'bg-white shadow-sm text-slate-500'}`}>
+                                        <Filter size={18} strokeWidth={2.5} />
+                                    </div>
+                                    <span className="text-[15px]">خيارات عرض الكشف</span>
+                                    {activeFilters.length > 0 && (
+                                        <span className="flex items-center justify-center bg-primary-500 text-white text-xs font-black w-6 h-6 rounded-full shadow-sm">
+                                            {activeFilters.length}
+                                        </span>
+                                    )}
+                                    <svg className={`w-5 h-5 mr-auto transition-transform duration-300 ${showFilters ? 'rotate-180 text-primary-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                    </svg>
                                 </button>
+
+                                {/* Quick summary pill (visible when panel closed) */}
+                                {!showFilters && semesterInfo && divisionInfo && (
+                                    <div className="flex items-center gap-3 text-sm font-bold text-slate-600 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl">
+                                        <Calendar size={15} className="text-primary-500" />
+                                        <span>{semesterInfo.name}</span>
+                                        <span className="text-slate-300">|</span>
+                                        <Layers size={15} className="text-primary-500" />
+                                        <span>{divisionInfo.grade?.name} - {divisionInfo.name}</span>
+                                    </div>
+                                )}
                             </div>
-                        </form>
+
+                            {/* Active filter chips */}
+                            {activeFilters.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-slate-100">
+                                    <span className="text-sm font-bold text-slate-500 ml-2">الفلاتر النشطة:</span>
+                                    {activeFilters.map(filter => (
+                                        <span key={filter.id} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-primary-200 text-primary-700 text-sm font-bold shadow-sm group">
+                                            {filter.label}
+                                            <button type="button" onClick={() => removeFilter(filter.id)} className="p-0.5 rounded-full hover:bg-red-50 text-slate-400 group-hover:text-red-500 transition-colors">
+                                                <X size={14} strokeWidth={2.5} />
+                                            </button>
+                                        </span>
+                                    ))}
+                                    <button onClick={clearFilters} className="text-sm text-slate-400 hover:text-red-600 font-bold px-3 transition-colors mr-auto flex items-center gap-1">
+                                        <X size={14} strokeWidth={2.5} /> مسح جميع الفلاتر
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Collapsible form */}
+                            <div className={`grid transition-all duration-300 ease-in-out ${showFilters ? 'grid-rows-[1fr] opacity-100 mt-6 pt-6 border-t border-slate-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                                <div className="overflow-hidden">
+                                    <form onSubmit={handleFilter} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+
+                                        {/* Academic Year */}
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">العام الدراسي</label>
+                                            <select
+                                                value={selectedYear}
+                                                onChange={(e) => { setSelectedYear(e.target.value); setSelectedSemester(''); setSelectedDivision(''); }}
+                                                className="w-full border-slate-200 bg-slate-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm h-[42px] px-3"
+                                            >
+                                                <option value="">اختر العام الدراسي...</option>
+                                                {academicYears.map(year => (
+                                                    <option key={year.id} value={year.id}>{year.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Semester */}
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">الفصل الدراسي</label>
+                                            <select
+                                                value={selectedSemester}
+                                                onChange={(e) => { setSelectedSemester(e.target.value); setSelectedDivision(''); }}
+                                                disabled={!selectedYear}
+                                                className="w-full border-slate-200 bg-slate-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm h-[42px] px-3 disabled:opacity-60 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="">{!selectedYear ? 'اختر العام أولاً...' : 'اختر الفصل الدراسي...'}</option>
+                                                {semesters.map(term => (
+                                                    <option key={term.id} value={term.id}>{term.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Division */}
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">الصف / الشعبة</label>
+                                            <select
+                                                value={selectedDivision}
+                                                onChange={(e) => setSelectedDivision(e.target.value)}
+                                                className="w-full border-slate-200 bg-slate-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm h-[42px] px-3"
+                                            >
+                                                <option value="">اختر الشعبة...</option>
+                                                {divisions.map(div => (
+                                                    <option key={div.id} value={div.id}>
+                                                        {div.grade?.name} - {div.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Submit + Clear */}
+                                        <div className="flex gap-3 items-end">
+                                            <button
+                                                type="submit"
+                                                disabled={!selectedSemester || !selectedDivision}
+                                                className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl hover:bg-primary-700 transition-all font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <Search size={16} strokeWidth={2.5} />
+                                                <span>عرض الكشف</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={clearFilters}
+                                                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition-all"
+                                            >
+                                                <X size={16} strokeWidth={2.5} />
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <ReportPrintLayout 
@@ -172,6 +302,8 @@ export default function ClassReport({
                         printSettings={printSettings} 
                         setPrintSettings={setPrintSettings} 
                         onPrint={handlePrint}
+                        onDownloadPdf={handleDownloadPDF}
+                        isGeneratingPdf={isGeneratingPdf}
                         subtitle={subtitle || 'كشف علامات ونهاية فصل'}
                     >
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm relative z-10 print:border-none print:shadow-none print:rounded-none">
@@ -287,7 +419,6 @@ export default function ClassReport({
                             )}
                         </div>
                     </ReportPrintLayout>
-                </div>
             </div>
         </AdminLayout>
     );

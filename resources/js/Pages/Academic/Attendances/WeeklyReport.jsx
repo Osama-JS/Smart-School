@@ -37,8 +37,25 @@ export default function WeeklyReport({ students, weekDays = {}, divisionInfo, gr
     }, [printSettings]);
 
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    const handleDownloadPDF = () => {
-        alert('سيتم تفعيل تصدير PDF قريباً');
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                date: filterData.date || '',
+                grade_id: filterData.grade_id || '',
+                division_id: filterData.division_id || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+
+            const url = route('academic.attendances.weekly-report.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
     };
 
     const handleFilter = (e) => {

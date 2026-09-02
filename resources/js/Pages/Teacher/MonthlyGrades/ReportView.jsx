@@ -92,8 +92,27 @@ export default function MonthlyGradesReportView({ division, subject, period, gra
     }, [printSettings]);
 
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    const handleDownloadPDF = () => {
-        alert('سيتم تفعيل تصدير PDF قريباً');
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                printSettings: JSON.stringify(printSettings)
+            });
+
+            const url = route('academic.monthly-grades.report.pdf', {
+                division: division.id,
+                subject_id: subject.id,
+                period: period.id
+            }) + '?' + params.toString();
+            
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
     };
 
     const handlePrint = () => {

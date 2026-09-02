@@ -4,8 +4,6 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Printer, Filter, Calendar, Users, Briefcase, FileDown, Search, ArrowRight, X, AlertTriangle, Trophy, ChevronDown, XCircle, Clock, CheckCircle, UserCheck, Loader2 } from 'lucide-react';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 import Select from 'react-select';
-import pdfMakeLib from 'pdfmake/build/pdfmake';
-const pdfMake = pdfMakeLib.default || pdfMakeLib;
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Pagination from '@/Components/Pagination';
 
@@ -164,38 +162,6 @@ export default function EmployeeLeaves({ employeesData, kpis, departmentChartDat
         setEndDate(formatDate(end));
     };
 
-    // Helper to fetch font and convert to base64
-    const fetchFontAsBase64 = async (url) => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch font');
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                resolve(reader.result.split(',')[1]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    };
-
-    const preparePdfMake = async () => {
-        if (!pdfMake.vfs || !pdfMake.vfs['Amiri-Regular.ttf']) {
-            pdfMake.vfs = pdfMake.vfs || {};
-            // Fetch the local Arabic font from the public directory
-            const base64Font = await fetchFontAsBase64('/Smart-School/public/fonts/arabic.ttf');
-            pdfMake.vfs['Amiri-Regular.ttf'] = base64Font;
-            pdfMake.fonts = {
-                Amiri: {
-                    normal: 'Amiri-Regular.ttf',
-                    bold: 'Amiri-Regular.ttf',
-                    italics: 'Amiri-Regular.ttf',
-                    bolditalics: 'Amiri-Regular.ttf'
-                }
-            };
-        }
-    };
-
     const handlePrintClick = () => {
         window.print();
     };
@@ -203,90 +169,21 @@ export default function EmployeeLeaves({ employeesData, kpis, departmentChartDat
     const handleDownloadPDF = async () => {
         setIsGeneratingPdf(true);
         try {
-            await preparePdfMake();
-
-            const tableBody = [
-                // Header row
-                [
-                    { text: 'م', style: 'tableHeader', alignment: 'center' },
-                    { text: 'اسم الموظف', style: 'tableHeader', alignment: 'center' },
-                    { text: 'القسم', style: 'tableHeader', alignment: 'center' },
-                    { text: 'تاريخ الإجازة', style: 'tableHeader', alignment: 'center' },
-                    { text: 'نوع الإجازة', style: 'tableHeader', alignment: 'center' },
-                    { text: 'الأيام', style: 'tableHeader', alignment: 'center' },
-                    { text: 'التفاصيل', style: 'tableHeader', alignment: 'center' }
-                ]
-            ];
-
-            let count = 1;
-            sortedEmployeesData.forEach(data => {
-                data.records.forEach(record => {
-                    tableBody.push([
-                        { text: count.toString(), alignment: 'center' },
-                        { text: data.employee_name, alignment: 'right' },
-                        { text: data.department || '-', alignment: 'right' },
-                        { text: formatDateStr(record.leave_date), alignment: 'center' },
-                        { text: record.type_name, alignment: 'center' },
-                        { text: record.days ? record.days.toString() : '-', alignment: 'center' },
-                        { text: record.details ? record.details : '-', alignment: 'center' }
-                    ]);
-                    count++;
-                });
+            const params = new URLSearchParams({
+                search: filters.search || '',
+                start_date: startDate || '',
+                end_date: endDate || '',
+                employee_id: selectedEmployee?.value || '',
+                department_id: selectedDepartment?.value || '',
+                printSettings: JSON.stringify(printSettings)
             });
 
-            if (tableBody.length === 1) {
-                tableBody.push([{ text: 'لا توجد بيانات', colSpan: 7, alignment: 'center' }, {}, {}, {}, {}, {}, {}]);
-            }
-
-            const docDefinition = {
-                pageSize: printSettings.paperSize || 'A4',
-                pageOrientation: printSettings.orientation || 'portrait',
-                defaultStyle: {
-                    font: 'Amiri',
-                    fontSize: 10,
-                    direction: 'rtl'
-                },
-                styles: {
-                    header: {
-                        fontSize: 18,
-                        bold: true,
-                        alignment: 'center',
-                        margin: [0, 0, 0, 20],
-                        color: printSettings.brandColor || '#63a22f'
-                    },
-                    tableHeader: {
-                        bold: true,
-                        fontSize: 11,
-                        fillColor: '#f1f5f9',
-                        color: '#334155'
-                    }
-                },
-                content: [
-                    { text: printSettings.title || 'تقرير إجازات الموظفين', style: 'header' },
-                    {
-                        columns: [
-                            { text: `من: ${startDate || '-'}`, alignment: 'right' },
-                            { text: `إلى: ${endDate || '-'}`, alignment: 'right' },
-                            { text: `إجمالي الإجازات: ${totalLeaves}`, alignment: 'right' },
-                            { text: `إجمالي الأيام: ${totalLeaveDays}`, alignment: 'right' }
-                        ],
-                        margin: [0, 0, 0, 20]
-                    },
-                    {
-                        table: {
-                            headerRows: 1,
-                            widths: ['auto', '*', '*', 'auto', 'auto', 'auto', 'auto'],
-                            body: tableBody
-                        },
-                        layout: 'lightHorizontalLines'
-                    }
-                ]
-            };
-
-            pdfMake.createPdf(docDefinition).download('employee_leaves.pdf');
+            const url = route('hr.reports.employee-leaves.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
         } catch (error) {
             console.error('Error generating PDF:', error);
-            alert('حدث خطأ أثناء توليد الملف: ' + (error.message || error));
+            alert('حدث خطأ أثناء طلب الملف.');
         } finally {
             setIsGeneratingPdf(false);
         }

@@ -288,87 +288,23 @@ export default function FollowupBooksReport({
     const handleDownloadPDF = async () => {
         setIsGeneratingPdf(true);
         try {
-            await preparePdfMake();
-
-            const tableBody = [
-                [
-                    { text: 'م', style: 'tableHeader', alignment: 'center' },
-                    { text: 'اسم المعلم', style: 'tableHeader', alignment: 'center' },
-                    { text: 'القسم', style: 'tableHeader', alignment: 'center' },
-                    { text: 'الحصص المستهدفة', style: 'tableHeader', alignment: 'center' },
-                    { text: 'تم التحضير', style: 'tableHeader', alignment: 'center' },
-                    { text: 'تحضير متأخر', style: 'tableHeader', alignment: 'center' },
-                    { text: 'غير محضر (تقصير)', style: 'tableHeader', alignment: 'center' }
-                ]
-            ];
-
-            let count = 1;
-            sortedTeachers.forEach(teacher => {
-                tableBody.push([
-                    { text: count.toString(), alignment: 'center' },
-                    { text: teacher.employee_name || teacher.name, alignment: 'right' },
-                    { text: teacher.department || '-', alignment: 'right' },
-                    { text: (teacher.total_weekly_lessons || 0).toString(), alignment: 'center' },
-                    { text: (teacher.published_preparations || 0).toString(), alignment: 'center' },
-                    { text: (teacher.late_uploads || 0).toString(), alignment: 'center' },
-                    { text: (teacher.negligence || 0).toString(), alignment: 'center' }
-                ]);
-                count++;
+            const params = new URLSearchParams({
+                search: filters.search || '',
+                start_date: startDate || '',
+                end_date: endDate || '',
+                department_id: filters.department_id || '',
+                employee_id: selectedTeacher?.value || '',
+                statuses: selectedStatuses ? selectedStatuses.map(s => s.value).join(',') : '',
+                violators_only: violatorsOnly ? '1' : '0',
+                printSettings: JSON.stringify(printSettings)
             });
 
-            if (tableBody.length === 1) {
-                tableBody.push([{ text: 'لا توجد بيانات', colSpan: 7, alignment: 'center' }, {}, {}, {}, {}, {}, {}]);
-            }
-
-            const docDefinition = {
-                pageSize: printSettings.paperSize || 'A4',
-                pageOrientation: printSettings.orientation || 'portrait',
-                defaultStyle: {
-                    font: 'Amiri',
-                    fontSize: 10,
-                    direction: 'rtl'
-                },
-                styles: {
-                    header: {
-                        fontSize: 18,
-                        bold: true,
-                        alignment: 'center',
-                        margin: [0, 0, 0, 20],
-                        color: printSettings.brandColor || '#63a22f'
-                    },
-                    tableHeader: {
-                        bold: true,
-                        fontSize: 11,
-                        fillColor: '#f1f5f9',
-                        color: '#334155'
-                    }
-                },
-                content: [
-                    { text: printSettings.title || 'تقرير رفع دفتر المتابعة وانضباط التحضير', style: 'header' },
-                    {
-                        columns: [
-                            { text: `الفترة من: ${startDate || '-'} إلى: ${endDate || '-'}`, alignment: 'right' },
-                            { text: `موعد الرفع المحدد: ${timeLimit}`, alignment: 'right' },
-                            { text: `إجمالي المستهدف: ${totalExpected}`, alignment: 'right' },
-                            { text: `إجمالي التقصير: ${totalNegligence}`, alignment: 'right' }
-                        ],
-                        margin: [0, 0, 0, 20]
-                    },
-                    {
-                        table: {
-                            headerRows: 1,
-                            widths: ['auto', '*', '*', 'auto', 'auto', 'auto', 'auto'],
-                            body: tableBody
-                        },
-                        layout: 'lightHorizontalLines'
-                    }
-                ]
-            };
-
-            pdfMake.createPdf(docDefinition).download('followup_books_report.pdf');
+            const url = route('hr.reports.followup-books.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
         } catch (error) {
             console.error('Error generating PDF:', error);
-            alert('حدث خطأ أثناء توليد الملف: ' + (error.message || error));
+            alert('حدث خطأ أثناء طلب الملف.');
         } finally {
             setIsGeneratingPdf(false);
         }

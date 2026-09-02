@@ -228,6 +228,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:إدارة الزيارات الصفية')->group(function () {
         Route::get('/hr/reports/classroom-visits', [\App\Http\Controllers\Academic\ClassroomVisitReportController::class, 'report'])->name('hr.reports.classroom-visits');
+        Route::get('/hr/reports/classroom-visits/pdf', [\App\Http\Controllers\Academic\ClassroomVisitReportController::class, 'downloadPdf'])->name('hr.reports.classroom-visits.pdf');
         Route::resource('/academic/classroom-visits', \App\Http\Controllers\Academic\ClassroomVisitController::class)->names([
             'index'   => 'academic.classroom-visits',
             'store'   => 'academic.classroom-visits.store',
@@ -248,6 +249,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:إدارة الخطط الدراسية')->group(function () {
         Route::get('/hr/reports/study-plans', [\App\Http\Controllers\Academic\StudyPlanReportController::class, 'report'])->name('hr.reports.study-plans');
+        Route::get('/hr/reports/study-plans/pdf', [\App\Http\Controllers\Academic\StudyPlanReportController::class, 'downloadPdf'])->name('hr.reports.study-plans.pdf');
         Route::get('/academic/study-plans/analytics', [\App\Http\Controllers\Academic\StudyPlanAnalyticsController::class, 'index'])->name('academic.study-plans.analytics');
         Route::get('/academic/study-plans', [\App\Http\Controllers\Academic\StudyPlanController::class, 'index'])->name('academic.study-plans.index');
         Route::get('/academic/study-plans/{studyPlan}', [\App\Http\Controllers\Academic\StudyPlanController::class, 'show'])->name('academic.study-plans.show');
@@ -406,6 +408,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/admin/followup-books/export', [\App\Http\Controllers\Admin\FollowupBookController::class, 'export'])->name('admin.followup-books.export');
         Route::get('/admin/followup-books', [\App\Http\Controllers\Admin\FollowupBookController::class, 'index'])->name('admin.followup-books.index');
         Route::get('/hr/reports/followup-books', [\App\Http\Controllers\Admin\FollowupBookController::class, 'report'])->name('hr.reports.followup-books');
+        Route::get('/hr/reports/followup-books/pdf', [\App\Http\Controllers\Admin\FollowupBookController::class, 'downloadPdf'])->name('hr.reports.followup-books.pdf');
         Route::get('/admin/followup-books/{teacher}', [\App\Http\Controllers\Admin\FollowupBookController::class, 'show'])->name('admin.followup-books.show');
         Route::post('/admin/followup-books/settings', [\App\Http\Controllers\Admin\FollowupBookController::class, 'updateSettings'])->name('admin.followup-books.settings');
     });
@@ -484,15 +487,19 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::middleware('permission:إدارة الطلاب')->group(function () {
+        Route::get('/academic/weekly-attendances-report/pdf', [\App\Http\Controllers\StudentAttendanceController::class, 'downloadWeeklyAttendanceReportPdf'])->name('academic.attendances.weekly-report.pdf');
         // Class Attendances (Admins only)
         Route::get('/academic/attendances-report', [\App\Http\Controllers\StudentAttendanceController::class, 'attendanceReport'])->name('academic.attendances.report');
+        Route::get('/academic/attendances-report/pdf', [\App\Http\Controllers\StudentAttendanceController::class, 'downloadAttendanceReportPdf'])->name('academic.attendances.report.pdf');
         Route::get('/academic/class-attendances-report', [\App\Http\Controllers\StudentAttendanceController::class, 'classAttendanceReport'])->name('academic.attendances.class-report');
+        Route::get('/academic/class-attendances-report/pdf', [\App\Http\Controllers\StudentAttendanceController::class, 'downloadClassAttendanceReportPdf'])->name('academic.attendances.class-report.pdf');
         Route::get('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'classReports'])->name('academic.attendances.classes');
         Route::post('/academic/class-attendances', [\App\Http\Controllers\StudentAttendanceController::class, 'storeClassAttendance'])->name('academic.attendances.classes.store');
         Route::post('/academic/class-attendances/bulk', [\App\Http\Controllers\StudentAttendanceController::class, 'storeBulkClassAttendance'])->name('academic.attendances.classes.storeBulk');
 
         // Parent Summons
         Route::get('/academic/parent-summons/report', [\App\Http\Controllers\Academic\ParentSummonController::class, 'report'])->name('academic.parent-summons.report');
+        Route::get('/academic/parent-summons/report/pdf', [\App\Http\Controllers\Academic\ParentSummonController::class, 'downloadParentSummonsReportPdf'])->name('academic.parent-summons.report.pdf');
         Route::resource('/academic/parent-summons', \App\Http\Controllers\Academic\ParentSummonController::class)->names([
             'index'   => 'academic.parent-summons.index',
             'store'   => 'academic.parent-summons.store',
@@ -501,6 +508,7 @@ Route::middleware('auth')->group(function () {
         ])->except(['create', 'show', 'edit']);
 
         Route::get('/academic/parent-visits/report', [\App\Http\Controllers\Academic\ParentVisitController::class, 'report'])->name('academic.parent-visits.report');
+        Route::get('/academic/parent-visits/report/pdf', [\App\Http\Controllers\Academic\ParentVisitController::class, 'downloadParentVisitsReportPdf'])->name('academic.parent-visits.report.pdf');
         Route::get('/academic/parent-visits/analytics', [\App\Http\Controllers\Academic\ParentVisitController::class, 'analytics'])->name('academic.parent-visits.analytics');
         Route::post('/academic/parent-visits/{parentVisit}/achievement', [\App\Http\Controllers\Academic\ParentVisitController::class, 'convertToAchievement'])->name('academic.parent-visits.achievement');
         Route::post('/academic/parent-visits/{parentVisit}/violation', [\App\Http\Controllers\Academic\ParentVisitController::class, 'convertToViolation'])->name('academic.parent-visits.violation');
@@ -512,6 +520,7 @@ Route::middleware('auth')->group(function () {
         ])->except(['create', 'show', 'edit']);
 
         Route::get('/academic/student-pledges/report', [\App\Http\Controllers\Academic\StudentPledgeController::class, 'report'])->name('academic.student-pledges.report');
+        Route::get('/academic/student-pledges/report/pdf', [\App\Http\Controllers\Academic\StudentPledgeController::class, 'downloadStudentPledgesReportPdf'])->name('academic.student-pledges.report.pdf');
         Route::post('/academic/student-pledges/{student_pledge}/sign', [\App\Http\Controllers\Academic\StudentPledgeController::class, 'sign'])->name('academic.student-pledges.sign');
         Route::resource('/academic/student-pledges', \App\Http\Controllers\Academic\StudentPledgeController::class)->names([
             'index'   => 'academic.student-pledges.index',
@@ -547,6 +556,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/academic/monthly-grades', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'index'])->name('academic.monthly-grades.index');
         Route::get('/academic/monthly-grades-report', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'reportIndex'])->name('academic.monthly-grades.report.index');
         Route::get('/academic/monthly-grades-report/division/{division}/subject/{subject_id}/period/{period}', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'reportView'])->name('academic.monthly-grades.report.view');
+        Route::get('/academic/monthly-grades-report/division/{division}/subject/{subject_id}/period/{period}/pdf', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'downloadMonthlyGradesReportPdf'])->name('academic.monthly-grades.report.pdf');
         Route::get('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'gradeEntry'])->name('academic.monthly-grades.entry');
         Route::post('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}/save-weekly', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'saveWeeklyScores'])->name('academic.monthly-grades.save-weekly');
         Route::post('/academic/monthly-grades/division/{division}/subject/{subject_id}/period/{period}/submit-month', [\App\Http\Controllers\Academic\MonthlyGradeController::class, 'submitMonth'])->name('academic.monthly-grades.submit-month');
@@ -554,6 +564,7 @@ Route::middleware('auth')->group(function () {
         // Semester Results
         Route::get('/academic/semester-results', [\App\Http\Controllers\Academic\SemesterResultController::class, 'index'])->name('academic.semester-results.index');
         Route::get('/academic/semester-results/report', [\App\Http\Controllers\Academic\SemesterResultController::class, 'classReport'])->name('academic.semester-results.report');
+        Route::get('/academic/semester-results/report/pdf', [\App\Http\Controllers\Academic\SemesterResultController::class, 'downloadClassReportPdf'])->name('academic.semester-results.report.pdf');
         Route::post('/academic/semester-results', [\App\Http\Controllers\Academic\SemesterResultController::class, 'store'])->name('academic.semester-results.store');
         Route::post('/academic/semester-results/lock', [\App\Http\Controllers\Academic\SemesterResultController::class, 'lock'])->name('academic.semester-results.lock');
 
@@ -609,6 +620,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:إدارة المخالفات')->group(function () {
         Route::get('/hr/reports/employee-violations', [\App\Http\Controllers\HR\EmployeeViolationReportController::class, 'report'])->name('hr.reports.employee-violations');
+        Route::get('/hr/reports/employee-violations/pdf', [\App\Http\Controllers\HR\EmployeeViolationReportController::class, 'downloadPdf'])->name('hr.reports.employee-violations.pdf');
         Route::resource('/hr/employee-violations', \App\Http\Controllers\HR\EmployeeViolationController::class)->names([
             'index'   => 'hr.employee-violations',
             'store'   => 'hr.employee-violations.store',
@@ -638,7 +650,9 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:عرض الإنجازات')->group(function () {
         Route::get('/hr/reports/employee-achievements', [\App\Http\Controllers\HR\EmployeeAchievementReportController::class, 'report'])->name('hr.reports.employee-achievements');
+        Route::get('/hr/reports/employee-achievements/pdf', [\App\Http\Controllers\HR\EmployeeAchievementReportController::class, 'downloadPdf'])->name('hr.reports.employee-achievements.pdf');
         Route::get('/hr/reports/employee-leaves', [\App\Http\Controllers\HR\EmployeeLeavesReportController::class, 'report'])->name('hr.reports.employee-leaves');
+        Route::get('/hr/reports/employee-leaves/pdf', [\App\Http\Controllers\HR\EmployeeLeavesReportController::class, 'downloadPdf'])->name('hr.reports.employee-leaves.pdf');
         Route::get('/hr/reports/administrative-requests', [\App\Http\Controllers\HR\AdministrativeRequestsReportController::class, 'report'])->name('hr.reports.administrative-requests');
         Route::resource('/hr/employee-achievements', \App\Http\Controllers\HR\EmployeeAchievementController::class)->names([
             'index'   => 'hr.employee-achievements',
@@ -701,6 +715,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'index'])->name('hr.attendance');
         Route::get('/hr/attendance/report', [\App\Http\Controllers\HR\AttendanceController::class, 'report'])->name('hr.attendance.report');
         Route::get('/hr/reports/teacher-absences', [\App\Http\Controllers\HR\AttendanceController::class, 'teacherAbsencesReport'])->name('hr.reports.teacher-absences');
+        Route::get('/hr/reports/teacher-absences/pdf', [\App\Http\Controllers\HR\AttendanceController::class, 'downloadTeacherAbsencesPdf'])->name('hr.reports.teacher-absences.pdf');
         Route::get('/hr/attendance/employee-report/{employeeId}', [\App\Http\Controllers\Api\AttendanceApiController::class, 'employeeReport'])->name('hr.attendance.employee-report');
         Route::post('/hr/attendance', [\App\Http\Controllers\HR\AttendanceController::class, 'store'])->name('hr.attendance.store');
         Route::post('/hr/attendance/bulk-update', [\App\Http\Controllers\HR\AttendanceController::class, 'bulkUpdate'])->name('hr.attendance.bulk-update');
@@ -808,6 +823,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('permission:إدارة العيادة')->prefix('clinic')->name('clinic.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Clinic\ClinicController::class, 'index'])->name('index');
         Route::get('/report', [\App\Http\Controllers\Clinic\ClinicController::class, 'report'])->name('report');
+        Route::get('/report/pdf', [\App\Http\Controllers\Clinic\ClinicController::class, 'downloadClinicReportPdf'])->name('report.pdf');
         Route::get('/search-students', [\App\Http\Controllers\Clinic\ClinicController::class, 'searchStudents'])->name('search-students');
         
         // Medical Records

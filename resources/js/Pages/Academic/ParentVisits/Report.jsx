@@ -103,6 +103,29 @@ export default function Report({ visits = [], stats = {}, filters = {} }) {
         localStorage.setItem('ParentVisitsReportPrintSettings', JSON.stringify(printSettings));
     }, [printSettings]);
 
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                start_date: startDate || '',
+                end_date: endDate || '',
+                status: status || '',
+                purpose_category: purposeCategory || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+
+            const url = route('academic.parent-visits.report.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
     const handlePrint = () => window.print();
 
     return (
@@ -202,6 +225,8 @@ export default function Report({ visits = [], stats = {}, filters = {} }) {
                         printSettings={printSettings} 
                         setPrintSettings={setPrintSettings} 
                         onPrint={handlePrint}
+                        onDownloadPdf={handleDownloadPDF}
+                        isGeneratingPdf={isGeneratingPdf}
                         subtitle={startDate && endDate ? `الفترة: ${startDate} إلى ${endDate}` : 'إدارة شؤون الطلاب والإرشاد'}
                     >
                         {/* KPI Summary Cards */}

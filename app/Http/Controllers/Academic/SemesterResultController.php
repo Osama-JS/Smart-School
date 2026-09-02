@@ -197,7 +197,7 @@ class SemesterResultController extends Controller implements \Illuminate\Routing
     /**
      * كشف درجات ونتائج الطلاب المجمع (Class Report)
      */
-    public function classReport(Request $request)
+    public function getClassReportFilterData(Request $request)
     {
         $user = auth()->user();
         $branchId = $user->branch_id;
@@ -229,7 +229,6 @@ class SemesterResultController extends Controller implements \Illuminate\Routing
                 ->where('status', 'active')
                 ->get();
 
-            // Load existing semester results for all students in this division for all subjects
             $existingResults = SemesterResult::where('semester_id', $semester->id)
                 ->whereIn('enrollment_id', $enrollments->pluck('id'))
                 ->get()
@@ -246,10 +245,8 @@ class SemesterResultController extends Controller implements \Illuminate\Routing
                     $result = $studentResults->get($subject->id);
                     $score = $result ? (float)$result->semester_total : 0;
                     
-                    // We need the max score for percentage. Assuming semester_aggregate_max + final_exam_max
-                    // or just 100 for default.
                     $subjectMax = ($subject->semester_aggregate_max ?? 0) + ($subject->final_exam_max ?? 0);
-                    if ($subjectMax == 0) $subjectMax = 100; // Fallback
+                    if ($subjectMax == 0) $subjectMax = 100;
 
                     $subjectScores[$subject->id] = $score;
                     $totalScore += $score;
@@ -269,14 +266,12 @@ class SemesterResultController extends Controller implements \Illuminate\Routing
                 ];
             }
 
-            // Default sorting: Alphabetical (since that's what the user prefers for lists typically)
-            // But we'll do it by name
             usort($studentsData, function($a, $b) {
                 return strcmp($a['student_name'], $b['student_name']);
             });
         }
 
-        return Inertia::render('Academic/SemesterResults/ClassReport', [
+        return [
             'academicYears' => $academicYears,
             'semesters' => $semesters,
             'divisions' => $divisions,
@@ -289,6 +284,76 @@ class SemesterResultController extends Controller implements \Illuminate\Routing
                 'semester_id' => $semesterId,
                 'division_id' => $divisionId,
             ]
-        ]);
+        ];
+    }
+
+    public function classReport(Request $request)
+    {
+        $data = $this->getClassReportFilterData($request);
+        return Inertia::render('Academic/SemesterResults/ClassReport', $data);
+    }
+
+    public function downloadClassReportPdf(Request $request)
+    {
+        $data = $this->getClassReportFilterData($request);
+        
+        $printSettings = json_decode($request->input('printSettings', '{}'), true);
+        $paperSize = $printSettings['paperSize'] ?? 'A4';
+        $brandColor = $printSettings['brandColor'] ?? '#6366f1';
+        $orientation = $printSettings['orientation'] ?? 'portrait';
+        $marginSetting = $printSettings['margins'] ?? 'normal';
+        
+        $margins = match ($marginSetting) {
+            'none' => [0, 0, 0, 0],
+            '1cm' => [10, 10, 10, 10],
+            '2cm' => [20, 20, 20, 20],
+            default => [15, 15, 15, 15],
+        };
+
+        if ($orientation === 'landscape') {
+            $paperSize = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
+            $margins = [$margins[0], $margins[1], $margins[2], $margins[3]];
+        }
+
+        $data['printSettings'] = $printSettings;
+        $data['brandColor'] = $brandColor;
+        $data['watermark'] = $printSettings['watermark'] ?? 'none';
+        $data['orientation'] = $orientation;
+
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 40px 10px 40px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">نظام الإدارة الذكية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $pdf = \Spatie\LaravelPdf\Facades\Pdf::view('pdf.academic.class-results-report', $data)
+            ->format($paperSize)
+            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+            ->footerHtml($footerHtml);
+
+        if ($orientation === 'landscape') {
+            $pdf->landscape();
+        }
+
+        return $pdf->withBrowsershot(function ($browsershot) {
+                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
+                           ->noSandbox()
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(2000);
+            })
+            ->download('class_results_report.pdf');
     }
 }

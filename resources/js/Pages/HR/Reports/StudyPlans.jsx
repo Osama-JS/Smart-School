@@ -7,8 +7,7 @@ import {
     BookOpen, Settings, Download, Eye, AlertCircle, FileText, Check, Map 
 } from 'lucide-react';
 import Select from 'react-select';
-import pdfMakeLib from 'pdfmake/build/pdfmake';
-const pdfMake = pdfMakeLib.default || pdfMakeLib;
+import Select from 'react-select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Swal from 'sweetalert2';
 
@@ -228,36 +227,6 @@ export default function StudyPlansReport({
         document.body.removeChild(link);
     };
 
-    const fetchFontAsBase64 = async (url) => {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch font');
-        const blob = await response.blob();
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                resolve(reader.result.split(',')[1]);
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    };
-
-    const preparePdfMake = async () => {
-        if (!pdfMake.vfs || !pdfMake.vfs['Amiri-Regular.ttf']) {
-            pdfMake.vfs = pdfMake.vfs || {};
-            const base64Font = await fetchFontAsBase64('/Smart-School/public/fonts/arabic.ttf');
-            pdfMake.vfs['Amiri-Regular.ttf'] = base64Font;
-            pdfMake.fonts = {
-                Amiri: {
-                    normal: 'Amiri-Regular.ttf',
-                    bold: 'Amiri-Regular.ttf',
-                    italics: 'Amiri-Regular.ttf',
-                    bolditalics: 'Amiri-Regular.ttf'
-                }
-            };
-        }
-    };
-
     const handlePrintClick = () => {
         window.print();
     };
@@ -265,87 +234,22 @@ export default function StudyPlansReport({
     const handleDownloadPDF = async () => {
         setIsGeneratingPdf(true);
         try {
-            await preparePdfMake();
-
-            const tableBody = [
-                [
-                    { text: 'م', style: 'tableHeader', alignment: 'center' },
-                    { text: 'اسم المعلم', style: 'tableHeader', alignment: 'center' },
-                    { text: 'القسم', style: 'tableHeader', alignment: 'center' },
-                    { text: 'إجمالي الخطط', style: 'tableHeader', alignment: 'center' },
-                    { text: 'المعتمدة', style: 'tableHeader', alignment: 'center' },
-                    { text: 'المرفوضة', style: 'tableHeader', alignment: 'center' },
-                    { text: 'لم تُقدم', style: 'tableHeader', alignment: 'center' }
-                ]
-            ];
-
-            let count = 1;
-            sortedTeachers.forEach(teacher => {
-                tableBody.push([
-                    { text: count.toString(), alignment: 'center' },
-                    { text: teacher.employee_name || teacher.name, alignment: 'right' },
-                    { text: teacher.department || '-', alignment: 'right' },
-                    { text: (teacher.total_plans || 0).toString(), alignment: 'center' },
-                    { text: (teacher.approved_plans || 0).toString(), alignment: 'center' },
-                    { text: (teacher.rejected_plans || 0).toString(), alignment: 'center' },
-                    { text: (teacher.missing || 0).toString(), alignment: 'center' }
-                ]);
-                count++;
+            const params = new URLSearchParams({
+                search: filters.search || '',
+                start_date: startDate || '',
+                end_date: endDate || '',
+                employee_id: selectedTeacher?.value || '',
+                statuses: selectedStatuses ? selectedStatuses.map(s => s.value).join(',') : '',
+                violators_only: violatorsOnly ? '1' : '0',
+                printSettings: JSON.stringify(printSettings)
             });
 
-            if (tableBody.length === 1) {
-                tableBody.push([{ text: 'لا توجد بيانات', colSpan: 7, alignment: 'center' }, {}, {}, {}, {}, {}, {}]);
-            }
-
-            const docDefinition = {
-                pageSize: printSettings.paperSize || 'A4',
-                pageOrientation: printSettings.orientation || 'portrait',
-                defaultStyle: {
-                    font: 'Amiri',
-                    fontSize: 10,
-                    direction: 'rtl'
-                },
-                styles: {
-                    header: {
-                        fontSize: 18,
-                        bold: true,
-                        alignment: 'center',
-                        margin: [0, 0, 0, 20],
-                        color: printSettings.brandColor || '#63a22f'
-                    },
-                    tableHeader: {
-                        bold: true,
-                        fontSize: 11,
-                        fillColor: '#f1f5f9',
-                        color: '#334155'
-                    }
-                },
-                content: [
-                    { text: printSettings.title || 'تقرير الخطط الدراسية وانضباط التسليم', style: 'header' },
-                    {
-                        columns: [
-                            { text: `الفترة من: ${startDate || '-'} إلى: ${endDate || '-'}`, alignment: 'right' },
-                            { text: `إجمالي الخطط: ${totalPlans}`, alignment: 'right' },
-                            { text: `المعتمدة: ${totalApproved}`, alignment: 'right' },
-                            { text: `نسبة الاعتماد: ${approvalRate}%`, alignment: 'right' }
-                        ],
-                        margin: [0, 0, 0, 20]
-                    },
-                    {
-                        table: {
-                            headerRows: 1,
-                            widths: ['auto', '*', '*', 'auto', 'auto', 'auto', 'auto'],
-                            body: tableBody
-                        },
-                        layout: 'lightHorizontalLines'
-                    }
-                ]
-            };
-
-            pdfMake.createPdf(docDefinition).download('study_plans_report.pdf');
+            const url = route('hr.reports.study-plans.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
         } catch (error) {
             console.error('Error generating PDF:', error);
-            alert('حدث خطأ أثناء توليد الملف: ' + (error.message || error));
+            alert('حدث خطأ أثناء طلب الملف.');
         } finally {
             setIsGeneratingPdf(false);
         }

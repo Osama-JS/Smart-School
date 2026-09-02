@@ -41,9 +41,29 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
     }, [printSettings]);
 
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    const handleDownloadPDF = () => {
-        // PDF generation not implemented for paginated appraisals yet
-        alert('سيتم تفعيل تصدير PDF قريباً');
+
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                search: filterData.search || '',
+                date_from: filterData.date_from || '',
+                date_to: filterData.date_to || '',
+                employee_id: filterData.employee_id || '',
+                department_id: filterData.department_id || '',
+                cycle_id: filterData.cycle_id || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+
+            const url = route('hr.appraisals.report.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
     };
 
     const handleFilter = (e) => {

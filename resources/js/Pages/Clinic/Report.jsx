@@ -78,6 +78,28 @@ export default function Report({ visits, filters }) {
         localStorage.setItem('ClinicReportPrintSettings', JSON.stringify(printSettings));
     }, [printSettings]);
 
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                start_date: startDate || '',
+                end_date: endDate || '',
+                status: status || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+
+            const url = route('clinic.report.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
     const handlePrint = () => window.print();
 
     return (
@@ -162,6 +184,8 @@ export default function Report({ visits, filters }) {
                         printSettings={printSettings} 
                         setPrintSettings={setPrintSettings} 
                         onPrint={handlePrint}
+                        onDownloadPdf={handleDownloadPDF}
+                        isGeneratingPdf={isGeneratingPdf}
                         subtitle={startDate && endDate ? `الفترة: ${startDate} إلى ${endDate}` : 'إدارة الشؤون الطبية والصحية'}
                     >
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm relative z-10 print:border-none print:shadow-none print:rounded-none">

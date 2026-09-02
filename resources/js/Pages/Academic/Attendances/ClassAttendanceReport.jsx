@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { Search, Calendar, UserX, User, Clock, X, Filter, BookOpen, AlertCircle, Save, UserCheck, CheckCheck } from 'lucide-react';
-import FlatpickrInput from '@/Components/FlatpickrInput';
+import { Search, Calendar, UserX, Clock, X, Filter, BookOpen, AlertCircle, Layers } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 
@@ -37,23 +36,70 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
     }, [printSettings]);
 
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    const handleDownloadPDF = () => {
-        alert('سيتم تفعيل تصدير PDF قريباً');
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                date: date || '',
+                grade_id: gradeId || '',
+                division_id: divisionId || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+
+            const url = route('academic.attendances.class-report.pdf') + '?' + params.toString();
+            window.location.href = url;
+            
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
     };
     const handlePrint = () => {
         window.print();
     };
 
-    const applyFilters = () => {
+    const [showFilters, setShowFilters] = useState(false);
+
+    const applyFilters = (e) => {
+        if (e) e.preventDefault();
         router.get(route('academic.attendances.class-report'), { date, grade_id: gradeId, division_id: divisionId }, { preserveState: true, replace: true });
     };
 
     const clearFilters = () => {
-        setDate('');
+        const today = new Date().toISOString().split('T')[0];
+        setDate(today);
         setGradeId('');
         setDivisionId('');
         router.get(route('academic.attendances.class-report'));
     };
+
+    const removeFilter = (filterId) => {
+        let params = { date, grade_id: gradeId, division_id: divisionId };
+        if (filterId === 'grade')    { params.grade_id = ''; params.division_id = ''; setGradeId(''); setDivisionId(''); }
+        if (filterId === 'division') { params.division_id = ''; setDivisionId(''); }
+        router.get(route('academic.attendances.class-report'), params, { preserveState: true, replace: true });
+    };
+
+    const setPresetDate = (preset) => {
+        const today = new Date();
+        const fmt = (d) => {
+            let m = '' + (d.getMonth() + 1);
+            let dy = '' + d.getDate();
+            if (m.length < 2) m = '0' + m;
+            if (dy.length < 2) dy = '0' + dy;
+            return [d.getFullYear(), m, dy].join('-');
+        };
+        if (preset === 'today') { setDate(fmt(today)); }
+    };
+
+    const getGradeName    = (id) => grades?.find(g => g.id == id)?.name || id;
+    const getDivisionName = (id) => { const d = divisions?.find(d => d.id == id); return d ? `${d.grade?.name} - ${d.name}` : id; };
+
+    const activeFilters = [];
+    if (gradeId)    activeFilters.push({ id: 'grade',    label: `الصف: ${getGradeName(gradeId)}` });
+    if (divisionId) activeFilters.push({ id: 'division', label: `الشعبة: ${getDivisionName(divisionId)}` });
 
     const submitBulkAttendance = (periodId) => {
         if (!confirm('هل أنت متأكد من حفظ الحضور لجميع الطلاب كحاضرين لهذه الحصة؟ (لن يتم تجاوز من تم تحضيرهم مسبقاً)')) {
@@ -87,129 +133,170 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
         <AdminLayout activeMenu="غياب الحصص">
             <Head title="تقارير غياب الحصص | النظام الإداري" />
 
-            <div className="max-w-7xl mx-auto space-y-6 sm:px-6 lg:px-8">
-                {/* Header Section with Brand Colors and Geometric Accent */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none">
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                    
-                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
-                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
-                            <path d="M-50 145 C 170 45, 270 305, 470 145 C 670 -15, 770 245, 970 145" stroke="currentColor" strokeWidth="1" className="text-primary-500" fill="none" />
-                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
-                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
-                            <circle cx="750" cy="60" r="3" className="fill-primary-300" />
-                        </svg>
-                    </div>
-                    
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center text-primary-600 dark:text-primary-400">
-                                <Clock size={28} />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                                    الغياب في الحصص
-                                </h1>
-                                <p className="text-primary-700/80 dark:text-primary-300/80 mt-1 text-sm font-bold">
-                                    تتبع حضور وغياب الطلاب في كل حصة دراسية ومادة على حدة
-                                </p>
-                            </div>
+            <div className="space-y-6">
+
+                {/* Header */}
+                <div className="print:hidden relative overflow-hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-600 to-primary-400 z-20"></div>
+                    <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-primary-50 to-transparent pointer-events-none"></div>
+                    <div className="flex items-center gap-4 relative z-10">
+                        <div className="p-3.5 bg-white border border-primary-100 shadow-sm rounded-xl text-primary-600 flex-shrink-0 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-primary-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <Clock size={28} strokeWidth={2} className="relative z-10" />
                         </div>
+                        <div>
+                            <h1 className="text-[22px] font-black text-slate-800 tracking-tight mb-1">الغياب في الحصص</h1>
+                            <p className="text-[13.5px] font-bold text-slate-500">تتبع حضور وغياب الطلاب في كل حصة دراسية ومادة على حدة</p>
+                        </div>
+                    </div>
+                    <div className="flex gap-3 relative z-10 w-full sm:w-auto">
+                        <button
+                            onClick={handlePrint}
+                            className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
+                        >
+                            طباعة التقرير
+                        </button>
                     </div>
                 </div>
 
-                {/* Filters Section */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-5 md:p-6 flex flex-col md:flex-row items-center gap-4 justify-between">
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-500">
-                            <Filter size={18} />
-                        </div>
-                        <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300">أدوات الفلترة</h2>
-                    </div>
+                {/* Filter Panel */}
+                <div className="print:hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
+                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-600 to-primary-400"></div>
 
-                    <div className="flex flex-wrap items-end gap-3 w-full md:w-auto">
-                        <div className="w-full sm:w-auto min-w-[160px] relative group">
-                            <FlatpickrInput
-                                value={date}
-                                onChange={(val) => setDate(val)}
-                                placeholder="اختر التاريخ..."
-                                options={{
-                                    altInput: true,
-                                    altFormat: "l, Y-m-d", // Shows day name + date
-                                    disable: [
-                                        function(d) {
-                                            const dayMap = {
-                                                'Sunday': 0, 'Monday': 1, 'Tuesday': 2, 
-                                                'Wednesday': 3, 'Thursday': 4, 'Friday': 5, 'Saturday': 6
-                                            };
-                                            const wDays = (workingDays && workingDays.length > 0) 
-                                                ? workingDays 
-                                                : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
-                                            const enabledIndexes = wDays.map(name => dayMap[name]);
-                                            return !enabledIndexes.includes(d.getDay());
-                                        }
-                                    ]
-                                }}
-                                className="w-full bg-slate-50 hover:bg-slate-100 focus:bg-white dark:bg-slate-800/50 dark:hover:bg-slate-800 dark:focus:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl pl-4 pr-11 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-300 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500 transition-all outline-none"
-                            />
-                            <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors pointer-events-none" />
-                        </div>
-                        
-                        <div className="w-full sm:w-48">
-                            <SelectInput
-                                value={gradeId}
-                                onChange={(val) => {
-                                    setGradeId(val);
-                                    setDivisionId(''); // Reset division when grade changes
-                                }}
-                                className="w-full text-sm font-bold"
-                                placeholder="اختر الصف"
-                                options={grades?.map(grade => ({
-                                    value: grade.id,
-                                    label: grade.name
-                                })) || []}
-                            />
-                        </div>
-
-                        <div className="w-full sm:w-48">
-                            <SelectInput
-                                value={divisionId}
-                                onChange={(val) => setDivisionId(val)}
-                                className="w-full text-sm font-bold"
-                                placeholder="اختر الشعبة (إلزامي)"
-                                options={divisions
-                                    ?.filter(div => !gradeId || String(div.grade_id) === String(gradeId))
-                                    .map(div => ({
-                                        value: div.id,
-                                        label: `${div.grade?.name} - ${div.name}`
-                                    })) || []
-                                }
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                            <button 
-                                onClick={applyFilters}
-                                className="flex-1 sm:flex-none px-6 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-md shadow-primary-500/20 active:scale-95"
+                    <div className="p-5">
+                        {/* Toggle button + Date presets */}
+                        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+                            <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className={`flex items-center gap-3 font-bold px-6 py-3 rounded-xl transition-all duration-300 w-full xl:w-auto ${
+                                    showFilters
+                                        ? 'bg-primary-50 text-primary-700 shadow-inner'
+                                        : 'bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300'
+                                }`}
                             >
-                                <Search size={16} /> <span className="hidden md:inline">بحث</span>
+                                <div className={`p-1.5 rounded-lg transition-colors ${showFilters ? 'bg-primary-100 text-primary-600' : 'bg-white shadow-sm text-slate-500'}`}>
+                                    <Filter size={18} strokeWidth={2.5} />
+                                </div>
+                                <span className="text-[15px]">خيارات التصفية المتقدمة</span>
+                                {activeFilters.length > 0 && (
+                                    <span className="flex items-center justify-center bg-primary-500 text-white text-xs font-black w-6 h-6 rounded-full shadow-sm">
+                                        {activeFilters.length}
+                                    </span>
+                                )}
+                                <svg className={`w-5 h-5 mr-auto transition-transform duration-300 ${showFilters ? 'rotate-180 text-primary-600' : 'text-slate-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                </svg>
                             </button>
-                            {(filters.date || filters.grade_id || filters.division_id) && (
-                                <button 
-                                    onClick={clearFilters}
-                                    className="w-10 h-10 flex items-center justify-center bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-500/10 dark:text-slate-400 dark:hover:text-rose-400 rounded-2xl transition-all shrink-0"
-                                    title="مسح الفلاتر"
+
+                            {/* Today button + Date display */}
+                            <div className="flex bg-slate-100/80 p-1.5 rounded-xl border border-slate-200 overflow-x-auto hide-scrollbar w-full xl:w-auto shadow-inner gap-1">
+                                <button
+                                    onClick={() => setPresetDate('today')}
+                                    className="whitespace-nowrap px-5 py-2 text-sm font-bold rounded-lg text-slate-600 hover:text-primary-700 hover:bg-white hover:shadow-sm transition-all"
                                 >
-                                    <X size={18} />
+                                    اليوم
                                 </button>
-                            )}
+                                {date && (
+                                    <div className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-primary-700 bg-white rounded-lg shadow-sm border border-primary-100">
+                                        <Calendar size={14} className="text-primary-500" />
+                                        <span>{date}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Active filter chips */}
+                        {activeFilters.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 mt-5 pt-5 border-t border-slate-100">
+                                <span className="text-sm font-bold text-slate-500 ml-2">الفلاتر النشطة:</span>
+                                {activeFilters.map(filter => (
+                                    <span key={filter.id} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white border border-primary-200 text-primary-700 text-sm font-bold shadow-sm group">
+                                        {filter.label}
+                                        <button type="button" onClick={() => removeFilter(filter.id)} className="p-0.5 rounded-full hover:bg-red-50 text-slate-400 group-hover:text-red-500 transition-colors">
+                                            <X size={14} strokeWidth={2.5} />
+                                        </button>
+                                    </span>
+                                ))}
+                                <button onClick={clearFilters} className="text-sm text-slate-400 hover:text-red-600 font-bold px-3 transition-colors mr-auto flex items-center gap-1">
+                                    <X size={14} strokeWidth={2.5} /> مسح جميع الفلاتر
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Collapsible form */}
+                        <div className={`grid transition-all duration-300 ease-in-out ${showFilters ? 'grid-rows-[1fr] opacity-100 mt-6 pt-6 border-t border-slate-100' : 'grid-rows-[0fr] opacity-0'}`}>
+                            <div className="overflow-hidden">
+                                <form onSubmit={applyFilters} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+
+                                    {/* Date */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">التاريخ</label>
+                                        <input
+                                            type="date"
+                                            value={date}
+                                            onChange={(e) => setDate(e.target.value)}
+                                            className="w-full border-slate-200 bg-slate-50/50 rounded-xl focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm h-[42px] px-3"
+                                        />
+                                    </div>
+
+                                    {/* Grade */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">الصف الدراسي</label>
+                                        <SelectInput
+                                            value={gradeId}
+                                            onChange={(val) => { setGradeId(val); setDivisionId(''); }}
+                                            placeholder="اختر الصف..."
+                                            options={grades?.map(grade => ({
+                                                value: grade.id,
+                                                label: grade.name
+                                            })) || []}
+                                        />
+                                    </div>
+
+                                    {/* Division */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                                            الشعبة <span className="text-rose-500 text-xs font-bold">(إلزامي)</span>
+                                        </label>
+                                        <SelectInput
+                                            value={divisionId}
+                                            onChange={(val) => setDivisionId(val)}
+                                            placeholder="اختر الشعبة..."
+                                            options={divisions
+                                                ?.filter(div => !gradeId || String(div.grade_id) === String(gradeId))
+                                                .map(div => ({
+                                                    value: div.id,
+                                                    label: `${div.grade?.name} - ${div.name}`
+                                                })) || []
+                                            }
+                                        />
+                                    </div>
+
+                                    {/* Buttons */}
+                                    <div className="flex gap-3 items-end">
+                                        <button
+                                            type="submit"
+                                            className="flex-1 flex items-center justify-center gap-2 bg-primary-600 text-white px-5 py-2.5 rounded-xl hover:bg-primary-700 transition-all font-bold shadow-sm"
+                                        >
+                                            <Search size={16} strokeWidth={2.5} />
+                                            <span>عرض التقرير</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={clearFilters}
+                                            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold transition-all"
+                                        >
+                                            <X size={16} strokeWidth={2.5} />
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Data Table */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                     {!divisionId ? (
                         <div className="px-6 py-16 text-center text-slate-500">
                             <div className="flex flex-col items-center justify-center">
