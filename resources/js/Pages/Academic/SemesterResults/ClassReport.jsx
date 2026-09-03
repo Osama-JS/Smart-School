@@ -12,6 +12,27 @@ import {
     BookOpen,
     Calendar
 } from 'lucide-react';
+import Select from 'react-select';
+
+const customSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: '42px',
+        borderRadius: '1rem',
+        borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+        backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+        '&:hover': {
+            borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
+        }
+    }),
+    option: (base, state) => ({
+        ...base,
+        backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+        color: state.isSelected ? 'white' : '#1e293b',
+        fontWeight: state.isSelected ? 'bold' : 'normal',
+    })
+};
 
 export default function ClassReport({
     academicYears,
@@ -77,6 +98,42 @@ export default function ClassReport({
         if (percentage >= 60) return { text: 'مقبول', color: 'text-orange-600 print:text-black' };
         return { text: 'ضعيف', color: 'text-red-600 font-bold print:text-black' };
     };
+
+    // Frontend Smart Filters
+    const [gradeFilter, setGradeFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('alpha');
+    const [hasFailures, setHasFailures] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState('');
+
+    const processedStudents = studentsData.map(student => {
+        return {
+            ...student,
+            estimation: getGradeEstimation(student.percentage)
+        };
+    }).filter(student => {
+        if (selectedStudent && student.student_id !== selectedStudent) return false;
+        
+        if (gradeFilter === 'excellent' && student.percentage < 90) return false;
+        if (gradeFilter === 'vgood' && (student.percentage < 80 || student.percentage >= 90)) return false;
+        if (gradeFilter === 'good' && (student.percentage < 70 || student.percentage >= 80)) return false;
+        if (gradeFilter === 'pass' && (student.percentage < 60 || student.percentage >= 70)) return false;
+        if (gradeFilter === 'weak' && student.percentage >= 60) return false;
+
+        if (hasFailures) {
+            const failedSubject = subjects.some(subject => {
+                const score = student.scores[subject.id] || 0;
+                const subjectMax = (subject.semester_aggregate_max || 0) + (subject.final_exam_max || 0) || 100;
+                return score < (subjectMax / 2);
+            });
+            if (!failedSubject) return false;
+        }
+
+        return true;
+    }).sort((a, b) => {
+        if (sortBy === 'desc') return b.percentage - a.percentage;
+        if (sortBy === 'asc') return a.percentage - b.percentage;
+        return 0; // fallback alpha
+    });
 
     const [printSettings, setPrintSettings] = useState(() => {
         try {
@@ -297,6 +354,83 @@ export default function ClassReport({
                         </div>
                     </div>
 
+                    {/* Secondary Frontend Filters */}
+                    {studentsData.length > 0 && (
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 md:p-5 print:hidden">
+                            <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between">
+                                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                                    <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
+                                    
+                                    <div className="flex flex-wrap items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
+                                        <button 
+                                            onClick={() => setGradeFilter('all')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all ${gradeFilter === 'all' ? 'bg-primary-600 text-white' : 'hover:bg-slate-100 text-slate-600'}`}
+                                        >الكل</button>
+                                        <button 
+                                            onClick={() => setGradeFilter('excellent')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'excellent' ? 'bg-emerald-500 text-white' : 'hover:bg-emerald-50 text-emerald-600'}`}
+                                        >امتياز</button>
+                                        <button 
+                                            onClick={() => setGradeFilter('vgood')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'vgood' ? 'bg-blue-500 text-white' : 'hover:bg-blue-50 text-blue-600'}`}
+                                        >جيد جداً</button>
+                                        <button 
+                                            onClick={() => setGradeFilter('good')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'good' ? 'bg-yellow-500 text-white' : 'hover:bg-yellow-50 text-yellow-600'}`}
+                                        >جيد</button>
+                                        <button 
+                                            onClick={() => setGradeFilter('pass')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'pass' ? 'bg-orange-500 text-white' : 'hover:bg-orange-50 text-orange-600'}`}
+                                        >مقبول</button>
+                                        <button 
+                                            onClick={() => setGradeFilter('weak')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'weak' ? 'bg-red-500 text-white' : 'hover:bg-red-50 text-red-600'}`}
+                                        >ضعيف / راسب</button>
+                                    </div>
+
+                                    <div className="flex items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
+                                        <span className="px-3 py-2 text-sm font-bold text-slate-500 bg-slate-100 border-l border-slate-200">الفرز:</span>
+                                        <button 
+                                            onClick={() => setSortBy('alpha')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${sortBy === 'alpha' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
+                                        >أبجدي</button>
+                                        <button 
+                                            onClick={() => setSortBy('desc')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${sortBy === 'desc' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
+                                        >الأعلى نسبة</button>
+                                        <button 
+                                            onClick={() => setSortBy('asc')}
+                                            className={`px-3 py-2 text-sm font-bold transition-all ${sortBy === 'asc' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
+                                        >الأقل نسبة</button>
+                                    </div>
+                                    
+                                    <button 
+                                        onClick={() => setHasFailures(!hasFailures)}
+                                        className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${hasFailures ? 'bg-red-600 text-white' : 'bg-slate-50 border border-slate-200 text-red-600 hover:bg-slate-100'}`}
+                                        title="إظهار الطلاب الذين رسبوا في مادة واحدة على الأقل"
+                                    >
+                                        <span className="w-2 h-2 rounded-full bg-current"></span>
+                                        راسب بمواد
+                                    </button>
+                                </div>
+                                
+                                <div className="w-full xl:w-72">
+                                    <Select
+                                        options={[
+                                            { value: '', label: 'الكل (بحث باسم الطالب)' },
+                                            ...(studentsData?.map(e => ({ value: e.student_id, label: e.student_name })) || [])
+                                        ]}
+                                        value={selectedStudent ? { value: selectedStudent, label: studentsData?.find(e => e.student_id === selectedStudent)?.student_name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
+                                        onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
+                                        placeholder="بحث باسم الطالب..."
+                                        isClearable
+                                        styles={customSelectStyles}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <ReportPrintLayout 
                         title={printSettings.title} 
                         printSettings={printSettings} 
@@ -341,45 +475,53 @@ export default function ClassReport({
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white divide-y divide-slate-200">
-                                            {studentsData.map((student, idx) => {
-                                                const estimation = getGradeEstimation(student.percentage);
-                                                const isFailing = student.percentage < 50;
-                                                
-                                                return (
-                                                    <tr key={student.enrollment_id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${isFailing ? 'bg-red-50/30 dark:bg-red-900/10' : ''} print:hover:bg-transparent ${isFailing ? 'print:bg-red-50' : ''}`}>
-                                                        <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-500 text-center border-l border-slate-200 dark:border-slate-800 font-medium print:border-black/30 print:text-black">
-                                                            {idx + 1}
-                                                        </td>
-                                                        <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                            {student.student_name}
-                                                            <div className="text-xs text-slate-500 font-normal print:hidden">{student.student_id_number}</div>
-                                                        </td>
-                                                        
-                                                        {/* Subject Scores */}
-                                                        {subjects.map(subject => {
-                                                            const score = student.scores[subject.id] || 0;
-                                                            const subjectMax = (subject.semester_aggregate_max || 0) + (subject.final_exam_max || 0) || 100;
-                                                            const isSubjectFailing = score < (subjectMax / 2);
+                                            {processedStudents.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={subjects.length + 5} className="py-12 px-6 text-center text-slate-500 font-bold">
+                                                        لا توجد نتائج مطابقة لخيارات الفلترة.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                processedStudents.map((student, idx) => {
+                                                    const estimation = student.estimation;
+                                                    const isFailing = student.percentage < 50;
+                                                    
+                                                    return (
+                                                        <tr key={student.enrollment_id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${isFailing ? 'bg-red-50/30 dark:bg-red-900/10' : ''} print:hover:bg-transparent ${isFailing ? 'print:bg-red-50' : ''}`}>
+                                                            <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-500 text-center border-l border-slate-200 dark:border-slate-800 font-medium print:border-black/30 print:text-black">
+                                                                {idx + 1}
+                                                            </td>
+                                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
+                                                                {student.student_name}
+                                                                <div className="text-xs text-slate-500 font-normal print:hidden">{student.student_id_number}</div>
+                                                            </td>
                                                             
-                                                            return (
-                                                                <td key={subject.id} className={`px-2 py-3 whitespace-nowrap text-sm text-center border-l border-slate-200 dark:border-slate-800 font-semibold ${isSubjectFailing ? 'text-red-600 dark:text-red-400 print:text-red-700 print:font-black' : 'text-slate-700 dark:text-slate-300 print:text-black'} print:border-black/30`}>
-                                                                    {score > 0 ? score : '-'}
-                                                                </td>
-                                                            );
-                                                        })}
-                                                        
-                                                        <td className="px-3 py-3 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-white text-center border-l border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 print:bg-transparent print:border-black/30 print:text-black">
-                                                            {student.total_score}
-                                                        </td>
-                                                        <td className={`px-3 py-3 whitespace-nowrap text-sm font-bold text-center border-l border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 ${isFailing ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-white'} print:bg-transparent print:border-black/30 ${isFailing ? 'print:text-red-700 print:font-black' : 'print:text-black'}`}>
-                                                            {student.percentage}%
-                                                        </td>
-                                                        <td className={`px-3 py-3 whitespace-nowrap text-sm font-bold text-center bg-slate-50/50 dark:bg-slate-800/50 print:bg-transparent print:border-black/30 print:border-r ${estimation.color}`}>
-                                                            {estimation.text}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
+                                                            {/* Subject Scores */}
+                                                            {subjects.map(subject => {
+                                                                const score = student.scores[subject.id] || 0;
+                                                                const subjectMax = (subject.semester_aggregate_max || 0) + (subject.final_exam_max || 0) || 100;
+                                                                const isSubjectFailing = score < (subjectMax / 2);
+                                                                
+                                                                return (
+                                                                    <td key={subject.id} className={`px-2 py-3 whitespace-nowrap text-sm text-center border-l border-slate-200 dark:border-slate-800 font-semibold ${isSubjectFailing ? 'text-red-600 dark:text-red-400 print:text-red-700 print:font-black' : 'text-slate-700 dark:text-slate-300 print:text-black'} print:border-black/30`}>
+                                                                        {score > 0 ? score : '-'}
+                                                                    </td>
+                                                                );
+                                                            })}
+                                                            
+                                                            <td className="px-3 py-3 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-white text-center border-l border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 print:bg-transparent print:border-black/30 print:text-black">
+                                                                {student.total_score}
+                                                            </td>
+                                                            <td className={`px-3 py-3 whitespace-nowrap text-sm font-bold text-center border-l border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 ${isFailing ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-white'} print:bg-transparent print:border-black/30 ${isFailing ? 'print:text-red-700 print:font-black' : 'print:text-black'}`}>
+                                                                {student.percentage}%
+                                                            </td>
+                                                            <td className={`px-3 py-3 whitespace-nowrap text-sm font-bold text-center bg-slate-50/50 dark:bg-slate-800/50 print:bg-transparent print:border-black/30 print:border-r ${estimation.color}`}>
+                                                                {estimation.text}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>

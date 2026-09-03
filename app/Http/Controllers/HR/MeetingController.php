@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\MeetingInvitationMail;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class MeetingController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
@@ -43,6 +44,18 @@ class MeetingController extends Controller implements \Illuminate\Routing\Contro
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->where('date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->where('date', '<=', $request->end_date);
+        }
 
         $meetings = $query->orderBy('date', 'desc')->orderBy('time', 'desc')->get();
 
@@ -57,13 +70,118 @@ class MeetingController extends Controller implements \Illuminate\Routing\Contro
         return Inertia::render('HR/Meetings/ReportIndex', [
             'meetings' => $meetings,
             'users' => $users,
-            'filters' => $request->only(['search', 'status']),
+            'filters' => $request->only(['search', 'status', 'type', 'start_date', 'end_date']),
             'stats' => [
                 'total' => (clone $query)->count(),
                 'scheduled' => (clone $query)->where('status', 'scheduled')->count(),
                 'completed' => (clone $query)->where('status', 'completed')->count(),
             ]
         ]);
+    }
+
+    public function reportPdf(Request $request)
+    {
+        $user = auth()->user();
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير الفرع', 'مدير النظام']);
+        $branchId = $isAdmin ? session('active_branch_id', $user->branch_id) : $user->branch_id;
+
+        $query = Meeting::with(['supervisor', 'participants.user'])
+            ->where(function($q) use ($branchId) {
+                if ($branchId) {
+                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+                }
+            });
+
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        if ($request->filled('start_date')) {
+            $query->where('date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->where('date', '<=', $request->end_date);
+        }
+
+        $meetings = $query->orderBy('date', 'desc')->orderBy('time', 'desc')->get();
+
+        $stats = [
+            'total' => (clone $query)->count(),
+            'scheduled' => (clone $query)->where('status', 'scheduled')->count(),
+            'completed' => (clone $query)->where('status', 'completed')->count(),
+        ];
+
+        $printSettings = json_decode($request->input('printSettings', '{}'), true);
+        $paperSize = $printSettings['paperSize'] ?? 'A4';
+        $brandColor = $printSettings['brandColor'] ?? '#63a22f';
+        $orientation = $printSettings['orientation'] ?? 'portrait';
+        $marginSetting = $printSettings['margins'] ?? 'normal';
+        
+        $margins = match ($marginSetting) {
+            'none' => [0, 0, 0, 0],
+            '1cm' => [10, 10, 10, 10],
+            '2cm' => [20, 20, 20, 20],
+            default => [15, 15, 15, 15],
+        };
+
+        if ($orientation === 'landscape') {
+            $paperSize = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
+            $margins = [$margins[0], $margins[1], $margins[2], $margins[3]];
+        }
+
+        $data = [
+            'meetings' => $meetings,
+            'stats' => $stats,
+            'printSettings' => $printSettings,
+            'brandColor' => $brandColor,
+            'watermark' => $printSettings['watermark'] ?? 'none',
+            'orientation' => $orientation,
+        ];
+
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 40px 10px 40px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">نظام الإدارة الذكية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $pdf = Pdf::view('pdf.hr.meetings-report', $data)
+            ->format($paperSize)
+            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+            ->footerHtml($footerHtml);
+
+        if ($orientation === 'landscape') {
+            $pdf->landscape();
+        }
+
+        return $pdf->withBrowsershot(function ($browsershot) {
+                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
+                           ->noSandbox()
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(2000);
+            })
+            ->download('meetings_report.pdf');
     }
 
     public function index(Request $request)

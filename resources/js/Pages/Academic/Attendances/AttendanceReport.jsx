@@ -5,13 +5,52 @@ import { Search, Calendar, UserX, Clock, Filter, X, CheckCircle, AlertTriangle, 
 import SelectInput from '@/Components/SelectInput';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 
-export default function AttendanceReport({ logs, filters, divisions }) {
+import Select from 'react-select';
+
+// Custom styles for React Select
+const customSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: '42px',
+        borderRadius: '0.75rem',
+        borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+        backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+        '&:hover': {
+            borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
+        }
+    }),
+    multiValue: (base) => ({
+        ...base,
+        backgroundColor: '#eff6ff',
+        borderRadius: '0.5rem',
+    }),
+    multiValueLabel: (base) => ({
+        ...base,
+        color: '#1d4ed8',
+        fontWeight: 'bold',
+        fontSize: '0.75rem',
+    }),
+    multiValueRemove: (base) => ({
+        ...base,
+        color: '#1d4ed8',
+        ':hover': {
+            backgroundColor: '#dbeafe',
+            color: '#1e40af',
+            borderRadius: '0 0.5rem 0.5rem 0',
+        },
+    }),
+};
+
+export default function AttendanceReport({ logs, filters, divisions, grades, studentsList }) {
     const [date, setDate]           = useState(filters.date || new Date().toISOString().split('T')[0]);
     const [startDate, setStartDate] = useState(filters.start_date || '');
     const [endDate, setEndDate]     = useState(filters.end_date || '');
     const [search, setSearch]       = useState(filters.search || '');
-    const [status, setStatus]       = useState(filters.status || '');
-    const [divisionId, setDivisionId] = useState(filters.division_id || '');
+    const [status, setStatus]       = useState(filters.status ? (Array.isArray(filters.status) ? filters.status : [filters.status]) : []);
+    const [gradeId, setGradeId]     = useState(filters.grade_id || '');
+    const [divisionId, setDivisionId] = useState(filters.division_id ? (Array.isArray(filters.division_id) ? filters.division_id : [filters.division_id]) : []);
+    const [smartFilter, setSmartFilter] = useState(filters.smart_filter || '');
     const [showFilters, setShowFilters] = useState(false);
 
     const [printSettings, setPrintSettings] = useState(() => {
@@ -67,8 +106,13 @@ export default function AttendanceReport({ logs, filters, divisions }) {
     const applyFilters = (e) => {
         if (e) e.preventDefault();
         router.get(route('academic.attendances.report'), {
-            date, search, status, division_id: divisionId,
-            start_date: startDate, end_date: endDate,
+            date, search, 
+            status, 
+            grade_id: gradeId,
+            division_id: divisionId, 
+            start_date: startDate, 
+            end_date: endDate,
+            smart_filter: smartFilter
         }, { preserveState: true, replace: true });
     };
 
@@ -78,18 +122,31 @@ export default function AttendanceReport({ logs, filters, divisions }) {
         setStartDate('');
         setEndDate('');
         setSearch('');
-        setStatus('');
-        setDivisionId('');
+        setStatus([]);
+        setGradeId('');
+        setDivisionId([]);
+        setSmartFilter('');
         router.get(route('academic.attendances.report'), { date: today });
     };
 
     const removeFilter = (filterId) => {
-        let params = { date, search, status, division_id: divisionId, start_date: startDate, end_date: endDate };
+        let params = { date, search, status, grade_id: gradeId, division_id: divisionId, start_date: startDate, end_date: endDate, smart_filter: smartFilter };
         if (filterId === 'search')   { params.search = '';      setSearch(''); }
-        if (filterId === 'status')   { params.status = '';      setStatus(''); }
-        if (filterId === 'division') { params.division_id = ''; setDivisionId(''); }
+        if (filterId === 'status')   { params.status = [];      setStatus([]); }
+        if (filterId === 'grade')    { params.grade_id = '';    setGradeId(''); params.division_id = []; setDivisionId([]); }
+        if (filterId === 'division') { params.division_id = []; setDivisionId([]); }
         if (filterId === 'range')    { params.start_date = ''; params.end_date = ''; setStartDate(''); setEndDate(''); }
+        if (filterId === 'smart_filter') { params.smart_filter = ''; setSmartFilter(''); }
         router.get(route('academic.attendances.report'), params, { preserveState: true, replace: true });
+    };
+
+    const applySmartFilter = (filterType) => {
+        const newSmartFilter = smartFilter === filterType ? '' : filterType;
+        setSmartFilter(newSmartFilter);
+        router.get(route('academic.attendances.report'), {
+            ...filters,
+            smart_filter: newSmartFilter
+        }, { preserveState: true, replace: true });
     };
 
     const setPresetDate = (preset) => {
@@ -130,9 +187,40 @@ export default function AttendanceReport({ logs, filters, divisions }) {
 
     const activeFilters = [];
     if (search)     activeFilters.push({ id: 'search',   label: `بحث: ${search}` });
-    if (status)     activeFilters.push({ id: 'status',   label: `الحالة: ${getStatusLabel(status)}` });
-    if (divisionId) activeFilters.push({ id: 'division', label: `الفصل: ${getDivisionName(divisionId)}` });
+    if (gradeId) {
+        const gName = grades?.find(g => g.id == gradeId)?.name || gradeId;
+        activeFilters.push({ id: 'grade', label: `الصف: ${gName}` });
+    }
+    if (status && status.length > 0) {
+        activeFilters.push({ id: 'status',   label: `الحالة: ${status.map(s => getStatusLabel(s)).join(' و ')}` });
+    }
+    if (divisionId && divisionId.length > 0) {
+        activeFilters.push({ id: 'division', label: `الفصول: ${divisionId.map(id => getDivisionName(id)).join(' و ')}` });
+    }
     if (startDate || endDate) activeFilters.push({ id: 'range', label: `الفترة: ${startDate || 'الكل'} إلى ${endDate || 'الكل'}` });
+    if (smartFilter) {
+        const labels = {
+            'absent_today': 'غائبون بدون عذر اليوم',
+            'frequent_late': 'تأخر متكرر هذا الشهر',
+            'frequent_absent': 'غياب متكرر هذا الشهر'
+        };
+        activeFilters.push({ id: 'smart_filter', label: `فلتر ذكي: ${labels[smartFilter] || smartFilter}` });
+    }
+
+    const availableDivisions = gradeId 
+        ? divisions?.filter(d => d.grade_id == gradeId)
+        : divisions;
+
+    const availableStudents = studentsList?.filter(s => {
+        let match = true;
+        if (gradeId) {
+            match = match && s.grade_id == gradeId;
+        }
+        if (divisionId && divisionId.length > 0) {
+            match = match && divisionId.includes(s.division_id);
+        }
+        return match;
+    });
 
     const subtitle = startDate && endDate
         ? `من ${startDate} إلى ${endDate}`
@@ -159,20 +247,7 @@ export default function AttendanceReport({ logs, filters, divisions }) {
                             <p className="text-[13.5px] font-bold text-slate-500">تتبع الحضور والغياب اليومي للطلاب عن المدرسة</p>
                         </div>
                     </div>
-                    <div className="flex gap-3 relative z-10 w-full sm:w-auto">
-                        <Link
-                            href={route('academic.attendances.create')}
-                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-bold transition-all shadow-sm text-sm"
-                        >
-                            تسجيل حضور يدوي
-                        </Link>
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
-                        >
-                            طباعة التقرير
-                        </button>
-                    </div>
+
                 </div>
 
                 {/* Filter Panel */}
@@ -232,6 +307,32 @@ export default function AttendanceReport({ logs, filters, divisions }) {
                             </div>
                         )}
 
+                        {/* Smart Filters Preset Row */}
+                        <div className="flex gap-2 print:hidden mt-5 overflow-x-auto hide-scrollbar pt-2 border-t border-slate-100">
+                            <span className="text-sm font-bold text-slate-500 ml-2 mt-2">فلاتر ذكية وسريعة:</span>
+                            <button 
+                                onClick={() => applySmartFilter('absent_today')}
+                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'absent_today' ? 'bg-red-600 text-white' : 'bg-white border border-red-200 text-red-600 hover:bg-red-50'}`}
+                            >
+                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                غائبون بدون عذر
+                            </button>
+                            <button 
+                                onClick={() => applySmartFilter('frequent_late')}
+                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'frequent_late' ? 'bg-amber-500 text-white' : 'bg-white border border-amber-200 text-amber-600 hover:bg-amber-50'}`}
+                            >
+                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                تأخر صباحي متكرر
+                            </button>
+                            <button 
+                                onClick={() => applySmartFilter('frequent_absent')}
+                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'frequent_absent' ? 'bg-indigo-600 text-white' : 'bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50'}`}
+                            >
+                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                غياب متكرر
+                            </button>
+                        </div>
+
                         {/* Collapsible form */}
                         <div className={`grid transition-all duration-300 ease-in-out ${showFilters ? 'grid-rows-[1fr] opacity-100 mt-6 pt-6 border-t border-slate-100' : 'grid-rows-[0fr] opacity-0'}`}>
                             <div className="overflow-hidden">
@@ -239,19 +340,19 @@ export default function AttendanceReport({ logs, filters, divisions }) {
 
                                     {/* Search */}
                                     <div>
-                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">بحث باسم الطالب</label>
-                                        <div className="relative">
-                                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-                                                <Search size={16} />
-                                            </div>
-                                            <input
-                                                type="text"
-                                                value={search}
-                                                onChange={(e) => setSearch(e.target.value)}
-                                                placeholder="اكتب اسم الطالب..."
-                                                className="w-full border-slate-200 bg-slate-50/50 rounded-xl pr-9 pl-3 focus:bg-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-sm h-[42px]"
-                                            />
-                                        </div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">البحث باسم الطالب</label>
+                                        <Select
+                                            options={[
+                                                { value: '', label: 'الكل' },
+                                                ...(availableStudents || [])
+                                            ]}
+                                            value={search ? { value: search, label: search } : { value: '', label: 'الكل' }}
+                                            onChange={(selected) => setSearch(selected ? selected.value : '')}
+                                            placeholder="اختر طالباً..."
+                                            isClearable
+                                            styles={customSelectStyles}
+                                            noOptionsMessage={() => "لا يوجد طلاب في هذا النطاق"}
+                                        />
                                     </div>
 
                                     {/* Date (single) */}
@@ -265,37 +366,58 @@ export default function AttendanceReport({ logs, filters, divisions }) {
                                         />
                                     </div>
 
+                                    {/* Grade */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">الصف الدراسي</label>
+                                        <SelectInput
+                                            value={gradeId}
+                                            onChange={(val) => { setGradeId(val); setDivisionId([]); }} // Reset division on grade change
+                                            placeholder="كل الصفوف"
+                                            options={[
+                                                { value: '', label: 'كل الصفوف' },
+                                                ...(grades?.map(g => ({
+                                                    value: g.id,
+                                                    label: g.name
+                                                })) || [])
+                                            ]}
+                                        />
+                                    </div>
+
                                     {/* Status */}
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5">حالة الحضور</label>
-                                        <SelectInput
-                                            value={status}
-                                            onChange={setStatus}
-                                            placeholder="كل الحالات"
+                                        <Select
+                                            isMulti
                                             options={[
-                                                { value: '', label: 'كل الحالات' },
                                                 { value: 'present', label: 'حاضر' },
                                                 { value: 'late', label: 'متأخر' },
                                                 { value: 'absent', label: 'غائب' },
                                                 { value: 'excused', label: 'عذر / استئذان' },
                                             ]}
+                                            value={status?.map(s => ({ value: s, label: getStatusLabel(s) }))}
+                                            onChange={(selected) => setStatus(selected ? selected.map(item => item.value) : [])}
+                                            placeholder="كل الحالات"
+                                            styles={customSelectStyles}
+                                            noOptionsMessage={() => "لا يوجد خيارات"}
                                         />
                                     </div>
 
                                     {/* Division */}
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5">الفصل / الشعبة</label>
-                                        <SelectInput
-                                            value={divisionId}
-                                            onChange={setDivisionId}
-                                            placeholder="كل الفصول"
+                                        <Select
+                                            isMulti
                                             options={[
-                                                { value: '', label: 'كل الفصول' },
-                                                ...(divisions?.map(div => ({
+                                                ...(availableDivisions?.map(div => ({
                                                     value: div.id,
                                                     label: `${div.grade?.name} - ${div.name}`
                                                 })) || [])
                                             ]}
+                                            value={divisionId?.map(id => ({ value: id, label: getDivisionName(id) }))}
+                                            onChange={(selected) => setDivisionId(selected ? selected.map(item => item.value) : [])}
+                                            placeholder="كل الفصول"
+                                            styles={customSelectStyles}
+                                            noOptionsMessage={() => "لا توجد فصول"}
                                         />
                                     </div>
 

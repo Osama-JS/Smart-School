@@ -36,22 +36,71 @@ class StudentAttendanceController extends Controller
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
-        if ($request->filled('division_id')) {
-            $query->whereHas('student.currentEnrollment', function($q) use ($request) {
-                $q->where('division_id', $request->division_id);
+        // Grade Filter
+        if ($request->filled('grade_id')) {
+            $query->whereHas('student.currentEnrollment.division', function($q) use ($request) {
+                if (is_array($request->grade_id)) {
+                    $q->whereIn('grade_id', $request->grade_id);
+                } else {
+                    $q->where('grade_id', $request->grade_id);
+                }
             });
         }
 
-        if ($request->filled('status')) {
-             if ($request->status === 'غائب') {
-                 $query->whereDoesntHave('attendanceLogs', function($q) use ($date) {
-                     $q->whereDate('attendance_date', $date);
-                 });
-             } else {
-                 $query->whereHas('attendanceLogs', function($q) use ($date, $request) {
-                     $q->whereDate('attendance_date', $date)->where('status', $request->status);
-                 });
-             }
+        // Division Filter (Array Support for Multi-select)
+        if ($request->filled('division_id')) {
+            $query->whereHas('student.currentEnrollment', function($q) use ($request) {
+                if (is_array($request->division_id)) {
+                    $q->whereIn('division_id', $request->division_id);
+                } else {
+                    $q->where('division_id', $request->division_id);
+                }
+            });
+        }
+
+        // Smart Filters
+        if ($request->filled('smart_filter')) {
+            $startOfMonth = today()->startOfMonth()->toDateString();
+            $endOfMonth = today()->endOfMonth()->toDateString();
+            
+            if ($request->smart_filter === 'absent_today') {
+                $query->whereDoesntHave('attendanceLogs', function($q) use ($date) {
+                    $q->whereDate('attendance_date', $date)
+                      ->whereIn('status', ['present', 'late', 'excused']);
+                });
+            }
+            elseif ($request->smart_filter === 'frequent_late') {
+                $query->whereHas('attendanceLogs', function($q) use ($startOfMonth, $endOfMonth) {
+                    $q->whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                      ->where('status', 'late');
+                }, '>=', 3);
+            }
+            elseif ($request->smart_filter === 'frequent_absent') {
+                $query->whereHas('attendanceLogs', function($q) use ($startOfMonth, $endOfMonth) {
+                    $q->whereBetween('attendance_date', [$startOfMonth, $endOfMonth])
+                      ->where('status', 'absent');
+                }, '>=', 3);
+            }
+        }
+
+        // Status Filter (Array Support for Multi-select)
+        if ($request->filled('status') && empty($request->smart_filter)) {
+            $statuses = is_array($request->status) ? $request->status : [$request->status];
+            
+            $query->where(function($q) use ($date, $statuses) {
+                if (in_array('absent', $statuses) || in_array('غائب', $statuses)) {
+                    // Filter for absent: they either have no log for today, or have a log with 'absent'
+                    $q->whereDoesntHave('attendanceLogs', function($subQ) use ($date) {
+                        $subQ->whereDate('attendance_date', $date);
+                    })->orWhereHas('attendanceLogs', function($subQ) use ($date, $statuses) {
+                        $subQ->whereDate('attendance_date', $date)->whereIn('status', $statuses);
+                    });
+                } else {
+                    $q->whereHas('attendanceLogs', function($subQ) use ($date, $statuses) {
+                        $subQ->whereDate('attendance_date', $date)->whereIn('status', $statuses);
+                    });
+                }
+            });
         }
 
         $users = $query->get();
@@ -72,16 +121,32 @@ class StudentAttendanceController extends Controller
                 'check_in_time' => $log ? $log->check_in_time : null,
                 'check_out_time' => $log ? $log->check_out_time : null,
                 'location' => $log ? $log->location : null,
-                'status' => $log ? $log->status : 'غائب'
+                'status' => $log ? $log->status : 'absent' // Default is absent
             ];
         });
 
+        $grades = Grade::with('divisions')->get();
         $divisions = Division::with('grade')->get();
+
+        $studentsList = User::whereHas('role', function($q) {
+            $q->where('name', 'طالب');
+        })->with('student.currentEnrollment.division:id,grade_id')
+          ->select('id', 'name')->get()->map(function($user) {
+            $div = $user->student?->currentEnrollment?->division;
+            return [
+                'value' => $user->name,
+                'label' => $user->name,
+                'division_id' => $div ? $div->id : null,
+                'grade_id' => $div ? $div->grade_id : null,
+            ];
+        });
 
         return [
             'logs' => $mappedData,
+            'grades' => $grades,
             'divisions' => $divisions,
-            'filters' => $request->only(['date', 'search', 'division_id', 'status']),
+            'studentsList' => $studentsList,
+            'filters' => $request->only(['date', 'search', 'grade_id', 'division_id', 'status', 'smart_filter']),
             'date' => $date
         ];
     }
@@ -92,7 +157,9 @@ class StudentAttendanceController extends Controller
 
         return Inertia::render('Academic/Attendances/AttendanceReport', [
             'logs' => $data['logs'],
+            'grades' => $data['grades'],
             'divisions' => $data['divisions'],
+            'studentsList' => $data['studentsList'],
             'filters' => $data['filters'],
         ]);
     }

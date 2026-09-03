@@ -7,7 +7,6 @@ import {
     BookOpen, Settings, Download, Eye, AlertCircle, FileText, Check, Award, Star 
 } from 'lucide-react';
 import Select from 'react-select';
-import Select from 'react-select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Swal from 'sweetalert2';
 

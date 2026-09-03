@@ -13,6 +13,7 @@ use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class TimetableController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
@@ -87,6 +88,123 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
             'daysTranslation' => $daysTranslation,
             'filters' => $request->only('academic_year_id', 'semester_id', 'section_id', 'grade_id', 'division_id'),
         ]);
+    }
+
+    public function reportPdf(Request $request)
+    {
+        $branchId = auth()->user()->branch_id;
+
+        $academicYears = AcademicYear::with('semesters')->latest()->get();
+        
+        $selectedDivisionId = $request->division_id;
+        $selectedSemesterId = $request->semester_id;
+
+        $periodsQuery = DailyPeriod::where('branch_id', $branchId);
+        $division = null;
+        
+        if ($selectedDivisionId) {
+            $division = Division::with('grade.section')->find($selectedDivisionId);
+            $gradeId = $division ? $division->grade_id : null;
+            if ($gradeId) {
+                $periodsQuery->where(function($q) use ($gradeId) {
+                    $q->whereNull('timetable_group_id')
+                      ->orWhereHas('group.grades', function($q2) use ($gradeId) {
+                          $q2->where('grades.id', $gradeId);
+                      });
+                });
+            }
+        }
+        
+        $periods = $periodsQuery->orderBy('start_time')->get();
+
+        $timetable = [];
+        if ($selectedDivisionId && $selectedSemesterId) {
+            $timetable = MasterTimetable::with(['subject', 'teacher'])
+                ->where('division_id', $selectedDivisionId)
+                ->where('semester_id', $selectedSemesterId)
+                ->get();
+        }
+
+        $semester = Semester::with('academicYear')->find($selectedSemesterId);
+        $workingDays = $semester && $semester->academicYear->working_days 
+            ? $semester->academicYear->working_days 
+            : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+
+        $daysTranslation = [
+            'Sunday'    => 'الأحد',
+            'Monday'    => 'الإثنين',
+            'Tuesday'   => 'الثلاثاء',
+            'Wednesday' => 'الأربعاء',
+            'Thursday'  => 'الخميس',
+            'Friday'    => 'الجمعة',
+            'Saturday'  => 'السبت',
+        ];
+
+        $printSettings = json_decode($request->input('printSettings', '{}'), true);
+        $paperSize = $printSettings['paperSize'] ?? 'A4';
+        $brandColor = $printSettings['brandColor'] ?? '#63a22f';
+        $orientation = $printSettings['orientation'] ?? 'landscape';
+        $marginSetting = $printSettings['margins'] ?? 'normal';
+        
+        $margins = match ($marginSetting) {
+            'none' => [0, 0, 0, 0],
+            '1cm' => [10, 10, 10, 10],
+            '2cm' => [20, 20, 20, 20],
+            default => [15, 15, 15, 15],
+        };
+
+        if ($orientation === 'landscape') {
+            $paperSize = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
+            $margins = [$margins[0], $margins[1], $margins[2], $margins[3]];
+        }
+
+        $data = [
+            'periods' => $periods,
+            'timetable' => $timetable,
+            'workingDays' => $workingDays,
+            'daysTranslation' => $daysTranslation,
+            'division' => $division,
+            'printSettings' => $printSettings,
+            'brandColor' => $brandColor,
+            'watermark' => $printSettings['watermark'] ?? 'none',
+            'orientation' => $orientation,
+        ];
+
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 40px 10px 40px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">نظام الإدارة الذكية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $pdf = Pdf::view('pdf.academic.timetable-report', $data)
+            ->format($paperSize)
+            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+            ->footerHtml($footerHtml);
+
+        if ($orientation === 'landscape') {
+            $pdf->landscape();
+        }
+
+        return $pdf->withBrowsershot(function ($browsershot) {
+                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
+                           ->noSandbox()
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(2000);
+            })
+            ->download('timetable_report.pdf');
     }
 
     public function index(Request $request)

@@ -109,11 +109,34 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
         };
     });
 
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
     useEffect(() => {
         localStorage.setItem('TimetableReportPrintSettings', JSON.stringify(printSettings));
     }, [printSettings]);
 
     const handlePrint = () => window.print();
+
+    const handleDownloadPDF = async () => {
+        setIsGeneratingPdf(true);
+        try {
+            const params = new URLSearchParams({
+                academic_year_id: selectedYear || '',
+                semester_id: selectedSemester || '',
+                section_id: selectedSection || '',
+                grade_id: selectedGrade || '',
+                division_id: selectedDivision || '',
+                printSettings: JSON.stringify(printSettings)
+            });
+            const url = route('academic.timetable.report.pdf') + '?' + params.toString();
+            window.location.href = url;
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('حدث خطأ أثناء طلب الملف.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
 
     return (
         <AdminLayout activeMenu="الجدول المدرسي العام">
@@ -236,6 +259,8 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
                         printSettings={printSettings} 
                         setPrintSettings={setPrintSettings} 
                         onPrint={handlePrint}
+                        onDownloadPdf={handleDownloadPDF}
+                        isGeneratingPdf={isGeneratingPdf}
                     >
                     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col relative z-10 print:border-none print:shadow-none print:rounded-none">
                         

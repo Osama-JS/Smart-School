@@ -1,8 +1,29 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link } from '@inertiajs/react';
-import { BookOpen, Calculator, ArrowRight } from 'lucide-react';
+import { BookOpen, Calculator, ArrowRight, Filter, X, Search } from 'lucide-react';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
+import Select from 'react-select';
+
+const customSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: '42px',
+        borderRadius: '1rem',
+        borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+        backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+        '&:hover': {
+            borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
+        }
+    }),
+    option: (base, state) => ({
+        ...base,
+        backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+        color: state.isSelected ? 'white' : '#1e293b',
+        fontWeight: state.isSelected ? 'bold' : 'normal',
+    })
+};
 
 export default function MonthlyGradesReportView({ division, subject, period, gradeSetting, enrollments, existingGrades }) {
     // 1. Settings
@@ -119,6 +140,44 @@ export default function MonthlyGradesReportView({ division, subject, period, gra
         window.print();
     };
 
+    // Frontend Smart Filters
+    const [filterLevel, setFilterLevel] = useState('all');
+    const [sortBy, setSortBy] = useState('alpha');
+    const [hideEmpty, setHideEmpty] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState('');
+    const [missingBehavior, setMissingBehavior] = useState(false);
+
+    const maxWeeklyTotal = (oralMax + hwMax) * weeksCount;
+    const maxTotalScore = maxWeeklyTotal + behaviorMax + examMax;
+
+    const processedEnrollments = enrollments.map(enrollment => {
+        const data = localGrades[enrollment.id];
+        const totals = calculateStudentTotals(data);
+        return {
+            ...enrollment,
+            gradeData: data,
+            totals: totals,
+            percentage: maxTotalScore > 0 ? (totals.grandTotal / maxTotalScore) * 100 : 0
+        };
+    }).filter(enroll => {
+        if (selectedStudent && enroll.id !== selectedStudent) return false;
+        
+        const hasAnyScore = enroll.totals.grandTotal > 0 || enroll.gradeData.is_submitted;
+        if (hideEmpty && !hasAnyScore) return false;
+        
+        if (missingBehavior && (enroll.totals.behavior < behaviorMax)) return false;
+
+        if (filterLevel === 'excellent' && enroll.percentage < 90) return false;
+        if (filterLevel === 'average' && (enroll.percentage < 70 || enroll.percentage >= 90)) return false;
+        if (filterLevel === 'weak' && enroll.percentage >= 70) return false;
+
+        return true;
+    }).sort((a, b) => {
+        if (sortBy === 'total_desc') return b.totals.grandTotal - a.totals.grandTotal;
+        if (sortBy === 'total_asc') return a.totals.grandTotal - b.totals.grandTotal;
+        return 0; // alpha
+    });
+
     return (
         <AdminLayout activeMenu="الدرجات الشهرية">
             <Head title={`تقرير درجات - ${subject.name}`} />
@@ -152,6 +211,83 @@ export default function MonthlyGradesReportView({ division, subject, period, gra
                         </p>
                     </div>
                 </div>
+
+                {/* Secondary Frontend Filters */}
+                {enrollments.length > 0 && (
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 md:p-5 print:hidden">
+                        <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between">
+                            <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                                <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
+                                
+                                <div className="flex items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
+                                    <button 
+                                        onClick={() => setFilterLevel('all')}
+                                        className={`px-3 py-2 text-sm font-bold transition-all ${filterLevel === 'all' ? 'bg-primary-600 text-white' : 'hover:bg-slate-100 text-slate-600'}`}
+                                    >الكل</button>
+                                    <button 
+                                        onClick={() => setFilterLevel('excellent')}
+                                        className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${filterLevel === 'excellent' ? 'bg-emerald-500 text-white' : 'hover:bg-emerald-50 text-emerald-600'}`}
+                                    >امتياز (90%+)</button>
+                                    <button 
+                                        onClick={() => setFilterLevel('average')}
+                                        className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${filterLevel === 'average' ? 'bg-amber-500 text-white' : 'hover:bg-amber-50 text-amber-600'}`}
+                                    >متوسط</button>
+                                    <button 
+                                        onClick={() => setFilterLevel('weak')}
+                                        className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${filterLevel === 'weak' ? 'bg-rose-500 text-white' : 'hover:bg-rose-50 text-rose-600'}`}
+                                    >ضعيف (&lt;70%)</button>
+                                </div>
+
+                                <div className="flex items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
+                                    <span className="px-3 py-2 text-sm font-bold text-slate-500 bg-slate-100 border-l border-slate-200">الترتيب:</span>
+                                    <button 
+                                        onClick={() => setSortBy('alpha')}
+                                        className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${sortBy === 'alpha' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
+                                    >أبجدي</button>
+                                    <button 
+                                        onClick={() => setSortBy('total_desc')}
+                                        className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${sortBy === 'total_desc' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
+                                    >الأعلى درجة</button>
+                                    <button 
+                                        onClick={() => setSortBy('total_asc')}
+                                        className={`px-3 py-2 text-sm font-bold transition-all ${sortBy === 'total_asc' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
+                                    >الأقل درجة</button>
+                                </div>
+                                
+                                <button 
+                                    onClick={() => setHideEmpty(!hideEmpty)}
+                                    className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${hideEmpty ? 'bg-slate-700 text-white' : 'bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100'}`}
+                                >
+                                    <span className="w-2 h-2 rounded-full bg-current"></span>
+                                    إخفاء غير المرصود لهم
+                                </button>
+                                
+                                <button 
+                                    onClick={() => setMissingBehavior(!missingBehavior)}
+                                    className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${missingBehavior ? 'bg-orange-500 text-white' : 'bg-slate-50 border border-slate-200 text-orange-600 hover:bg-orange-50'}`}
+                                    title="إظهار الطلاب الذين نقصوا في درجة السلوك والمواظبة"
+                                >
+                                    <span className="w-2 h-2 rounded-full bg-current"></span>
+                                    نقص السلوك
+                                </button>
+                            </div>
+                            
+                            <div className="w-full xl:w-64">
+                                <Select
+                                    options={[
+                                        { value: '', label: 'الكل (بحث باسم الطالب)' },
+                                        ...(enrollments?.map(e => ({ value: e.id, label: e.student.name })) || [])
+                                    ]}
+                                    value={selectedStudent ? { value: selectedStudent, label: enrollments?.find(e => e.id === selectedStudent)?.student.name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
+                                    onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
+                                    placeholder="بحث باسم الطالب..."
+                                    isClearable
+                                    styles={customSelectStyles}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Print Layout Wrap */}
                 <ReportPrintLayout 
@@ -205,16 +341,16 @@ export default function MonthlyGradesReportView({ division, subject, period, gra
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 print:divide-black/20">
-                                {enrollments.length === 0 ? (
+                                {processedEnrollments.length === 0 ? (
                                     <tr>
                                         <td colSpan={weeksData.length * 3 + 7} className="py-12 px-6 text-center text-slate-500 font-bold">
-                                            لا يوجد طلاب مسجلين في هذا الفصل.
+                                            {enrollments.length === 0 ? 'لا يوجد طلاب مسجلين في هذا الفصل.' : 'لا توجد نتائج مطابقة لخيارات الفلترة.'}
                                         </td>
                                     </tr>
                                 ) : (
-                                    enrollments.map((enrollment, index) => {
-                                        const data = localGrades[enrollment.id];
-                                        const totals = calculateStudentTotals(data);
+                                    processedEnrollments.map((enrollment, index) => {
+                                        const data = enrollment.gradeData;
+                                        const totals = enrollment.totals;
                                         const weeklyTotal = totals.oralTotal + totals.hwTotal;
 
                                         return (

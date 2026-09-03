@@ -12,6 +12,7 @@ use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class ClassCoverageController extends Controller
 {
@@ -69,6 +70,111 @@ class ClassCoverageController extends Controller
             'teachers'  => $teachers,
             'filters'   => $request->only('date', 'absent_teacher_id', 'substitute_teacher_id'),
         ]);
+    }
+
+    public function reportPdf(Request $request)
+    {
+        $user     = auth()->user();
+        $branchId = $user->branch_id;
+
+        $query = ClassCoverage::with([
+            'absentTeacher:id,name',
+            'substituteTeacher:id,name',
+            'period:id,period_name,start_time,end_time',
+            'division.grade.section',
+            'subject:id,name',
+            'semester:id,name',
+            'recordedBy:id,name',
+        ])->where('branch_id', $branchId);
+
+        // Filters
+        if ($request->filled('date')) {
+            $query->whereDate('coverage_date', $request->date);
+        }
+        if ($request->filled('absent_teacher_id')) {
+            $query->where('absent_teacher_id', $request->absent_teacher_id);
+        }
+        if ($request->filled('substitute_teacher_id')) {
+            $query->where('substitute_teacher_id', $request->substitute_teacher_id);
+        }
+
+        $coverages = $query->orderBy('coverage_date', 'desc')->get();
+
+        // Stats
+        $today     = Carbon::today();
+        $weekStart = Carbon::now()->startOfWeek(Carbon::SATURDAY);
+        $monthStart = Carbon::now()->startOfMonth();
+
+        $statsBase = ClassCoverage::where('branch_id', $branchId);
+
+        $stats = [
+            'today'       => (clone $statsBase)->whereDate('coverage_date', $today)->count(),
+            'this_week'   => (clone $statsBase)->whereBetween('coverage_date', [$weekStart, Carbon::now()])->count(),
+            'this_month'  => (clone $statsBase)->whereBetween('coverage_date', [$monthStart, Carbon::now()])->count(),
+            'total'       => (clone $statsBase)->count(),
+        ];
+
+        $printSettings = json_decode($request->input('printSettings', '{}'), true);
+        $paperSize = $printSettings['paperSize'] ?? 'A4';
+        $brandColor = $printSettings['brandColor'] ?? '#63a22f';
+        $orientation = $printSettings['orientation'] ?? 'portrait';
+        $marginSetting = $printSettings['margins'] ?? 'normal';
+        
+        $margins = match ($marginSetting) {
+            'none' => [0, 0, 0, 0],
+            '1cm' => [10, 10, 10, 10],
+            '2cm' => [20, 20, 20, 20],
+            default => [15, 15, 15, 15],
+        };
+
+        if ($orientation === 'landscape') {
+            $paperSize = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
+            $margins = [$margins[0], $margins[1], $margins[2], $margins[3]];
+        }
+
+        $data = [
+            'coverages' => $coverages,
+            'stats' => $stats,
+            'printSettings' => $printSettings,
+            'brandColor' => $brandColor,
+            'watermark' => $printSettings['watermark'] ?? 'none',
+        ];
+
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 40px 10px 40px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">نظام الإدارة الذكية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 4px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $pdf = Pdf::view('pdf.academic.coverage-report', $data)
+            ->format($paperSize)
+            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+            ->footerHtml($footerHtml);
+
+        if ($orientation === 'landscape') {
+            $pdf->landscape();
+        }
+
+        return $pdf->withBrowsershot(function ($browsershot) {
+                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
+                           ->noSandbox()
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(2000);
+            })
+            ->download('coverage_report.pdf');
     }
 
     public function index(Request $request)

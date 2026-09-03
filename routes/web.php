@@ -203,12 +203,14 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/academic/timetable', [\App\Http\Controllers\Academic\TimetableController::class, 'index'])->name('academic.timetable');
         Route::get('/academic/timetable-report', [\App\Http\Controllers\Academic\TimetableController::class, 'reportIndex'])->name('academic.timetable.report');
+        Route::get('/academic/timetable-report/pdf', [\App\Http\Controllers\Academic\TimetableController::class, 'reportPdf'])->name('academic.timetable.report.pdf');
         Route::post('/academic/timetable/assign', [\App\Http\Controllers\Academic\TimetableController::class, 'assign'])->name('academic.timetable.assign');
         Route::post('/academic/timetable/unassign', [\App\Http\Controllers\Academic\TimetableController::class, 'unassign'])->name('academic.timetable.unassign');
         
         // Class Coverage (Absence & Substitution)
         Route::get('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'index'])->name('academic.coverage.index');
         Route::get('/academic/coverage-report', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'reportIndex'])->name('academic.coverage.report');
+        Route::get('/academic/coverage-report/pdf', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'reportPdf'])->name('academic.coverage.report.pdf');
         Route::get('/academic/coverage/create', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'create'])->name('academic.coverage.create');
         Route::get('/academic/coverage/teacher-periods', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'getTeacherPeriods'])->name('academic.coverage.teacher-periods');
         Route::post('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'store'])->name('academic.coverage.store');
@@ -786,6 +788,7 @@ Route::middleware('auth')->group(function () {
 
     // ── Meetings ──
         Route::get('/meetings/report', [\App\Http\Controllers\HR\MeetingController::class, 'reportIndex'])->name('meetings.report');
+        Route::get('/meetings/report/pdf', [\App\Http\Controllers\HR\MeetingController::class, 'reportPdf'])->name('meetings.report.pdf');
     Route::middleware('permission:إدارة الاجتماعات')->group(function () {
         Route::resource('/meetings', \App\Http\Controllers\HR\MeetingController::class)->names([
             'index'   => 'meetings.index',

@@ -4,11 +4,38 @@ import { Head, router } from '@inertiajs/react';
 import { Search, Calendar, UserX, Clock, X, Filter, BookOpen, AlertCircle, Layers } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
+import Select from 'react-select';
+
+const customSelectStyles = {
+    control: (base, state) => ({
+        ...base,
+        minHeight: '42px',
+        borderRadius: '1rem',
+        borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+        backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+        '&:hover': {
+            borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
+        }
+    }),
+    option: (base, state) => ({
+        ...base,
+        backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+        color: state.isSelected ? 'white' : '#1e293b',
+        fontWeight: state.isSelected ? 'bold' : 'normal',
+    })
+};
 
 export default function ClassAttendanceReport({ students, periods, grades, divisions, filters, workingDays, timetable }) {
     const [date, setDate] = useState(filters.date || new Date().toISOString().split('T')[0]);
     const [gradeId, setGradeId] = useState(filters.grade_id || '');
     const [divisionId, setDivisionId] = useState(filters.division_id || '');
+
+    // Frontend Filters State
+    const [selectedStudent, setSelectedStudent] = useState('');
+    const [selectedPeriod, setSelectedPeriod] = useState('');
+    const [smartFilter, setSmartFilter] = useState(''); // 'absent_in_class', 'last_periods_absent'
+    const [hidePerfect, setHidePerfect] = useState(false);
 
     const [printSettings, setPrintSettings] = useState(() => {
         const defaultSettings = {
@@ -100,6 +127,42 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
     const activeFilters = [];
     if (gradeId)    activeFilters.push({ id: 'grade',    label: `الصف: ${getGradeName(gradeId)}` });
     if (divisionId) activeFilters.push({ id: 'division', label: `الشعبة: ${getDivisionName(divisionId)}` });
+
+    // Compute Filtered Students (Frontend Filtering)
+    const filteredStudents = (students || []).filter(student => {
+        // 1. Hide perfect attendance
+        if (hidePerfect) {
+            const hasAnyAbsence = Object.values(student.periods).some(p => p.status !== 'present') || student.daily_status !== 'present';
+            if (!hasAnyAbsence) return false;
+        }
+
+        // 2. Selected Student
+        if (selectedStudent && student.id !== selectedStudent) return false;
+
+        // 3. Smart Filters
+        if (smartFilter === 'absent_in_class') {
+            const isDailyPresent = student.daily_status === 'present';
+            const hasClassAbsence = Object.values(student.periods).some(p => p.status === 'absent');
+            if (!(isDailyPresent && hasClassAbsence)) return false;
+        }
+
+        if (smartFilter === 'last_periods_absent') {
+            if (periods.length < 2) return true;
+            const lastTwoPeriods = periods.slice(-2);
+            const absentInLast = lastTwoPeriods.some(p => student.periods[p.id]?.status === 'absent');
+            if (!absentInLast) return false;
+        }
+
+        // 4. Period filter
+        if (selectedPeriod) {
+            const pData = student.periods[selectedPeriod];
+            if (!pData || (pData.status !== 'absent' && pData.status !== 'late')) {
+                return false;
+            }
+        }
+
+        return true;
+    });
 
     const submitBulkAttendance = (periodId) => {
         if (!confirm('هل أنت متأكد من حفظ الحضور لجميع الطلاب كحاضرين لهذه الحصة؟ (لن يتم تجاوز من تم تحضيرهم مسبقاً)')) {
@@ -290,6 +353,69 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
                                         </button>
                                     </div>
                                 </form>
+
+                                {/* Secondary Frontend Filters */}
+                                {divisionId && students?.length > 0 && (
+                                    <div className="mt-5 pt-5 border-t border-slate-100 flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between">
+                                        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                                            <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
+                                            
+                                            <button 
+                                                onClick={() => setHidePerfect(!hidePerfect)}
+                                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${hidePerfect ? 'bg-emerald-600 text-white' : 'bg-slate-50 border border-slate-200 text-emerald-600 hover:bg-emerald-50'}`}
+                                            >
+                                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                                إخفاء المنتظمين
+                                            </button>
+                                            
+                                            <button 
+                                                onClick={() => setSmartFilter(smartFilter === 'absent_in_class' ? '' : 'absent_in_class')}
+                                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'absent_in_class' ? 'bg-rose-600 text-white' : 'bg-slate-50 border border-slate-200 text-rose-600 hover:bg-rose-50'}`}
+                                                title="حاضر في البصمة الصباحية وغائب في إحدى الحصص"
+                                            >
+                                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                                كشف الهروب
+                                            </button>
+
+                                            <button 
+                                                onClick={() => setSmartFilter(smartFilter === 'last_periods_absent' ? '' : 'last_periods_absent')}
+                                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'last_periods_absent' ? 'bg-amber-500 text-white' : 'bg-slate-50 border border-slate-200 text-amber-600 hover:bg-amber-50'}`}
+                                            >
+                                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                                غياب الحصص الأخيرة
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+                                            <div className="w-full sm:w-64">
+                                                <Select
+                                                    options={[
+                                                        { value: '', label: 'الكل (بحث باسم الطالب)' },
+                                                        ...(students?.map(s => ({ value: s.id, label: s.name })) || [])
+                                                    ]}
+                                                    value={selectedStudent ? { value: selectedStudent, label: students?.find(s => s.id === selectedStudent)?.name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
+                                                    onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
+                                                    placeholder="بحث باسم الطالب..."
+                                                    isClearable
+                                                    styles={customSelectStyles}
+                                                />
+                                            </div>
+                                            <div className="w-full sm:w-48">
+                                                <Select
+                                                    options={[
+                                                        { value: '', label: 'تصفية بالحصة' },
+                                                        ...(periods?.map(p => ({ value: p.id, label: p.period_name })) || [])
+                                                    ]}
+                                                    value={selectedPeriod ? { value: selectedPeriod, label: periods?.find(p => p.id === selectedPeriod)?.period_name } : { value: '', label: 'تصفية بالحصة' }}
+                                                    onChange={(opt) => setSelectedPeriod(opt ? opt.value : '')}
+                                                    placeholder="تصفية بالحصة..."
+                                                    isClearable
+                                                    styles={customSelectStyles}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -353,8 +479,8 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                                    {students.length > 0 ? (
-                                        students.map((student) => (
+                                    {filteredStudents.length > 0 ? (
+                                        filteredStudents.map((student) => (
                                             <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
                                                 <td className="px-6 py-4 bg-white dark:bg-slate-900 sticky right-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] dark:shadow-none">
                                                     <div className="flex items-center gap-3 min-w-[150px]">
