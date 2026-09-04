@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { Head, router } from "@inertiajs/react";
 import AdminLayout from "@/Layouts/AdminLayout";
 import ReportPrintLayout from "@/Components/Reports/ReportPrintLayout";
-import { Calendar as CalendarIcon, Clock, MapPin, Users, Search, Filter, CheckCircle, X, FileDown, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, MapPin, Users, Search, Filter, CheckCircle, X, FileDown, Loader2, FileText, Check, AlertCircle } from "lucide-react";
+import Modal from "@/Components/Modal";
 
 export default function MeetingsReportIndex({ meetings, stats, filters }) {
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
@@ -12,6 +13,8 @@ export default function MeetingsReportIndex({ meetings, stats, filters }) {
     const [typeFilter, setTypeFilter] = useState(filters.type || '');
     const [showFilters, setShowFilters] = useState(false);
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const [selectedMeeting, setSelectedMeeting] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handleFilter = (e) => {
         if (e) e.preventDefault();
@@ -175,14 +178,7 @@ export default function MeetingsReportIndex({ meetings, stats, filters }) {
                             <p className="text-[13.5px] font-bold text-slate-500">عرض وطباعة سجلات الاجتماعات واللجان</p>
                         </div>
                     </div>
-                    <div className="flex gap-3 relative z-10 w-full sm:w-auto">
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
-                        >
-                            طباعة التقرير
-                        </button>
-                    </div>
+
                 </div>
 
                 {/* Filters Panel */}
@@ -344,7 +340,6 @@ export default function MeetingsReportIndex({ meetings, stats, filters }) {
                     title={printSettings.title}
                     printSettings={printSettings}
                     setPrintSettings={setPrintSettings}
-                    onPrint={handlePrint}
                     onDownloadPdf={handleDownloadPDF}
                     isGeneratingPdf={isGeneratingPdf}
                     subtitle={startDate && endDate ? `الفترة: ${startDate} إلى ${endDate}` : 'سجل الاجتماعات واللجان'}
@@ -352,45 +347,48 @@ export default function MeetingsReportIndex({ meetings, stats, filters }) {
                     {/* KPIs */}
                     {printSettings.showKPIs && (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
+                            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-4 shadow-sm flex items-center gap-4 relative overflow-hidden print:border-black/20 print:bg-transparent print:shadow-none">
+                                <div className="absolute top-0 right-0 bottom-0 w-1 opacity-80" style={{ backgroundColor: printSettings.brandColor }}></div>
+                                <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 print:bg-slate-100 print:text-black" style={{ color: printSettings.brandColor, backgroundColor: printSettings.brandColor + '20' }}>
+                                    <Users size={24} />
+                                </div>
                                 <div>
-                                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">إجمالي الاجتماعات</p>
-                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white print:text-black">
+                                    <p className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-0.5 print:text-slate-700">إجمالي الاجتماعات</p>
+                                    <h3 className="text-2xl font-black leading-none text-slate-800 dark:text-white print:text-black">
                                         {stats.total}
                                     </h3>
                                 </div>
-                                <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800/50 text-slate-500 flex items-center justify-center print:bg-slate-100 print:text-black">
-                                    <Users size={24} />
-                                </div>
                             </div>
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
+                            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-4 shadow-sm flex items-center gap-4 relative overflow-hidden print:border-black/20 print:bg-transparent print:shadow-none">
+                                <div className="absolute top-0 right-0 bottom-0 w-1 bg-amber-500 opacity-80"></div>
+                                <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center shrink-0 print:bg-slate-100 print:text-black">
+                                    <Clock size={24} />
+                                </div>
                                 <div>
-                                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">اجتماعات مجدولة</p>
-                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white print:text-black">
+                                    <p className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-0.5 print:text-slate-700">اجتماعات مجدولة</p>
+                                    <h3 className="text-2xl font-black leading-none text-amber-600 print:text-black">
                                         {stats.scheduled}
                                     </h3>
                                 </div>
-                                <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-500 flex items-center justify-center print:bg-slate-100 print:text-black">
-                                    <Clock size={24} />
-                                </div>
                             </div>
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
+                            <div className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl p-4 shadow-sm flex items-center gap-4 relative overflow-hidden print:border-black/20 print:bg-transparent print:shadow-none">
+                                <div className="absolute top-0 right-0 bottom-0 w-1 bg-emerald-500 opacity-80"></div>
+                                <div className="w-12 h-12 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center shrink-0 print:bg-slate-100 print:text-black">
+                                    <CheckCircle size={24} />
+                                </div>
                                 <div>
-                                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">اجتماعات مكتملة</p>
-                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white print:text-black">
+                                    <p className="text-[13px] font-bold text-slate-500 dark:text-slate-400 mb-0.5 print:text-slate-700">اجتماعات مكتملة</p>
+                                    <h3 className="text-2xl font-black leading-none text-emerald-600 print:text-black">
                                         {stats.completed}
                                     </h3>
-                                </div>
-                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center print:bg-slate-100 print:text-black">
-                                    <CheckCircle size={24} />
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm relative z-10 print:border-none print:shadow-none print:rounded-none">
+                    <div className="bg-white dark:bg-slate-900 overflow-hidden relative z-10">
                         {meetings.length === 0 ? (
-                            <div className="p-12 text-center">
+                            <div className="p-12 text-center border border-slate-200 dark:border-slate-800 rounded-3xl">
                                 <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <CalendarIcon size={32} className="text-slate-400" />
                                 </div>
@@ -400,57 +398,77 @@ export default function MeetingsReportIndex({ meetings, stats, filters }) {
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto custom-scrollbar">
-                                <table className="w-full text-sm text-right print:border-collapse">
-                                    <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-black border-b border-slate-200 dark:border-slate-800 print:bg-slate-100 print:border-black/30 print:text-slate-800">
+                            <div className="overflow-x-auto custom-scrollbar rounded-xl border border-slate-300 dark:border-slate-700">
+                                <table className="w-full text-sm text-right border-collapse">
+                                    <thead className="text-white text-[13px] font-bold print:bg-slate-100 print:border-black/30 print:text-slate-800" style={{ backgroundColor: printSettings.brandColor }}>
                                         <tr>
-                                            <th className="px-6 py-4 rounded-tr-3xl print:rounded-none print:border print:border-black/30">الاجتماع</th>
-                                            <th className="px-6 py-4 print:border print:border-black/30">التاريخ والوقت</th>
-                                            <th className="px-6 py-4 print:border print:border-black/30">النوع</th>
-                                            <th className="px-6 py-4 print:border print:border-black/30">المنسق</th>
-                                            <th className="px-6 py-4 print:border print:border-black/30">عدد المدعوين</th>
-                                            <th className="px-6 py-4 rounded-tl-3xl print:rounded-none print:border print:border-black/30">الحالة</th>
+                                            <th className="border border-slate-300 dark:border-slate-600 px-4 py-3 text-center w-12 print:border-black/30">م</th>
+                                            <th className="border border-slate-300 dark:border-slate-600 px-4 py-3 print:border-black/30">الاجتماع</th>
+                                            <th className="border border-slate-300 dark:border-slate-600 px-4 py-3 text-center print:border-black/30">التاريخ والوقت</th>
+                                            <th className="border border-slate-300 dark:border-slate-600 px-4 py-3 text-center print:border-black/30">النوع</th>
+                                            <th className="border border-slate-300 dark:border-slate-600 px-4 py-3 text-center print:border-black/30">المنسق</th>
+                                            <th className="border border-slate-300 dark:border-slate-600 px-4 py-3 text-center print:border-black/30">عدد المدعوين</th>
+                                            <th className="border border-slate-300 dark:border-slate-600 px-4 py-3 text-center print:border-black/30">الحالة</th>
+                                            <th className="border border-slate-300 dark:border-slate-600 px-4 py-3 text-center print:hidden">إجراءات</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 font-medium print:divide-black/20">
-                                        {meetings.map(meeting => (
-                                            <tr key={meeting.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors print:hover:bg-transparent">
-                                                <td className="px-6 py-4 print:border print:border-black/30">
+                                    <tbody className="font-medium bg-white dark:bg-slate-900">
+                                        {meetings.map((meeting, index) => (
+                                            <tr key={meeting.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                                                <td className="border border-slate-300 dark:border-slate-700 px-4 py-3 text-center text-slate-500 font-bold print:border-black/30">
+                                                    {index + 1}
+                                                </td>
+                                                <td className="border border-slate-300 dark:border-slate-700 px-4 py-3 print:border-black/30">
                                                     <span className="font-bold text-slate-800 dark:text-white print:text-black">
                                                         {meeting.title}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap print:border print:border-black/30">
-                                                    <div className="flex items-center gap-2">
-                                                        <CalendarIcon size={14} className="text-slate-400 print:hidden" />
-                                                        <span className="text-slate-700 dark:text-slate-300 print:text-black">{formatDateAr(meeting.date)}</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 print:text-slate-700">
-                                                        <Clock size={12} className="text-slate-400 print:hidden" />
-                                                        {formatTimeAr(meeting.time)}
+                                                <td className="border border-slate-300 dark:border-slate-700 px-4 py-3 whitespace-nowrap text-center print:border-black/30">
+                                                    <div className="flex flex-col items-center justify-center">
+                                                        <span className="font-bold text-slate-700 dark:text-slate-300 print:text-black">{formatDateAr(meeting.date)}</span>
+                                                        <span className="text-xs text-slate-500 mt-1 font-semibold print:text-slate-700" dir="ltr">{formatTimeAr(meeting.time)}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap print:border print:border-black/30">
+                                                <td className="border border-slate-300 dark:border-slate-700 px-4 py-3 whitespace-nowrap text-center print:border-black/30">
                                                     {meeting.type === 'online' ? (
-                                                        <span className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md text-xs font-bold w-max print:bg-transparent print:p-0 print:text-black">
-                                                            <Users size={12} className="print:hidden"/> عن بعد
-                                                        </span>
+                                                        <span className="text-blue-600 dark:text-blue-400 text-[13px] font-bold w-max mx-auto print:text-black">عن بعد</span>
                                                     ) : (
-                                                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md text-xs font-bold w-max print:bg-transparent print:p-0 print:text-black">
-                                                            <MapPin size={12} className="print:hidden"/> حضوري
-                                                        </span>
+                                                        <span className="text-emerald-600 dark:text-emerald-400 text-[13px] font-bold w-max mx-auto print:text-black">حضوري</span>
                                                     )}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap print:border print:border-black/30 print:text-black">
+                                                <td className="border border-slate-300 dark:border-slate-700 px-4 py-3 whitespace-nowrap text-center font-bold text-slate-700 dark:text-slate-300 print:border-black/30 print:text-black">
                                                     {meeting.supervisor?.name || '-'}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap print:border print:border-black/30 print:text-black">
+                                                <td className="border border-slate-300 dark:border-slate-700 px-4 py-3 whitespace-nowrap text-center font-black text-slate-600 dark:text-slate-400 print:border-black/30 print:text-black">
                                                     {meeting.participants?.length || 0}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap print:border print:border-black/30">
-                                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-bold ${getStatusBadgeColor(meeting.status)} print:bg-transparent print:p-0 print:border-none print:text-black`}>
-                                                        {getStatusLabel(meeting.status)}
-                                                    </span>
+                                                <td className="border border-slate-300 dark:border-slate-700 px-4 py-3 whitespace-nowrap text-center print:border-black/30">
+                                                    {meeting.status === 'scheduled' && <span className="text-amber-600 font-bold text-[13px] print:text-black">مجدول</span>}
+                                                    {meeting.status === 'completed' && <span className="text-emerald-600 font-bold text-[13px] print:text-black">مكتمل</span>}
+                                                    {meeting.status === 'cancelled' && <span className="text-rose-600 font-bold text-[13px] print:text-black">ملغي</span>}
+                                                </td>
+                                                <td className="border border-slate-300 dark:border-slate-700 px-4 py-3 whitespace-nowrap text-center print:hidden">
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setSelectedMeeting(meeting);
+                                                                setIsModalOpen(true);
+                                                            }}
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-primary-50 text-slate-600 hover:text-primary-600 rounded-lg text-xs font-bold transition-colors"
+                                                        >
+                                                            <FileText size={14} />
+                                                            عرض المحضر
+                                                        </button>
+                                                        <a
+                                                            href={`${route('meetings.single-report.pdf', meeting.id)}?printSettings=${encodeURIComponent(JSON.stringify(printSettings))}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600 rounded-lg text-xs font-bold transition-colors"
+                                                        >
+                                                            <FileDown size={14} />
+                                                            طباعة PDF
+                                                        </a>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -461,6 +479,224 @@ export default function MeetingsReportIndex({ meetings, stats, filters }) {
                     </div>
                 </ReportPrintLayout>
             </div>
+
+            <Modal show={isModalOpen} onClose={() => setIsModalOpen(false)} maxWidth="4xl">
+                {selectedMeeting && (
+                    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 rounded-2xl overflow-hidden">
+                        {/* Header Banner */}
+                        <div 
+                            className="relative px-6 py-5 flex items-center justify-between"
+                            style={{ backgroundColor: printSettings.brandColor }}
+                        >
+                            <div className="absolute inset-0 bg-black/10"></div>
+                            <div className="absolute -left-12 -top-12 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                            
+                            <h2 className="text-xl font-black text-white flex items-center gap-2.5 relative z-10 drop-shadow-md">
+                                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                    <FileText size={22} className="text-white" />
+                                </div>
+                                <div>
+                                    <span className="block text-[11px] text-white/80 font-semibold mb-0.5 tracking-wider">تفاصيل محضر الاجتماع</span>
+                                    {selectedMeeting.title}
+                                </div>
+                            </h2>
+                            <div className="flex items-center gap-3 relative z-10">
+                                <a
+                                    href={`${route('meetings.single-report.pdf', selectedMeeting.id)}?printSettings=${encodeURIComponent(JSON.stringify(printSettings))}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-xl text-sm font-bold transition-all shadow-sm border border-white/10"
+                                >
+                                    <FileDown size={18} />
+                                    تصدير PDF
+                                </a>
+                                <button onClick={() => setIsModalOpen(false)} className="text-white/70 hover:text-white bg-black/10 hover:bg-black/20 p-2 rounded-full transition-all">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-6 space-y-8 h-[70vh] overflow-y-auto custom-scrollbar">
+                            {/* Meeting Info Cards */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4 group hover:shadow-md transition-shadow">
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${printSettings.brandColor}15`, color: printSettings.brandColor }}>
+                                        <CalendarIcon size={22} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] text-slate-500 font-bold mb-0.5">تاريخ الانعقاد</p>
+                                        <p className="text-slate-800 dark:text-white font-black text-sm" dir="ltr">{formatDateAr(selectedMeeting.date)}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4 group hover:shadow-md transition-shadow">
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-amber-50 dark:bg-amber-900/20 text-amber-500">
+                                        <Clock size={22} />
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] text-slate-500 font-bold mb-0.5">وقت الانعقاد</p>
+                                        <p className="text-slate-800 dark:text-white font-black text-sm" dir="ltr">{formatTimeAr(selectedMeeting.time)}</p>
+                                    </div>
+                                </div>
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4 group hover:shadow-md transition-shadow">
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500">
+                                        {selectedMeeting.type === 'online' ? <Users size={22} /> : <MapPin size={22} />}
+                                    </div>
+                                    <div>
+                                        <p className="text-[11px] text-slate-500 font-bold mb-0.5">طبيعة الاجتماع</p>
+                                        <p className="text-slate-800 dark:text-white font-black text-sm">
+                                            {selectedMeeting.type === 'online' ? 'عن بعد (Online)' : 'حضوري (In-Person)'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm flex items-center gap-4 group hover:shadow-md transition-shadow">
+                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-purple-50 dark:bg-purple-900/20 text-purple-500">
+                                        <Users size={22} />
+                                    </div>
+                                    <div className="overflow-hidden">
+                                        <p className="text-[11px] text-slate-500 font-bold mb-0.5">منسق الاجتماع</p>
+                                        <p className="text-slate-800 dark:text-white font-black text-sm truncate">
+                                            {selectedMeeting.supervisor?.name || '-'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Main Content Areas */}
+                            <div className="grid grid-cols-1 gap-6">
+                                {/* Agendas */}
+                                <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden flex flex-col">
+                                    <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center gap-3 bg-slate-50/50 dark:bg-slate-800/80">
+                                        <div className="p-2 rounded-lg" style={{ backgroundColor: `${printSettings.brandColor}15`, color: printSettings.brandColor }}>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                                        </div>
+                                        <h3 className="text-lg font-black text-slate-800 dark:text-white">جدول الأعمال والمحاور</h3>
+                                    </div>
+                                    <div className="p-5">
+                                        {selectedMeeting.agendas && selectedMeeting.agendas.length > 0 ? (
+                                            <ul className="space-y-3">
+                                                {selectedMeeting.agendas.map((agenda, i) => (
+                                                    <li key={i} className="flex items-start gap-3 text-slate-700 dark:text-slate-300 font-medium">
+                                                        <span className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[11px] font-bold mt-0.5" style={{ backgroundColor: printSettings.brandColor, color: 'white' }}>{i + 1}</span>
+                                                        <span className="pt-0.5 leading-relaxed">{agenda}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-6 text-slate-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2 opacity-50"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+                                                <p className="text-sm">لم يتم تحديد جدول أعمال</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Outcomes & Recommendations (Side by side on large screens) */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 shadow-sm overflow-hidden flex flex-col relative">
+                                        <div className="absolute top-0 right-0 w-1 h-full bg-emerald-500"></div>
+                                        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center gap-3 bg-emerald-50/50 dark:bg-emerald-900/10">
+                                            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                            </div>
+                                            <h3 className="text-lg font-black text-slate-800 dark:text-white">القرارات والنتائج</h3>
+                                        </div>
+                                        <div className="p-5">
+                                            {selectedMeeting.outcomes ? (
+                                                <div className="text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedMeeting.outcomes }}></div>
+                                            ) : (
+                                                <p className="text-slate-400 text-sm text-center py-6">لا توجد قرارات أو نتائج مدونة.</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-amber-100 dark:border-amber-900/30 shadow-sm overflow-hidden flex flex-col relative">
+                                        <div className="absolute top-0 right-0 w-1 h-full bg-amber-500"></div>
+                                        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center gap-3 bg-amber-50/50 dark:bg-amber-900/10">
+                                            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                                            </div>
+                                            <h3 className="text-lg font-black text-slate-800 dark:text-white">التوصيات</h3>
+                                        </div>
+                                        <div className="p-5">
+                                            {selectedMeeting.recommendations ? (
+                                                <div className="text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: selectedMeeting.recommendations }}></div>
+                                            ) : (
+                                                <p className="text-slate-400 text-sm text-center py-6">لا توجد توصيات مدونة.</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Participants Attendance Table */}
+                            <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm overflow-hidden">
+                                <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/80">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400">
+                                            <Users size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <h3 className="text-lg font-black text-slate-800 dark:text-white">كشف الحضور والغياب</h3>
+                                    </div>
+                                    <span className="px-3 py-1 bg-slate-200 dark:bg-slate-700 rounded-full text-xs font-bold text-slate-600 dark:text-slate-300">
+                                        الإجمالي: {selectedMeeting.participants?.length || 0}
+                                    </span>
+                                </div>
+                                
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm text-right border-collapse">
+                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700">
+                                            <tr>
+                                                <th className="px-6 py-4 w-16 text-center">م</th>
+                                                <th className="px-6 py-4">اسم العضو المدعو</th>
+                                                <th className="px-6 py-4 text-center">حالة الحضور</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 font-medium">
+                                            {selectedMeeting.participants && selectedMeeting.participants.length > 0 ? (
+                                                selectedMeeting.participants.map((participant, index) => (
+                                                    <tr key={participant.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                        <td className="px-6 py-4 text-center text-slate-400">{index + 1}</td>
+                                                        <td className="px-6 py-4 text-slate-800 dark:text-white font-bold">{participant.user?.name || 'غير معروف'}</td>
+                                                        <td className="px-6 py-4 text-center">
+                                                            {participant.attendance_status === 'attended' && (
+                                                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 w-32 border border-emerald-200 dark:border-emerald-800/50 shadow-sm">
+                                                                    <Check size={16} />
+                                                                    حاضر
+                                                                </span>
+                                                            )}
+                                                            {participant.attendance_status === 'absent' && (
+                                                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold text-rose-700 bg-rose-100 dark:bg-rose-900/30 dark:text-rose-400 w-32 border border-rose-200 dark:border-rose-800/50 shadow-sm">
+                                                                    <X size={16} />
+                                                                    غائب
+                                                                </span>
+                                                            )}
+                                                            {(participant.attendance_status === 'pending' || !participant.attendance_status) && (
+                                                                <span className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-bold text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 w-32 border border-amber-200 dark:border-amber-800/50 shadow-sm">
+                                                                    <AlertCircle size={16} />
+                                                                    قيد الانتظار
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            ) : (
+                                                <tr>
+                                                    <td colSpan="3" className="px-6 py-8 text-center text-slate-400">
+                                                        <div className="flex flex-col items-center justify-center gap-2">
+                                                            <Users size={24} className="opacity-50" />
+                                                            <span>لا يوجد مدعوين لهذا الاجتماع</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </AdminLayout>
     );
 }

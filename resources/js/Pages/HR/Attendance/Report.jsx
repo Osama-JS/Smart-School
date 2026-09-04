@@ -158,12 +158,6 @@ export default function AttendanceReport({ employees, academicYears = [], isAdmi
                             <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">عرض كشف مفصل يشمل أيام الدوام والإجازات</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                            {reportData && (
-                                <button onClick={handlePrint} className="flex items-center justify-center gap-2 px-5 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-none text-sm font-bold transition-all active:scale-95">
-                                    <Printer size={18} />
-                                    <span>طباعة التقرير</span>
-                                </button>
-                            )}
                         </div>
                     </div>
                 </div>

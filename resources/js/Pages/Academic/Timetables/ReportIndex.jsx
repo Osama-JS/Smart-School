@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
-import { CalendarDays, Filter, User, BookOpen, Search, Calculator, FlaskConical, Globe, Laptop, Music, Palette, Microscope, Languages, Feather, Clock } from 'lucide-react';
+import { CalendarDays, Filter, User, Users, BookOpen, Search, Calculator, FlaskConical, Globe, Laptop, Music, Palette, Microscope, Languages, Feather, Clock } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 
 const SUBJECT_ICONS = {
@@ -32,7 +32,7 @@ const SUBJECT_COLORS = {
 };
 const DEFAULT_COLOR = 'from-slate-500/10 via-slate-50/50 to-transparent dark:from-slate-500/20 dark:via-slate-900/10 border-slate-200 dark:border-slate-800/50 text-slate-700 dark:text-slate-300';
 
-export default function TimetableReportIndex({ academicYears, sections, periods, timetable, workingDays, daysTranslation, subjects, teachers, filters }) {
+export default function TimetableReportIndex({ academicYears, sections, periods, timetable, workingDays, daysTranslation, subjects, teachers, masterDivisions, filters }) {
     
     // Helpers for defaults
     const getInitialYear = () => filters.academic_year_id || academicYears.find(y => y.is_active)?.id || academicYears[0]?.id || '';
@@ -50,6 +50,9 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
     const [selectedGrade, setSelectedGrade] = useState(filters.grade_id || '');
     const [availableDivisions, setAvailableDivisions] = useState([]);
     const [selectedDivision, setSelectedDivision] = useState(filters.division_id || '');
+
+    const [reportType, setReportType] = useState(filters.report_type || 'division');
+    const [selectedTeacher, setSelectedTeacher] = useState(filters.teacher_id || '');
 
     // Setup Cascading lists on load
     useEffect(() => {
@@ -74,14 +77,18 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
     }, [selectedGrade, availableGrades]);
 
     const applyFilters = () => {
-        if (!selectedSemester || !selectedDivision) return;
+        if (!selectedSemester) return;
+        if (reportType === 'division' && !selectedDivision) return;
+        if (reportType === 'teacher' && !selectedTeacher) return;
         
         router.get(route('academic.timetable.report'), {
+            report_type: reportType,
             academic_year_id: selectedYear,
             semester_id: selectedSemester,
             section_id: selectedSection,
             grade_id: selectedGrade,
-            division_id: selectedDivision
+            division_id: selectedDivision,
+            teacher_id: selectedTeacher
         }, { preserveState: true });
     };
 
@@ -121,11 +128,13 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
         setIsGeneratingPdf(true);
         try {
             const params = new URLSearchParams({
+                report_type: reportType,
                 academic_year_id: selectedYear || '',
                 semester_id: selectedSemester || '',
                 section_id: selectedSection || '',
                 grade_id: selectedGrade || '',
                 division_id: selectedDivision || '',
+                teacher_id: selectedTeacher || '',
                 printSettings: JSON.stringify(printSettings)
             });
             const url = route('academic.timetable.report.pdf') + '?' + params.toString();
@@ -182,20 +191,43 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
                                 </div>
                                 <div>
                                     <h3 className="font-black text-lg text-slate-900 dark:text-white">محددات الجدول</h3>
-                                    <p className="text-xs font-bold text-slate-500">اختر الفصل والشعبة لعرض الشبكة</p>
+                                    <p className="text-xs font-bold text-slate-500">
+                                        {reportType === 'division' ? 'اختر الفصل والشعبة لعرض الشبكة' : reportType === 'teacher' ? 'اختر المعلم لعرض شبكة جدوله الأسبوعي' : 'اختر القسم أو الصف (اختياري) لتصفية الجدول العام'}
+                                    </p>
                                 </div>
+                            </div>
+                            
+                            <div className="hidden md:flex bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl mx-auto">
+                                <button
+                                    onClick={() => setReportType('division')}
+                                    className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${reportType === 'division' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                >
+                                    جدول شعبة
+                                </button>
+                                <button
+                                    onClick={() => setReportType('teacher')}
+                                    className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${reportType === 'teacher' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                >
+                                    جدول معلم
+                                </button>
+                                <button
+                                    onClick={() => setReportType('master')}
+                                    className={`px-5 py-2 rounded-lg text-sm font-bold transition-all ${reportType === 'master' ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                                >
+                                    الجدول العام
+                                </button>
                             </div>
                             
                             <button 
                                 onClick={applyFilters}
-                                disabled={!selectedSemester || !selectedDivision}
+                                disabled={reportType === 'division' ? (!selectedSemester || !selectedDivision) : reportType === 'teacher' ? (!selectedSemester || !selectedTeacher) : !selectedSemester}
                                 className="hidden md:flex items-center gap-2 bg-gradient-to-l from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white px-8 py-3.5 rounded-2xl text-sm font-black shadow-lg shadow-primary-500/30 transition-all duration-300 hover:-translate-y-1 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                             >
                                 <Search size={18} strokeWidth={2.5} /> استعراض الجدول
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div className={`grid grid-cols-1 gap-4 ${reportType === 'teacher' ? 'md:grid-cols-3' : (reportType === 'master' ? 'md:grid-cols-4' : 'md:grid-cols-5')}`}>
                             <div>
                                 <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">السنة الدراسية</label>
                                 <SelectInput
@@ -213,38 +245,53 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
                                     disabled={!selectedYear}
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">القسم</label>
-                                <SelectInput
-                                    options={sections.map(s => ({ value: s.id, label: s.name }))}
-                                    value={selectedSection}
-                                    onChange={val => { setSelectedSection(val); setSelectedGrade(''); setSelectedDivision(''); }}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">الصف</label>
-                                <SelectInput
-                                    options={availableGrades.map(g => ({ value: g.id, label: g.name }))}
-                                    value={selectedGrade}
-                                    onChange={val => { setSelectedGrade(val); setSelectedDivision(''); }}
-                                    disabled={!selectedSection}
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">الشعبة</label>
-                                <SelectInput
-                                    options={availableDivisions.map(d => ({ value: d.id, label: d.name }))}
-                                    value={selectedDivision}
-                                    onChange={setSelectedDivision}
-                                    disabled={!selectedGrade}
-                                />
-                            </div>
+                            {reportType === 'division' || reportType === 'master' ? (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">القسم</label>
+                                        <SelectInput
+                                            options={sections.map(s => ({ value: s.id, label: s.name }))}
+                                            value={selectedSection}
+                                            onChange={val => { setSelectedSection(val); setSelectedGrade(''); setSelectedDivision(''); }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">الصف</label>
+                                        <SelectInput
+                                            options={availableGrades.map(g => ({ value: g.id, label: g.name }))}
+                                            value={selectedGrade}
+                                            onChange={val => { setSelectedGrade(val); setSelectedDivision(''); }}
+                                            disabled={!selectedSection}
+                                        />
+                                    </div>
+                                    {reportType === 'division' && (
+                                        <div>
+                                            <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">الشعبة</label>
+                                            <SelectInput
+                                                options={availableDivisions.map(d => ({ value: d.id, label: d.name }))}
+                                                value={selectedDivision}
+                                                onChange={setSelectedDivision}
+                                                disabled={!selectedGrade}
+                                            />
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <div>
+                                    <label className="block text-sm font-bold text-slate-600 dark:text-slate-400 mb-1.5 px-1">المعلم</label>
+                                    <SelectInput
+                                        options={teachers.map(t => ({ value: t.id, label: t.name }))}
+                                        value={selectedTeacher}
+                                        onChange={setSelectedTeacher}
+                                    />
+                                </div>
+                            )}
                         </div>
                         
                         <div className="mt-4 md:hidden">
                             <button 
                                 onClick={applyFilters}
-                                disabled={!selectedSemester || !selectedDivision}
+                                disabled={reportType === 'division' ? (!selectedSemester || !selectedDivision) : reportType === 'teacher' ? (!selectedSemester || !selectedTeacher) : !selectedSemester}
                                 className="w-full flex items-center justify-center gap-2 bg-gradient-to-l from-primary-600 to-primary-500 text-white px-8 py-3.5 rounded-2xl text-sm font-black shadow-lg shadow-primary-500/30 transition-all active:scale-95 disabled:opacity-50"
                             >
                                 <Search size={18} strokeWidth={2.5} /> استعراض الجدول
@@ -253,7 +300,9 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
                 </div>
 
                 {/* Timetable Grid */}
-                {selectedDivision && filters.division_id == selectedDivision && filters.semester_id == selectedSemester ? (
+                {(reportType === 'division' && selectedDivision && filters.division_id == selectedDivision && filters.semester_id == selectedSemester) || 
+                 (reportType === 'teacher' && selectedTeacher && filters.teacher_id == selectedTeacher && filters.semester_id == selectedSemester) ||
+                 (reportType === 'master' && filters.report_type === 'master' && filters.semester_id == selectedSemester) ? (
                     <ReportPrintLayout 
                         title={printSettings.title} 
                         printSettings={printSettings} 
@@ -265,23 +314,101 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
                     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col relative z-10 print:border-none print:shadow-none print:rounded-none">
                         
                         {/* Selected info in print mode */}
-                        <div className="mb-6 flex flex-col gap-1 items-start text-sm font-bold text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200 print:bg-transparent print:border-none print:p-0 print:mb-4">
-                            <span>الشعبة: {availableDivisions.find(d => d.id == selectedDivision)?.name}</span>
-                            <span>الفصل الدراسي: {availableSemesters.find(s => s.id == selectedSemester)?.name}</span>
+                        <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 print:bg-transparent print:border-none print:p-0 print:mb-4">
+                            <div className="flex flex-col gap-1 text-sm font-bold text-slate-700 dark:text-slate-300">
+                                {reportType === 'division' ? (
+                                    <span>الشعبة: {availableDivisions.find(d => d.id == selectedDivision)?.name}</span>
+                                ) : reportType === 'teacher' ? (
+                                    <span>المعلم: {teachers.find(t => t.id == selectedTeacher)?.name}</span>
+                                ) : (
+                                    <span>الجدول العام المجمع</span>
+                                )}
+                                <span>الفصل الدراسي: {availableSemesters.find(s => s.id == selectedSemester)?.name}</span>
+                            </div>
+                            
+                            {reportType === 'teacher' && (
+                                <div className="flex items-center gap-4">
+                                    <div className="flex flex-col items-center bg-white dark:bg-slate-900 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm print:border-black/20">
+                                        <span className="text-[10px] text-slate-500 font-bold mb-0.5">النصاب الأسبوعي</span>
+                                        <span className="text-lg font-black text-primary-600 dark:text-primary-400 leading-none">{timetable.length}</span>
+                                    </div>
+                                    <div className="flex flex-col items-center bg-white dark:bg-slate-900 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm print:border-black/20">
+                                        <span className="text-[10px] text-slate-500 font-bold mb-0.5">عدد الشعب</span>
+                                        <span className="text-lg font-black text-emerald-600 dark:text-emerald-400 leading-none">{new Set(timetable.map(t => t.division_id)).size}</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
+                        {reportType === 'master' ? (
+                            <div className="overflow-auto custom-scrollbar flex-1 relative p-2 md:p-4 print:p-0">
+                                <table className="w-full text-right border-separate border-spacing-1 min-w-max print:border-collapse print:border-spacing-0 text-[11px]">
+                                    <thead className="sticky top-0 z-30">
+                                        <tr>
+                                            <th rowSpan="2" className="p-2 rounded-xl font-black text-center shadow-sm sticky right-0 z-40 border-b border-white/20 print:border-black/20 print:bg-slate-100 print:text-black print:rounded-none print:border min-w-[120px] align-middle transition-colors" style={{ backgroundColor: printSettings?.brandColor || '#2563eb', color: '#fff' }}>
+                                                الشعبة
+                                            </th>
+                                            {workingDays.map(day => {
+                                                const dayPeriods = periods.filter(p => !p.is_break && !p.period_name.includes('فسحة') && !p.period_name.includes('استراحة') && !p.period_name.includes('صلاة'));
+                                                return (
+                                                <th key={day} colSpan={dayPeriods.length} className="p-2 text-center shadow-sm border-l border-b border-white/20 font-black print:border-black/20 print:bg-slate-200 print:text-black print:rounded-none print:border transition-colors" style={{ backgroundColor: printSettings?.brandColor || '#2563eb', color: '#fff' }}>
+                                                    {daysTranslation[day] || day}
+                                                </th>
+                                            )})}
+                                        </tr>
+                                        <tr>
+                                            {workingDays.map(day => (
+                                                periods.filter(p => !p.is_break && !p.period_name.includes('فسحة') && !p.period_name.includes('استراحة') && !p.period_name.includes('صلاة')).map(period => (
+                                                    <th key={`${day}-${period.id}`} className="bg-slate-50 dark:bg-slate-800 p-1 text-center border border-slate-200 dark:border-slate-700 font-bold text-[10px] text-slate-600 dark:text-slate-400 print:border-black/20 print:bg-slate-100 print:rounded-none print:border min-w-[80px]">
+                                                        {period.period_name}
+                                                    </th>
+                                                ))
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {masterDivisions && masterDivisions.map(div => (
+                                            <tr key={div.id} className="group/row hover:bg-slate-50/80 dark:hover:bg-slate-800/80 transition-colors">
+                                                <td className="bg-slate-50 dark:bg-slate-800 p-2 rounded-xl font-black text-slate-800 dark:text-white text-center sticky right-0 z-20 shadow-sm border border-slate-200 dark:border-slate-700 group-hover/row:border-primary-300 dark:group-hover/row:border-primary-700 transition-colors print:border-black/20 print:bg-transparent print:rounded-none print:border">
+                                                    {div.grade?.name} <br/> <span className="text-[9px] text-slate-500 font-bold">{div.name}</span>
+                                                </td>
+                                                {workingDays.map(day => (
+                                                    periods.filter(p => !p.is_break && !p.period_name.includes('فسحة') && !p.period_name.includes('استراحة') && !p.period_name.includes('صلاة')).map(period => {
+                                                        const slot = timetable.find(t => t.division_id === div.id && t.day_of_week === day && t.period_id === period.id);
+                                                        return (
+                                                            <td key={`${div.id}-${day}-${period.id}`} className="p-0.5 border border-slate-100 dark:border-slate-800/50 bg-white dark:bg-slate-900 print:border-black/20 print:bg-transparent transition-colors">
+                                                                {slot ? (
+                                                                    <div className={`h-full min-h-[45px] w-full bg-gradient-to-br rounded-lg border p-1 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 flex flex-col items-center justify-center text-center overflow-hidden cursor-default ${SUBJECT_COLORS[slot.subject?.icon] || DEFAULT_COLOR} print:rounded-none print:border-none print:shadow-none print:bg-transparent print:p-1`}>
+                                                                        <span className="font-black text-[10px] leading-tight truncate w-[75px]" title={slot.subject?.name}>{slot.subject?.name}</span>
+                                                                        <span className="text-[8px] font-bold opacity-80 truncate w-[75px] mt-0.5" title={slot.teacher?.name}>{slot.teacher?.name ? slot.teacher?.name.split(' ')[0] : ''}</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex items-center justify-center h-full min-h-[45px] rounded-lg border border-transparent">
+                                                                        <span className="text-[9px] font-bold text-slate-200 dark:text-slate-700">-</span>
+                                                                    </div>
+                                                                )}
+                                                            </td>
+                                                        );
+                                                    })
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
                         <div className="overflow-auto custom-scrollbar flex-1 relative p-2 md:p-4 print:p-0">
                             <table className="w-full text-right border-separate border-spacing-1.5 min-w-max print:border-collapse print:border-spacing-0">
                                 <thead className="sticky top-0 z-30">
                                     <tr>
-                                        <th className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl min-w-[140px] text-slate-700 dark:text-slate-300 font-black text-center shadow-sm sticky right-0 z-40 border border-slate-200 dark:border-slate-700 print:border-black/20 print:bg-slate-100 print:rounded-none print:border">
+                                        <th className="p-4 rounded-2xl min-w-[140px] font-black text-center shadow-sm sticky right-0 z-40 border-b border-l border-white/20 print:border-black/20 print:bg-slate-100 print:text-black print:rounded-none print:border transition-colors" style={{ backgroundColor: printSettings?.brandColor || '#2563eb', color: '#fff' }}>
                                             اليوم / الحصة
                                         </th>
                                         {periods.map((period, idx) => (
-                                            <th key={period.id} className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl min-w-[180px] text-center shadow-sm border border-slate-200 dark:border-slate-700 group relative overflow-hidden transition-all duration-300 hover:shadow-md hover:border-primary-300 dark:hover:border-primary-500/50 print:border-black/20 print:bg-slate-100 print:rounded-none print:border print:p-2">
-                                                <div className="font-black text-slate-900 dark:text-white mb-2 text-[15px] group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors relative z-10 print:mb-1">{period.period_name}</div>
-                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white dark:bg-slate-950 text-xs text-slate-600 dark:text-slate-400 font-bold shadow-sm relative z-10 print:bg-transparent print:shadow-none print:p-0" dir="ltr">
-                                                    <Clock size={12} className="text-primary-500 print:hidden" />
+                                            <th key={period.id} className="p-4 rounded-2xl min-w-[180px] text-center shadow-sm border-b border-l border-white/20 group relative overflow-hidden transition-colors print:border-black/20 print:bg-slate-100 print:text-black print:rounded-none print:border print:p-2" style={{ backgroundColor: printSettings?.brandColor || '#2563eb', color: '#fff' }}>
+                                                <div className="font-black mb-2 text-[15px] relative z-10 print:mb-1">{period.period_name}</div>
+                                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/20 text-xs font-bold shadow-sm relative z-10 print:bg-transparent print:text-black print:shadow-none print:p-0" dir="ltr">
+                                                    <Clock size={12} className="print:hidden" />
                                                     {period.start_time ? period.start_time.substring(0,5) : ''} - {period.end_time ? period.end_time.substring(0,5) : ''}
                                                 </div>
                                             </th>
@@ -291,7 +418,7 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
                                 <tbody>
                                     {workingDays.map(day => (
                                         <tr key={day} className="group/row">
-                                            <td className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl font-black text-slate-800 dark:text-white text-center text-lg sticky right-0 z-20 shadow-sm border border-slate-200 dark:border-slate-700 group-hover/row:bg-primary-50 dark:group-hover/row:bg-primary-900/20 transition-colors print:border-black/20 print:bg-transparent print:rounded-none print:border print:p-2">
+                                            <td className="p-4 rounded-2xl font-black text-center text-lg sticky right-0 z-20 shadow-sm border-l border-t border-white/20 transition-colors print:border-black/20 print:bg-transparent print:text-black print:rounded-none print:border print:p-2" style={{ backgroundColor: printSettings?.brandColor || '#2563eb', color: '#fff' }}>
                                                 {daysTranslation[day] || day}
                                             </td>
                                             {periods.map(period => {
@@ -324,8 +451,19 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
                                                                         <div className="font-black text-sm mb-1 leading-tight line-clamp-2 drop-shadow-sm print:text-xs print:drop-shadow-none" title={slot.subject?.name}>{slot.subject?.name || 'بدون مادة'}</div>
                                                                         
                                                                         <div className="inline-flex items-center gap-1.5 text-xs font-bold bg-white/40 dark:bg-black/20 px-2 py-1 rounded-lg shadow-sm w-max max-w-full print:bg-transparent print:shadow-none print:p-0 print:border-none">
-                                                                            <User size={10} className="shrink-0 opacity-70 print:hidden" />
-                                                                            <span className="truncate print:text-[10px] print:text-slate-600" title={slot.teacher?.name}>{slot.teacher?.name || 'بدون معلم'}</span>
+                                                                            {reportType === 'teacher' ? (
+                                                                                <>
+                                                                                    <Users size={10} className="shrink-0 opacity-70 print:hidden" />
+                                                                                    <span className="truncate print:text-[10px] print:text-slate-600" title={slot.division?.grade?.name + ' - ' + slot.division?.name}>
+                                                                                        {slot.division?.grade?.name} {slot.division?.name}
+                                                                                    </span>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <User size={10} className="shrink-0 opacity-70 print:hidden" />
+                                                                                    <span className="truncate print:text-[10px] print:text-slate-600" title={slot.teacher?.name}>{slot.teacher?.name || 'بدون معلم'}</span>
+                                                                                </>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -341,6 +479,7 @@ export default function TimetableReportIndex({ academicYears, sections, periods,
                                 </tbody>
                             </table>
                         </div>
+                        )}
                     </div>
                     </ReportPrintLayout>
                 ) : (

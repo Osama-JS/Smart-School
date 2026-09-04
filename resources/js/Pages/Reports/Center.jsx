@@ -374,13 +374,6 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     permission: 'إدارة الدرجات',
                 },
                 {
-                    name: 'نتائج نهاية الفصل',
-                    description: 'الشهادات والنتائج النهائية والمعدل التراكمي',
-                    icon: Award,
-                    url: route('academic.semester-results.index'),
-                    permission: 'إدارة الدرجات',
-                },
-                {
                     name: 'كشف العلامات المجمع',
                     description: 'كشف درجات ونتائج الطلاب في جميع المواد',
                     icon: FileText,

@@ -285,42 +285,22 @@ export default function Report({ pledges = [], stats = {}, filters = {} }) {
                     >
                         {/* KPI Summary Cards */}
                         {printSettings.showKPIs && (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">إجمالي التعهدات</p>
-                                        <h3 className="text-2xl font-black text-slate-800 dark:text-white print:text-black">{stats.total || 0}</h3>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 flex items-center justify-center print:hidden">
-                                        <PenTool size={20} />
-                                    </div>
+                            <div className="flex flex-wrap gap-4 mb-6">
+                                <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3 text-center shadow-sm">
+                                    <div className="text-[10px] font-bold text-slate-500">إجمالي التعهدات</div>
+                                    <div className="text-xl font-black text-slate-800">{stats.total || 0}</div>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">مكتمل التوقيع</p>
-                                        <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 print:text-black">{stats.fully_signed || 0}</h3>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center print:hidden">
-                                        <CheckCircle2 size={20} />
-                                    </div>
+                                <div className="flex-1 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center shadow-sm">
+                                    <div className="text-[10px] font-bold text-emerald-600">مكتمل التوقيع</div>
+                                    <div className="text-xl font-black text-emerald-700">{stats.fully_signed || 0}</div>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">توقيع جزئي</p>
-                                        <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400 print:text-black">{stats.partially_signed || 0}</h3>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 flex items-center justify-center print:hidden">
-                                        <AlertTriangle size={20} />
-                                    </div>
+                                <div className="flex-1 bg-amber-50 border border-amber-200 rounded-xl p-3 text-center shadow-sm">
+                                    <div className="text-[10px] font-bold text-amber-600">توقيع جزئي</div>
+                                    <div className="text-xl font-black text-amber-700">{stats.partially_signed || 0}</div>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">غير موقع</p>
-                                        <h3 className="text-2xl font-black text-rose-600 dark:text-rose-400 print:text-black">{stats.unsigned || 0}</h3>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 flex items-center justify-center print:hidden">
-                                        <XCircle size={20} />
-                                    </div>
+                                <div className="flex-1 bg-rose-50 border border-rose-200 rounded-xl p-3 text-center shadow-sm">
+                                    <div className="text-[10px] font-bold text-rose-600">غير موقع</div>
+                                    <div className="text-xl font-black text-rose-700">{stats.unsigned || 0}</div>
                                 </div>
                             </div>
                         )}
@@ -335,101 +315,101 @@ export default function Report({ pledges = [], stats = {}, filters = {} }) {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto custom-scrollbar">
-                                    <table className="w-full text-sm text-right print:border-collapse">
-                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-black border-b border-slate-200 dark:border-slate-800 print:bg-slate-100 print:border-black/30 print:text-slate-800">
-                                            <tr>
-                                                <th className="w-12 px-3 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30 print:rounded-none">م</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">تاريخ التعهد</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">اسم الطالب / الصف</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">المخالفة المرتبطة</th>
-                                                <th className="px-6 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30 w-1/3">نص التعهد والالتزام</th>
-                                                <th className="px-4 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30">توقيع الطالب</th>
-                                                <th className="px-4 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30">توقيع ولي الأمر</th>
-                                                <th className="w-28 px-3 py-4 text-center hidden print:table-cell print:border-black/30">توقيع المرشد</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 font-medium print:divide-black/20">
-                                            {pledges.map((pledge, idx) => (
-                                                <tr key={pledge.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors print:hover:bg-transparent">
-                                                    <td className="px-3 py-4 whitespace-nowrap text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                        {idx + 1}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        <div className="flex items-center gap-2 text-slate-900 dark:text-white print:text-black font-bold">
-                                                            <Calendar className="w-4 h-4 text-slate-400 print:hidden" />
-                                                            {formatDateAr(pledge.date)}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        <div className="text-sm font-bold text-slate-900 dark:text-white print:text-black">
-                                                            {pledge.student?.user?.name || '-'}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 print:text-slate-700">
-                                                            {pledge.student?.current_enrollment?.division ? 
-                                                                `${pledge.student.current_enrollment.division.grade?.name || ''} - ${pledge.student.current_enrollment.division.name || ''}`
-                                                            : '-'}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        {pledge.violation ? (
-                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-800 print:bg-transparent print:p-0 print:border-none print:text-black">
-                                                                {pledge.violation.violation_type?.name || 'مخالفة سلوكية'}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-xs text-slate-400 print:text-slate-600">تعهد عام</span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-xs text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                        <p className="line-clamp-2 print:line-clamp-none font-semibold leading-relaxed">
-                                                            {pledge.pledge_text || '-'}
-                                                        </p>
-                                                    </td>
-                                                    <td className="px-4 py-4 text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        {pledge.is_signed_by_student ? (
-                                                            <div className="flex flex-col items-center justify-center gap-1">
-                                                                {pledge.student_signature_path ? (
-                                                                    <div className="w-20 h-9 bg-white border border-slate-200 rounded flex items-center justify-center overflow-hidden p-0.5 print:border-none">
-                                                                        <img src={`/storage/${pledge.student_signature_path}`} alt="توقيع الطالب" className="max-h-full object-contain" />
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 print:border-none print:p-0 print:bg-transparent print:text-black">
-                                                                        <Check size={12} /> تم التوقيع
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 print:border-none print:p-0 print:bg-transparent print:text-black">
-                                                                <X size={12} /> غير موقع
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        {pledge.is_signed_by_parent ? (
-                                                            <div className="flex flex-col items-center justify-center gap-1">
-                                                                {pledge.parent_signature_path ? (
-                                                                    <div className="w-20 h-9 bg-white border border-slate-200 rounded flex items-center justify-center overflow-hidden p-0.5 print:border-none">
-                                                                        <img src={`/storage/${pledge.parent_signature_path}`} alt="توقيع ولي الأمر" className="max-h-full object-contain" />
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 print:border-none print:p-0 print:bg-transparent print:text-black">
-                                                                        <Check size={12} /> تم التوقيع
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 print:border-none print:p-0 print:bg-transparent print:text-black">
-                                                                <X size={12} /> غير موقع
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-3 py-4 text-center hidden print:table-cell print:border-black/30">
-                                                        {/* Empty cell for live signature in print mode */}
-                                                    </td>
+                                <div className="overflow-x-auto print:overflow-visible flex justify-center">
+                                    <div className="inline-block min-w-full lg:w-4/5 xl:w-5/6 bg-white rounded-xl shadow-sm border-2 border-slate-800 overflow-hidden print:shadow-none print:border-none print:w-full">
+                                        <table className="w-full text-right border-collapse text-sm">
+                                            <thead className={`${printSettings.ecoMode ? 'bg-slate-100 text-slate-800 border-b-2 border-slate-800' : 'text-white'}`} style={!printSettings.ecoMode ? { backgroundColor: printSettings.brandColor } : {}}>
+                                                <tr>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-10 text-center">م</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-28">تاريخ التعهد</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-40">اسم الطالب / الصف</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-40">المخالفة المرتبطة</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300">نص التعهد والالتزام</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 text-center w-24">توقيع الطالب</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 text-center w-24">توقيع ولي الأمر</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 text-center w-24 hidden print:table-cell">توقيع المرشد</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200 font-medium">
+                                                {pledges.map((pledge, idx) => (
+                                                    <tr key={pledge.id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="px-4 py-3 text-center border-y border-slate-200 font-bold text-slate-700">
+                                                            {idx + 1}
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200 text-center">
+                                                            <div className="font-bold text-slate-800" dir="ltr">
+                                                                {formatDateAr(pledge.date)}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200">
+                                                            <div className="font-bold text-slate-900">
+                                                                {pledge.student?.user?.name || '-'}
+                                                            </div>
+                                                            <div className="text-xs text-slate-600 mt-0.5">
+                                                                {pledge.student?.current_enrollment?.division ? 
+                                                                    `${pledge.student.current_enrollment.division.grade?.name || ''} - ${pledge.student.current_enrollment.division.name || ''}`
+                                                                : '-'}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200">
+                                                            {pledge.violation ? (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200 print:bg-transparent print:p-0 print:border-none print:text-black">
+                                                                    {pledge.violation.violation_type?.name || 'مخالفة سلوكية'}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="text-xs text-slate-400 print:text-slate-600">تعهد عام</span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200 text-xs text-slate-700">
+                                                            <p className="line-clamp-2 print:line-clamp-none font-semibold leading-relaxed">
+                                                                {pledge.pledge_text || '-'}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200 text-center">
+                                                            {pledge.is_signed_by_student ? (
+                                                                <div className="flex flex-col items-center justify-center gap-1">
+                                                                    {pledge.student_signature_path ? (
+                                                                        <div className="w-20 h-9 bg-white border border-slate-200 rounded flex items-center justify-center overflow-hidden p-0.5 print:border-none">
+                                                                            <img src={`/storage/${pledge.student_signature_path}`} alt="توقيع الطالب" className="max-h-full object-contain" />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 print:border-none print:p-0 print:bg-transparent print:text-black">
+                                                                            <Check size={12} /> تم التوقيع
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 print:border-none print:p-0 print:bg-transparent print:text-black">
+                                                                    <X size={12} /> غير موقع
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200 text-center">
+                                                            {pledge.is_signed_by_parent ? (
+                                                                <div className="flex flex-col items-center justify-center gap-1">
+                                                                    {pledge.parent_signature_path ? (
+                                                                        <div className="w-20 h-9 bg-white border border-slate-200 rounded flex items-center justify-center overflow-hidden p-0.5 print:border-none">
+                                                                            <img src={`/storage/${pledge.parent_signature_path}`} alt="توقيع ولي الأمر" className="max-h-full object-contain" />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 print:border-none print:p-0 print:bg-transparent print:text-black">
+                                                                            <Check size={12} /> تم التوقيع
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 print:border-none print:p-0 print:bg-transparent print:text-black">
+                                                                    <X size={12} /> غير موقع
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200 text-center hidden print:table-cell">
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
 

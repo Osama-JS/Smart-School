@@ -174,9 +174,9 @@
                         </div>
                         <div class="text-xs text-slate-500 mt-0.5">
                             @php
-                                $timeStr = $meeting->time;
-                                if ($timeStr) {
-                                    $timeObj = \Carbon\Carbon::createFromFormat('H:i', substr($timeStr, 0, 5));
+                                $timeVal = $meeting->time;
+                                if ($timeVal) {
+                                    $timeObj = is_string($timeVal) ? \Carbon\Carbon::parse($timeVal) : $timeVal;
                                     echo '<span dir="ltr">' . $timeObj->format('h:i A') . '</span>';
                                 }
                             @endphp

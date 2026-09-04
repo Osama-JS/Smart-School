@@ -111,7 +111,7 @@ export default function ClassReport({
             estimation: getGradeEstimation(student.percentage)
         };
     }).filter(student => {
-        if (selectedStudent && student.student_id !== selectedStudent) return false;
+        if (selectedStudent && student.enrollment_id !== selectedStudent) return false;
         
         if (gradeFilter === 'excellent' && student.percentage < 90) return false;
         if (gradeFilter === 'vgood' && (student.percentage < 80 || student.percentage >= 90)) return false;
@@ -188,6 +188,13 @@ export default function ClassReport({
         subtitle = `${semesterInfo.name} - ${divisionInfo.grade?.name} (شعبة ${divisionInfo.name})`;
     }
 
+    // KPI Calculations
+    const totalStudents = studentsData.length;
+    const passedStudents = studentsData.filter(s => s.percentage >= 50).length;
+    const excellentStudents = studentsData.filter(s => s.percentage >= 90).length;
+    const failingStudents = studentsData.filter(s => s.percentage < 50).length;
+    const passRate = totalStudents > 0 ? Math.round((passedStudents / totalStudents) * 100) : 0;
+
     return (
         <AdminLayout activeMenu="كشف العلامات المجمع">
             <Head title="كشف درجات ونتائج الطلاب" />
@@ -198,23 +205,15 @@ export default function ClassReport({
                     <div className="print:hidden relative overflow-hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
                         <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary-600 to-primary-400 z-20"></div>
                         <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-primary-50 to-transparent pointer-events-none"></div>
-                        <div className="flex items-center gap-4 relative z-10">
-                            <div className="p-3.5 bg-white border border-primary-100 shadow-sm rounded-xl text-primary-600 flex-shrink-0 relative overflow-hidden group">
-                                <div className="absolute inset-0 bg-primary-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                                <Award size={28} strokeWidth={2} className="relative z-10" />
+                        
+                        <div className="relative z-10 flex items-center gap-4">
+                            <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
+                                <Layers className="w-7 h-7 text-primary-600" />
                             </div>
                             <div>
                                 <h1 className="text-[22px] font-black text-slate-800 tracking-tight mb-1">كشف درجات ونتائج الطلاب</h1>
                                 <p className="text-[13.5px] font-bold text-slate-500">كشف مجمع لدرجات الطلاب في جميع المواد نهاية الفصل الدراسي</p>
                             </div>
-                        </div>
-                        <div className="flex gap-3 relative z-10 w-full sm:w-auto">
-                            <button
-                                onClick={handlePrint}
-                                className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
-                            >
-                                طباعة الكشف
-                            </button>
                         </div>
                     </div>
 
@@ -356,81 +355,99 @@ export default function ClassReport({
 
                     {/* Secondary Frontend Filters */}
                     {studentsData.length > 0 && (
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 md:p-5 print:hidden">
-                            <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between">
-                                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                                    <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 print:hidden">
+                            <div className="flex items-center gap-2 mb-5 pb-4 border-b border-slate-100">
+                                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                    <Filter size={18} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="font-black text-slate-800 text-[15px]">أدوات التصفية والفرز (فورية)</h3>
+                            </div>
+                            
+                            <div className="flex flex-col xl:flex-row items-start xl:items-end gap-5 justify-between">
+                                <div className="flex flex-wrap items-end gap-5 w-full xl:w-auto">
                                     
-                                    <div className="flex flex-wrap items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
-                                        <button 
-                                            onClick={() => setGradeFilter('all')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all ${gradeFilter === 'all' ? 'bg-primary-600 text-white' : 'hover:bg-slate-100 text-slate-600'}`}
-                                        >الكل</button>
-                                        <button 
-                                            onClick={() => setGradeFilter('excellent')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'excellent' ? 'bg-emerald-500 text-white' : 'hover:bg-emerald-50 text-emerald-600'}`}
-                                        >امتياز</button>
-                                        <button 
-                                            onClick={() => setGradeFilter('vgood')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'vgood' ? 'bg-blue-500 text-white' : 'hover:bg-blue-50 text-blue-600'}`}
-                                        >جيد جداً</button>
-                                        <button 
-                                            onClick={() => setGradeFilter('good')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'good' ? 'bg-yellow-500 text-white' : 'hover:bg-yellow-50 text-yellow-600'}`}
-                                        >جيد</button>
-                                        <button 
-                                            onClick={() => setGradeFilter('pass')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'pass' ? 'bg-orange-500 text-white' : 'hover:bg-orange-50 text-orange-600'}`}
-                                        >مقبول</button>
-                                        <button 
-                                            onClick={() => setGradeFilter('weak')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 ${gradeFilter === 'weak' ? 'bg-red-500 text-white' : 'hover:bg-red-50 text-red-600'}`}
-                                        >ضعيف / راسب</button>
+                                    {/* Grade Segmented Control */}
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[12px] font-bold text-slate-400 px-1">التصفية حسب التقدير:</span>
+                                        <div className="flex flex-wrap items-center bg-slate-50/80 border border-slate-200 p-1 rounded-xl shadow-inner gap-1">
+                                            <button 
+                                                onClick={() => setGradeFilter('all')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${gradeFilter === 'all' ? 'bg-white text-slate-800 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >الكل</button>
+                                            <button 
+                                                onClick={() => setGradeFilter('excellent')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${gradeFilter === 'excellent' ? 'bg-emerald-50 text-emerald-700 shadow-sm border border-emerald-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >امتياز</button>
+                                            <button 
+                                                onClick={() => setGradeFilter('vgood')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${gradeFilter === 'vgood' ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >جيد جداً</button>
+                                            <button 
+                                                onClick={() => setGradeFilter('good')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${gradeFilter === 'good' ? 'bg-yellow-50 text-yellow-700 shadow-sm border border-yellow-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >جيد</button>
+                                            <button 
+                                                onClick={() => setGradeFilter('pass')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${gradeFilter === 'pass' ? 'bg-orange-50 text-orange-700 shadow-sm border border-orange-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >مقبول</button>
+                                            <button 
+                                                onClick={() => setGradeFilter('weak')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${gradeFilter === 'weak' ? 'bg-red-50 text-red-700 shadow-sm border border-red-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >ضعيف / راسب</button>
+                                        </div>
                                     </div>
 
-                                    <div className="flex items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
-                                        <span className="px-3 py-2 text-sm font-bold text-slate-500 bg-slate-100 border-l border-slate-200">الفرز:</span>
-                                        <button 
-                                            onClick={() => setSortBy('alpha')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${sortBy === 'alpha' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
-                                        >أبجدي</button>
-                                        <button 
-                                            onClick={() => setSortBy('desc')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${sortBy === 'desc' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
-                                        >الأعلى نسبة</button>
-                                        <button 
-                                            onClick={() => setSortBy('asc')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all ${sortBy === 'asc' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-50 text-indigo-600'}`}
-                                        >الأقل نسبة</button>
+                                    {/* Sort Segmented Control */}
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[12px] font-bold text-slate-400 px-1">فرز وترتيب:</span>
+                                        <div className="flex items-center bg-slate-50/80 border border-slate-200 p-1 rounded-xl shadow-inner gap-1">
+                                            <button 
+                                                onClick={() => setSortBy('alpha')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${sortBy === 'alpha' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >أبجدي</button>
+                                            <button 
+                                                onClick={() => setSortBy('desc')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${sortBy === 'desc' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >الأعلى نسبة</button>
+                                            <button 
+                                                onClick={() => setSortBy('asc')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${sortBy === 'asc' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >الأقل نسبة</button>
+                                        </div>
                                     </div>
                                     
-                                    <button 
-                                        onClick={() => setHasFailures(!hasFailures)}
-                                        className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${hasFailures ? 'bg-red-600 text-white' : 'bg-slate-50 border border-slate-200 text-red-600 hover:bg-slate-100'}`}
-                                        title="إظهار الطلاب الذين رسبوا في مادة واحدة على الأقل"
-                                    >
-                                        <span className="w-2 h-2 rounded-full bg-current"></span>
-                                        راسب بمواد
-                                    </button>
+                                    <label className="flex items-center justify-between cursor-pointer group p-1.5 pr-3 bg-red-50 hover:bg-red-100 border border-red-100 rounded-xl transition-colors h-[40px] w-[180px]">
+                                        <span className="text-[13px] font-bold text-red-700 group-hover:text-red-800 transition-colors">راسبين بمواد فقط</span>
+                                        <div className={`relative w-9 h-5 rounded-full transition-colors duration-300 shadow-inner ${hasFailures ? 'bg-red-500' : 'bg-red-200'}`} onClick={(e) => { e.preventDefault(); setHasFailures(!hasFailures); }}>
+                                            <div className={`absolute top-0.5 bg-white w-4 h-4 rounded-full shadow transition-all duration-300 ${hasFailures ? 'left-1' : 'right-1'}`}></div>
+                                        </div>
+                                    </label>
+
                                 </div>
                                 
                                 <div className="w-full xl:w-72">
                                     <Select
                                         options={[
                                             { value: '', label: 'الكل (بحث باسم الطالب)' },
-                                            ...(studentsData?.map(e => ({ value: e.student_id, label: e.student_name })) || [])
+                                            ...(studentsData?.map(e => ({ value: e.enrollment_id, label: e.student_name })) || [])
                                         ]}
-                                        value={selectedStudent ? { value: selectedStudent, label: studentsData?.find(e => e.student_id === selectedStudent)?.student_name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
+                                        value={selectedStudent ? { value: selectedStudent, label: studentsData?.find(e => e.enrollment_id === selectedStudent)?.student_name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
                                         onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
                                         placeholder="بحث باسم الطالب..."
                                         isClearable
-                                        styles={customSelectStyles}
+                                        styles={{
+                                            ...customSelectStyles,
+                                            control: (base, state) => ({
+                                                ...customSelectStyles.control(base, state),
+                                                minHeight: '40px',
+                                                borderWidth: '1px'
+                                            })
+                                        }}
                                     />
                                 </div>
                             </div>
                         </div>
                     )}
-
                     <ReportPrintLayout 
                         title={printSettings.title} 
                         printSettings={printSettings} 
@@ -440,45 +457,88 @@ export default function ClassReport({
                         isGeneratingPdf={isGeneratingPdf}
                         subtitle={subtitle || 'كشف علامات ونهاية فصل'}
                     >
+                        {/* KPI Metrics Grid */}
+                        {printSettings?.showKPIs !== false && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 print:mb-3">
+                                <div className="bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group print:border-black print:rounded-none">
+                                    <div className="absolute top-0 right-0 w-1.5 h-full bg-blue-500 brand-bg"></div>
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-black">إجمالي الطلاب</p>
+                                    <div className="flex items-end gap-1.5">
+                                        <h3 className="text-xl font-black text-slate-800 dark:text-white print:text-black">{totalStudents}</h3>
+                                        <span className="text-[10px] font-bold text-slate-400 mb-0.5 print:text-black">طالب</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group print:border-black print:rounded-none">
+                                    <div className="absolute top-0 right-0 w-1.5 h-full bg-emerald-500"></div>
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-black">نسبة النجاح (الاجتياز)</p>
+                                    <div className="flex items-end gap-1.5">
+                                        <h3 className="text-xl font-black text-slate-800 dark:text-white print:text-black">{passRate}%</h3>
+                                        <span className="text-[10px] font-bold text-slate-400 mb-0.5 print:text-black">({passedStudents} طالب)</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group print:border-black print:rounded-none">
+                                    <div className="absolute top-0 right-0 w-1.5 h-full bg-indigo-500"></div>
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-black">الطلاب المتميزين (امتياز)</p>
+                                    <div className="flex items-end gap-1.5">
+                                        <h3 className="text-xl font-black text-indigo-600 dark:text-indigo-400 print:text-black">{excellentStudents}</h3>
+                                        <span className="text-[10px] font-bold text-slate-400 mb-0.5 print:text-black">طالب</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-white dark:bg-slate-800 rounded-xl px-4 py-3 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group print:border-black print:rounded-none">
+                                    <div className="absolute top-0 right-0 w-1.5 h-full bg-red-500"></div>
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-black">يحتاجون متابعة (تعثر)</p>
+                                    <div className="flex items-end gap-1.5">
+                                        <h3 className="text-xl font-black text-red-600 dark:text-red-400 print:text-black">{failingStudents}</h3>
+                                        <span className="text-[10px] font-bold text-slate-400 mb-0.5 print:text-black">طالب</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm relative z-10 print:border-none print:shadow-none print:rounded-none">
                             {studentsData.length > 0 ? (
-                                <div className="overflow-x-auto custom-scrollbar">
-                                    <table className="min-w-full divide-y divide-slate-200 table-fixed print:border-collapse">
-                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-black border-b border-slate-200 dark:border-slate-800 print:bg-slate-100 print:border-black/30 print:text-slate-800">
-                                            <tr>
-                                                <th scope="col" className="w-12 px-3 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30 print:rounded-none">م</th>
-                                                <th scope="col" className="w-64 px-4 py-4 text-right border-l border-slate-200 dark:border-slate-700 print:border-black/30">اسم الطالب</th>
+                                <div className="overflow-x-auto overflow-y-auto max-h-[70vh] custom-scrollbar shadow-sm rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <table className="min-w-full text-sm text-center border-collapse table-fixed">
+                                        <thead className="print:border-black sticky top-0 z-30 shadow-md">
+                                            <tr className="brand-bg" style={{ backgroundColor: printSettings?.brandColor || '#1e293b' }}>
+                                                <th scope="col" className="w-12 px-2 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:border-black print:rounded-none brand-bg sticky right-0 z-40 shadow-[-1px_0_0_#cbd5e1_inset] dark:shadow-[-1px_0_0_#475569_inset] print:static print:shadow-none" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>م</th>
+                                                <th scope="col" className="w-56 px-3 py-3 text-right font-black text-white border border-slate-300 dark:border-slate-600 print:border-black brand-bg sticky right-[48px] z-40 shadow-[-1px_0_0_#cbd5e1_inset] dark:shadow-[-1px_0_0_#475569_inset] print:static print:shadow-none" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>اسم الطالب</th>
                                                 {/* Subjects Columns */}
                                                 {subjects.map(subject => (
-                                                    <th key={subject.id} scope="col" className="px-2 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30">
-                                                        <div className="writing-mode-vertical-rl transform rotate-180 h-32 m-auto font-bold text-sm">
+                                                    <th key={subject.id} scope="col" className="w-14 px-1 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:border-black" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>
+                                                        <div className="[writing-mode:vertical-rl] transform rotate-180 h-28 mx-auto flex items-center justify-center font-bold text-xs tracking-wide">
                                                             {subject.name}
                                                         </div>
                                                     </th>
                                                 ))}
-                                                <th scope="col" className="w-24 px-3 py-4 text-center border-l border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 print:bg-transparent print:border-black/30">المجموع</th>
-                                                <th scope="col" className="w-24 px-3 py-4 text-center border-l border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 print:bg-transparent print:border-black/30">النسبة</th>
-                                                <th scope="col" className="w-24 px-3 py-4 text-center bg-slate-100 dark:bg-slate-800 print:bg-transparent print:border-black/30">التقدير</th>
+                                                <th scope="col" className="w-20 px-2 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:border-black bg-black/10 print:bg-transparent" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>المجموع</th>
+                                                <th scope="col" className="w-20 px-2 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:border-black bg-black/10 print:bg-transparent" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>النسبة</th>
+                                                <th scope="col" className="w-20 px-2 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:border-black bg-black/10 print:bg-transparent" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>التقدير</th>
                                             </tr>
-                                            <tr className="bg-slate-100 dark:bg-slate-800 print:bg-slate-200">
-                                                <th colSpan="2" className="px-4 py-2 text-left text-xs font-bold text-slate-600 dark:text-slate-400 border-l border-slate-200 dark:border-slate-700 border-t border-slate-300 dark:border-slate-600 print:border-black/30 print:text-slate-800">النهاية العظمى</th>
+                                            <tr className="bg-slate-100 dark:bg-slate-800 print:bg-slate-200 text-slate-800 dark:text-slate-200 sticky top-[138px] z-20 shadow-sm print:static">
+                                                <th colSpan="2" className="px-3 py-2 text-left text-[11px] font-black uppercase tracking-wider border border-slate-300 dark:border-slate-600 print:border-black sticky right-0 z-30 shadow-[-1px_0_0_#cbd5e1_inset] dark:shadow-[-1px_0_0_#475569_inset] print:static print:shadow-none bg-slate-200 dark:bg-slate-700 print:bg-slate-200">النهاية العظمى</th>
                                                 {subjects.map(subject => (
-                                                    <th key={subject.id} className="px-2 py-2 text-center text-xs font-bold text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-700 border-t border-slate-300 dark:border-slate-600 print:border-black/30 print:text-black">
+                                                    <th key={subject.id} className="px-1 py-2 text-center text-xs font-black text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 print:border-black bg-slate-50 dark:bg-slate-800">
                                                         { (subject.semester_aggregate_max || 0) + (subject.final_exam_max || 0) || 100 }
                                                     </th>
                                                 ))}
-                                                <th className="px-3 py-2 text-center text-xs font-bold text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-700 border-t border-slate-300 dark:border-slate-600 print:border-black/30 print:text-black">
+                                                <th className="px-2 py-2 text-center text-xs font-black text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 print:border-black bg-slate-200 dark:bg-slate-700">
                                                     {studentsData[0]?.max_total || 0}
                                                 </th>
-                                                <th className="px-3 py-2 text-center text-xs font-bold text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-700 border-t border-slate-300 dark:border-slate-600 print:border-black/30 print:text-black">100%</th>
-                                                <th className="px-3 py-2 border-t border-slate-300 dark:border-slate-600 print:border-black/30"></th>
+                                                <th className="px-2 py-2 text-center text-xs font-black text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 print:border-black bg-slate-200 dark:bg-slate-700">100%</th>
+                                                <th className="px-2 py-2 border border-slate-300 dark:border-slate-600 print:border-black bg-slate-200 dark:bg-slate-700"></th>
                                             </tr>
                                         </thead>
-                                        <tbody className="bg-white divide-y divide-slate-200">
+                                        <tbody className="bg-white dark:bg-slate-900">
                                             {processedStudents.length === 0 ? (
                                                 <tr>
-                                                    <td colSpan={subjects.length + 5} className="py-12 px-6 text-center text-slate-500 font-bold">
-                                                        لا توجد نتائج مطابقة لخيارات الفلترة.
+                                                    <td colSpan={subjects.length + 5} className="py-16 px-6 text-center text-slate-500 font-bold">
+                                                        <div className="flex flex-col items-center justify-center gap-2">
+                                                            <AlertCircle className="w-12 h-12 text-slate-300 dark:text-slate-600" />
+                                                            <span>لا توجد نتائج مطابقة لخيارات الفلترة.</span>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ) : (
@@ -486,14 +546,18 @@ export default function ClassReport({
                                                     const estimation = student.estimation;
                                                     const isFailing = student.percentage < 50;
                                                     
+                                                    const rowBg = isFailing ? 'bg-red-50 dark:bg-red-900/20' : (idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800');
+                                                    const printRowBg = isFailing ? 'print:bg-red-50' : (idx % 2 === 0 ? 'print:bg-transparent' : 'print:bg-slate-100');
+                                                    const stickyBg = isFailing ? 'bg-red-50 dark:bg-red-900/40' : (idx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800');
+                                                    
                                                     return (
-                                                        <tr key={student.enrollment_id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors ${isFailing ? 'bg-red-50/30 dark:bg-red-900/10' : ''} print:hover:bg-transparent ${isFailing ? 'print:bg-red-50' : ''}`}>
-                                                            <td className="px-3 py-3 whitespace-nowrap text-sm text-slate-500 text-center border-l border-slate-200 dark:border-slate-800 font-medium print:border-black/30 print:text-black">
+                                                        <tr key={student.enrollment_id} className={`group hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${rowBg} print:hover:bg-transparent ${printRowBg}`}>
+                                                            <td className={`px-2 py-2.5 whitespace-nowrap text-xs text-slate-500 text-center border border-slate-300 dark:border-slate-700 print:border-black font-bold print:text-black sticky right-0 z-10 shadow-[-1px_0_0_#cbd5e1_inset] dark:shadow-[-1px_0_0_#334155_inset] print:static print:shadow-none ${stickyBg} group-hover:bg-slate-100 dark:group-hover:bg-slate-700 print:bg-transparent`}>
                                                                 {idx + 1}
                                                             </td>
-                                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-slate-900 dark:text-white border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
+                                                            <td className={`px-3 py-2.5 whitespace-nowrap text-xs font-bold text-slate-900 dark:text-white border border-slate-300 dark:border-slate-700 print:border-black print:text-black sticky right-[48px] z-10 shadow-[-1px_0_0_#cbd5e1_inset] dark:shadow-[-1px_0_0_#334155_inset] print:static print:shadow-none ${stickyBg} group-hover:bg-slate-100 dark:group-hover:bg-slate-700 print:bg-transparent text-right pr-3`}>
                                                                 {student.student_name}
-                                                                <div className="text-xs text-slate-500 font-normal print:hidden">{student.student_id_number}</div>
+                                                                <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium print:hidden mt-0.5">{student.student_id_number}</div>
                                                             </td>
                                                             
                                                             {/* Subject Scores */}
@@ -503,19 +567,19 @@ export default function ClassReport({
                                                                 const isSubjectFailing = score < (subjectMax / 2);
                                                                 
                                                                 return (
-                                                                    <td key={subject.id} className={`px-2 py-3 whitespace-nowrap text-sm text-center border-l border-slate-200 dark:border-slate-800 font-semibold ${isSubjectFailing ? 'text-red-600 dark:text-red-400 print:text-red-700 print:font-black' : 'text-slate-700 dark:text-slate-300 print:text-black'} print:border-black/30`}>
+                                                                    <td key={subject.id} className={`px-1 py-2.5 whitespace-nowrap text-xs text-center border border-slate-300 dark:border-slate-700 font-bold ${isSubjectFailing ? 'text-red-600 dark:text-red-400 print:text-red-700 print:font-black' : 'text-slate-700 dark:text-slate-300 print:text-black'} print:border-black`}>
                                                                         {score > 0 ? score : '-'}
                                                                     </td>
                                                                 );
                                                             })}
                                                             
-                                                            <td className="px-3 py-3 whitespace-nowrap text-sm font-bold text-slate-800 dark:text-white text-center border-l border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 print:bg-transparent print:border-black/30 print:text-black">
+                                                            <td className="px-2 py-2.5 whitespace-nowrap text-xs font-black text-slate-800 dark:text-white text-center border border-slate-300 dark:border-slate-700 bg-black/5 dark:bg-white/5 print:bg-transparent print:border-black print:text-black">
                                                                 {student.total_score}
                                                             </td>
-                                                            <td className={`px-3 py-3 whitespace-nowrap text-sm font-bold text-center border-l border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 ${isFailing ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-white'} print:bg-transparent print:border-black/30 ${isFailing ? 'print:text-red-700 print:font-black' : 'print:text-black'}`}>
+                                                            <td className={`px-2 py-2.5 whitespace-nowrap text-xs font-black text-center border border-slate-300 dark:border-slate-700 bg-black/5 dark:bg-white/5 ${isFailing ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-white'} print:bg-transparent print:border-black ${isFailing ? 'print:text-red-700 print:font-black' : 'print:text-black'}`}>
                                                                 {student.percentage}%
                                                             </td>
-                                                            <td className={`px-3 py-3 whitespace-nowrap text-sm font-bold text-center bg-slate-50/50 dark:bg-slate-800/50 print:bg-transparent print:border-black/30 print:border-r ${estimation.color}`}>
+                                                            <td className={`px-2 py-2.5 whitespace-nowrap text-xs font-black text-center border border-slate-300 dark:border-slate-700 bg-black/5 dark:bg-white/5 print:bg-transparent print:border-black ${estimation.color}`}>
                                                                 {estimation.text}
                                                             </td>
                                                         </tr>

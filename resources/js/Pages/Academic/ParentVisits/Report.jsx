@@ -342,42 +342,22 @@ export default function Report({ visits = [], stats = {}, filters = {} }) {
                     >
                         {/* KPI Summary Cards */}
                         {printSettings.showKPIs && (
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">إجمالي الزيارات</p>
-                                        <h3 className="text-2xl font-black text-slate-800 dark:text-white print:text-black">{stats.total || 0}</h3>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 flex items-center justify-center print:hidden">
-                                        <UserCheck size={20} />
-                                    </div>
+                            <div className="flex flex-wrap gap-4 mb-6">
+                                <div className="flex-1 bg-slate-50 border border-slate-200 rounded-xl p-3 text-center shadow-sm">
+                                    <div className="text-[10px] font-bold text-slate-500">إجمالي الزيارات</div>
+                                    <div className="text-xl font-black text-slate-800">{stats.total || 0}</div>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">زيارات مكتملة</p>
-                                        <h3 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 print:text-black">{stats.completed || 0}</h3>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center print:hidden">
-                                        <CheckCircle2 size={20} />
-                                    </div>
+                                <div className="flex-1 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center shadow-sm">
+                                    <div className="text-[10px] font-bold text-emerald-600">زيارات مكتملة</div>
+                                    <div className="text-xl font-black text-emerald-700">{stats.completed || 0}</div>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">زيارات مجدولة</p>
-                                        <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400 print:text-black">{stats.scheduled || 0}</h3>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 flex items-center justify-center print:hidden">
-                                        <CalendarDays size={20} />
-                                    </div>
+                                <div className="flex-1 bg-amber-50 border border-amber-200 rounded-xl p-3 text-center shadow-sm">
+                                    <div className="text-[10px] font-bold text-amber-600">زيارات مجدولة</div>
+                                    <div className="text-xl font-black text-amber-700">{stats.scheduled || 0}</div>
                                 </div>
-                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between print:border-black/20 print:bg-transparent print:shadow-none">
-                                    <div>
-                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-1 print:text-slate-700">زيارات جارية</p>
-                                        <h3 className="text-2xl font-black text-blue-600 dark:text-blue-400 print:text-black">{stats.in_progress || 0}</h3>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center print:hidden">
-                                        <Clock3 size={20} />
-                                    </div>
+                                <div className="flex-1 bg-blue-50 border border-blue-200 rounded-xl p-3 text-center shadow-sm">
+                                    <div className="text-[10px] font-bold text-blue-600">زيارات جارية</div>
+                                    <div className="text-xl font-black text-blue-700">{stats.in_progress || 0}</div>
                                 </div>
                             </div>
                         )}
@@ -392,83 +372,82 @@ export default function Report({ visits = [], stats = {}, filters = {} }) {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto custom-scrollbar">
-                                    <table className="w-full text-sm text-right print:border-collapse">
-                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-black border-b border-slate-200 dark:border-slate-800 print:bg-slate-100 print:border-black/30 print:text-slate-800">
-                                            <tr>
-                                                <th className="w-12 px-3 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30 print:rounded-none">م</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">تاريخ ووقت الزيارة</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">اسم الزائر / الصلة</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">اسم الطالب / الصف</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">غرض الزيارة والتصنيف</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">الموظف المقابل</th>
-                                                <th className="px-3 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30">الحالة</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">الملاحظات / التوصيات</th>
-                                                <th className="w-28 px-3 py-4 text-center hidden print:table-cell print:border-black/30">توقيع الزائر</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 font-medium print:divide-black/20">
-                                            {visits.map((visit, idx) => (
-                                                <tr key={visit.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors print:hover:bg-transparent">
-                                                    <td className="px-3 py-4 whitespace-nowrap text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                        {idx + 1}
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        <div className="flex items-center gap-2 text-slate-900 dark:text-white print:text-black font-bold">
-                                                            <Calendar className="w-4 h-4 text-slate-400 print:hidden" />
-                                                            {formatDateAr(visit.visit_date)}
-                                                        </div>
-                                                        {visit.visit_time && (
-                                                            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1 print:text-slate-700">
-                                                                <Clock className="w-3 h-3 text-slate-400 print:hidden" />
-                                                                {formatTimeAr(visit.visit_time)}
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="px-4 py-4 border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        <div className="text-sm font-bold text-slate-900 dark:text-white print:text-black">
-                                                            {visit.visitor_name}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 print:text-slate-700">
-                                                            صلة القرابة: {visit.visitor_relation || 'ولي أمر'}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        <div className="text-sm font-semibold text-slate-900 dark:text-white print:text-black">
-                                                            {visit.student?.user?.name || '-'}
-                                                        </div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 print:text-slate-700">
-                                                            {visit.student?.current_enrollment?.division ? 
-                                                                `${visit.student.current_enrollment.division.grade?.name || ''} - ${visit.student.current_enrollment.division.name || ''}`
-                                                            : '-'}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-4 border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        <div className="mb-1">
-                                                            {getPurposeBadge(visit.purpose_category)}
-                                                        </div>
-                                                        <p className="text-xs text-slate-700 dark:text-slate-300 print:text-black line-clamp-2 print:line-clamp-none">
-                                                            {visit.purpose || '-'}
-                                                        </p>
-                                                    </td>
-                                                    <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                        {visit.employee?.name || <span className="text-slate-400">—</span>}
-                                                    </td>
-                                                    <td className="px-3 py-4 whitespace-nowrap text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                        {getStatusBadge(visit.status)}
-                                                    </td>
-                                                    <td className="px-4 py-4 text-xs text-slate-600 dark:text-slate-400 border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                        <p className="line-clamp-2 print:line-clamp-none">
-                                                            {visit.notes || '—'}
-                                                        </p>
-                                                    </td>
-                                                    <td className="px-3 py-4 text-center hidden print:table-cell print:border-black/30">
-                                                        {/* Empty cell for signature */}
-                                                    </td>
+                                <div className="overflow-x-auto print:overflow-visible flex justify-center">
+                                    <div className="inline-block min-w-full lg:w-4/5 xl:w-3/4 bg-white rounded-xl shadow-sm border-2 border-slate-800 overflow-hidden print:shadow-none print:border-none print:w-full">
+                                        <table className="w-full text-right border-collapse text-sm">
+                                            <thead className={`${printSettings.ecoMode ? 'bg-slate-100 text-slate-800 border-b-2 border-slate-800' : 'text-white'}`} style={!printSettings.ecoMode ? { backgroundColor: printSettings.brandColor } : {}}>
+                                                <tr>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-8 text-center">م</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-24">التاريخ والوقت</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-32">اسم الزائر / الصلة</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-40">اسم الطالب / الصف</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300">غرض الزيارة</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-28">الموظف المقابل</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 text-center w-20">الحالة</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-40">الملاحظات</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 text-center w-24 hidden print:table-cell">توقيع الزائر</th>
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200 font-medium">
+                                                {visits.map((visit, idx) => (
+                                                    <tr key={visit.id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="px-4 py-3 text-center border-y border-slate-200 font-bold text-slate-700">
+                                                            {idx + 1}
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200 text-center" dir="ltr">
+                                                            <div className="font-bold text-slate-800">
+                                                                {formatDateAr(visit.visit_date)}
+                                                            </div>
+                                                            {visit.visit_time && (
+                                                                <div className="text-xs text-slate-500 mt-1">
+                                                                    {formatTimeAr(visit.visit_time)}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200">
+                                                            <div className="font-bold text-slate-900">
+                                                                {visit.visitor_name}
+                                                            </div>
+                                                            <div className="text-xs text-slate-600 mt-1">
+                                                                صلة القرابة: {visit.visitor_relation || 'ولي أمر'}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200">
+                                                            <div className="font-bold text-slate-900">
+                                                                {visit.student?.user?.name || '-'}
+                                                            </div>
+                                                            <div className="text-xs text-slate-600 mt-1">
+                                                                {visit.student?.current_enrollment?.division ? 
+                                                                    `${visit.student.current_enrollment.division.grade?.name || ''} - ${visit.student.current_enrollment.division.name || ''}`
+                                                                : '-'}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200">
+                                                            <div className="mb-1">
+                                                                {getPurposeBadge(visit.purpose_category)}
+                                                            </div>
+                                                            <div className="text-slate-800 text-xs">
+                                                                {visit.purpose || '-'}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200 text-sm text-slate-800">
+                                                            {visit.employee?.name || <span className="text-slate-400">—</span>}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center border-y border-slate-200">
+                                                            {getStatusBadge(visit.status)}
+                                                        </td>
+                                                        <td className="px-4 py-3 border-y border-slate-200 text-xs text-slate-700">
+                                                            <p className="line-clamp-2 print:line-clamp-none">
+                                                                {visit.notes || '—'}
+                                                            </p>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-center hidden print:table-cell border-y border-slate-200">
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
 

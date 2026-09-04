@@ -121,6 +121,48 @@
             <h2 class="text-xl font-bold text-slate-600">لا توجد درجات لطلاب هذه الشعبة في الفصل المحدد.</h2>
         </div>
     @else
+        @php
+            $totalStudents = count($studentsData);
+            $passedStudents = 0;
+            $excellentStudents = 0;
+            $failingStudents = 0;
+            
+            foreach($studentsData as $student) {
+                $percentage = $student['percentage'];
+                if ($percentage >= 50) $passedStudents++;
+                if ($percentage < 50) $failingStudents++;
+                if ($percentage >= 90) $excellentStudents++;
+            }
+            
+            $passRate = $totalStudents > 0 ? round(($passedStudents / $totalStudents) * 100) : 0;
+        @endphp
+        
+        @if($printSettings['showKPIs'] ?? true)
+        <!-- KPIs -->
+        <div class="flex justify-between gap-4 mb-4 mt-2">
+            <div class="flex-1 bg-white border border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute right-0 inset-y-0 w-1 brand-bg"></div>
+                <span class="text-[11px] font-bold text-slate-500 mb-1">إجمالي الطلاب</span>
+                <span class="text-xl font-black text-slate-800">{{ $totalStudents }} <span class="text-[10px] font-normal text-slate-500">طالب</span></span>
+            </div>
+            <div class="flex-1 bg-white border border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute right-0 inset-y-0 w-1 bg-green-500"></div>
+                <span class="text-[11px] font-bold text-slate-500 mb-1">نسبة النجاح</span>
+                <span class="text-xl font-black text-slate-800">{{ $passRate }}%</span>
+            </div>
+            <div class="flex-1 bg-white border border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute right-0 inset-y-0 w-1 bg-blue-500"></div>
+                <span class="text-[11px] font-bold text-slate-500 mb-1">المتميزين (امتياز)</span>
+                <span class="text-xl font-black text-slate-800">{{ $excellentStudents }} <span class="text-[10px] font-normal text-slate-500">طالب</span></span>
+            </div>
+            <div class="flex-1 bg-white border border-slate-300 rounded-lg p-3 flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute right-0 inset-y-0 w-1 bg-red-500"></div>
+                <span class="text-[11px] font-bold text-slate-500 mb-1">يحتاجون متابعة</span>
+                <span class="text-xl font-black text-slate-800">{{ $failingStudents }} <span class="text-[10px] font-normal text-slate-500">طالب</span></span>
+            </div>
+        </div>
+        @endif
+
         <table class="w-full text-center border-collapse border border-slate-400 text-sm mt-2">
             <thead>
                 <tr class="brand-bg">
@@ -162,12 +204,15 @@
                         $isFailing = $percentage < 50;
                         
                         $estimationText = 'ضعيف';
-                        if ($percentage >= 90) $estimationText = 'ممتاز';
-                        elseif ($percentage >= 80) $estimationText = 'جيد جداً';
-                        elseif ($percentage >= 70) $estimationText = 'جيد';
-                        elseif ($percentage >= 60) $estimationText = 'مقبول';
+                        $estimationColor = 'text-red-700';
+                        if ($percentage >= 90) { $estimationText = 'ممتاز'; $estimationColor = 'text-green-700'; }
+                        elseif ($percentage >= 80) { $estimationText = 'جيد جداً'; $estimationColor = 'text-blue-700'; }
+                        elseif ($percentage >= 70) { $estimationText = 'جيد'; $estimationColor = 'text-sky-700'; }
+                        elseif ($percentage >= 60) { $estimationText = 'مقبول'; $estimationColor = 'text-orange-700'; }
+                        
+                        $rowBg = $isFailing ? 'bg-red-50' : ($index % 2 === 0 ? 'bg-white' : 'bg-slate-50');
                     @endphp
-                    <tr class="{{ $isFailing ? 'bg-red-50' : '' }}">
+                    <tr class="{{ $rowBg }}">
                         <td class="border border-slate-400 p-2 font-bold text-xs">{{ $index + 1 }}</td>
                         <td class="border border-slate-400 p-2 text-right pr-2">
                             <span class="font-bold text-slate-800 text-sm">
@@ -189,7 +234,7 @@
                         
                         <td class="border border-slate-400 p-1 font-bold text-sm bg-slate-50">{{ $student['total_score'] }}</td>
                         <td class="border border-slate-400 p-1 font-bold text-sm bg-slate-50 {{ $isFailing ? 'text-red-700' : '' }}">{{ $student['percentage'] }}%</td>
-                        <td class="border border-slate-400 p-1 font-bold text-sm bg-slate-50 {{ $isFailing ? 'text-red-700' : '' }}">{{ $estimationText }}</td>
+                        <td class="border border-slate-400 p-1 font-bold text-sm bg-slate-50 {{ $estimationColor }}">{{ $estimationText }}</td>
                     </tr>
                 @endforeach
             </tbody>

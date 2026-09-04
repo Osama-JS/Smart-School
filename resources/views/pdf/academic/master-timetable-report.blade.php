@@ -119,78 +119,78 @@
         </div>
     </div>
 
-    <!-- معلومات الشعبة -->
-    @if($division)
-    <div class="mb-4 flex flex-col gap-1 items-start text-sm font-bold text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200">
-        <span>الشعبة: {{ $division->grade->name }} - {{ $division->name }}</span>
-    </div>
-    @endif
 
-    <table class="w-full text-right border-collapse border border-black/20 mt-2">
+    <table class="w-full text-right border-collapse mt-2 text-[10px]" style="border: 2px solid {{ $brandColor }};">
         <thead>
             <tr>
-                <th class="brand-bg p-2 font-bold w-24 text-center border border-black/20 text-white">اليوم / الحصة</th>
-                @foreach($periods as $period)
-                    <th class="brand-bg p-2 font-bold text-center border border-black/20 text-white w-32">
-                        <div class="mb-1 text-[13px] font-black">{{ $period->period_name }}</div>
-                        <div class="text-[10px] text-white/80 font-bold" dir="ltr">
-                            {{ substr($period->start_time, 0, 5) }} - {{ substr($period->end_time, 0, 5) }}
-                        </div>
+                <th rowspan="2" class="brand-bg p-2 font-bold w-24 text-center border text-white align-middle" style="border-color: rgba(255,255,255,0.2);">
+                    الشعبة
+                </th>
+                @foreach($workingDays as $day)
+                    @php
+                        $dayPeriods = $periods->filter(function($p) {
+                            return !$p->is_break && !str_contains($p->period_name, 'فسحة') && !str_contains($p->period_name, 'استراحة') && !str_contains($p->period_name, 'صلاة');
+                        });
+                    @endphp
+                    <th colspan="{{ $dayPeriods->count() }}" class="brand-bg p-1 font-black text-center border text-white" style="border-color: rgba(255,255,255,0.2);">
+                        {{ $daysTranslation[$day] ?? $day }}
                     </th>
+                @endforeach
+            </tr>
+            <tr class="bg-slate-100">
+                @foreach($workingDays as $day)
+                    @foreach($periods->filter(function($p) { return !$p->is_break && !str_contains($p->period_name, 'فسحة') && !str_contains($p->period_name, 'استراحة') && !str_contains($p->period_name, 'صلاة'); }) as $period)
+                        <th class="p-1 font-bold text-center border border-slate-300 text-slate-700 w-[60px]" style="background-color: #f8fafc;">
+                            {{ $period->period_name }}
+                        </th>
+                    @endforeach
                 @endforeach
             </tr>
         </thead>
         <tbody>
-            @foreach($workingDays as $day)
-                <tr>
-                    <td class="brand-bg p-2 font-black text-white text-center border border-black/20">
-                        {{ $daysTranslation[$day] ?? $day }}
-                    </td>
-                    @foreach($periods as $period)
-                        @php
-                            $slot = collect($timetable)->first(function($t) use ($day, $period) {
-                                return $t->day_of_week === $day && $t->period_id === $period->id;
-                            });
-                            
-                            $isBreak = $period->is_break || str_contains($period->period_name, 'فسحة') || str_contains($period->period_name, 'استراحة') || str_contains($period->period_name, 'صلاة');
-                        @endphp
-                        
-                        @if($isBreak)
-                            <td class="p-0 border border-black/20 text-center">
-                                <div class="w-full h-full min-h-[60px] flex items-center justify-center bg-slate-100">
-                                    <span class="font-black text-black text-sm tracking-wide">{{ $period->period_name }}</span>
-                                </div>
-                            </td>
-                        @else
-                            <td class="p-0 border border-black/20">
-                                @if($slot)
-                                    @php
-                                        $icon = $slot->subject ? $slot->subject->icon : '';
-                                        $colorClass = 'color-default';
-                                        if (in_array($icon, ['Calculator', 'Binary'])) $colorClass = 'color-blue';
-                                        elseif (in_array($icon, ['FlaskConical', 'Dna', 'Microscope'])) $colorClass = 'color-emerald';
-                                        elseif (in_array($icon, ['BookOpen', 'Languages'])) $colorClass = 'color-violet';
-                                        elseif (in_array($icon, ['History', 'Globe2', 'Compass'])) $colorClass = 'color-amber';
-                                        elseif (in_array($icon, ['Palette', 'Music'])) $colorClass = 'color-rose';
-                                        elseif (in_array($icon, ['Monitor', 'Laptop'])) $colorClass = 'color-cyan';
-                                        elseif (in_array($icon, ['Trophy', 'Activity'])) $colorClass = 'color-fuchsia';
-                                    @endphp
-                                    <div class="min-h-[60px] p-2 flex flex-col justify-between h-full border-l-4 {{ $colorClass }}" style="border-left-width: 4px; border-left-color: inherit;">
-                                        <div class="font-black text-[12px] mb-1 leading-tight">{{ $slot->subject ? $slot->subject->name : 'بدون مادة' }}</div>
-                                        <div class="flex items-center gap-1 mt-auto">
-                                            <span class="text-[10px] font-bold opacity-80 truncate">{{ $slot->teacher ? $slot->teacher->name : 'لم يتم تحديد المعلم' }}</span>
+            @if(isset($masterDivisions))
+                @foreach($masterDivisions as $div)
+                    <tr>
+                        <td class="bg-slate-50 p-2 font-black text-slate-800 text-center border border-slate-300">
+                            {{ $div->grade->name }}<br>{{ $div->name }}
+                        </td>
+                        @foreach($workingDays as $day)
+                            @foreach($periods->filter(function($p) { return !$p->is_break && !str_contains($p->period_name, 'فسحة') && !str_contains($p->period_name, 'استراحة') && !str_contains($p->period_name, 'صلاة'); }) as $period)
+                                @php
+                                    $slot = collect($timetable)->first(function($t) use ($div, $day, $period) {
+                                        return $t->division_id === $div->id && $t->day_of_week === $day && $t->period_id === $period->id;
+                                    });
+                                @endphp
+                                <td class="p-0 border border-slate-300 text-center align-middle" style="height: 45px;">
+                                    @if($slot)
+                                        @php
+                                            $icon = $slot->subject ? $slot->subject->icon : '';
+                                            $colorClass = 'color-default';
+                                            if (in_array($icon, ['Calculator', 'Binary'])) $colorClass = 'color-blue';
+                                            elseif (in_array($icon, ['FlaskConical', 'Dna', 'Microscope'])) $colorClass = 'color-emerald';
+                                            elseif (in_array($icon, ['BookOpen', 'Languages'])) $colorClass = 'color-violet';
+                                            elseif (in_array($icon, ['History', 'Globe2', 'Compass'])) $colorClass = 'color-amber';
+                                            elseif (in_array($icon, ['Palette', 'Music'])) $colorClass = 'color-rose';
+                                            elseif (in_array($icon, ['Monitor', 'Laptop'])) $colorClass = 'color-cyan';
+                                            elseif (in_array($icon, ['Trophy', 'Activity'])) $colorClass = 'color-fuchsia';
+                                        @endphp
+                                        <div class="h-full w-full p-1 {{ $colorClass }}" style="border-right-width: 3px; border-right-style: solid; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                                            <div class="font-bold text-[9px] leading-tight truncate w-full" style="max-width: 55px;" title="{{ $slot->subject ? $slot->subject->name : '' }}">
+                                                {{ $slot->subject ? $slot->subject->name : '' }}
+                                            </div>
+                                            <div class="text-[8px] opacity-80 truncate mt-0.5 w-full" style="max-width: 55px;" title="{{ $slot->teacher ? $slot->teacher->name : '' }}">
+                                                {{ $slot->teacher ? explode(' ', $slot->teacher->name)[0] : '' }}
+                                            </div>
                                         </div>
-                                    </div>
-                                @else
-                                    <div class="min-h-[60px] flex items-center justify-center">
-                                        <span class="text-[11px] font-bold text-slate-400">فارغ</span>
-                                    </div>
-                                @endif
-                            </td>
-                        @endif
-                    @endforeach
-                </tr>
-            @endforeach
+                                    @else
+                                        <span class="text-slate-300">-</span>
+                                    @endif
+                                </td>
+                            @endforeach
+                        @endforeach
+                    </tr>
+                @endforeach
+            @endif
         </tbody>
     </table>
 </body>

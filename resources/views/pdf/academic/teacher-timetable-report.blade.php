@@ -86,7 +86,7 @@
                 
                 <div class="mt-3 pr-3 border-r-[3px] py-0.5 brand-border">
                     <h1 class="text-xl font-black text-slate-900 tracking-tight whitespace-nowrap leading-none">
-                        {{ $printSettings['title'] ?? 'الجدول المدرسي العام' }}
+                        {{ $printSettings['title'] ?? 'الجدول المدرسي للمعلم' }}
                     </h1>
                 </div>
             </div>
@@ -119,10 +119,17 @@
         </div>
     </div>
 
-    <!-- معلومات الشعبة -->
-    @if($division)
+    <!-- معلومات المعلم -->
+    @if($teacher)
     <div class="mb-4 flex flex-col gap-1 items-start text-sm font-bold text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200">
-        <span>الشعبة: {{ $division->grade->name }} - {{ $division->name }}</span>
+        <span>المعلم: {{ $teacher->name }}</span>
+        @if($teacher->employee && $teacher->employee->job_title)
+            <span>المسمى الوظيفي: {{ $teacher->employee->job_title }}</span>
+        @endif
+        <div class="flex items-center gap-4 mt-2">
+            <span class="brand-bg px-3 py-1 rounded-md text-xs font-black text-white">النصاب: {{ count($timetable) }} حصة</span>
+            <span class="brand-border border-2 text-slate-700 px-3 py-1 rounded-md text-xs font-black">عدد الشعب: {{ collect($timetable)->pluck('division_id')->unique()->count() }}</span>
+        </div>
     </div>
     @endif
 
@@ -178,7 +185,7 @@
                                     <div class="min-h-[60px] p-2 flex flex-col justify-between h-full border-l-4 {{ $colorClass }}" style="border-left-width: 4px; border-left-color: inherit;">
                                         <div class="font-black text-[12px] mb-1 leading-tight">{{ $slot->subject ? $slot->subject->name : 'بدون مادة' }}</div>
                                         <div class="flex items-center gap-1 mt-auto">
-                                            <span class="text-[10px] font-bold opacity-80 truncate">{{ $slot->teacher ? $slot->teacher->name : 'لم يتم تحديد المعلم' }}</span>
+                                            <span class="text-[10px] font-bold opacity-80 truncate">{{ $slot->division ? $slot->division->grade->name . ' - ' . $slot->division->name : '' }}</span>
                                         </div>
                                     </div>
                                 @else

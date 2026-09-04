@@ -9,7 +9,8 @@ import {
     Calendar,
     Filter,
     X,
-    ChevronDown
+    ChevronDown,
+    Sparkles
 } from 'lucide-react';
 import Select from 'react-select';
 
@@ -316,52 +317,64 @@ export default function Report({ summons, filters }) {
 
                     {/* Secondary Frontend Filters */}
                     {summons.length > 0 && (
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-4 md:p-5 print:hidden">
-                            <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between">
-                                <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                                    <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 print:hidden">
+                            <div className="flex items-center gap-2 mb-5 pb-4 border-b border-slate-100">
+                                <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                                    <Filter size={18} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="font-black text-slate-800 text-[15px]">أدوات التصفية والفرز (فورية)</h3>
+                            </div>
+                            
+                            <div className="flex flex-col xl:flex-row items-start xl:items-end gap-5 justify-between">
+                                <div className="flex flex-wrap items-end gap-5 w-full xl:w-auto">
                                     
-                                    <div className="flex flex-wrap items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
-                                        <button 
-                                            onClick={() => setStatusFilter('all')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all ${statusFilter === 'all' ? 'bg-slate-700 text-white' : 'hover:bg-slate-100 text-slate-600'}`}
-                                        >الكل</button>
-                                        <button 
-                                            onClick={() => setStatusFilter('scheduled')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 flex items-center gap-1 ${statusFilter === 'scheduled' ? 'bg-blue-600 text-white' : 'hover:bg-blue-50 text-blue-700'}`}
-                                        >مجدول ⏳</button>
-                                        <button 
-                                            onClick={() => setStatusFilter('no_show')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 flex items-center gap-1 ${statusFilter === 'no_show' ? 'bg-rose-600 text-white' : 'hover:bg-rose-50 text-rose-700'}`}
-                                        >لم يحضر ❌</button>
-                                        <button 
-                                            onClick={() => setStatusFilter('attended')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-r border-slate-200 flex items-center gap-1 ${statusFilter === 'attended' ? 'bg-emerald-600 text-white' : 'hover:bg-emerald-50 text-emerald-700'}`}
-                                        >تم الحضور ✅</button>
+                                    {/* Status Segmented Control */}
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[12px] font-bold text-slate-400 px-1">حالة الاستدعاء:</span>
+                                        <div className="flex flex-wrap items-center bg-slate-50/80 border border-slate-200 p-1 rounded-xl shadow-inner gap-1">
+                                            <button 
+                                                onClick={() => setStatusFilter('all')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${statusFilter === 'all' ? 'bg-white text-slate-800 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >الكل</button>
+                                            <button 
+                                                onClick={() => setStatusFilter('scheduled')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all flex items-center gap-1.5 ${statusFilter === 'scheduled' ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >مجدول ⏳</button>
+                                            <button 
+                                                onClick={() => setStatusFilter('no_show')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all flex items-center gap-1.5 ${statusFilter === 'no_show' ? 'bg-rose-50 text-rose-700 shadow-sm border border-rose-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >لم يحضر ❌</button>
+                                            <button 
+                                                onClick={() => setStatusFilter('attended')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all flex items-center gap-1.5 ${statusFilter === 'attended' ? 'bg-emerald-50 text-emerald-700 shadow-sm border border-emerald-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >تم الحضور ✅</button>
+                                        </div>
                                     </div>
 
-                                    <div className="flex flex-wrap items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
-                                        <button 
-                                            onClick={() => setReasonFilter(reasonFilter === 'violation' ? 'all' : 'violation')}
-                                            className={`px-4 py-2 text-sm font-bold transition-all flex items-center gap-1.5 ${reasonFilter === 'violation' ? 'bg-amber-500 text-white' : 'hover:bg-amber-50 text-amber-700'}`}
-                                            title="الاستدعاءات التي تم توليدها بسبب مخالفة سلوكية للطالب"
-                                        >
-                                            <AlertCircle size={16} />
-                                            بسبب مخالفة سلوكية
-                                        </button>
+                                    {/* Sort Segmented Control */}
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[12px] font-bold text-slate-400 px-1">فرز وترتيب:</span>
+                                        <div className="flex items-center bg-slate-50/80 border border-slate-200 p-1 rounded-xl shadow-inner gap-1">
+                                            <button 
+                                                onClick={() => setSortOrder('asc')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${sortOrder === 'asc' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >الأقرب موعداً</button>
+                                            <button 
+                                                onClick={() => setSortOrder('desc')}
+                                                className={`px-4 py-1.5 text-[13px] font-bold rounded-lg transition-all ${sortOrder === 'desc' ? 'bg-white text-indigo-700 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border border-transparent'}`}
+                                            >الأحدث تسجيلاً</button>
+                                        </div>
                                     </div>
+                                    
+                                    <label className="flex items-center justify-between cursor-pointer group p-1.5 pr-3 bg-amber-50 hover:bg-amber-100 border border-amber-100 rounded-xl transition-colors h-[40px] w-[180px]" title="الاستدعاءات التي تم توليدها بسبب مخالفة سلوكية للطالب">
+                                        <span className="text-[13px] font-bold text-amber-700 group-hover:text-amber-800 transition-colors flex items-center gap-1.5">
+                                            <AlertCircle size={16} /> بسبب مخالفة
+                                        </span>
+                                        <div className={`relative w-9 h-5 rounded-full transition-colors duration-300 shadow-inner ${reasonFilter === 'violation' ? 'bg-amber-500' : 'bg-amber-200'}`} onClick={(e) => { e.preventDefault(); setReasonFilter(reasonFilter === 'violation' ? 'all' : 'violation'); }}>
+                                            <div className={`absolute top-0.5 bg-white w-4 h-4 rounded-full shadow transition-all duration-300 ${reasonFilter === 'violation' ? 'left-1' : 'right-1'}`}></div>
+                                        </div>
+                                    </label>
 
-                                    <div className="flex flex-wrap items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
-                                        <span className="px-3 py-2 text-sm font-bold text-slate-500 bg-slate-100 border-l border-slate-200">فرز:</span>
-                                        <button 
-                                            onClick={() => setSortOrder('asc')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${sortOrder === 'asc' ? 'bg-indigo-600 text-white' : 'hover:bg-indigo-50 text-indigo-700'}`}
-                                        >الأقرب موعداً</button>
-                                        <button 
-                                            onClick={() => setSortOrder('desc')}
-                                            className={`px-3 py-2 text-sm font-bold transition-all ${sortOrder === 'desc' ? 'bg-indigo-600 text-white' : 'hover:bg-indigo-50 text-indigo-700'}`}
-                                        >الأحدث تسجيلاً</button>
-                                    </div>
                                 </div>
                                 
                                 <div className="w-full xl:w-72">
@@ -374,7 +387,14 @@ export default function Report({ summons, filters }) {
                                         onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
                                         placeholder="تتبع استدعاءات الطالب..."
                                         isClearable
-                                        styles={customSelectStyles}
+                                        styles={{
+                                            ...customSelectStyles,
+                                            control: (base, state) => ({
+                                                ...customSelectStyles.control(base, state),
+                                                minHeight: '40px',
+                                                borderWidth: '1px'
+                                            })
+                                        }}
                                     />
                                 </div>
                             </div>
@@ -402,15 +422,15 @@ export default function Report({ summons, filters }) {
                             ) : (
                                 <div className="overflow-x-auto custom-scrollbar">
                                     <table className="w-full text-sm text-right print:border-collapse">
-                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-black border-b border-slate-200 dark:border-slate-800 print:bg-slate-100 print:border-black/30 print:text-slate-800">
+                                        <thead className="text-white text-xs uppercase font-black border-b print:border-black/30" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>
                                             <tr>
-                                                <th className="w-12 px-4 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30 print:rounded-none">م</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">تاريخ الاستدعاء</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">اسم الطالب</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">الصف / الشعبة</th>
-                                                <th className="w-64 px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">سبب الاستدعاء</th>
-                                                <th className="px-4 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30">الحالة</th>
-                                                <th className="w-32 px-4 py-4 text-center hidden print:table-cell print:border-black/30">توقيع ولي الأمر</th>
+                                                <th className="w-12 px-4 py-4 text-center border-l print:border-black/30 print:rounded-none" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>م</th>
+                                                <th className="px-4 py-4 border-l print:border-black/30" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>تاريخ الاستدعاء</th>
+                                                <th className="px-4 py-4 border-l print:border-black/30" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>اسم الطالب</th>
+                                                <th className="px-4 py-4 border-l print:border-black/30" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>الصف / الشعبة</th>
+                                                <th className="w-64 px-4 py-4 border-l print:border-black/30" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>سبب الاستدعاء</th>
+                                                <th className="px-4 py-4 text-center border-l print:border-black/30" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>الحالة</th>
+                                                <th className="w-32 px-4 py-4 text-center hidden print:table-cell print:border-black/30" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>توقيع ولي الأمر</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 font-medium print:divide-black/20">

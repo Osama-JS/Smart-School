@@ -421,83 +421,84 @@ export default function Report({ visits, filters }) {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto custom-scrollbar">
-                                    <table className="w-full text-sm text-right print:border-collapse">
-                                        <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs uppercase font-black border-b border-slate-200 dark:border-slate-800 print:bg-emerald-50 print:border-black/30 print:text-slate-800">
-                                            <tr>
-                                                <th className="w-12 px-4 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30 print:rounded-none">م</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">التاريخ والوقت</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">اسم الطالب / الصف</th>
-                                                <th className="px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">السجل المرضي</th>
-                                                <th className="w-48 px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">الشكوى / الأعراض</th>
-                                                <th className="w-48 px-4 py-4 border-l border-slate-200 dark:border-slate-700 print:border-black/30">الإجراء المتخذ</th>
-                                                <th className="px-4 py-4 text-center border-l border-slate-200 dark:border-slate-700 print:border-black/30">التصنيف</th>
-                                                <th className="w-24 px-4 py-4 text-center hidden print:table-cell print:border-black/30">التوقيع</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 font-medium print:divide-black/20">
-                                            {processedVisits.map((visit, idx) => {
-                                                const style = getStatusStyle(visit.status);
-                                                return (
-                                                    <tr key={visit.id} className={`${style.row} transition-colors print:hover:bg-transparent`}>
-                                                        <td className="px-4 py-4 whitespace-nowrap text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                            {idx + 1}
-                                                        </td>
-                                                        <td className="px-4 py-4 whitespace-nowrap border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                            <div className="flex items-center gap-2 text-slate-900 dark:text-white print:text-black font-bold">
-                                                                <Calendar className="w-4 h-4 text-slate-400 print:hidden" />
-                                                                {new Date(visit.visited_at).toLocaleString('ar-SA')}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 py-4 border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                            <div className="text-sm font-bold text-slate-900 dark:text-white print:text-black">
-                                                                {visit.student?.user?.name || 'غير معروف'}
-                                                            </div>
-                                                            <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 print:text-slate-700">
-                                                                {visit.student?.current_enrollment ? 
-                                                                    `${visit.student.current_enrollment.division?.grade?.name || ''} - ${visit.student.current_enrollment.division?.name || ''}`
-                                                                : '-'}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 py-4 border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                            {visit.student?.medical_record ? (
-                                                                <div className="text-xs text-slate-700 dark:text-slate-300 space-y-1 print:text-black">
-                                                                    {visit.student.medical_record.chronic_diseases && (
-                                                                        <div><span className="font-bold">أمراض:</span> {visit.student.medical_record.chronic_diseases}</div>
-                                                                    )}
-                                                                    {visit.student.medical_record.allergies && (
-                                                                        <div><span className="font-bold text-rose-600">حساسية:</span> {visit.student.medical_record.allergies}</div>
-                                                                    )}
-                                                                    {!visit.student.medical_record.chronic_diseases && !visit.student.medical_record.allergies && (
-                                                                        <span className="text-slate-400">سليم</span>
-                                                                    )}
+                                <div className="overflow-x-auto print:overflow-visible flex justify-center">
+                                    <div className="inline-block min-w-full lg:w-4/5 xl:w-3/4 bg-white rounded-xl shadow-sm border-2 border-slate-800 overflow-hidden print:shadow-none print:border-none print:w-full">
+                                        <table className="w-full text-right border-collapse text-sm">
+                                            <thead className={`${printSettings.ecoMode ? 'bg-slate-100 text-slate-800 border-b-2 border-slate-800' : 'text-white'}`} style={!printSettings.ecoMode ? { backgroundColor: printSettings.brandColor } : {}}>
+                                                <tr>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-12 text-center">م</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 text-center w-32">التاريخ والوقت</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-48">الطالب / الصف</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 w-40">السجل المرضي</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300">الشكوى / الأعراض</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300">الإجراء المتخذ</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 text-center w-24">التصنيف</th>
+                                                    <th className="px-4 py-3 font-bold border-y border-slate-300 text-center w-24 hidden print:table-cell">التوقيع</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-200 font-medium">
+                                                {processedVisits.map((visit, idx) => {
+                                                    const style = getStatusStyle(visit.status);
+                                                    return (
+                                                        <tr key={visit.id} className="hover:bg-slate-50 transition-colors">
+                                                            <td className="px-4 py-3 text-center border-y border-slate-200 font-bold text-slate-700">
+                                                                {idx + 1}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center border-y border-slate-200" dir="ltr">
+                                                                <div className="font-bold text-slate-800">
+                                                                    {new Date(visit.visited_at).toLocaleDateString('en-CA')}
                                                                 </div>
-                                                            ) : (
-                                                                <span className="text-xs text-slate-400">لا يوجد سجل</span>
-                                                            )}
-                                                        </td>
-                                                        <td className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                            <div className="flex items-start gap-2">
-                                                                <Activity className="w-4 h-4 text-slate-400 shrink-0 mt-0.5 print:hidden" />
+                                                                <div className="text-xs text-slate-500">
+                                                                    {new Date(visit.visited_at).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 border-y border-slate-200">
+                                                                <div className="font-bold text-slate-900">
+                                                                    {visit.student?.user?.name || 'غير معروف'}
+                                                                </div>
+                                                                <div className="text-xs text-slate-600 mt-1">
+                                                                    {visit.student?.current_enrollment ? 
+                                                                        `${visit.student.current_enrollment.division?.grade?.name || ''} - ${visit.student.current_enrollment.division?.name || ''}`
+                                                                    : '-'}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 py-3 border-y border-slate-200 text-xs">
+                                                                {visit.student?.medical_record ? (
+                                                                    <div className="text-slate-700 space-y-1">
+                                                                        {visit.student.medical_record.chronic_diseases && (
+                                                                            <div><span className="font-bold">أمراض:</span> {visit.student.medical_record.chronic_diseases}</div>
+                                                                        )}
+                                                                        {visit.student.medical_record.allergies && (
+                                                                            <div><span className="font-bold text-rose-600">حساسية:</span> {visit.student.medical_record.allergies}</div>
+                                                                        )}
+                                                                        {!visit.student.medical_record.chronic_diseases && !visit.student.medical_record.allergies && (
+                                                                            <span className="text-slate-400">سليم</span>
+                                                                        )}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-slate-400">لا يوجد سجل</span>
+                                                                )}
+                                                            </td>
+                                                            <td className="px-4 py-3 border-y border-slate-200 text-sm text-slate-700">
                                                                 <p className="line-clamp-2 print:line-clamp-none">{visit.symptoms}</p>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 py-4 text-sm text-slate-700 dark:text-slate-300 border-l border-slate-200 dark:border-slate-800 print:border-black/30 print:text-black">
-                                                            <p className="line-clamp-2 print:line-clamp-none">{visit.action_taken}</p>
-                                                        </td>
-                                                        <td className="px-4 py-4 whitespace-nowrap text-center border-l border-slate-200 dark:border-slate-800 print:border-black/30">
-                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${style.badge} print:bg-transparent print:p-0 print:border-none print:text-black`}>
-                                                                {style.label}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-4 py-4 text-center hidden print:table-cell print:border-black/30">
-                                                            {/* Empty cell for signature in print mode */}
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
+                                                            </td>
+                                                            <td className="px-4 py-3 border-y border-slate-200 text-sm text-slate-700">
+                                                                <p className="line-clamp-2 print:line-clamp-none">{visit.action_taken}</p>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center border-y border-slate-200">
+                                                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${style.badge} print:bg-transparent print:p-0 print:border-none print:text-black`}>
+                                                                    {style.label}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center hidden print:table-cell border-y border-slate-200">
+                                                                {/* Empty cell for signature in print mode */}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             )}
 

@@ -277,22 +277,7 @@ export default function ClassroomVisitsReport({
                             <p className="text-[13.5px] font-bold text-slate-500">متابعة وتقييم الزيارات الصفية الميدانية للمشرفين الأكاديميين ونسب أداء المعلمين</p>
                         </div>
                     </div>
-                    <div className="flex flex-wrap gap-3 relative z-10 w-full sm:w-auto">
-                        <button
-                            onClick={handleExportCSV}
-                            className="flex items-center justify-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 hover:shadow-md transition-all font-bold"
-                        >
-                            <Download size={18} strokeWidth={2.5} />
-                            <span>تصدير (CSV)</span>
-                        </button>
-                        <button
-                            onClick={handlePrintClick}
-                            className="flex items-center justify-center gap-2.5 px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md transition-all font-bold"
-                        >
-                            <Printer size={18} strokeWidth={2.5} />
-                            <span>طباعة التقرير</span>
-                        </button>
-                    </div>
+
                 </div>
 
                 {/* Filters Section */}
@@ -559,10 +544,6 @@ export default function ClassroomVisitsReport({
                                     </div>
 
                                     <div className="flex flex-col gap-3 mt-6 pt-4">
-                                        <button onClick={handlePrintClick} className="w-full px-6 py-3.5 bg-slate-800 text-white hover:bg-slate-700 rounded-xl transition-all font-black shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2">
-                                            <Printer size={18} strokeWidth={2.5} />
-                                            طباعة التقرير
-                                        </button>
                                         <button 
                                             onClick={handleDownloadPDF} 
                                             disabled={isGeneratingPdf}

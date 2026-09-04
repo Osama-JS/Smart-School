@@ -161,12 +161,11 @@
                         </td>
                         @foreach(['sunday', 'monday', 'tuesday', 'wednesday', 'thursday'] as $dayKey)
                             @php
-                                $date = $weekDays[$dayKey]['date'];
-                                $log = collect($student['logs'])->firstWhere('date', $date);
-                                $statusInfo = getStatusInfo($log ? $log['status'] : null);
+                                $status = $student['days'][$dayKey]['status'] ?? null;
+                                $statusInfo = getStatusInfo($status);
                             @endphp
                             <td class="border border-slate-300 p-3 text-center">
-                                @if($log)
+                                @if($status)
                                     <span class="inline-block px-3 py-1 rounded text-xs font-bold {{ $statusInfo['color'] }}">
                                         {{ $statusInfo['label'] }}
                                     </span>

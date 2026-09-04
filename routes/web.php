@@ -789,6 +789,7 @@ Route::middleware('auth')->group(function () {
     // ── Meetings ──
         Route::get('/meetings/report', [\App\Http\Controllers\HR\MeetingController::class, 'reportIndex'])->name('meetings.report');
         Route::get('/meetings/report/pdf', [\App\Http\Controllers\HR\MeetingController::class, 'reportPdf'])->name('meetings.report.pdf');
+        Route::get('/meetings/report/{meeting}/pdf', [\App\Http\Controllers\HR\MeetingController::class, 'singleReportPdf'])->name('meetings.single-report.pdf');
     Route::middleware('permission:إدارة الاجتماعات')->group(function () {
         Route::resource('/meetings', \App\Http\Controllers\HR\MeetingController::class)->names([
             'index'   => 'meetings.index',

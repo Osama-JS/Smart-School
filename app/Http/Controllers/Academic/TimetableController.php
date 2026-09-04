@@ -38,10 +38,15 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
 
         $selectedDivisionId = $request->division_id;
         $selectedSemesterId = $request->semester_id;
+        $reportType = $request->report_type ?? 'division';
+        $selectedTeacherId = $request->teacher_id;
+        
+        $selectedSectionId = $request->section_id;
+        $selectedGradeId = $request->grade_id;
 
         $periodsQuery = DailyPeriod::where('branch_id', $branchId);
         
-        if ($selectedDivisionId) {
+        if ($reportType === 'division' && $selectedDivisionId) {
             $division = Division::find($selectedDivisionId);
             $gradeId = $division ? $division->grade_id : null;
             if ($gradeId) {
@@ -57,12 +62,45 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
         $periods = $periodsQuery->orderBy('start_time')->get();
 
         $timetable = [];
-        if ($selectedDivisionId && $selectedSemesterId) {
+        $masterDivisions = [];
+        if ($reportType === 'division' && $selectedDivisionId && $selectedSemesterId) {
             $timetable = MasterTimetable::with(['subject', 'teacher'])
                 ->where('division_id', $selectedDivisionId)
                 ->where('semester_id', $selectedSemesterId)
                 ->get();
+        } elseif ($reportType === 'teacher' && $selectedTeacherId && $selectedSemesterId) {
+            $timetable = MasterTimetable::with(['subject', 'division.grade.section'])
+                ->where('teacher_id', $selectedTeacherId)
+                ->where('semester_id', $selectedSemesterId)
+                ->get();
+        } elseif ($reportType === 'master' && $selectedSemesterId) {
+            $divisionsQuery = Division::with('grade.section')->where('branch_id', $branchId);
+            if ($selectedGradeId) {
+                $divisionsQuery->where('grade_id', $selectedGradeId);
+            } elseif ($selectedSectionId) {
+                $divisionsQuery->whereHas('grade', function($q) use ($selectedSectionId) {
+                    $q->where('section_id', $selectedSectionId);
+                });
+            }
+            $masterDivisions = $divisionsQuery->orderBy('grade_id')->orderBy('name')->get();
+
+            $timetable = MasterTimetable::with(['subject', 'teacher', 'division.grade.section'])
+                ->whereIn('division_id', $masterDivisions->pluck('id'))
+                ->where('semester_id', $selectedSemesterId)
+                ->get();
         }
+
+        $teachers = User::with(['role', 'employee'])
+            ->where('branch_id', $branchId)
+            ->whereHas('role', function($q){
+                $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']);
+            })->get(['id', 'name', 'role_id'])->map(function($teacher) {
+                $jobTitle = $teacher->employee?->job_title ?? $teacher->role?->name ?? '';
+                return [
+                    'id' => $teacher->id,
+                    'name' => $jobTitle ? "{$teacher->name} - {$jobTitle}" : $teacher->name,
+                ];
+            });
 
         $semester = Semester::with('academicYear')->find($selectedSemesterId);
         $workingDays = $semester && $semester->academicYear->working_days 
@@ -86,7 +124,9 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
             'timetable' => $timetable,
             'workingDays' => $workingDays,
             'daysTranslation' => $daysTranslation,
-            'filters' => $request->only('academic_year_id', 'semester_id', 'section_id', 'grade_id', 'division_id'),
+            'teachers' => $teachers,
+            'masterDivisions' => $masterDivisions,
+            'filters' => $request->only('academic_year_id', 'semester_id', 'section_id', 'grade_id', 'division_id', 'report_type', 'teacher_id'),
         ]);
     }
 
@@ -98,11 +138,17 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
         
         $selectedDivisionId = $request->division_id;
         $selectedSemesterId = $request->semester_id;
+        $reportType = $request->report_type ?? 'division';
+        $selectedTeacherId = $request->teacher_id;
+        
+        $selectedSectionId = $request->section_id;
+        $selectedGradeId = $request->grade_id;
 
         $periodsQuery = DailyPeriod::where('branch_id', $branchId);
         $division = null;
+        $teacher = null;
         
-        if ($selectedDivisionId) {
+        if ($reportType === 'division' && $selectedDivisionId) {
             $division = Division::with('grade.section')->find($selectedDivisionId);
             $gradeId = $division ? $division->grade_id : null;
             if ($gradeId) {
@@ -114,13 +160,38 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
                 });
             }
         }
+
+        if ($reportType === 'teacher' && $selectedTeacherId) {
+            $teacher = User::with('employee')->find($selectedTeacherId);
+        }
         
         $periods = $periodsQuery->orderBy('start_time')->get();
 
         $timetable = [];
-        if ($selectedDivisionId && $selectedSemesterId) {
+        $masterDivisions = [];
+        if ($reportType === 'division' && $selectedDivisionId && $selectedSemesterId) {
             $timetable = MasterTimetable::with(['subject', 'teacher'])
                 ->where('division_id', $selectedDivisionId)
+                ->where('semester_id', $selectedSemesterId)
+                ->get();
+        } elseif ($reportType === 'teacher' && $selectedTeacherId && $selectedSemesterId) {
+            $timetable = MasterTimetable::with(['subject', 'division.grade.section'])
+                ->where('teacher_id', $selectedTeacherId)
+                ->where('semester_id', $selectedSemesterId)
+                ->get();
+        } elseif ($reportType === 'master' && $selectedSemesterId) {
+            $divisionsQuery = Division::with('grade.section')->where('branch_id', $branchId);
+            if ($selectedGradeId) {
+                $divisionsQuery->where('grade_id', $selectedGradeId);
+            } elseif ($selectedSectionId) {
+                $divisionsQuery->whereHas('grade', function($q) use ($selectedSectionId) {
+                    $q->where('section_id', $selectedSectionId);
+                });
+            }
+            $masterDivisions = $divisionsQuery->orderBy('grade_id')->orderBy('name')->get();
+
+            $timetable = MasterTimetable::with(['subject', 'teacher', 'division.grade.section'])
+                ->whereIn('division_id', $masterDivisions->pluck('id'))
                 ->where('semester_id', $selectedSemesterId)
                 ->get();
         }
@@ -164,6 +235,9 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
             'workingDays' => $workingDays,
             'daysTranslation' => $daysTranslation,
             'division' => $division,
+            'teacher' => $teacher,
+            'masterDivisions' => $masterDivisions,
+            'reportType' => $reportType,
             'printSettings' => $printSettings,
             'brandColor' => $brandColor,
             'watermark' => $printSettings['watermark'] ?? 'none',
@@ -188,7 +262,14 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
             </div>
         ';
 
-        $pdf = Pdf::view('pdf.academic.timetable-report', $data)
+        $viewName = 'pdf.academic.timetable-report';
+        if ($reportType === 'teacher') {
+            $viewName = 'pdf.academic.teacher-timetable-report';
+        } elseif ($reportType === 'master') {
+            $viewName = 'pdf.academic.master-timetable-report';
+        }
+
+        $pdf = Pdf::view($viewName, $data)
             ->format($paperSize)
             ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
             ->footerHtml($footerHtml);

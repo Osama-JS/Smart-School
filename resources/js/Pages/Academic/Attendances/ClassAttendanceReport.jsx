@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { Search, Calendar, UserX, Clock, X, Filter, BookOpen, AlertCircle, Layers } from 'lucide-react';
+import { Search, Calendar, UserX, Clock, X, Filter, BookOpen, AlertCircle, Layers, Sparkles } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 import Select from 'react-select';
@@ -137,7 +137,7 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
         }
 
         // 2. Selected Student
-        if (selectedStudent && student.id !== selectedStudent) return false;
+        if (selectedStudent && student.id != selectedStudent) return false;
 
         // 3. Smart Filters
         if (smartFilter === 'absent_in_class') {
@@ -212,14 +212,7 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
                             <p className="text-[13.5px] font-bold text-slate-500">تتبع حضور وغياب الطلاب في كل حصة دراسية ومادة على حدة</p>
                         </div>
                     </div>
-                    <div className="flex gap-3 relative z-10 w-full sm:w-auto">
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
-                        >
-                            طباعة التقرير
-                        </button>
-                    </div>
+
                 </div>
 
                 {/* Filter Panel */}
@@ -354,72 +347,74 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
                                     </div>
                                 </form>
 
-                                {/* Secondary Frontend Filters */}
-                                {divisionId && students?.length > 0 && (
-                                    <div className="mt-5 pt-5 border-t border-slate-100 flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between">
-                                        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                                            <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
-                                            
-                                            <button 
-                                                onClick={() => setHidePerfect(!hidePerfect)}
-                                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${hidePerfect ? 'bg-emerald-600 text-white' : 'bg-slate-50 border border-slate-200 text-emerald-600 hover:bg-emerald-50'}`}
-                                            >
-                                                <span className="w-2 h-2 rounded-full bg-current"></span>
-                                                إخفاء المنتظمين
-                                            </button>
-                                            
-                                            <button 
-                                                onClick={() => setSmartFilter(smartFilter === 'absent_in_class' ? '' : 'absent_in_class')}
-                                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'absent_in_class' ? 'bg-rose-600 text-white' : 'bg-slate-50 border border-slate-200 text-rose-600 hover:bg-rose-50'}`}
-                                                title="حاضر في البصمة الصباحية وغائب في إحدى الحصص"
-                                            >
-                                                <span className="w-2 h-2 rounded-full bg-current"></span>
-                                                كشف الهروب
-                                            </button>
-
-                                            <button 
-                                                onClick={() => setSmartFilter(smartFilter === 'last_periods_absent' ? '' : 'last_periods_absent')}
-                                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'last_periods_absent' ? 'bg-amber-500 text-white' : 'bg-slate-50 border border-slate-200 text-amber-600 hover:bg-amber-50'}`}
-                                            >
-                                                <span className="w-2 h-2 rounded-full bg-current"></span>
-                                                غياب الحصص الأخيرة
-                                            </button>
-                                        </div>
-                                        
-                                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-                                            <div className="w-full sm:w-64">
-                                                <Select
-                                                    options={[
-                                                        { value: '', label: 'الكل (بحث باسم الطالب)' },
-                                                        ...(students?.map(s => ({ value: s.id, label: s.name })) || [])
-                                                    ]}
-                                                    value={selectedStudent ? { value: selectedStudent, label: students?.find(s => s.id === selectedStudent)?.name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
-                                                    onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
-                                                    placeholder="بحث باسم الطالب..."
-                                                    isClearable
-                                                    styles={customSelectStyles}
-                                                />
-                                            </div>
-                                            <div className="w-full sm:w-48">
-                                                <Select
-                                                    options={[
-                                                        { value: '', label: 'تصفية بالحصة' },
-                                                        ...(periods?.map(p => ({ value: p.id, label: p.period_name })) || [])
-                                                    ]}
-                                                    value={selectedPeriod ? { value: selectedPeriod, label: periods?.find(p => p.id === selectedPeriod)?.period_name } : { value: '', label: 'تصفية بالحصة' }}
-                                                    onChange={(opt) => setSelectedPeriod(opt ? opt.value : '')}
-                                                    placeholder="تصفية بالحصة..."
-                                                    isClearable
-                                                    styles={customSelectStyles}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                {/* Secondary Frontend Filters were moved outside */}
                             </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Secondary Frontend Filters - Always Visible */}
+                {divisionId && students?.length > 0 && (
+                    <div className="p-5 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between print:hidden">
+                        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                            <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
+                            
+                            <button 
+                                onClick={() => setHidePerfect(!hidePerfect)}
+                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${hidePerfect ? 'bg-emerald-600 text-white' : 'bg-slate-50 border border-slate-200 text-emerald-600 hover:bg-emerald-50'}`}
+                            >
+                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                إخفاء المنتظمين
+                            </button>
+                            
+                            <button 
+                                onClick={() => setSmartFilter(smartFilter === 'absent_in_class' ? '' : 'absent_in_class')}
+                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'absent_in_class' ? 'bg-rose-600 text-white' : 'bg-slate-50 border border-slate-200 text-rose-600 hover:bg-rose-50'}`}
+                                title="حاضر في البصمة الصباحية وغائب في إحدى الحصص"
+                            >
+                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                كشف الهروب
+                            </button>
+
+                            <button 
+                                onClick={() => setSmartFilter(smartFilter === 'last_periods_absent' ? '' : 'last_periods_absent')}
+                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${smartFilter === 'last_periods_absent' ? 'bg-amber-500 text-white' : 'bg-slate-50 border border-slate-200 text-amber-600 hover:bg-amber-50'}`}
+                            >
+                                <span className="w-2 h-2 rounded-full bg-current"></span>
+                                غياب الحصص الأخيرة
+                            </button>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+                            <div className="w-full sm:w-64">
+                                <Select
+                                    options={[
+                                        { value: '', label: 'الكل (بحث باسم الطالب)' },
+                                        ...(students?.map(s => ({ value: s.id, label: s.name })) || [])
+                                    ]}
+                                    value={selectedStudent ? { value: selectedStudent, label: students?.find(s => s.id == selectedStudent)?.name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
+                                    onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
+                                    placeholder="بحث باسم الطالب..."
+                                    isClearable
+                                    styles={customSelectStyles}
+                                />
+                            </div>
+                            <div className="w-full sm:w-48">
+                                <Select
+                                    options={[
+                                        { value: '', label: 'تصفية بالحصة' },
+                                        ...(periods?.map(p => ({ value: p.id, label: p.period_name })) || [])
+                                    ]}
+                                    value={selectedPeriod ? { value: selectedPeriod, label: periods?.find(p => p.id == selectedPeriod)?.period_name } : { value: '', label: 'تصفية بالحصة' }}
+                                    onChange={(opt) => setSelectedPeriod(opt ? opt.value : '')}
+                                    placeholder="تصفية بالحصة..."
+                                    isClearable
+                                    styles={customSelectStyles}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Data Table */}
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -452,25 +447,25 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
                             </div>
                             <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-none">
                                 <table className="w-full text-sm text-right">
-                                    <thead className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 print:bg-slate-100 print:border-black">
+                                    <thead className="text-white border-b print:border-black" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>
                                     <tr>
-                                        <th className="px-6 py-4 font-black text-slate-700 dark:text-slate-300 whitespace-nowrap bg-slate-50/80 dark:bg-slate-800/50 sticky right-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] dark:shadow-none">
+                                        <th className="px-6 py-4 font-black whitespace-nowrap sticky right-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] dark:shadow-none" style={{ backgroundColor: printSettings?.brandColor || '#1e293b' }}>
                                             الطالب
                                         </th>
-                                        <th className="px-6 py-4 font-black text-slate-700 dark:text-slate-300 whitespace-nowrap text-center border-l border-slate-200 dark:border-slate-700">
+                                        <th className="px-6 py-4 font-black whitespace-nowrap text-center border-l" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                                             الغياب اليومي (الباب)
                                         </th>
                                         {periods.map(period => {
                                             const slot = timetable ? timetable[period.id] : null;
                                             return (
-                                                <th key={period.id} className="px-6 py-4 font-black text-slate-700 dark:text-slate-300 whitespace-nowrap text-center min-w-[140px]">
+                                                <th key={period.id} className="px-6 py-4 font-black whitespace-nowrap text-center min-w-[140px] border-l" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                                                     {period.period_name}
                                                     {slot && (
-                                                        <div className="text-[10px] text-slate-400 font-bold mb-1 line-clamp-1 border-b border-slate-100 dark:border-slate-700 pb-1 w-full text-center print:border-black/10">
+                                                        <div className="text-[10px] text-white/80 font-bold mb-1 line-clamp-1 border-b border-white/20 pb-1 w-full text-center print:border-black/10">
                                                             {slot.subject ? slot.subject.name : 'فراغ'}
                                                         </div>
                                                     )}
-                                                    <div className="text-[10px] font-normal text-slate-500 mt-1">
+                                                    <div className="text-[10px] font-normal text-white/70 mt-1">
                                                         {period.start_time ? period.start_time.substring(0,5) : ''} - {period.end_time ? period.end_time.substring(0,5) : ''}
                                                     </div>
                                                 </th>

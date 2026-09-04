@@ -282,9 +282,6 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
                                 </div>
                                 
                                 <div className="flex flex-col sm:flex-row gap-3 shrink-0 pt-4 md:pt-0 border-t border-dark-100 dark:border-dark-800 md:border-0 mt-4 md:mt-0">
-                                    <button onClick={handlePrint} className="bg-white dark:bg-dark-800 text-dark-700 dark:text-dark-200 border border-dark-200 dark:border-dark-700 hover:border-dark-300 dark:hover:border-dark-600 hover:bg-dark-50 dark:hover:bg-dark-700 px-6 py-3.5 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 shadow-sm">
-                                        <Printer size={18} /> طباعة التقرير
-                                    </button>
                                     {isSupervisor && meeting.status === 'scheduled' && (
                                         <button onClick={() => setIsLiveMode(true)} className="flex items-center justify-center gap-3 px-8 py-3.5 bg-gradient-to-l from-primary-600 to-primary-500 text-white rounded-2xl hover:from-primary-500 hover:to-primary-400 shadow-lg shadow-primary-500/30 text-sm font-black transition-all active:scale-95 group">
                                             <PlayCircle size={22} className="group-hover:scale-110 transition-transform" /> بدء الاجتماع المباشر

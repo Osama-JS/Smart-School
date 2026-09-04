@@ -12,6 +12,7 @@ const formatDateStr = (dateString) => {
 
 export default function ReportPrintLayout({
     children,
+    sidebarFilters,
     printSettings,
     setPrintSettings,
     onPrint,
@@ -179,12 +180,7 @@ export default function ReportPrintLayout({
                                 </label>
                             </div>
                             <div className="flex flex-col gap-3 mt-6 pt-4">
-                                {onPrint && (
-                                    <button onClick={onPrint} className="w-full px-6 py-3.5 bg-slate-800 text-white hover:bg-slate-700 rounded-xl transition-all font-black shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2">
-                                        <Printer size={18} strokeWidth={2.5} />
-                                        طباعة التقرير
-                                    </button>
-                                )}
+
                                 {onDownloadPdf && (
                                     <button 
                                         onClick={onDownloadPdf} 
@@ -320,6 +316,17 @@ export default function ReportPrintLayout({
             </div>
 
             <style jsx global>{`
+                .brand-bg {
+                    background-color: ${printSettings.brandColor} !important;
+                    color: #ffffff !important;
+                }
+                .brand-border {
+                    border-color: ${printSettings.brandColor} !important;
+                }
+                .brand-text {
+                    color: ${printSettings.brandColor} !important;
+                }
+
                 @media print {
                     @page {
                         size: ${paperDims.maxWidth} ${paperDims.minHeight};

@@ -168,14 +168,6 @@ export default function CoverageReportIndex({ coverages, stats, teachers, filter
                             <p className="text-[13.5px] font-bold text-slate-500">عرض وطباعة سجلات التغطية وحصص الاحتياط</p>
                         </div>
                     </div>
-                    <div className="flex gap-3 relative z-10 w-full sm:w-auto">
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
-                        >
-                            طباعة التقرير
-                        </button>
-                    </div>
                 </div>
 
                 {/* Filters Panel */}
@@ -339,12 +331,16 @@ export default function CoverageReportIndex({ coverages, stats, teachers, filter
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             {[
                                 { label: 'اليوم', value: stats.today, icon: CalendarDays, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400' },
-                                { label: 'هذا الأسبوع', value: stats.this_week, icon: TrendingUp, color: 'text-primary-600 bg-primary-50 dark:bg-primary-500/10 dark:text-primary-400' },
+                                { label: 'هذا الأسبوع', value: stats.this_week, icon: TrendingUp, color: 'text-primary-600 bg-primary-50 dark:bg-primary-500/10 dark:text-primary-400', isBrand: true },
                                 { label: 'هذا الشهر', value: stats.this_month, icon: ShieldCheck, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 dark:text-indigo-400' },
                                 { label: 'إجمالي السجلات', value: stats.total, icon: BookOpen, color: 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400' },
                             ].map((s) => (
-                                <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-center gap-4 shadow-sm print:shadow-none print:border-black/20 print:bg-transparent">
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${s.color} print:text-black print:bg-slate-100`}>
+                                <div key={s.label} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex items-center gap-4 shadow-sm relative overflow-hidden transition-all print:shadow-none print:border-black/20 print:bg-transparent">
+                                    <div className="absolute top-0 right-0 bottom-0 w-1 opacity-80 transition-colors" style={{ backgroundColor: printSettings?.brandColor || '#2563eb' }}></div>
+                                    <div 
+                                        className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 print:text-black print:bg-slate-100 ${s.isBrand ? '' : s.color}`}
+                                        style={s.isBrand ? { backgroundColor: `${printSettings?.brandColor || '#2563eb'}15`, color: printSettings?.brandColor || '#2563eb' } : {}}
+                                    >
                                         <s.icon size={22} className="print:text-black" />
                                     </div>
                                     <div>
@@ -369,63 +365,66 @@ export default function CoverageReportIndex({ coverages, stats, teachers, filter
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-right print:border-collapse">
+                            <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-xl m-4">
+                                <table className="w-full text-right border-collapse print:border-collapse">
                                     <thead>
-                                        <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 print:bg-slate-100 print:border-black/30">
-                                            {['التاريخ', 'الحصة', 'الشعبة', 'المعلم الغائب', 'المعلم البديل', 'نوع التغطية', 'الحالة'].map(h => (
-                                                <th key={h} className="px-5 py-3.5 text-xs font-black text-slate-500 dark:text-slate-400 whitespace-nowrap print:text-slate-800 print:border print:border-black/30">{h}</th>
+                                        <tr className="transition-colors print:bg-slate-100 print:border-black/30" style={{ backgroundColor: printSettings?.brandColor || '#2563eb', color: '#fff' }}>
+                                            {['م', 'التاريخ', 'الحصة', 'الشعبة', 'المعلم الغائب', 'المعلم البديل', 'نوع التغطية', 'الحالة'].map(h => (
+                                                <th key={h} className={`px-5 py-3.5 text-[13px] font-black text-center border border-white/20 print:text-slate-800 print:border-black/30 ${h === 'م' ? 'w-8' : ''}`}>{h}</th>
                                             ))}
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 print:divide-black/20">
-                                        {coverages.map(c => {
+                                    <tbody className="bg-white dark:bg-slate-900">
+                                        {coverages.map((c, index) => {
                                             const typeInfo = COVERAGE_TYPE_LABELS[c.coverage_type] || COVERAGE_TYPE_LABELS.substitution;
                                             return (
                                                 <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors print:hover:bg-transparent">
-                                                    <td className="px-5 py-4 print:border print:border-black/30 print:p-2">
-                                                        <div className="flex items-center gap-2">
+                                                    <td className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-center text-[13px] font-bold text-slate-500 print:border-black/30 print:p-2">
+                                                        {index + 1}
+                                                    </td>
+                                                    <td className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-center print:border-black/30 print:p-2">
+                                                        <div className="flex items-center justify-center gap-2">
                                                             <CalendarDays size={15} className="text-slate-400 print:hidden" />
-                                                            <span className="text-sm font-bold text-slate-800 dark:text-white print:text-black">{formatDate(c.coverage_date)}</span>
+                                                            <span className="text-[13px] font-bold text-slate-800 dark:text-white print:text-black">{formatDate(c.coverage_date)}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-5 py-4 print:border print:border-black/30 print:p-2">
-                                                        <div className="text-sm font-bold text-slate-800 dark:text-white print:text-black">{c.period?.period_name}</div>
+                                                    <td className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-center print:border-black/30 print:p-2">
+                                                        <div className="text-[13px] font-bold text-slate-800 dark:text-white print:text-black">{c.period?.period_name}</div>
                                                         <div className="text-xs text-slate-500 font-mono print:text-slate-700" dir="ltr">
                                                             {c.period?.start_time?.substring(0,5)} - {c.period?.end_time?.substring(0,5)}
                                                         </div>
                                                     </td>
-                                                    <td className="px-5 py-4 text-sm text-slate-600 dark:text-slate-300 print:text-black print:border print:border-black/30 print:p-2">
+                                                    <td className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-[13px] text-center font-semibold text-slate-700 dark:text-slate-300 print:text-black print:border-black/30 print:p-2">
                                                         {c.division?.grade?.section?.name} / {c.division?.name}
                                                     </td>
-                                                    <td className="px-5 py-4 print:border print:border-black/30 print:p-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-7 h-7 rounded-full bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 print:hidden">
-                                                                <User size={13} />
+                                                    <td className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-center print:border-black/30 print:p-2">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <div className="w-6 h-6 rounded-full bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 print:hidden">
+                                                                <User size={12} />
                                                             </div>
-                                                            <span className="text-sm font-bold text-slate-800 dark:text-white print:text-black">{c.absent_teacher?.name}</span>
+                                                            <span className="text-[13px] font-bold text-rose-700 dark:text-rose-400 print:text-black">{c.absent_teacher?.name}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-5 py-4 print:border print:border-black/30 print:p-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 print:hidden">
-                                                                <User size={13} />
+                                                    <td className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-center print:border-black/30 print:p-2">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 print:hidden">
+                                                                <User size={12} />
                                                             </div>
-                                                            <span className="text-sm font-bold text-slate-800 dark:text-white print:text-black">{c.substitute_teacher?.name}</span>
+                                                            <span className="text-[13px] font-bold text-emerald-700 dark:text-emerald-400 print:text-black">{c.substitute_teacher?.name}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-5 py-4 print:border print:border-black/30 print:p-2">
-                                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border ${typeInfo.color} print:border-none print:p-0 print:bg-transparent print:text-black`}>
+                                                    <td className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-center print:border-black/30 print:p-2">
+                                                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold border ${typeInfo.color} print:border-none print:p-0 print:bg-transparent print:text-black`}>
                                                             {typeInfo.label}
                                                         </span>
                                                     </td>
-                                                    <td className="px-5 py-4 print:border print:border-black/30 print:p-2">
+                                                    <td className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-center print:border-black/30 print:p-2">
                                                         {c.substitute_notified ? (
-                                                            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 print:text-black">
+                                                            <span className="inline-flex items-center justify-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 print:text-black">
                                                                 <CheckCircle2 size={14} className="print:hidden" /> أُبلغ
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 print:text-black">
+                                                            <span className="inline-flex items-center justify-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 print:text-black">
                                                                 <AlertCircle size={14} className="print:hidden" /> لم يُبلَّغ
                                                             </span>
                                                         )}

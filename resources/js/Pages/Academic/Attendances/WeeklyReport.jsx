@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { Printer, Filter, CalendarDays, CheckCircle2, XCircle, Clock, Search, Calendar, X } from 'lucide-react';
+import { Printer, Filter, CalendarDays, CheckCircle2, XCircle, Clock, Search, Calendar, X, Sparkles } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 import Select from 'react-select';
@@ -92,7 +92,7 @@ export default function WeeklyReport({ students, weekDays = {}, divisionInfo, gr
     // Compute Filtered Students
     const filteredStudents = (students || []).filter(student => {
         // Search filter
-        if (selectedStudent && student.id !== selectedStudent) return false;
+        if (selectedStudent && student.id != selectedStudent) return false;
         
         // Hide perfect
         if (hidePerfect) {
@@ -235,15 +235,7 @@ export default function WeeklyReport({ students, weekDays = {}, divisionInfo, gr
                         </div>
                     </div>
                     
-                    <div className="flex gap-3 relative z-10 w-full sm:w-auto">
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold text-sm"
-                        >
-                            <Printer size={18} />
-                            طباعة الكشف
-                        </button>
-                    </div>
+
                 </div>
                 
                 {/* Filter Panel */}
@@ -386,85 +378,87 @@ export default function WeeklyReport({ students, weekDays = {}, divisionInfo, gr
                                     </div>
                                 </form>
 
-                                {/* Secondary Frontend Filters */}
-                                {divisionInfo && students?.length > 0 && (
-                                    <div className="mt-5 pt-5 border-t border-slate-100 flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between">
-                                        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-                                            <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
-                                            
-                                            <button 
-                                                onClick={() => setHidePerfect(!hidePerfect)}
-                                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${hidePerfect ? 'bg-emerald-600 text-white' : 'bg-slate-50 border border-slate-200 text-emerald-600 hover:bg-emerald-50'}`}
-                                            >
-                                                <span className="w-2 h-2 rounded-full bg-current"></span>
-                                                إخفاء المنتظمين
-                                            </button>
-
-                                            <div className="flex items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
-                                                <span className="px-3 py-2 text-sm font-bold text-slate-500 bg-slate-100 border-l border-slate-200">الغياب:</span>
-                                                <button 
-                                                    onClick={() => setMinAbsences(minAbsences === 1 ? 0 : 1)}
-                                                    className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${minAbsences === 1 ? 'bg-amber-500 text-white' : 'hover:bg-amber-50 text-amber-600'}`}
-                                                >
-                                                    يوم+
-                                                </button>
-                                                <button 
-                                                    onClick={() => setMinAbsences(minAbsences === 2 ? 0 : 2)}
-                                                    className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${minAbsences === 2 ? 'bg-rose-500 text-white' : 'hover:bg-rose-50 text-rose-600'}`}
-                                                >
-                                                    يومين+
-                                                </button>
-                                                <button 
-                                                    onClick={() => setMinAbsences(minAbsences === 3 ? 0 : 3)}
-                                                    className={`px-3 py-2 text-sm font-bold transition-all ${minAbsences === 3 ? 'bg-red-700 text-white' : 'hover:bg-red-50 text-red-700'}`}
-                                                >
-                                                    3 أيام+
-                                                </button>
-                                            </div>
-
-                                            <button 
-                                                onClick={() => setSortByAbsences(!sortByAbsences)}
-                                                className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${sortByAbsences ? 'bg-indigo-600 text-white' : 'bg-slate-50 border border-slate-200 text-indigo-600 hover:bg-indigo-50'}`}
-                                            >
-                                                <Filter size={14} className={sortByAbsences ? 'text-white' : 'text-indigo-500'} />
-                                                الأكثر غياباً
-                                            </button>
-                                        </div>
-                                        
-                                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
-                                            <div className="w-full sm:w-64">
-                                                <Select
-                                                    options={[
-                                                        { value: '', label: 'الكل (بحث باسم الطالب)' },
-                                                        ...(students?.map(s => ({ value: s.id, label: s.name })) || [])
-                                                    ]}
-                                                    value={selectedStudent ? { value: selectedStudent, label: students?.find(s => s.id === selectedStudent)?.name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
-                                                    onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
-                                                    placeholder="بحث باسم الطالب..."
-                                                    isClearable
-                                                    styles={customSelectStyles}
-                                                />
-                                            </div>
-                                            <div className="w-full sm:w-48">
-                                                <Select
-                                                    options={[
-                                                        { value: '', label: 'تصفية بيوم محدد' },
-                                                        ...(Object.keys(weekDays || {}).map(key => ({ value: key, label: weekDays[key].name })))
-                                                    ]}
-                                                    value={selectedDayKey ? { value: selectedDayKey, label: weekDays[selectedDayKey]?.name } : { value: '', label: 'تصفية بيوم محدد' }}
-                                                    onChange={(opt) => setSelectedDayKey(opt ? opt.value : '')}
-                                                    placeholder="تصفية بيوم..."
-                                                    isClearable
-                                                    styles={customSelectStyles}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                                {/* Secondary Frontend Filters were moved outside */}
                             </div>
                         </div>
                     </div>
                 </div>
+
+                    {/* Secondary Frontend Filters - Always Visible */}
+                    {divisionInfo && students?.length > 0 && (
+                        <div className="p-5 bg-white border-t border-slate-100 flex flex-col xl:flex-row items-start xl:items-center gap-4 justify-between">
+                            <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+                                <span className="text-sm font-bold text-slate-500 ml-1">فلاتر ذكية (فورية):</span>
+                                
+                                <button 
+                                    onClick={() => setHidePerfect(!hidePerfect)}
+                                    className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${hidePerfect ? 'bg-emerald-600 text-white' : 'bg-slate-50 border border-slate-200 text-emerald-600 hover:bg-emerald-50'}`}
+                                >
+                                    <span className="w-2 h-2 rounded-full bg-current"></span>
+                                    إخفاء المنتظمين
+                                </button>
+
+                                <div className="flex items-center rounded-xl bg-slate-50 border border-slate-200 overflow-hidden shadow-sm">
+                                    <span className="px-3 py-2 text-sm font-bold text-slate-500 bg-slate-100 border-l border-slate-200">الغياب:</span>
+                                    <button 
+                                        onClick={() => setMinAbsences(minAbsences === 1 ? 0 : 1)}
+                                        className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${minAbsences === 1 ? 'bg-amber-500 text-white' : 'hover:bg-amber-50 text-amber-600'}`}
+                                    >
+                                        يوم+
+                                    </button>
+                                    <button 
+                                        onClick={() => setMinAbsences(minAbsences === 2 ? 0 : 2)}
+                                        className={`px-3 py-2 text-sm font-bold transition-all border-l border-slate-200 ${minAbsences === 2 ? 'bg-rose-500 text-white' : 'hover:bg-rose-50 text-rose-600'}`}
+                                    >
+                                        يومين+
+                                    </button>
+                                    <button 
+                                        onClick={() => setMinAbsences(minAbsences === 3 ? 0 : 3)}
+                                        className={`px-3 py-2 text-sm font-bold transition-all ${minAbsences === 3 ? 'bg-red-700 text-white' : 'hover:bg-red-50 text-red-700'}`}
+                                    >
+                                        3 أيام+
+                                    </button>
+                                </div>
+
+                                <button 
+                                    onClick={() => setSortByAbsences(!sortByAbsences)}
+                                    className={`px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${sortByAbsences ? 'bg-indigo-600 text-white' : 'bg-slate-50 border border-slate-200 text-indigo-600 hover:bg-indigo-50'}`}
+                                >
+                                    <Filter size={14} className={sortByAbsences ? 'text-white' : 'text-indigo-500'} />
+                                    الأكثر غياباً
+                                </button>
+                            </div>
+                            
+                            <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
+                                <div className="w-full sm:w-64">
+                                    <Select
+                                        options={[
+                                            { value: '', label: 'الكل (بحث باسم الطالب)' },
+                                            ...(students?.map(s => ({ value: s.id, label: s.name })) || [])
+                                        ]}
+                                        value={selectedStudent ? { value: selectedStudent, label: students?.find(s => s.id == selectedStudent)?.name } : { value: '', label: 'الكل (بحث باسم الطالب)' }}
+                                        onChange={(opt) => setSelectedStudent(opt ? opt.value : '')}
+                                        placeholder="بحث باسم الطالب..."
+                                        isClearable
+                                        styles={customSelectStyles}
+                                    />
+                                </div>
+                                <div className="w-full sm:w-48">
+                                    <Select
+                                        options={[
+                                            { value: '', label: 'تصفية بيوم محدد' },
+                                            ...(Object.keys(weekDays || {}).map(key => ({ value: key, label: weekDays[key].name })))
+                                        ]}
+                                        value={selectedDayKey ? { value: selectedDayKey, label: weekDays[selectedDayKey]?.name } : { value: '', label: 'تصفية بيوم محدد' }}
+                                        onChange={(opt) => setSelectedDayKey(opt ? opt.value : '')}
+                                        placeholder="تصفية بيوم..."
+                                        isClearable
+                                        styles={customSelectStyles}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                 {/* Data Table */}
                 {divisionInfo && students.length > 0 ? (
@@ -485,20 +479,20 @@ export default function WeeklyReport({ students, weekDays = {}, divisionInfo, gr
 
                         <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200 print:shadow-none print:border-none">
                             <table className="w-full text-center print:text-sm border-collapse">
-                                <thead>
-                                    <tr className="bg-slate-50 dark:bg-slate-800/50 print:bg-slate-100">
-                                        <th className="px-4 py-4 text-right text-sm font-bold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 print:border-black w-12">م</th>
-                                        <th className="px-4 py-4 text-right text-sm font-bold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 print:border-black min-w-[200px]">اسم الطالب</th>
+                                <thead className="text-white border-b print:border-black" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>
+                                    <tr>
+                                        <th className="px-4 py-4 text-right text-sm font-bold border-l w-12" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>م</th>
+                                        <th className="px-4 py-4 text-right text-sm font-bold border-l min-w-[200px]" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>اسم الطالب</th>
                                         
                                         {/* Days Columns */}
                                         {Object.values(weekDays).map((day, index) => (
-                                            <th key={index} className="px-2 py-3 text-sm font-bold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 print:border-black w-24">
+                                            <th key={index} className="px-2 py-3 text-sm font-bold border-l w-24" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
                                                 <div className="block">{day.name}</div>
-                                                <div className="text-xs font-normal text-slate-500 mt-1">{day.date}</div>
+                                                <div className="text-xs font-normal text-white/70 mt-1">{day.date}</div>
                                             </th>
                                         ))}
                                         
-                                        <th className="px-4 py-4 text-sm font-black text-rose-600 dark:text-rose-400 border-b border-slate-200 dark:border-slate-700 print:border-black bg-rose-50/50 dark:bg-rose-500/10 w-24">إجمالي الغياب</th>
+                                        <th className="px-4 py-4 text-sm font-black w-24" style={{ backgroundColor: 'rgba(0,0,0,0.1)' }}>إجمالي الغياب</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 print:divide-black">

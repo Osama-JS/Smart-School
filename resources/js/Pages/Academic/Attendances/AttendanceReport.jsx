@@ -483,11 +483,11 @@ export default function AttendanceReport({ logs, filters, divisions, grades, stu
                 >
                     <div className="overflow-x-auto bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 print:shadow-none print:border-none">
                         <table className="w-full text-sm text-right">
-                            <thead className="bg-slate-50/80 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 print:bg-slate-100 print:border-black">
+                            <thead className="text-white border-b print:border-black" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>
                                 <tr>
-                                    <th className="px-6 py-4 font-black text-slate-700 dark:text-slate-300">اسم الطالب</th>
-                                    <th className="px-6 py-4 font-black text-slate-700 dark:text-slate-300">تاريخ الحضور</th>
-                                    <th className="px-6 py-4 font-black text-slate-700 dark:text-slate-300">الحالة</th>
+                                    <th className="px-6 py-4 font-black">اسم الطالب</th>
+                                    <th className="px-6 py-4 font-black border-r" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>تاريخ الحضور</th>
+                                    <th className="px-6 py-4 font-black border-r" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>الحالة</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">

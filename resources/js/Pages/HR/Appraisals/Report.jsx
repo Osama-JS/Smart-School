@@ -210,68 +210,70 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                     startDate={filterData.date_from} 
                     endDate={filterData.date_to}
                 >
-                    <div className="overflow-x-auto bg-white rounded-xl shadow-sm border border-slate-200 print:shadow-none print:border-none">
-                        <table className="w-full text-right print:text-sm">
-                            <thead>
-                                <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700 print:bg-slate-100 print:border-black">
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 print:text-black">م</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 print:text-black">اسم الموظف</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 print:text-black">القسم</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 print:text-black">الدورة</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 print:text-black">تاريخ التقييم</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 print:text-black text-center">الدرجة</th>
-                                    <th className="px-6 py-4 text-sm font-bold text-slate-700 dark:text-slate-300 print:text-black text-center">التقدير</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 print:divide-slate-300">
-                                {appraisals.data.length > 0 ? (
-                                    appraisals.data.map((appraisal, index) => {
-                                        const gradeInfo = getGradeInfo(appraisal.final_score);
-                                        return (
-                                            <tr key={appraisal.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors print:hover:bg-transparent">
-                                                <td className="px-6 py-4 text-sm text-slate-500 font-medium">
-                                                    {((appraisals.current_page - 1) * appraisals.per_page) + index + 1}
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="font-bold text-slate-800 dark:text-white">
-                                                        {appraisal.employee?.user?.name || 'غير متوفر'}
-                                                    </div>
-                                                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        {appraisal.employee?.user?.id_number || '-'}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                                                    {appraisal.employee?.department?.name || '-'}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                                                    {appraisal.cycle?.title || '-'}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm font-medium text-slate-500 dark:text-slate-400">
-                                                    {new Date(appraisal.created_at).toLocaleDateString('ar-SA')}
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-sm font-black ${gradeInfo.color}`}>
-                                                        {appraisal.final_score ? `${appraisal.final_score}%` : '-'}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <div className={`w-2 h-2 rounded-full ${gradeInfo.badge} print:hidden`}></div>
-                                                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{gradeInfo.label}</span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })
-                                ) : (
+                    <div className="overflow-x-auto print:overflow-visible flex justify-center">
+                        <div className="inline-block min-w-full lg:w-4/5 xl:w-3/4 bg-white rounded-xl shadow-sm border-2 border-slate-800 overflow-hidden print:shadow-none print:border-none print:w-full">
+                            <table className="w-full text-right border-collapse text-sm">
+                                <thead className={`${printSettings.ecoMode ? 'bg-slate-100 text-slate-800 border-b-2 border-slate-800' : 'text-white'}`} style={!printSettings.ecoMode ? { backgroundColor: printSettings.brandColor } : {}}>
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-12 text-center text-slate-500 dark:text-slate-400 font-bold bg-slate-50/30 dark:bg-slate-800/10">
-                                            لا توجد بيانات تطابق محددات البحث والفلاتر المدخلة.
-                                        </td>
+                                        <th className="px-4 py-3 font-bold border-y border-slate-300 w-12 text-center">م</th>
+                                        <th className="px-4 py-3 font-bold border-y border-slate-300">اسم الموظف</th>
+                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">القسم</th>
+                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">الدورة</th>
+                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">تاريخ التقييم</th>
+                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">الدرجة</th>
+                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">التقدير</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200">
+                                    {appraisals.data.length > 0 ? (
+                                        appraisals.data.map((appraisal, index) => {
+                                            const gradeInfo = getGradeInfo(appraisal.final_score);
+                                            return (
+                                                <tr key={appraisal.id} className="hover:bg-slate-50 transition-colors">
+                                                    <td className="px-4 py-3 border-y border-slate-200 text-center font-bold text-slate-700">
+                                                        {((appraisals.current_page - 1) * appraisals.per_page) + index + 1}
+                                                    </td>
+                                                    <td className="px-4 py-3 border-y border-slate-200">
+                                                        <div className="font-bold text-slate-800">
+                                                            {appraisal.employee?.user?.name || 'غير متوفر'}
+                                                        </div>
+                                                        <div className="text-xs text-slate-500 mt-0.5">
+                                                            {appraisal.employee?.user?.id_number || '-'}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 border-y border-slate-200 text-center font-bold text-slate-700">
+                                                        {appraisal.employee?.department?.name || '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 border-y border-slate-200 text-center font-semibold text-slate-700">
+                                                        {appraisal.cycle?.title || '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 border-y border-slate-200 text-center text-sm font-medium text-slate-600">
+                                                        {new Date(appraisal.created_at).toLocaleDateString('ar-SA')}
+                                                    </td>
+                                                    <td className="px-4 py-3 border-y border-slate-200 text-center">
+                                                        <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-sm font-black ${gradeInfo.color}`}>
+                                                            {appraisal.final_score ? `${appraisal.final_score}%` : '-'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 border-y border-slate-200 text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <div className={`w-2 h-2 rounded-full ${gradeInfo.badge} print:hidden`}></div>
+                                                            <span className="text-sm font-bold text-slate-700">{gradeInfo.label}</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="7" className="px-6 py-12 text-center text-slate-500 font-bold bg-slate-50">
+                                                لا توجد بيانات تطابق محددات البحث والفلاتر المدخلة.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </ReportPrintLayout>
 

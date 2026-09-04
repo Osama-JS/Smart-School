@@ -85,7 +85,7 @@ class ParentSummonController extends Controller
     public function getParentSummonsReportFilterData(Request $request)
     {
         $branchId = auth()->user()->branch_id;
-        $query = ParentSummon::with(['student.user', 'student.activeEnrollment.division.grade', 'violation.violationType'])
+        $query = ParentSummon::with(['student.user', 'student.currentEnrollment.division.grade', 'violation.violationType'])
             ->where('branch_id', $branchId);
 
         $startDate = $request->query('start_date');

@@ -262,15 +262,6 @@ export default function EmployeeAchievements({ employeesData, kpis, departmentCh
                             <p className="text-[13.5px] font-bold text-slate-500">عرض وطباعة سجلات الإنجازات للموظفين</p>
                         </div>
                     </div>
-                    <div className="flex gap-3 relative z-10 w-full sm:w-auto">
-                        <button
-                            onClick={handlePrintClick}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-3 bg-slate-800 text-white rounded-xl hover:bg-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all font-bold"
-                        >
-                            <Printer size={18} strokeWidth={2.5} />
-                            <span>طباعة التقرير</span>
-                        </button>
-                    </div>
                 </div>
 
                 <div className="print:hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative mb-6">
@@ -572,10 +563,6 @@ export default function EmployeeAchievements({ employeesData, kpis, departmentCh
                                         </label>
                                     </div>
                                     <div className="flex flex-col gap-3 mt-6 pt-4">
-                                        <button onClick={handlePrintClick} className="w-full px-6 py-3.5 bg-slate-800 text-white hover:bg-slate-700 rounded-xl transition-all font-black shadow-md hover:-translate-y-0.5 flex items-center justify-center gap-2">
-                                            <Printer size={18} strokeWidth={2.5} />
-                                            طباعة التقرير
-                                        </button>
                                         <button 
                                             onClick={handleDownloadPDF} 
                                             disabled={isGeneratingPdf}
