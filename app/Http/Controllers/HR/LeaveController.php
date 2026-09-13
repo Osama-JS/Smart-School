@@ -106,10 +106,13 @@ class LeaveController extends Controller implements \Illuminate\Routing\Controll
             'reason' => 'nullable|string',
         ]);
 
-        $requestedDays = Carbon::parse($request->start_date)->diffInDays(Carbon::parse($request->end_date)) + 1;
-        $balance = LeaveBalance::where('employee_id', $request->employee_id)
-            ->where('academic_year_id', $request->academic_year_id)
-            ->where('leave_type_id', $request->leave_type_id)
+        $validated['start_date'] = Carbon::parse($validated['start_date'])->format('Y-m-d');
+        $validated['end_date'] = Carbon::parse($validated['end_date'])->format('Y-m-d');
+
+        $requestedDays = Carbon::parse($validated['start_date'])->diffInDays(Carbon::parse($validated['end_date'])) + 1;
+        $balance = LeaveBalance::where('employee_id', $validated['employee_id'])
+            ->where('academic_year_id', $validated['academic_year_id'])
+            ->where('leave_type_id', $validated['leave_type_id'])
             ->first();
 
         if (!$balance) {
@@ -148,15 +151,18 @@ class LeaveController extends Controller implements \Illuminate\Routing\Controll
             'reason' => 'nullable|string',
         ]);
 
-        $requestedDays = Carbon::parse($request->start_date)->diffInDays(Carbon::parse($request->end_date)) + 1;
-        $balance = LeaveBalance::where('employee_id', $request->employee_id)
-            ->where('academic_year_id', $request->academic_year_id)
-            ->where('leave_type_id', $request->leave_type_id)
+        $validated['start_date'] = Carbon::parse($validated['start_date'])->format('Y-m-d');
+        $validated['end_date'] = Carbon::parse($validated['end_date'])->format('Y-m-d');
+
+        $requestedDays = Carbon::parse($validated['start_date'])->diffInDays(Carbon::parse($validated['end_date'])) + 1;
+        $balance = LeaveBalance::where('employee_id', $validated['employee_id'])
+            ->where('academic_year_id', $validated['academic_year_id'])
+            ->where('leave_type_id', $validated['leave_type_id'])
             ->first();
 
         if ($balance) {
             $usedDaysWithoutCurrent = $balance->used_days;
-            if ($leave->status === 'approved' && $leave->academic_year_id == $request->academic_year_id && $leave->leave_type_id == $request->leave_type_id) {
+            if ($leave->status === 'approved' && $leave->academic_year_id == $validated['academic_year_id'] && $leave->leave_type_id == $validated['leave_type_id']) {
                 $currentDays = Carbon::parse($leave->start_date)->diffInDays(Carbon::parse($leave->end_date)) + 1;
                 $usedDaysWithoutCurrent -= $currentDays;
             }
@@ -203,8 +209,11 @@ class LeaveController extends Controller implements \Illuminate\Routing\Controll
      */
     private function updateAttendanceForLeave(int $employeeId, string $startDate, string $endDate): void
     {
+        $start = Carbon::parse($startDate)->format('Y-m-d');
+        $end = Carbon::parse($endDate)->format('Y-m-d');
+
         \App\Models\Attendance::where('employee_id', $employeeId)
-            ->whereBetween('date', [$startDate, $endDate])
+            ->whereBetween('date', [$start, $end])
             ->whereIn('status', ['absent', 'weekend', 'excused'])
             ->update(['status' => 'leave']);
     }

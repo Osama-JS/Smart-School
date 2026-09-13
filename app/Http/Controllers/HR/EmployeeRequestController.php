@@ -325,24 +325,30 @@ class EmployeeRequestController extends Controller
             ->where('branch_id', $employeeRequest->branch_id)
             ->first();
 
+        $startDate = \Carbon\Carbon::parse($details['start_date'])->format('Y-m-d');
+        $endDate = \Carbon\Carbon::parse($details['end_date'])->format('Y-m-d');
+
         // Create leave record
         Leave::create([
             'employee_id'      => $employeeRequest->employee_id,
             'leave_type_id'    => $details['leave_type_id'] ?? null,
             'academic_year_id' => $academicYear ? $academicYear->id : null,
-            'start_date'       => $details['start_date'],
-            'end_date'         => $details['end_date'],
+            'start_date'       => $startDate,
+            'end_date'         => $endDate,
             'reason'           => $employeeRequest->employee_notes ?? 'طلب إجازة معتمد',
             'status'           => 'approved',
         ]);
 
-        $this->updateAttendanceForLeave($employeeRequest->employee_id, $details['start_date'], $details['end_date']);
+        $this->updateAttendanceForLeave($employeeRequest->employee_id, $startDate, $endDate);
     }
 
     private function updateAttendanceForLeave(int $employeeId, string $startDate, string $endDate): void
     {
+        $start = \Carbon\Carbon::parse($startDate)->format('Y-m-d');
+        $end = \Carbon\Carbon::parse($endDate)->format('Y-m-d');
+
         \App\Models\Attendance::where('employee_id', $employeeId)
-            ->whereBetween('date', [$startDate, $endDate])
+            ->whereBetween('date', [$start, $end])
             ->whereIn('status', ['absent', 'weekend', 'excused'])
             ->update(['status' => 'leave']);
     }

@@ -503,13 +503,14 @@ const BulkEditModal = ({ selectedCount, onClose, onSubmit }) => {
 // ── Register Leave Modal ──────────────────────────────────────
 const RegisterLeaveModal = ({ record, leaveTypes, leaveBalances, academicYears, onClose }) => {
     const defaultAcademicYear = academicYears.find(ay => ay.is_active) || academicYears[0];
+    const initialDate = record?.date ? (typeof record.date === 'string' ? record.date.split('T')[0] : record.date) : '';
     const { data, setData, post, processing, errors, reset } = useForm({
         employee_id: record.employee_id,
         academic_year_id: record.academic_year_id || (defaultAcademicYear ? defaultAcademicYear.id : ''),
         semester_id: record.semester_id || '',
         leave_type_id: '',
-        start_date: record.date,
-        end_date: record.date,
+        start_date: initialDate,
+        end_date: initialDate,
         status: 'approved',
         reason: '',
     });
