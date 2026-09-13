@@ -424,7 +424,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
             <div className="p-6 space-y-6" style={{ direction: 'rtl' }}>
                 
                 {/* Header Section */}
-                <div className="relative overflow-hidden bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-slate-800/80 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
+                <div className="relative overflow-hidden bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-4 sm:mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
                     {/* Visual geometric lines */}
@@ -436,15 +436,15 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                         </svg>
                     </div>
 
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">إدارة قوالب التقارير</h1>
-                            <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">قم بإنشاء وتصميم النماذج التي سيقوم الموظفون بتعبئتها بناءً على درجاتهم الوظيفية</p>
+                            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">إدارة قوالب التقارير</h1>
+                            <p className="text-primary-705/80 dark:text-primary-300/80 mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold">قم بإنشاء وتصميم النماذج التي سيقوم الموظفون بتعبئتها بناءً على درجاتهم الوظيفية</p>
                         </div>
                         
                         <button 
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95"
+                            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl sm:rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95 w-full sm:w-auto"
                         >
                             <Plus size={18} /> 
                             <span>إنشاء قالب جديد</span>
@@ -454,22 +454,22 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Dashboard Stats */}
                 {stats && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8">
                         {[
                             { label: 'إجمالي القوالب', value: stats.total_templates, icon: FileText, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-500/10', glow: 'bg-primary-500/5 dark:bg-primary-500/10', grad: 'from-primary-400 to-primary-600' },
                             { label: 'الحقول المخصصة', value: stats.total_fields, icon: Settings, color: 'text-accent-600 dark:text-accent-400', bg: 'bg-accent-50 dark:bg-accent-500/10', glow: 'bg-accent-500/5 dark:bg-accent-500/10', grad: 'from-accent-400 to-accent-600' },
                             { label: 'التقارير المرفوعة', value: stats.total_reports, icon: CheckSquare, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800/40', glow: 'bg-slate-500/5 dark:bg-slate-800/10', grad: 'from-slate-400 to-slate-600 dark:from-slate-600 dark:to-slate-800' }
                         ].map((stat, idx) => (
-                            <div key={idx} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#27313f_1.2px,transparent_1.2px)] [background-size:16px_16px]">
+                            <div key={idx} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#27313f_1.2px,transparent_1.2px)] [background-size:16px_16px]">
                                 <div className={`absolute top-0 right-0 left-0 h-1 bg-gradient-to-r ${stat.grad} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                                 <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glow} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
                                 
                                 <div className="relative z-10 min-w-0">
-                                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">{stat.label}</p>
-                                    <h3 className="text-2xl font-black text-slate-800 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
+                                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1 sm:mb-1.5">{stat.label}</p>
+                                    <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
                                 </div>
-                                <div className={`relative z-10 w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}>
-                                    <stat.icon size={20} strokeWidth={2.5} />
+                                <div className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}>
+                                    <stat.icon size={18} className="sm:w-5 sm:h-5" strokeWidth={2.5} />
                                 </div>
                             </div>
                         ))}
@@ -477,8 +477,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 )}
 
                 {/* Filters Panel */}
-                <div className="relative z-20 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px] mb-8">
-                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
+                <div className="relative z-20 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px] mb-4 sm:mb-8">
+                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3 sm:gap-4">
                         <div className="flex-1 relative group">
                             <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
                             <input
@@ -486,7 +486,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 value={filterForm.data.search}
                                 onChange={(e) => filterForm.setData('search', e.target.value)}
                                 placeholder="ابحث عن قالب..."
-                                className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl pr-11 pl-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                                className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl pr-11 pl-4 py-2.5 sm:py-3 text-[16px] sm:text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
                             />
                             {filterForm.data.search && (
                                 <button 
@@ -508,14 +508,14 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 classNames={selectClassNames}
                             />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button type="submit" className="bg-primary-600 text-white hover:bg-primary-700 px-6 py-3 rounded-2xl text-sm font-bold transition-all shrink-0 active:scale-95 shadow-sm hover:shadow-lg hover:shadow-primary-500/10">
+                        <div className="flex flex-col sm:flex-row items-center gap-2 mt-1 sm:mt-0">
+                            <button type="submit" className="w-full sm:w-auto bg-primary-600 text-white hover:bg-primary-700 px-6 py-3 sm:py-3 rounded-xl sm:rounded-2xl text-sm font-bold transition-all shrink-0 active:scale-95 shadow-sm hover:shadow-lg hover:shadow-primary-500/10">
                                 بحث
                             </button>
                             {(filterForm.data.search || filterForm.data.job_grade_id) && (
                                 <Link 
                                     href={route('reports.templates')}
-                                    className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 px-5 py-3 rounded-2xl text-sm font-bold transition-all active:scale-95"
+                                    className="w-full sm:w-auto text-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 px-5 py-3 sm:py-3 rounded-xl sm:rounded-2xl text-sm font-bold transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </Link>
@@ -525,9 +525,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 </div>
 
                 {/* Templates List */}
-                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl shadow-sm animate-fade-in mb-8">
-                    <div className="overflow-visible">
-                        <table className="w-full text-right border-collapse">
+                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl shadow-sm animate-fade-in mb-8 overflow-hidden">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-right border-collapse min-w-[800px]">
                             <thead>
                                 <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
@@ -665,11 +665,11 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Modal Create */}
                 {isCreateModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
-                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-3xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in">
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
+                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-3xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
                             <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 z-50" />
                             
-                            <div className="relative p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-8">
+                            <div className="relative p-4 sm:p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-6 sm:pt-8">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary-500 to-primary-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-primary-500/20 border border-primary-400/20">
                                         <PlusCircle size={20} className="animate-pulse" />
@@ -686,9 +686,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <X size={16} />
                                 </button>
                             </div>
-                            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                                <form id="createForm" onSubmit={handleCreateSubmit} className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+                                <form id="createForm" onSubmit={handleCreateSubmit} className="space-y-4 sm:space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>اسم القالب</span>
@@ -774,11 +774,11 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     </div>
                                 </form>
                             </div>
-                            <div className="p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/20 flex justify-end gap-3">
+                            <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/20 flex flex-col-reverse sm:flex-row justify-end gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
                                 <button 
                                     type="button" 
                                     onClick={() => setIsCreateModalOpen(false)}
-                                    className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
+                                    className="w-full sm:w-auto px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
@@ -786,7 +786,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     form="createForm" 
                                     type="submit" 
                                     disabled={form.processing}
-                                    className="px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white disabled:opacity-50 transition-all shadow-md shadow-primary-500/15 hover:shadow-lg hover:shadow-primary-500/25 active:scale-95 flex items-center gap-1.5"
+                                    className="w-full sm:w-auto justify-center px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white disabled:opacity-50 transition-all shadow-md shadow-primary-500/15 hover:shadow-lg hover:shadow-primary-500/25 active:scale-95 flex items-center gap-1.5"
                                 >
                                     <Plus size={16} />
                                     <span>حفظ القالب</span>
@@ -798,11 +798,11 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Modal Edit */}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-3xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in">
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-3xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
                             <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 z-50" />
                             
-                            <div className="relative p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-8">
+                            <div className="relative p-4 sm:p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-6 sm:pt-8">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-500 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20 border border-blue-400/20">
                                         <Edit size={20} />
@@ -819,9 +819,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <X size={16} />
                                 </button>
                             </div>
-                            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
-                                <form id="editForm" onSubmit={handleEditSubmit} className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+                                <form id="editForm" onSubmit={handleEditSubmit} className="space-y-4 sm:space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>اسم القالب</span>
@@ -902,11 +902,11 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     </div>
                                 </form>
                             </div>
-                            <div className="p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/20 flex justify-end gap-3">
+                            <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/20 flex flex-col-reverse sm:flex-row justify-end gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
                                 <button 
                                     type="button" 
                                     onClick={() => setIsEditModalOpen(false)}
-                                    className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
+                                    className="w-full sm:w-auto px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
@@ -914,7 +914,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     form="editForm" 
                                     type="submit" 
                                     disabled={editForm.processing}
-                                    className="px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white disabled:opacity-50 transition-all shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 flex items-center gap-1.5"
+                                    className="w-full sm:w-auto justify-center px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white disabled:opacity-50 transition-all shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 flex items-center gap-1.5"
                                 >
                                     <Edit size={16} />
                                     <span>حفظ التعديلات</span>
@@ -926,11 +926,11 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Modal Fields */}
                 {isFieldsModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-4xl rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scale-in">
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-4xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
                             <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 z-50" />
                             
-                            <div className="relative p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-8">
+                            <div className="relative p-4 sm:p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-6 sm:pt-8">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-emerald-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20 border border-emerald-400/20">
                                         <List size={20} />
@@ -952,16 +952,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <X size={20} />
                                 </button>
                             </div>
-                            <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
                                 <form id="fieldsForm" onSubmit={handleFieldsSubmit}>
                                     {renderFieldBuilder()}
                                 </form>
                             </div>
-                            <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20 flex justify-end gap-3">
+                            <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20 flex flex-col-reverse sm:flex-row justify-end gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
                                 <button 
                                     type="button" 
                                     onClick={() => setIsFieldsModalOpen(false)}
-                                    className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
+                                    className="w-full sm:w-auto px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
@@ -969,7 +969,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     form="fieldsForm" 
                                     type="submit" 
                                     disabled={fieldsForm.processing}
-                                    className="px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-750 text-white disabled:opacity-50 transition-all shadow-md shadow-emerald-500/15 hover:shadow-lg hover:shadow-emerald-500/25 active:scale-95 flex items-center gap-1.5"
+                                    className="w-full sm:w-auto justify-center px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-750 text-white disabled:opacity-50 transition-all shadow-md shadow-emerald-500/15 hover:shadow-lg hover:shadow-emerald-500/25 active:scale-95 flex items-center gap-1.5"
                                 >
                                     <CheckSquare size={16} />
                                     <span>حفظ حقول التقرير</span>

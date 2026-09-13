@@ -119,7 +119,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                 {/* ═══════════════════════════════════════════════════════════
                     HEADER — Brand-aligned hero section
                    ═══════════════════════════════════════════════════════════ */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none">
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 shadow-sm dark:shadow-none">
                     {/* Brand Line Accent */}
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
 
@@ -134,15 +134,15 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                         </svg>
                     </div>
 
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-4">
-                            <div className="h-14 w-14 rounded-2xl bg-white dark:bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0 shadow-sm border border-primary-50 dark:border-primary-500/20">
-                                <Activity size={28} strokeWidth={2.5} />
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-2xl bg-white dark:bg-primary-500/10 flex items-center justify-center text-primary-500 shrink-0 shadow-sm border border-primary-50 dark:border-primary-500/20">
+                                <Activity className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} />
                             </div>
                             <div>
-                                <div className="flex flex-wrap items-center gap-3">
-                                    <h1 className="text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">سجل التفاعل والنشاط</h1>
-                                    <div className="flex items-center gap-2">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-dark-900 dark:text-white tracking-tight">سجل التفاعل والنشاط</h1>
+                                    <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
                                         <button
                                             onClick={handleExport}
                                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm"
@@ -190,11 +190,11 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                 {/* ═══════════════════════════════════════════════════════════
                     STATS CARDS — KPI Overview
                    ═══════════════════════════════════════════════════════════ */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
                     {/* Active Today */}
                     <button
                         onClick={() => handleFilterChange('active_today')}
-                        className={`bg-white dark:bg-slate-900/60 border rounded-3xl p-6 shadow-sm transition-all text-right flex flex-col group cursor-pointer relative overflow-hidden ${
+                        className={`bg-white dark:bg-slate-900/60 border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm transition-all text-right flex flex-col group cursor-pointer relative overflow-hidden ${
                             filters.filter === 'active_today'
                             ? 'border-primary-500 ring-2 ring-primary-500/20'
                             : 'border-slate-100 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-500/30'
@@ -228,7 +228,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                     {/* Ghosts */}
                     <button
                         onClick={() => handleFilterChange('ghosts')}
-                        className={`bg-white dark:bg-slate-900/60 border rounded-3xl p-6 shadow-sm transition-all text-right flex flex-col group cursor-pointer relative overflow-hidden ${
+                        className={`bg-white dark:bg-slate-900/60 border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm transition-all text-right flex flex-col group cursor-pointer relative overflow-hidden ${
                             filters.filter === 'ghosts'
                             ? 'border-accent-500 ring-2 ring-accent-500/20'
                             : 'border-slate-100 dark:border-slate-800 hover:border-accent-300 dark:hover:border-accent-500/30'
@@ -254,7 +254,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                     {/* All Users */}
                     <button
                         onClick={() => handleFilterChange('all')}
-                        className={`bg-white dark:bg-slate-900/60 border rounded-3xl p-6 shadow-sm transition-all text-right flex flex-col group cursor-pointer relative overflow-hidden ${
+                        className={`bg-white dark:bg-slate-900/60 border rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm transition-all text-right flex flex-col group cursor-pointer relative overflow-hidden ${
                             filters.filter === 'all'
                             ? 'border-dark-600 ring-2 ring-dark-500/20'
                             : 'border-slate-100 dark:border-slate-800 hover:border-dark-300 dark:hover:border-dark-500/30'
@@ -278,7 +278,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                     </button>
 
                     {/* Engagement Rate — NEW KPI */}
-                    <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm relative overflow-hidden group">
+                    <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm relative overflow-hidden group">
                         <div className="absolute -left-4 -top-4 w-20 h-20 bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400 font-bold text-xs mb-4">
@@ -309,9 +309,9 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                     CHARTS — Data Visualization
                    ═══════════════════════════════════════════════════════════ */}
                 {charts && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                         {/* Trend Line Chart */}
-                        <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                        <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm">
                             <div className="flex items-center gap-2 text-slate-800 dark:text-white font-bold text-sm mb-6">
                                 <div className="p-2 bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 rounded-xl ring-1 ring-primary-500/20">
                                     <TrendingUp size={16} />
@@ -334,7 +334,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                         </div>
 
                         {/* Roles Donut Chart */}
-                        <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                        <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-sm">
                             <div className="flex items-center gap-2 text-slate-800 dark:text-white font-bold text-sm mb-6">
                                 <div className="p-2 bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 rounded-xl ring-1 ring-primary-500/20">
                                     <PieChartIcon size={16} />
@@ -373,7 +373,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                 {/* ═══════════════════════════════════════════════════════════
                     ADVANCED FILTER BAR
                    ═══════════════════════════════════════════════════════════ */}
-                <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-3xl p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-3xl p-4 shadow-sm flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
                     <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 font-bold text-sm">
                         <Filter size={18} />
                         فلاتر متقدمة
@@ -427,7 +427,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                 {/* ═══════════════════════════════════════════════════════════
                     USERS TABLE — Premium data table
                    ═══════════════════════════════════════════════════════════ */}
-                <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm">
                     {/* Table Header */}
                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-primary-50/20 dark:bg-primary-500/5">
                         <div className="flex items-center gap-3">
@@ -449,8 +449,8 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-right text-sm">
+                    <div className="overflow-x-auto custom-scrollbar">
+                        <table className="w-full text-right text-sm min-w-[900px]">
                             <thead className="bg-slate-50/80 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 font-bold text-xs border-b border-slate-100 dark:border-slate-800">
                                 <tr>
                                     <th className="py-4 px-6 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800/50 transition-colors" onClick={() => handleSort('name')}>
@@ -662,7 +662,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                 MODAL — Deep Dive Analytics
                ═══════════════════════════════════════════════════════════ */}
             {isDrawerOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+                <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6">
                     {/* Backdrop */}
                     <div 
                         className="absolute inset-0 bg-slate-900/60 dark:bg-slate-900/80 backdrop-blur-sm transition-opacity"
@@ -671,11 +671,11 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                     
                     {/* Modal */}
                     <div 
-                        className="relative w-full max-w-2xl bg-white dark:bg-[#151d27] rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] border border-slate-100 dark:border-slate-800 animate-in fade-in zoom-in-95 duration-300"
+                        className="relative w-full max-w-2xl bg-white dark:bg-[#151d27] rounded-t-[32px] sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] sm:max-h-[85vh] border border-slate-100 dark:border-slate-800 animate-slide-up sm:animate-in sm:fade-in sm:zoom-in-95 duration-300"
                     >
                         {/* Modal Header */}
-                        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20">
-                            <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-lg">
+                        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20 pt-6 sm:pt-5">
+                            <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 text-base sm:text-lg">
                                 <Activity size={20} className="text-primary-500" />
                                 السجل التفصيلي للمستخدم
                             </h3>
@@ -688,7 +688,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                         </div>
 
                         {/* Drawer Body */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 custom-scrollbar" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
                             {drawerLoading ? (
                                 <div className="flex flex-col items-center justify-center h-40 gap-3">
                                     <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
@@ -713,7 +713,7 @@ export default function UserEngagementIndex({ users, filters, stats, charts, ava
                                     </div>
 
                                     {/* Quick Stats Grid - Premium Look */}
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <div className="bg-white dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/50 rounded-2xl p-4 flex flex-col justify-center relative overflow-hidden group hover:border-primary-500/30 transition-colors">
                                             <div className="absolute top-0 right-0 w-16 h-16 bg-primary-500/5 rounded-full blur-xl -mr-8 -mt-8 pointer-events-none"></div>
                                             <div className="flex items-center gap-2 text-primary-500 mb-2">

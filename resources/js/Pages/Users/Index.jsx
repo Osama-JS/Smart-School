@@ -13,14 +13,14 @@ function Modal({ isOpen, onClose, title, children }) {
     }, [isOpen]);
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
             <div className="absolute inset-0 bg-dark-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white dark:bg-[#121820] rounded-3xl shadow-2xl w-full max-w-md z-10 overflow-hidden border border-slate-100 dark:border-slate-800 animate-scale-in">
-                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800/80">
-                    <div className="text-lg font-bold text-dark-900 dark:text-white">{title}</div>
-                    <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-400 dark:text-slate-500 transition-colors">✕</button>
+            <div className="relative bg-white dark:bg-[#121820] rounded-t-3xl sm:rounded-3xl shadow-2xl w-full sm:max-w-md z-10 overflow-hidden border border-slate-100 dark:border-slate-800 animate-scale-in max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800/80 sticky top-0 bg-white dark:bg-[#121820] z-10">
+                    <div className="text-base sm:text-lg font-bold text-dark-900 dark:text-white">{title}</div>
+                    <button onClick={onClose} className="p-2 sm:p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-900/60 text-slate-400 dark:text-slate-500 transition-colors min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 flex items-center justify-center">✕</button>
                 </div>
-                <div className="p-6">{children}</div>
+                <div className="p-4 sm:p-6">{children}</div>
             </div>
         </div>
     );
@@ -38,22 +38,22 @@ function ActionMenu({ user, onDelete, onResetPassword, currentUser }) {
     return (
         <div ref={ref} className="relative">
             <button onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-                className="text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 p-2.5 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-900/60 transition-all inline-flex border border-transparent hover:border-slate-200/50 dark:hover:border-slate-800">
+                className="text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 p-2.5 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-900/60 transition-all inline-flex border border-transparent hover:border-slate-200/50 dark:hover:border-slate-800 min-w-[44px] min-h-[44px] items-center justify-center">
                 <MoreVertical size={16} />
             </button>
             {open && (
-                <div className="absolute left-0 top-full mt-1.5 w-48 bg-white dark:bg-[#121820] rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 border border-slate-100 dark:border-slate-800 z-20 overflow-hidden animate-scale-in">
+                <div className="absolute left-0 sm:left-0 top-full mt-1.5 w-48 bg-white dark:bg-[#121820] rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 border border-slate-100 dark:border-slate-800 z-20 overflow-hidden animate-scale-in">
                     <Link href={route('users.edit', user.id)}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-700 dark:hover:text-primary-450 transition-colors">
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-700 dark:hover:text-primary-450 transition-colors min-h-[44px]">
                         <Edit2 size={14} className="text-primary-500" /> تعديل الحساب
                     </Link>
                     <button onClick={() => { onResetPassword(user); setOpen(false); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors min-h-[44px]">
                         <Key size={14} className="text-slate-400" /> تعيين كلمة المرور
                     </button>
                     {user.id !== currentUser?.id && (
                         <button onClick={() => { onDelete(user); setOpen(false); }}
-                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-colors">
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-colors min-h-[44px]">
                             <Trash2 size={14} /> حذف المستخدم
                         </button>
                     )}
@@ -67,15 +67,15 @@ function ActionMenu({ user, onDelete, onResetPassword, currentUser }) {
 function Pagination({ data }) {
     if (!data || data.last_page <= 1) return null;
     return (
-        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800/85 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/10 flex-wrap gap-3 no-print">
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">
+        <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-slate-100 dark:border-slate-800/85 flex flex-col sm:flex-row items-center justify-between bg-slate-50/50 dark:bg-slate-900/10 gap-3 no-print">
+            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-bold text-center sm:text-right">
                 عرض {data.from ?? 0} إلى {data.to ?? 0} من أصل {data.total} مستخدم
             </p>
-            <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap justify-center">
                 {data.links.map((link, i) => (
                     <button key={i} disabled={!link.url || link.active}
                         onClick={() => link.url && router.get(link.url, {}, { preserveScroll: true })}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all ${link.active
+                        className={`px-2.5 sm:px-3 py-1.5 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg border transition-all min-w-[32px] min-h-[32px] sm:min-w-0 sm:min-h-0 flex items-center justify-center ${link.active
                             ? 'bg-primary-500 text-white border-primary-500 dark:bg-primary-600 dark:border-primary-600 shadow-sm'
                             : link.url
                                 ? 'bg-white dark:bg-[#121820] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900/50'
@@ -638,8 +638,8 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
     const renderSortHeader = (label, field) => {
         const isSorted = sortBy === field;
         return (
-            <th onClick={() => handleSort(field)} className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 select-none transition-all no-print">
-                <div className="flex items-center gap-1.5 justify-start">
+            <th onClick={() => handleSort(field)} className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 select-none transition-all no-print whitespace-nowrap">
+                <div className="flex items-center gap-1 sm:gap-1.5 justify-start">
                     <span>{label}</span>
                     {isSorted ? (
                         sortDir === 'asc' ? <ArrowUp size={12} className="text-primary-500" /> : <ArrowDown size={12} className="text-primary-500" />
@@ -705,7 +705,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
             )}
 
             {/* Header Banner - Developed and Premium styled in Brand colors (Styled like Staff Directory) */}
-            <div className="relative bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none no-print bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px] z-40">
+            <div className="relative bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-5 sm:mb-8 shadow-sm dark:shadow-none no-print bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px] z-40">
                 <div className="absolute top-0 right-0 left-0 h-1 rounded-t-3xl bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
 
                 {/* Visual geometric lines */}
@@ -717,14 +717,14 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                     </svg>
                 </div>
 
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
                     <div>
-                        <h1 className="text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight">إدارة المستخدمين</h1>
-                        <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">التحكم الكامل في حسابات دخول النظام وصلاحياتها</p>
+                        <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-805 dark:text-white tracking-tight">إدارة المستخدمين</h1>
+                        <p className="text-primary-705/80 dark:text-primary-300/80 mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold">التحكم الكامل في حسابات دخول النظام وصلاحياتها</p>
                     </div>
 
                     {/* Buttons on Left in RTL */}
-                    <div className="flex items-center gap-3 self-end sm:self-auto" ref={columnToggleRef}>
+                    <div className="flex items-center gap-2 sm:gap-3 self-end sm:self-auto flex-wrap" ref={columnToggleRef}>
                         {/* View Mode Toggle (Grid vs Table) */}
                         <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-900/50 rounded-2xl p-1 border border-slate-200/50 dark:border-slate-800">
                             <button
@@ -756,7 +756,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                             type="button"
                             onClick={exportToExcel}
                             disabled={isExporting}
-                            className={`flex items-center justify-center p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820] text-slate-550 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300 shadow-sm transition-all ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`flex items-center justify-center p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820] text-slate-550 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300 shadow-sm transition-all min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0 ${isExporting ? 'opacity-50 cursor-not-allowed' : ''}`}
                             title="تصدير كملف Excel"
                         >
                             {isExporting ? <RotateCcw size={16} className="animate-spin" /> : <Download size={16} />}
@@ -766,7 +766,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                         <button
                             type="button"
                             onClick={triggerPrint}
-                            className="flex items-center justify-center p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820] text-slate-550 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300 shadow-sm transition-all"
+                            className="flex items-center justify-center p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#121820] text-slate-550 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300 shadow-sm transition-all min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
                             title="طباعة أو تصدير PDF"
                         >
                             <Printer size={16} />
@@ -775,7 +775,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                         {/* Columns Selector Dropdown */}
                         <div className="relative">
                             <button onClick={() => setShowColumnToggle(!showColumnToggle)}
-                                className={`flex items-center gap-2 px-5 py-3 rounded-2xl border text-sm font-bold shadow-sm transition-all shrink-0 ${showColumnToggle
+                                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-bold shadow-sm transition-all shrink-0 min-h-[40px] sm:min-h-0 ${showColumnToggle
                                     ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-300 dark:border-primary-500/30 text-primary-700 dark:text-primary-400'
                                     : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-dark-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300'
                                     }`}>
@@ -783,7 +783,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                 <span>الأعمدة</span>
                             </button>
                             {showColumnToggle && (
-                                <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-3 flex flex-col gap-2">
+                                <div className="absolute left-0 sm:left-0 mt-2 w-48 bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-30 p-3 flex flex-col gap-2">
                                     <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1">تحديد الأعمدة الظاهرة:</span>
                                     <label className="flex items-center gap-2.5 px-2 py-1 text-xs font-bold text-slate-650 dark:text-slate-350 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/40 rounded-lg">
                                         <input type="checkbox" checked={visibleColumns.user}
@@ -832,7 +832,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                         </div>
 
                         <button onClick={() => setShowFilter(!showFilter)}
-                            className={`flex items-center gap-2 px-5 py-3 rounded-2xl border text-sm font-bold shadow-sm transition-all shrink-0 ${showFilter
+                            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-bold shadow-sm transition-all shrink-0 min-h-[40px] sm:min-h-0 ${showFilter
                                 ? 'bg-primary-50 dark:bg-primary-500/10 border-primary-300 dark:border-primary-500/30 text-primary-700 dark:text-primary-400'
                                 : 'bg-white dark:bg-[#121820] border-slate-200 dark:border-slate-800 text-dark-800 dark:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-primary-300'
                                 }`}>
@@ -845,8 +845,8 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                             )}
                         </button>
                         <Link href={route('users.create')}
-                            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0">
-                            <Plus size={18} />
+                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl sm:rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-xs sm:text-sm font-bold transition-all shrink-0 min-h-[40px] sm:min-h-0">
+                            <Plus size={16} className="sm:w-[18px] sm:h-[18px]" />
                             <span>إضافة مستخدم</span>
                         </Link>
                     </div>
@@ -855,22 +855,22 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
 
             {/* Stats Cards Section */}
             {stats && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-5 sm:mb-8">
                     {statsItems.map((stat, index) => (
-                        <div key={index} className={`bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.015)] dark:shadow-none hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#f1f5f9_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:16px_16px] ${stat.hoverBorder}`}>
+                        <div key={index} className={`bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 p-3.5 sm:p-4 lg:p-5 rounded-2xl sm:rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.015)] dark:shadow-none hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between gap-3 sm:gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#f1f5f9_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#1e293b_1.2px,transparent_1.2px)] [background-size:16px_16px] ${stat.hoverBorder}`}>
                             {/* Glowing ambient light */}
                             <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glowBg} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
                             <div className={`absolute top-0 right-0 left-0 h-1 bg-transparent ${stat.topLineHover} transition-colors`} />
 
                             <div className="relative z-10 flex items-start justify-between gap-3">
                                 <div className="min-w-0">
-                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 truncate">{stat.title}</p>
-                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1 leading-none font-mono tracking-tight">{stat.value}</h3>
+                                    <p className="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 truncate">{stat.title}</p>
+                                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 leading-none font-mono tracking-tight">{stat.value}</h3>
                                 </div>
-                                <div className={`relative h-11 w-11 rounded-2xl ${stat.iconBg} flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-all duration-350 group-hover:scale-110 group-hover:-rotate-3`}>
+                                <div className={`relative h-9 w-9 sm:h-11 sm:w-11 rounded-xl sm:rounded-2xl ${stat.iconBg} flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 transition-all duration-350 group-hover:scale-110 group-hover:-rotate-3`}>
                                     {/* Double ring hover overlay */}
                                     <span className={`absolute inset-0 rounded-2xl border ${stat.ringColor} scale-100 group-hover:scale-125 opacity-0 group-hover:opacity-100 transition-all duration-300`} />
-                                    <stat.icon size={20} strokeWidth={2.5} />
+                                    <stat.icon size={16} className="sm:w-5 sm:h-5" strokeWidth={2.5} />
                                 </div>
                             </div>
 
@@ -893,17 +893,18 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
             )}
 
             {/* List Container with refined borders and shadows */}
-            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-3xl shadow-sm dark:shadow-none overflow-hidden animate-fade-in">
+            <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl shadow-sm dark:shadow-none overflow-hidden animate-fade-in">
                 {/* Search Header - Refactored search container with integrated button */}
-                <div className="p-6 border-b border-slate-50 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-b from-white to-slate-50/30 dark:from-transparent dark:to-transparent">
-                    <h2 className="text-base font-bold text-dark-900 dark:text-white">قائمة المستخدمين</h2>
+                <div className="p-3 sm:p-4 lg:p-6 border-b border-slate-50 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-gradient-to-b from-white to-slate-50/30 dark:from-transparent dark:to-transparent">
+                    <h2 className="text-sm sm:text-base font-bold text-dark-900 dark:text-white">قائمة المستخدمين</h2>
 
                     {/* Integrated Search Input and Search Button */}
-                    <div className="relative max-w-sm w-full flex items-center bg-slate-100/60 dark:bg-slate-900/50 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 focus-within:bg-white dark:focus-within:bg-[#121820] border border-transparent dark:border-slate-800 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-primary-500/10 rounded-2xl transition-all p-1">
+                    <div className="relative w-full sm:max-w-sm flex items-center bg-slate-100/60 dark:bg-slate-900/50 hover:bg-slate-100/80 dark:hover:bg-slate-900/80 focus-within:bg-white dark:focus-within:bg-[#121820] border border-transparent dark:border-slate-800 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-primary-500/10 rounded-xl sm:rounded-2xl transition-all p-1">
                         <div className="flex-1 relative flex items-center">
-                            <Search size={16} className="absolute right-3.5 text-slate-400 pointer-events-none" />
+                            <Search size={16} className="absolute right-3 sm:right-3.5 text-slate-400 pointer-events-none" />
                             <input type="text" placeholder="بحث بالاسم أو اسم المستخدم..."
-                                className="w-full bg-transparent border-none pr-10 pl-3 py-2 text-sm outline-none text-dark-900 dark:text-slate-100 font-medium"
+                                className="w-full bg-transparent border-none pr-9 sm:pr-10 pl-2 sm:pl-3 py-2 text-sm outline-none text-dark-900 dark:text-slate-100 font-medium"
+                                style={{ fontSize: '16px' }}
                                 value={searchValue}
                                 onChange={e => handleSearch(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') triggerSearch(); }}
@@ -911,21 +912,21 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                         </div>
                         <button
                             onClick={triggerSearch}
-                            className="px-4 py-2 text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-xl transition-all shadow-sm hover:shadow shrink-0 ml-1 flex items-center gap-1"
+                            className="px-3 sm:px-4 py-2 text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-lg sm:rounded-xl transition-all shadow-sm hover:shadow shrink-0 ml-1 flex items-center gap-1 min-h-[36px]"
                         >
                             <Search size={12} />
-                            <span>بحث</span>
+                            <span className="hidden sm:inline">بحث</span>
                         </button>
                     </div>
                 </div>
 
                 {/* Expandable Advanced Filters Panel */}
                 {showFilter && (
-                    <div className="p-6 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/20 dark:bg-slate-900/10 relative">
+                    <div className="p-3 sm:p-4 lg:p-6 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/20 dark:bg-slate-900/10 relative">
                         {/* Decorative Grid Line inside panel */}
                         <div className="absolute top-0 right-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-primary-500/20 to-transparent" />
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 items-end">
                             {/* Role Filter */}
                             <div className="group/select flex flex-col">
                                 <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-2">الدور والصلاحية</label>
@@ -1020,12 +1021,12 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                 )}
 
                 {/* Pre-configured filter presets toolbar */}
-                <div className="px-6 py-3.5 border-b border-slate-100/80 dark:border-slate-800/80 bg-slate-50/30 dark:bg-slate-900/10 flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 ml-2">مرشحات سريعة:</span>
+                <div className="px-3 sm:px-4 lg:px-6 py-2.5 sm:py-3.5 border-b border-slate-100/80 dark:border-slate-800/80 bg-slate-50/30 dark:bg-slate-900/10 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                    <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 ml-2 shrink-0 whitespace-nowrap">مرشحات سريعة:</span>
                     <button
                         type="button"
                         onClick={clearFilters}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${!roleFilter && !statusFilter && !branchFilter && !dateFilter
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${!roleFilter && !statusFilter && !branchFilter && !dateFilter
                             ? 'bg-primary-500 text-white shadow-sm'
                             : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                             }`}
@@ -1035,7 +1036,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                     <button
                         type="button"
                         onClick={() => handleFilterChange(roles?.find(r => r.name.includes('مدير'))?.id ?? '', '', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('مدير')
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('مدير')
                             ? 'bg-primary-500 text-white shadow-sm'
                             : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                             }`}
@@ -1045,7 +1046,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                     <button
                         type="button"
                         onClick={() => handleFilterChange(roles?.find(r => r.name.includes('معلم'))?.id ?? '', '', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('معلم')
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${roleFilter && roles?.find(r => r.id === roleFilter)?.name.includes('معلم')
                             ? 'bg-primary-500 text-white shadow-sm'
                             : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                             }`}
@@ -1055,7 +1056,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                     <button
                         type="button"
                         onClick={() => handleFilterChange('', 'active', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${statusFilter === 'active' && !roleFilter && !branchFilter && !dateFilter
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${statusFilter === 'active' && !roleFilter && !branchFilter && !dateFilter
                             ? 'bg-primary-500 text-white shadow-sm'
                             : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                             }`}
@@ -1065,7 +1066,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                     <button
                         type="button"
                         onClick={() => handleFilterChange('', 'inactive', '', '')}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${statusFilter === 'inactive' && !roleFilter && !branchFilter && !dateFilter
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 whitespace-nowrap ${statusFilter === 'inactive' && !roleFilter && !branchFilter && !dateFilter
                             ? 'bg-primary-500 text-white shadow-sm'
                             : 'bg-white dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800'
                             }`}
@@ -1083,13 +1084,13 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
-                            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div className="p-3 sm:p-4 lg:p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                                 {usersData.map(user => {
                                     const isAdmin = user.role?.includes('مدير');
                                     const isTeacher = user.role?.includes('معلم');
                                     const isSelected = selectedUsers.includes(user.id);
                                     return (
-                                        <div key={user.id} className={`relative bg-white dark:bg-slate-900/40 border rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 group ${isSelected ? 'border-primary-500 dark:border-primary-600 bg-primary-50/10 dark:bg-primary-950/10' : 'border-slate-100 dark:border-slate-800/80'}`}>
+                                        <div key={user.id} className={`relative bg-white dark:bg-slate-900/40 border rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-[0_4px_20px_rgba(0,0,0,0.01)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)] dark:hover:shadow-none hover:-translate-y-1.5 transition-all duration-300 group ${isSelected ? 'border-primary-500 dark:border-primary-600 bg-primary-50/10 dark:bg-primary-950/10' : 'border-slate-100 dark:border-slate-800/80'}`}>
                                             {/* Ambient Glow */}
                                             <div className="absolute -left-6 -top-6 w-20 h-20 bg-primary-500/5 rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none" />
 
@@ -1177,11 +1178,11 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                 })}
                             </div>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-right border-collapse">
+                            <div className="overflow-x-auto -mx-0 sm:mx-0">
+                                <table className="w-full text-right border-collapse min-w-[640px]">
                                     <thead>
                                         <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100/80 dark:border-slate-800/85">
-                                            <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider text-center w-12 no-print">
+                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider text-center w-10 sm:w-12 no-print">
                                                 <input type="checkbox"
                                                     className="w-4 h-4 text-primary-600 rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-primary-500/20 cursor-pointer"
                                                     checked={usersData.length > 0 && usersData.every(u => selectedUsers.includes(u.id))}
@@ -1195,7 +1196,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                             {visibleColumns.role && renderSortHeader("الدور (الصلاحية)", "role_id")}
                                             {visibleColumns.branch && renderSortHeader("الفرع", "branch_id")}
                                             {visibleColumns.status && renderSortHeader("الحالة", "is_active")}
-                                            <th className="px-6 py-4 text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider text-center no-print">إجراء</th>
+                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-[10px] sm:text-xs font-black text-slate-550 dark:text-slate-400 uppercase tracking-wider text-center no-print">إجراء</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100/70 dark:divide-slate-800/60">
@@ -1212,7 +1213,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                         : 'hover:border-r-primary-500 hover:bg-slate-50/40 dark:hover:bg-primary-500/5'
                                                     }`}>
                                                     {/* Checkbox column */}
-                                                    <td className="px-6 py-4.5 whitespace-nowrap text-center no-print">
+                                                    <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap text-center no-print">
                                                         <input type="checkbox"
                                                             className="w-4 h-4 text-primary-600 dark:text-[#5b8a2d] rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-primary-500/20 cursor-pointer"
                                                             checked={isSelected}
@@ -1222,16 +1223,16 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                     </td>
                                                     {/* User Info */}
                                                     {visibleColumns.user && (
-                                                        <td className="px-6 py-4.5 whitespace-nowrap">
-                                                            <div className="flex items-center gap-3.5">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap">
+                                                            <div className="flex items-center gap-2.5 sm:gap-3.5">
                                                                 <div className="relative shrink-0 no-print">
-                                                                    <img src={user.avatar} className="w-11 h-11 rounded-full border border-slate-200/80 dark:border-slate-800 object-cover shadow-sm transition-transform duration-300 group-hover:scale-105" />
+                                                                    <img src={user.avatar} className="w-9 h-9 sm:w-11 sm:h-11 rounded-full border border-slate-200/80 dark:border-slate-800 object-cover shadow-sm transition-transform duration-300 group-hover:scale-105" />
                                                                     {user.is_active && (
                                                                         <span className="absolute bottom-0 left-0 w-3 h-3 bg-primary-500 border-2 border-white dark:border-slate-900 rounded-full shadow-sm" />
                                                                     )}
                                                                 </div>
                                                                 <div>
-                                                                    <p className="font-bold text-dark-900 dark:text-white text-[14px] leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">{user.name}</p>
+                                                                    <p className="font-bold text-dark-900 dark:text-white text-[13px] sm:text-[14px] leading-snug group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors">{user.name}</p>
                                                                     <div className="flex items-center gap-2 mt-1">
                                                                         <p className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">@{user.username}</p>
                                                                         <span className="text-[10px] text-slate-300 dark:text-slate-600 font-bold no-print">•</span>
@@ -1251,22 +1252,22 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                     )}
                                                     {/* Extra User Columns */}
                                                     {visibleColumns.username && (
-                                                        <td className="px-6 py-4.5 whitespace-nowrap">
-                                                            <span className="text-sm font-mono text-slate-600 dark:text-slate-300">@{user.username}</span>
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap">
+                                                            <span className="text-xs sm:text-sm font-mono text-slate-600 dark:text-slate-300">@{user.username}</span>
                                                         </td>
                                                     )}
 
                                                     {visibleColumns.last_login && (
-                                                        <td className="px-6 py-4.5 whitespace-nowrap">
-                                                            <span className={`text-sm font-bold ${user.last_login === 'نشط الآن' ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap">
+                                                            <span className={`text-xs sm:text-sm font-bold ${user.last_login === 'نشط الآن' ? 'text-primary-600 dark:text-primary-400' : 'text-slate-500 dark:text-slate-400'}`}>
                                                                 {user.last_login}
                                                             </span>
                                                         </td>
                                                     )}
 
                                                     {visibleColumns.device && (
-                                                        <td className="px-6 py-4.5 whitespace-nowrap">
-                                                            <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap">
+                                                            <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
                                                                 {user.device && user.device !== '—' ? user.device : 'غير محدد'}
                                                             </span>
                                                         </td>
@@ -1274,7 +1275,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
 
                                                     {/* Role Badge */}
                                                     {visibleColumns.role && (
-                                                        <td className="px-6 py-4.5 whitespace-nowrap">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap">
                                                             {isAdmin ? (
                                                                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-900 dark:bg-slate-900 text-white dark:text-slate-100 text-[11.5px] font-bold shadow-sm border border-dark-900 dark:border-slate-800 transition-all hover:shadow hover:bg-black dark:hover:bg-slate-850">
                                                                     <Shield size={12} className="text-primary-400 no-print" /> {user.role}
@@ -1293,8 +1294,8 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
 
                                                     {/* Branch */}
                                                     {visibleColumns.branch && (
-                                                        <td className="px-6 py-4.5 whitespace-nowrap">
-                                                            <div className="flex items-center gap-1.5 text-[13.5px] font-bold text-slate-600 dark:text-slate-300">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap">
+                                                            <div className="flex items-center gap-1.5 text-xs sm:text-[13.5px] font-bold text-slate-600 dark:text-slate-300">
                                                                 <Store size={14} className="text-slate-400 dark:text-slate-500 shrink-0 no-print" />
                                                                 <span>{user.branch}</span>
                                                             </div>
@@ -1303,7 +1304,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
 
                                                     {/* Status Badge - Clickable Status toggle */}
                                                     {visibleColumns.status && (
-                                                        <td className="px-6 py-4.5 whitespace-nowrap">
+                                                        <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap">
                                                             <button onClick={() => toggleUserStatus(user)} title="اضغط لتغيير الحالة فورياً" className="transition-all hover:scale-105 shrink-0 no-print cursor-pointer">
                                                                 {user.is_active ? (
                                                                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-500/20">
@@ -1328,7 +1329,7 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
                                                     )}
 
                                                     {/* Action Menu */}
-                                                    <td className="px-6 py-4.5 whitespace-nowrap text-center no-print">
+                                                    <td className="px-3 sm:px-6 py-3 sm:py-4.5 whitespace-nowrap text-center no-print">
                                                         <ActionMenu user={user} onDelete={setShowDel} onResetPassword={setResetUser} currentUser={auth?.user} />
                                                     </td>
                                                 </tr>
@@ -1345,33 +1346,33 @@ export default function UsersIndex({ users, roles, branches, filters, stats, isA
 
             {/* Floating Bulk Actions Bar */}
             {selectedUsers.length > 0 && (
-                <div className="fixed bottom-6 right-1/2 translate-x-1/2 z-40 bg-dark-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 animate-slide-up border border-dark-800 max-w-2xl w-[90%] md:w-auto">
-                    <div className="flex items-center gap-2 shrink-0 border-l border-white/10 pl-4">
+                <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-40 bg-dark-900 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col sm:flex-row items-center gap-3 sm:gap-6 animate-slide-up border border-dark-800 max-w-2xl w-[calc(100%-2rem)] sm:w-auto" style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
+                    <div className="flex items-center gap-2 shrink-0 sm:border-l sm:border-white/10 sm:pl-4">
                         <span className="h-6 w-6 rounded-full bg-primary-500 text-white flex items-center justify-center text-xs font-bold font-mono">
                             {selectedUsers.length}
                         </span>
                         <span className="text-xs font-bold text-slate-300">محدد</span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                         <button onClick={() => runBulkAction('activate')}
-                            className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3.5 py-2.5 rounded-xl transition-all">
+                            className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl transition-all min-h-[40px]">
                             <Check size={14} className="text-primary-400" />
                             <span>تفعيل</span>
                         </button>
                         <button onClick={() => runBulkAction('deactivate')}
-                            className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3.5 py-2.5 rounded-xl transition-all">
+                            className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl transition-all min-h-[40px]">
                             <AlertTriangle size={14} className="text-amber-400" />
                             <span>تعطيل</span>
                         </button>
                         {isAdmin && branches?.length > 0 && (
                             <button onClick={() => setBulkBranchModal(true)}
-                                className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3.5 py-2.5 rounded-xl transition-all">
+                                className="flex items-center gap-1.5 text-xs font-bold bg-white/10 hover:bg-white/20 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl transition-all min-h-[40px]">
                                 <Store size={14} className="text-blue-400" />
                                 <span>تغيير الفرع</span>
                             </button>
                         )}
                         <button onClick={() => setShowBulkDel(true)}
-                            className="flex items-center gap-1.5 text-xs font-bold bg-accent-500/20 hover:bg-accent-500/30 text-accent-400 px-3.5 py-2.5 rounded-xl transition-all">
+                            className="flex items-center gap-1.5 text-xs font-bold bg-accent-500/20 hover:bg-accent-500/30 text-accent-400 px-3 sm:px-3.5 py-2 sm:py-2.5 rounded-xl transition-all min-h-[40px]">
                             <Trash2 size={14} />
                             <span>حذف جماعي</span>
                         </button>
