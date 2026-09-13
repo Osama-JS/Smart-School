@@ -217,14 +217,15 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             title: 'سير العمل والطلبات',
             items: [
                 { name: 'طلبات الموظفين', icon: Layers, url: route('hr.requests.index'), permission: 'إدارة طلبات الموظفين' },
-                { name: 'طلباتي', icon: FileText, url: route('hr.my-requests.index'), permission: null },
+                { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates'), permission: 'إدارة قوالب التقارير' },
                 { name: 'التقارير', icon: FileText, url: route('reports.index'), permission: 'إدارة التقارير' },
                 { name: 'مركز التقارير', icon: FileText, url: route('reports.center'), permission: 'إدارة التقارير' },
-                { name: 'إدارة القوالب', icon: Settings, url: route('reports.templates'), permission: 'إدارة قوالب التقارير' },
+                { name: 'الإجتماعات', icon: Users, url: route('meetings.index'), permission: 'إدارة الاجتماعات' },
                 { name: 'تقاريري', icon: FileText, url: route('hr.reports.my-reports.index'), permission: null },
+                { name: 'طلباتي', icon: FileText, url: route('hr.my-requests.index'), permission: null },
                 { name: 'مخالفاتي', icon: AlertCircle, url: route('hr.my-violations'), permission: 'عرض مخالفاتي' },
                 { name: 'إنجازاتي', icon: Star, url: route('hr.my-achievements'), permission: null },
-                { name: 'الإجتماعات', icon: Users, url: route('meetings.index'), permission: 'إدارة الاجتماعات' },
+                { name: 'تقييماتي', icon: Star, url: route('hr.appraisals.index') },
             ]
         },
         {
@@ -259,8 +260,6 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'الإشراف والمتابعة',
             items: [
-                { name: 'الحضور', icon: CheckSquare },
-                { name: 'تقييماتي', icon: Star, url: route('hr.appraisals.index') },
                 { name: 'متابعة انضباط التحضير', icon: BookOpen, url: route('admin.followup-books.index') },
                 { name: 'الزيارات الصفية', icon: Eye, url: route('academic.classroom-visits'), permission: 'إدارة الزيارات الصفية' },
                 { name: 'زياراتي الصفية', icon: Eye, url: route('teacher.my-classroom-visits'), permission: 'عرض زياراتي الصفية' },

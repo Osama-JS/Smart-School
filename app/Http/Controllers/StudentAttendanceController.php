@@ -585,8 +585,11 @@ class StudentAttendanceController extends Controller
      */
     public function getClassAttendanceReportFilterData(Request $request)
     {
-        $grades = Grade::with('divisions')->get();
-        $divisions = Division::with('grade')->get();
+        $user = auth()->user();
+        $userBranchId = ($user && $user->role && $user->role->name === 'مدير النظام') ? null : $user?->branch_id;
+
+        $grades = Grade::with('divisions')->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->get();
+        $divisions = Division::with('grade')->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->get();
         
         $date = $request->filled('date') ? $request->date : today()->toDateString();
         $divisionId = $request->division_id ?? ($divisions->first()->id ?? null);
@@ -605,8 +608,29 @@ class StudentAttendanceController extends Controller
         }
 
         $division = Division::with('grade')->find($divisionId);
-        $periodsQuery = DailyPeriod::where('is_break', false)->orderBy('start_time');
-        $periods = $periodsQuery->get();
+        $targetGradeId = $division ? $division->grade_id : $gradeId;
+        $branchId = $division ? $division->branch_id : $userBranchId;
+
+        $periodsQuery = DailyPeriod::where('is_break', false)
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId));
+
+        if ($targetGradeId) {
+            $hasAssignedGroup = \DB::table('timetable_group_grades')->where('grade_id', $targetGradeId)->exists();
+            if ($hasAssignedGroup) {
+                $periodsQuery->whereHas('group.grades', function($q) use ($targetGradeId) {
+                    $q->where('grades.id', $targetGradeId);
+                });
+            } else {
+                $periodsQuery->where(function($q) use ($targetGradeId) {
+                    $q->whereNull('timetable_group_id')
+                      ->orWhereHas('group.grades', function($q2) use ($targetGradeId) {
+                          $q2->where('grades.id', $targetGradeId);
+                      });
+                });
+            }
+        }
+
+        $periods = $periodsQuery->orderBy('start_time')->get();
 
         $students = User::with([
             'student.currentEnrollment.division.grade',
@@ -766,8 +790,11 @@ class StudentAttendanceController extends Controller
 
     public function classReports(Request $request)
     {
-        $grades = Grade::with('divisions')->get();
-        $divisions = Division::with('grade')->get();
+        $user = auth()->user();
+        $userBranchId = ($user && $user->role && $user->role->name === 'مدير النظام') ? null : $user?->branch_id;
+
+        $grades = Grade::with('divisions')->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->get();
+        $divisions = Division::with('grade')->when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->get();
         
         $date = $request->filled('date') ? $request->date : today()->toDateString();
         $divisionId = $request->division_id ?? ($divisions->first()->id ?? null);
@@ -787,8 +814,29 @@ class StudentAttendanceController extends Controller
         // 1. جلب الحصص الدراسية
         // نجلب الحصص الخاصة بالمجموعة (TimetableGroup) التي تتبع لها الشعبة، أو كل الحصص إذا لم يتوفر
         $division = Division::with('grade')->find($divisionId);
-        $periodsQuery = DailyPeriod::where('is_break', false)->orderBy('start_time');
-        $periods = $periodsQuery->get();
+        $targetGradeId = $division ? $division->grade_id : $gradeId;
+        $branchId = $division ? $division->branch_id : $userBranchId;
+
+        $periodsQuery = DailyPeriod::where('is_break', false)
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId));
+
+        if ($targetGradeId) {
+            $hasAssignedGroup = \DB::table('timetable_group_grades')->where('grade_id', $targetGradeId)->exists();
+            if ($hasAssignedGroup) {
+                $periodsQuery->whereHas('group.grades', function($q) use ($targetGradeId) {
+                    $q->where('grades.id', $targetGradeId);
+                });
+            } else {
+                $periodsQuery->where(function($q) use ($targetGradeId) {
+                    $q->whereNull('timetable_group_id')
+                      ->orWhereHas('group.grades', function($q2) use ($targetGradeId) {
+                          $q2->where('grades.id', $targetGradeId);
+                      });
+                });
+            }
+        }
+
+        $periods = $periodsQuery->orderBy('start_time')->get();
 
         // 2. جلب جميع الطلاب في هذه الشعبة
         $students = User::with([
@@ -868,7 +916,10 @@ class StudentAttendanceController extends Controller
             $timetable = \App\Models\MasterTimetable::with(['subject:id,name', 'teacher:id,name'])
                 ->where('division_id', $divisionId)
                 ->where('semester_id', $activeSemester->id)
-                ->where('day_of_week', $dayOfWeek)
+                ->where(function($q) use ($dayOfWeek, $date) {
+                    $q->where('day_of_week', $dayOfWeek)
+                      ->orWhere('day_of_week', date('w', strtotime($date)));
+                })
                 ->get()
                 ->keyBy('period_id');
         }
@@ -908,10 +959,15 @@ class StudentAttendanceController extends Controller
             $activeSemester = $activeYear ? $activeYear->semesters->first() : null;
         }
 
+        $dayOfWeek = \Carbon\Carbon::parse($request->date)->format('l');
+
         $timetableSlot = \App\Models\MasterTimetable::where('division_id', $request->division_id)
             ->where('semester_id', $activeSemester ? $activeSemester->id : null)
             ->where('period_id', $request->period_id)
-            ->where('day_of_week', date('w', strtotime($request->date))) // 0 (Sunday) to 6 (Saturday)
+            ->where(function($q) use ($dayOfWeek, $request) {
+                $q->where('day_of_week', $dayOfWeek)
+                  ->orWhere('day_of_week', date('w', strtotime($request->date)));
+            })
             ->first();
 
         ClassAttendance::updateOrCreate(
@@ -950,10 +1006,15 @@ class StudentAttendanceController extends Controller
             $activeSemester = $activeYear ? $activeYear->semesters->first() : null;
         }
 
+        $dayOfWeek = \Carbon\Carbon::parse($request->date)->format('l');
+
         $timetableSlot = \App\Models\MasterTimetable::where('division_id', $request->division_id)
             ->where('semester_id', $activeSemester ? $activeSemester->id : null)
             ->where('period_id', $request->period_id)
-            ->where('day_of_week', date('w', strtotime($request->date))) 
+            ->where(function($q) use ($dayOfWeek, $request) {
+                $q->where('day_of_week', $dayOfWeek)
+                  ->orWhere('day_of_week', date('w', strtotime($request->date)));
+            })
             ->first();
 
         // Get all students in the division

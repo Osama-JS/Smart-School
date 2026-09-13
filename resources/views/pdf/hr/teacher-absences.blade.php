@@ -50,9 +50,38 @@
             page-break-inside: avoid;
             page-break-after: auto;
         }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                padding: 0.5rem !important;
+                background-color: white !important;
+            }
+        }
     </style>
 </head>
 <body class="p-4 sm:p-8">
+    @if(isset($autoPrint) && $autoPrint)
+    <div class="no-print fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900/95 text-white backdrop-blur-md px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 text-xs font-bold border border-slate-700/80">
+        <span class="flex items-center gap-2">📄 جاهز للطباعة أو الحفظ كملف PDF</span>
+        <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer">
+            🖨️ طباعة / حفظ PDF
+        </button>
+        <button onclick="window.close()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-xl transition-colors cursor-pointer">
+            ✕ إغلاق
+        </button>
+    </div>
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                window.print();
+            }, 600);
+        });
+    </script>
+    @endif
+
     @if($watermark === 'confidential')
         <div class="watermark">ســـــري</div>
     @elseif($watermark === 'draft')
@@ -85,8 +114,20 @@
 
             <!-- Center: Logo -->
             <div class="flex flex-col items-center justify-start w-[24%] z-10">
+                @php
+                    $logoPath = public_path('images/logo.png');
+                    $schoolLogoPath = public_path('images/school_logo.png');
+                    $logoSrc = '';
+                    if (file_exists($logoPath)) {
+                        $logoSrc = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+                    } elseif (file_exists($schoolLogoPath)) {
+                        $logoSrc = 'data:image/png;base64,' . base64_encode(file_get_contents($schoolLogoPath));
+                    } else {
+                        $logoSrc = asset('images/logo.png');
+                    }
+                @endphp
                 <div class="w-20 h-20 bg-white flex items-center justify-center p-1 relative group">
-                    <img src="http://localhost/Smart-School/public/images/logo.png" alt="شعار المدرسة" class="w-full h-full object-contain filter drop-shadow-sm" onerror="this.onerror=null; this.src='http://localhost/Smart-School/public/images/school_logo.png'" />
+                    <img src="{{ $logoSrc }}" alt="شعار المدرسة" class="w-full h-full object-contain filter drop-shadow-sm" />
                 </div>
             </div>
 

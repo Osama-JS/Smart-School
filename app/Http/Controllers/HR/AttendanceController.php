@@ -338,9 +338,9 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
 
     public function teacherAbsencesReport(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user() ?: auth()->user();
         $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
-        $userBranchId = $isSystemAdmin ? null : $user->branch_id;
+        $userBranchId = ($isSystemAdmin || !$user) ? null : $user->branch_id;
 
         $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
@@ -461,9 +461,9 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
      */
     public function downloadTeacherAbsencesPdf(Request $request)
     {
-        $user = $request->user();
+        $user = $request->user() ?: auth()->user();
         $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
-        $userBranchId = $isSystemAdmin ? null : $user->branch_id;
+        $userBranchId = ($isSystemAdmin || !$user) ? null : $user->branch_id;
 
         $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
@@ -625,23 +625,59 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
             </div>
         ';
 
-        $pdf = Pdf::view('pdf.hr.teacher-absences', $data)
-            ->format($paperSize)
-            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
-            ->footerHtml($footerHtml)
-            ->withBrowsershot(function ($browsershot) {
-                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
-                           ->noSandbox()
+        try {
+            $pdf = Pdf::view('pdf.hr.teacher-absences', $data)
+                ->format($paperSize)
+                ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+                ->footerHtml($footerHtml);
+
+            if ($orientation === 'landscape') {
+                $pdf->landscape();
+            }
+
+            $pdf->withBrowsershot(function ($browsershot) {
+                if (PHP_OS_FAMILY === 'Windows') {
+                    $chromePaths = [
+                        'C:\Program Files\Google\Chrome\Application\chrome.exe',
+                        'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+                        'C:\Users\\' . get_current_user() . '\AppData\Local\Google\Chrome\Application\chrome.exe',
+                    ];
+                    foreach ($chromePaths as $path) {
+                        if (file_exists($path)) {
+                            $browsershot->setChromePath($path);
+                            break;
+                        }
+                    }
+                } else {
+                    $linuxPaths = [
+                        '/usr/bin/google-chrome',
+                        '/usr/bin/google-chrome-stable',
+                        '/usr/bin/chromium',
+                        '/usr/bin/chromium-browser',
+                        '/snap/bin/chromium',
+                    ];
+                    foreach ($linuxPaths as $path) {
+                        if (file_exists($path)) {
+                            $browsershot->setChromePath($path);
+                            break;
+                        }
+                    }
+                    $browsershot->setIncludePath('$PATH:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:/usr/local/nvm/current/bin');
+                }
+
+                $browsershot->noSandbox()
                            ->showBackground()
                            ->waitUntilNetworkIdle()
-                           ->delay(2000);
+                           ->delay(1000);
             });
 
-        if ($orientation === 'landscape') {
-            $pdf->landscape();
+            return $pdf->download('teacher_absences.pdf');
+        } catch (\Throwable $e) {
+            \Log::warning('PDF generation via Browsershot failed (' . $e->getMessage() . '), falling back to printable view.');
+            return response()->view('pdf.hr.teacher-absences', array_merge($data, [
+                'autoPrint' => true
+            ]))->header('Content-Type', 'text/html; charset=UTF-8');
         }
-
-        return $pdf->download('teacher_absences.pdf');
     }
 
 
