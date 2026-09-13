@@ -183,8 +183,8 @@ class NotificationSenderController extends Controller
         $chartQuery = clone $baseQuery;
         $aggregated = $chartQuery->where('created_at', '>=', $thirtyDaysAgo)
             ->selectRaw('DATE(created_at) as date,
-                         SUM(CASE WHEN sender_id IS NULL THEN 1 ELSE 0 END) as automated,
-                         SUM(CASE WHEN sender_id IS NOT NULL THEN 1 ELSE 0 END) as manual')
+                         SUM(CASE WHEN sender_id IS NULL THEN 1 ELSE 0 END) as automated_count,
+                         SUM(CASE WHEN sender_id IS NOT NULL THEN 1 ELSE 0 END) as manual_count')
             ->groupBy('date')
             ->get();
 
@@ -195,8 +195,8 @@ class NotificationSenderController extends Controller
             $record = $aggregated->firstWhere('date', $dateStr);
             $chartData[] = [
                 'date' => $dateObj->format('d M'),
-                'آلية' => $record ? (int)$record->automated : 0,
-                'يدوية' => $record ? (int)$record->manual : 0,
+                'آلية' => $record ? (int)($record->automated_count ?? 0) : 0,
+                'يدوية' => $record ? (int)($record->manual_count ?? 0) : 0,
             ];
         }
 
