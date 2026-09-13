@@ -5,7 +5,7 @@ import SelectInput from '@/Components/SelectInput';
 import {
     Search, Plus, MapPin, Phone, Users, Edit2, Trash2,
     MoreVertical, X, Check, AlertTriangle, Store, Compass, Crosshair, Save, SlidersHorizontal, RotateCcw,
-    ChevronDown
+    ChevronDown, Key, Lock
 } from 'lucide-react';
 
 // ─── Modal Component ───────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ function Modal({ isOpen, onClose, title, children }) {
 }
 
 // ─── Action Menu ──────────────────────────────────────────────────────────────
-function ActionMenu({ branch, onEdit, onDelete, onAssignManager }) {
+function ActionMenu({ branch, onEdit, onDelete, onAssignManager, onChangePassword }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
 
@@ -63,6 +63,14 @@ function ActionMenu({ branch, onEdit, onDelete, onAssignManager }) {
                     >
                         <Users size={14} className="text-emerald-500" /> تعيين مدير الفرع
                     </button>
+                    {branch.manager && (
+                        <button
+                            onClick={() => { onChangePassword(branch); setOpen(false); }}
+                            className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:pr-5 transition-all duration-200"
+                        >
+                            <Key size={14} className="text-amber-500" /> تغيير كلمة مرور المدير
+                        </button>
+                    )}
                     <button
                         onClick={() => { onEdit(branch); setOpen(false); }}
                         className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-950/30 hover:text-primary-700 dark:hover:text-primary-450 hover:pr-5 transition-all duration-200"
@@ -124,9 +132,13 @@ export default function BranchesIndex({ branches, users, filters }) {
     const [editBranch, setEditBranch] = useState(null);
     const [deleteBranch, setDeleteBranch] = useState(null);
     const [assignManagerBranch, setAssignManagerBranch] = useState(null);
+    const [changePasswordBranch, setChangePasswordBranch] = useState(null);
     const [isCreatingManager, setIsCreatingManager] = useState(false);
     const [managerForm, setManagerForm] = useState({
         name: '', username: '', national_id: '', password: ''
+    });
+    const [passwordForm, setPasswordForm] = useState({
+        password: '', password_confirmation: ''
     });
     const [form, setForm]           = useState({
         name: '', address: '', phone: '', is_active: true,
@@ -135,6 +147,18 @@ export default function BranchesIndex({ branches, users, filters }) {
     const [processing, setProcessing] = useState(false);
     const searchTimeout = useRef(null);
     const searchInputRef = useRef(null);
+
+    const handleUpdatePassword = (e) => {
+        e.preventDefault();
+        setProcessing(true);
+        router.put(route('hr.branches.update-manager-password', changePasswordBranch.id), passwordForm, {
+            onSuccess: () => {
+                setChangePasswordBranch(null);
+                setPasswordForm({ password: '', password_confirmation: '' });
+            },
+            onFinish: () => setProcessing(false)
+        });
+    };
 
     // Global shortcut key listener to focus search when '/' is pressed
     useEffect(() => {
@@ -581,7 +605,7 @@ export default function BranchesIndex({ branches, users, filters }) {
                                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100/30 dark:from-primary-950/20 dark:to-primary-900/20 text-primary-600 dark:text-primary-400 shadow-inner border border-primary-100/30 dark:border-primary-900/20 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3 flex items-center justify-center">
                                         <Store size={22} strokeWidth={2.5} />
                                     </div>
-                                    <ActionMenu branch={branch} onEdit={openEdit} onDelete={setDeleteBranch} onAssignManager={setAssignManagerBranch} />
+                                    <ActionMenu branch={branch} onEdit={openEdit} onDelete={setDeleteBranch} onAssignManager={setAssignManagerBranch} onChangePassword={setChangePasswordBranch} />
                                 </div>
                                 
                                 <div className="relative z-10 mb-6 transition-transform duration-300 group-hover:translate-x-1">
@@ -649,12 +673,24 @@ export default function BranchesIndex({ branches, users, filters }) {
                                                 </>
                                             )}
                                         </div>
-                                        <button 
-                                            onClick={() => setAssignManagerBranch(branch)}
-                                            className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:underline px-2"
-                                        >
-                                            {branch.manager ? 'تغيير' : 'تعيين'}
-                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {branch.manager && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setChangePasswordBranch(branch)}
+                                                    title="تعديل كلمة مرور المدير"
+                                                    className="p-1 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 dark:hover:text-amber-400 transition-colors"
+                                                >
+                                                    <Key size={13} />
+                                                </button>
+                                            )}
+                                            <button 
+                                                onClick={() => setAssignManagerBranch(branch)}
+                                                className="text-[10px] font-bold text-primary-600 dark:text-primary-400 hover:underline px-1.5"
+                                            >
+                                                {branch.manager ? 'تغيير' : 'تعيين'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -982,6 +1018,78 @@ export default function BranchesIndex({ branches, users, filters }) {
                         </div>
                     </form>
                 )}
+            </Modal>
+
+            {/* ── Change Manager Password Modal ── */}
+            <Modal isOpen={!!changePasswordBranch} onClose={() => { setChangePasswordBranch(null); setPasswordForm({ password: '', password_confirmation: '' }); }} title="تعديل كلمة مرور مدير الفرع">
+                <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div className="flex items-center gap-3 p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-800">
+                        <img 
+                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(changePasswordBranch?.manager?.name || 'Manager')}&background=0d9488&color=fff&bold=true`} 
+                            alt={changePasswordBranch?.manager?.name} 
+                            className="w-10 h-10 rounded-full" 
+                        />
+                        <div>
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{changePasswordBranch?.manager?.name}</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">اسم المستخدم: <span className="font-semibold text-primary-600 dark:text-primary-400" dir="ltr">{changePasswordBranch?.manager?.username}</span></p>
+                            <p className="text-[10px] text-slate-400">الفرع: {changePasswordBranch?.name}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">كلمة المرور الجديدة <span className="text-accent-500">*</span></label>
+                        <div className="relative flex items-center group">
+                            <Lock size={16} className="absolute right-4 text-slate-450 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200" />
+                            <input
+                                type="password"
+                                dir="ltr"
+                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl pr-11 pl-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all font-semibold"
+                                placeholder="••••••••"
+                                value={passwordForm.password}
+                                onChange={e => setPasswordForm({ ...passwordForm, password: e.target.value })}
+                                required
+                                minLength={6}
+                            />
+                        </div>
+                        {errors?.password && <p className="text-xs text-rose-500 mt-1 font-bold">{errors.password}</p>}
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-dark-900 dark:text-slate-350 mb-2">تأكيد كلمة المرور الجديدة <span className="text-accent-500">*</span></label>
+                        <div className="relative flex items-center group">
+                            <Lock size={16} className="absolute right-4 text-slate-450 dark:text-slate-500 pointer-events-none group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200" />
+                            <input
+                                type="password"
+                                dir="ltr"
+                                className="w-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-dark-900 dark:text-slate-100 rounded-2xl pr-11 pl-4 py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none transition-all font-semibold"
+                                placeholder="••••••••"
+                                value={passwordForm.password_confirmation}
+                                onChange={e => setPasswordForm({ ...passwordForm, password_confirmation: e.target.value })}
+                                required
+                                minLength={6}
+                            />
+                        </div>
+                        {errors?.password_confirmation && <p className="text-xs text-rose-500 mt-1 font-bold">{errors.password_confirmation}</p>}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-slate-50 dark:border-slate-800/40">
+                        <button
+                            type="button"
+                            onClick={() => { setChangePasswordBranch(null); setPasswordForm({ password: '', password_confirmation: '' }); }}
+                            className="px-5 py-2.5 text-sm font-bold text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-900 rounded-2xl hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            إلغاء
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={processing || !passwordForm.password || passwordForm.password !== passwordForm.password_confirmation}
+                            className="px-6 py-2.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-2xl shadow-md shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                            <Key size={16} />
+                            <span>{processing ? 'جاري التحديث...' : 'تحديث كلمة المرور'}</span>
+                        </button>
+                    </div>
+                </form>
             </Modal>
         </AdminLayout>
     );

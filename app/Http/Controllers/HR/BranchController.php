@@ -118,12 +118,18 @@ class BranchController extends Controller
             'user_id' => 'required|exists:users,id'
         ]);
 
-        $managerRole = \App\Models\Role::whereIn('name', ['مدير فرع', 'مدير الفرع'])->firstOrFail();
+        $managerRole = \App\Models\Role::whereIn('name', ['مدير فرع', 'مدير الفرع'])->first() 
+            ?? \App\Models\Role::firstOrCreate(['name' => 'مدير الفرع']);
 
-        // إزالة صلاحية "مدير الفرع" من أي مدير سابق لهذا الفرع
+        $fallbackRole = \App\Models\Role::whereIn('name', ['إداري', 'موظف', 'معلم'])->first()
+            ?? \App\Models\Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع'])->first()
+            ?? \App\Models\Role::firstOrCreate(['name' => 'إداري']);
+
+        // إزالة دور "مدير الفرع" من أي مدير سابق لهذا الفرع وإسناد دور بديل بدلاً من null
         \App\Models\User::where('branch_id', $branch->id)
             ->where('role_id', $managerRole->id)
-            ->update(['role_id' => null]);
+            ->where('id', '!=', $validated['user_id'])
+            ->update(['role_id' => $fallbackRole->id]);
 
         // تعيين المستخدم الجديد كمدير الفرع للفرع
         $user = \App\Models\User::findOrFail($validated['user_id']);
@@ -144,12 +150,17 @@ class BranchController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        $managerRole = \App\Models\Role::whereIn('name', ['مدير فرع', 'مدير الفرع'])->firstOrFail();
+        $managerRole = \App\Models\Role::whereIn('name', ['مدير فرع', 'مدير الفرع'])->first() 
+            ?? \App\Models\Role::firstOrCreate(['name' => 'مدير الفرع']);
 
-        // إزالة صلاحية "مدير الفرع" من أي مدير سابق لهذا الفرع
+        $fallbackRole = \App\Models\Role::whereIn('name', ['إداري', 'موظف', 'معلم'])->first()
+            ?? \App\Models\Role::whereNotIn('name', ['مدير النظام', 'مدير الفرع', 'مدير فرع'])->first()
+            ?? \App\Models\Role::firstOrCreate(['name' => 'إداري']);
+
+        // إزالة دور "مدير الفرع" من أي مدير سابق لهذا الفرع وإسناد دور بديل بدلاً من null
         \App\Models\User::where('branch_id', $branch->id)
             ->where('role_id', $managerRole->id)
-            ->update(['role_id' => null]);
+            ->update(['role_id' => $fallbackRole->id]);
 
         \App\Models\User::create([
             'name' => $validated['name'],
@@ -162,6 +173,28 @@ class BranchController extends Controller
         ]);
 
         return redirect()->route('hr.branches')->with('success', 'تم إضافة مدير الفرع وتعيينه بنجاح');
+    }
+
+    public function updateManagerPassword(Request $request, Branch $branch)
+    {
+        $validated = $request->validate([
+            'password' => 'required|string|min:6|confirmed',
+        ], [
+            'password.required' => 'كلمة المرور الجديدة مطلوبة.',
+            'password.min' => 'يجب ألا تقل كلمة المرور عن 6 أحرف.',
+            'password.confirmed' => 'تأكيد كلمة المرور غير متطابق.',
+        ]);
+
+        $manager = $branch->manager;
+        if (!$manager) {
+            return redirect()->back()->with('error', 'لا يوجد مدير معين لهذا الفرع لتعديل كلمة مروره.');
+        }
+
+        $manager->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+        ]);
+
+        return redirect()->route('hr.branches')->with('success', 'تم تحديث كلمة المرور لمدير الفرع (' . $manager->name . ') بنجاح');
     }
 
     public function destroy(Branch $branch)

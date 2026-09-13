@@ -145,6 +145,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/hr/branches/{branch}', [\App\Http\Controllers\HR\BranchController::class, 'destroy'])->name('hr.branches.destroy');
         Route::post('/hr/branches/{branch}/assign-manager', [\App\Http\Controllers\HR\BranchController::class, 'assignManager'])->name('hr.branches.assign-manager');
         Route::post('/hr/branches/{branch}/store-manager', [\App\Http\Controllers\HR\BranchController::class, 'storeManager'])->name('hr.branches.store-manager');
+        Route::put('/hr/branches/{branch}/update-manager-password', [\App\Http\Controllers\HR\BranchController::class, 'updateManagerPassword'])->name('hr.branches.update-manager-password');
     });
 
     // ── Academic Routes ──
