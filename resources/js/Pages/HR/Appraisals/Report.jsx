@@ -45,16 +45,17 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
         control: (provided, state) => ({
             ...provided,
             borderRadius: '0.75rem',
-            borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+            borderColor: state.isFocused ? '#10b981' : '#e2e8f0',
             backgroundColor: state.isFocused ? '#ffffff' : 'rgba(248, 250, 252, 0.5)',
             padding: '0px 2px',
-            boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+            boxShadow: state.isFocused ? '0 0 0 2px rgba(16, 185, 129, 0.2)' : 'none',
             minHeight: '42px',
             transition: 'all 0.2s ease',
             '&:hover': {
-                borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
+                borderColor: state.isFocused ? '#10b981' : '#cbd5e1'
             }
         }),
+        menuPortal: base => ({ ...base, zIndex: 9999 }),
         menu: (provided) => ({
             ...provided,
             borderRadius: '0.75rem',
@@ -71,17 +72,17 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
         option: (provided, state) => ({
             ...provided,
             backgroundColor: state.isSelected 
-                ? '#eff6ff' 
+                ? '#ecfdf5' 
                 : state.isFocused 
                     ? '#f8fafc' 
                     : 'transparent',
-            color: state.isSelected ? '#1d4ed8' : '#334155',
+            color: state.isSelected ? '#047857' : '#334155',
             cursor: 'pointer',
             fontWeight: state.isSelected ? '600' : '500',
             fontSize: '0.875rem',
             padding: '10px 12px',
             '&:active': {
-                backgroundColor: '#e0f2fe'
+                backgroundColor: '#d1fae5'
             }
         }),
         singleValue: (provided) => ({
@@ -209,6 +210,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                                     placeholder="الكل"
                                     isClearable
                                     styles={customStyles}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                 />
                             </div>
                             <div className="col-span-1 lg:col-span-1">
@@ -221,6 +223,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                                     placeholder="الكل"
                                     isClearable
                                     styles={customStyles}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                 />
                             </div>
                             
@@ -235,6 +238,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                                     placeholder="ابحث واختر الموظف..."
                                     isClearable
                                     styles={customStyles}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                 />
                             </div>
                             <div className="col-span-1 lg:col-span-1">

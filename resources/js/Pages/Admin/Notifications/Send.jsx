@@ -197,7 +197,11 @@ export default function SendNotification({ roles }) {
                                             placeholder="اكتب اسم المستخدم هنا..."
                                             noOptionsMessage={() => "لم يتم العثور على مستخدمين"}
                                             classNamePrefix="react-select"
-                                            styles={{ control: (base) => ({ ...base, borderRadius: '0.75rem', borderColor: '#34d399', borderWidth: '2px', padding: '4px' }) }}
+                                            styles={{ 
+                                                control: (base) => ({ ...base, borderRadius: '0.75rem', borderColor: '#34d399', borderWidth: '2px', padding: '4px' }),
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                         {errors.target_users && <p className="text-rose-500 text-xs font-bold mt-2">{errors.target_users}</p>}
                                     </div>
@@ -436,7 +440,12 @@ export default function SendNotification({ roles }) {
                                             }}
                                             onChange={(selected) => setLogTargetFilter(selected.value)}
                                             classNamePrefix="react-select"
-                                            styles={{ control: (base) => ({ ...base, borderRadius: '0.75rem', borderColor: '#e2e8f0', borderWidth: '2px', padding: '2px', minHeight: '46px' }) }}
+                                            styles={{ 
+                                                control: (base) => ({ ...base, borderRadius: '0.75rem', borderColor: '#e2e8f0', borderWidth: '2px', padding: '2px', minHeight: '46px' }),
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                            menuPosition="fixed"
                                         />
                                     </div>
                                     <div className="w-full sm:w-40">
@@ -450,7 +459,12 @@ export default function SendNotification({ roles }) {
                                             value={{ value: logFilter, label: logFilter === 'general' ? 'عام' : logFilter === 'important' ? 'هام' : logFilter === 'warning' ? 'تحذير' : 'كل الأنواع' }}
                                             onChange={(selected) => setLogFilter(selected.value)}
                                             classNamePrefix="react-select"
-                                            styles={{ control: (base) => ({ ...base, borderRadius: '0.75rem', borderColor: '#e2e8f0', borderWidth: '2px', padding: '2px', minHeight: '46px' }) }}
+                                            styles={{ 
+                                                control: (base) => ({ ...base, borderRadius: '0.75rem', borderColor: '#e2e8f0', borderWidth: '2px', padding: '2px', minHeight: '46px' }),
+                                                menuPortal: base => ({ ...base, zIndex: 9999 })
+                                            }}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                            menuPosition="fixed"
                                         />
                                     </div>
                                 </div>

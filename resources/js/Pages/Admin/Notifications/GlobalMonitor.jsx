@@ -219,7 +219,8 @@ export default function GlobalMonitor({ notifications, stats, filters, roles = [
         }),
         menuList: (base) => ({ ...base, padding: 0 }),
         dropdownIndicator: (base) => ({ ...base, color: '#9ca3af', '&:hover': { color: '#6b7280' } }),
-        indicatorSeparator: () => ({ display: 'none' })
+        indicatorSeparator: () => ({ display: 'none' }),
+        menuPortal: base => ({ ...base, zIndex: 9999 })
     };
 
     // --- Options Arrays ---
@@ -593,6 +594,7 @@ export default function GlobalMonitor({ notifications, stats, filters, roles = [
                                             onChange={(opt) => setType(opt.value)}
                                             styles={selectStyles}
                                             isSearchable={false}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
                                     
@@ -604,6 +606,7 @@ export default function GlobalMonitor({ notifications, stats, filters, roles = [
                                             onChange={(opt) => setSource(opt.value)}
                                             styles={selectStyles}
                                             isSearchable={false}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
 
@@ -615,6 +618,7 @@ export default function GlobalMonitor({ notifications, stats, filters, roles = [
                                             onChange={(opt) => setEngagement(opt.value)}
                                             styles={selectStyles}
                                             isSearchable={false}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
                                 </div>
@@ -634,6 +638,7 @@ export default function GlobalMonitor({ notifications, stats, filters, roles = [
                                             onChange={(opt) => setSenderRole(opt.value)}
                                             styles={selectStyles}
                                             isSearchable={false}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
 
@@ -650,6 +655,7 @@ export default function GlobalMonitor({ notifications, stats, filters, roles = [
                                             value={receiverName ? { value: receiverName, label: receiverName } : null}
                                             isClearable
                                             styles={selectStyles}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
                                 </div>
@@ -669,6 +675,7 @@ export default function GlobalMonitor({ notifications, stats, filters, roles = [
                                             onChange={(opt) => setDateRange(opt.value)}
                                             styles={selectStyles}
                                             isSearchable={false}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
 

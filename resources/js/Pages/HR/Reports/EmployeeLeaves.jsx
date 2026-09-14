@@ -190,15 +190,46 @@ export default function EmployeeLeaves({ employeesData, kpis, departmentChartDat
     };
 
     const customStyles = {
-        control: (provided) => ({
+        control: (provided, state) => ({
             ...provided,
             borderRadius: '0.75rem',
-            borderColor: '#e2e8f0',
-            padding: '2px',
-            boxShadow: 'none',
+            borderColor: state.isFocused ? '#10b981' : '#e2e8f0',
+            backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
+            boxShadow: state.isFocused ? '0 0 0 2px rgba(16, 185, 129, 0.2)' : 'none',
+            minHeight: '42px',
             '&:hover': {
-                borderColor: '#cbd5e1'
+                borderColor: state.isFocused ? '#10b981' : '#cbd5e1'
             }
+        }),
+        menuPortal: base => ({ ...base, zIndex: 9999 }),
+        menu: (provided) => ({
+            ...provided,
+            borderRadius: '0.75rem',
+            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+            overflow: 'hidden',
+            border: '1px solid #e2e8f0',
+            marginTop: '4px'
+        }),
+        option: (provided, state) => ({
+            ...provided,
+            backgroundColor: state.isSelected ? '#ecfdf5' : state.isFocused ? '#f8fafc' : 'white',
+            color: state.isSelected ? '#047857' : '#334155',
+            cursor: 'pointer',
+            fontWeight: state.isSelected ? '700' : '500',
+            padding: '10px 12px',
+            '&:active': {
+                backgroundColor: '#d1fae5'
+            }
+        }),
+        singleValue: (provided) => ({
+            ...provided,
+            color: '#334155',
+            fontWeight: '600'
+        }),
+        placeholder: (provided) => ({
+            ...provided,
+            color: '#94a3b8',
+            fontSize: '14px'
         })
     };
 
@@ -314,17 +345,8 @@ export default function EmployeeLeaves({ employeesData, kpis, departmentChartDat
                                         onChange={setSelectedDepartment}
                                         placeholder="اختر القسم..."
                                         isClearable
-                                        styles={{
-                                            ...customStyles,
-                                            control: (provided, state) => ({
-                                                ...provided,
-                                                borderRadius: '0.75rem',
-                                                borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
-                                                backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
-                                                boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
-                                                minHeight: '42px',
-                                            })
-                                        }}
+                                        styles={customStyles}
+                                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                     />
                                 </div>
                                 <div>
@@ -335,17 +357,8 @@ export default function EmployeeLeaves({ employeesData, kpis, departmentChartDat
                                         onChange={setSelectedEmployee}
                                         placeholder="ابحث عن موظف..."
                                         isClearable
-                                        styles={{
-                                            ...customStyles,
-                                            control: (provided, state) => ({
-                                                ...provided,
-                                                borderRadius: '0.75rem',
-                                                borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
-                                                backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
-                                                boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
-                                                minHeight: '42px',
-                                            })
-                                        }}
+                                        styles={customStyles}
+                                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                     />
                                 </div>
                                 

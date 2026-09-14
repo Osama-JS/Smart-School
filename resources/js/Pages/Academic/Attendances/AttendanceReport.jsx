@@ -13,30 +13,60 @@ const customSelectStyles = {
         ...base,
         minHeight: '42px',
         borderRadius: '0.75rem',
-        borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+        borderColor: state.isFocused ? '#10b981' : '#e2e8f0',
         backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
-        boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(16, 185, 129, 0.2)' : 'none',
         '&:hover': {
-            borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
+            borderColor: state.isFocused ? '#10b981' : '#cbd5e1'
         }
+    }),
+    menuPortal: base => ({ ...base, zIndex: 9999 }),
+    menu: (provided) => ({
+        ...provided,
+        borderRadius: '0.75rem',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        overflow: 'hidden',
+        border: '1px solid #e2e8f0',
+        marginTop: '4px'
+    }),
+    option: (provided, state) => ({
+        ...provided,
+        backgroundColor: state.isSelected ? '#ecfdf5' : state.isFocused ? '#f8fafc' : 'white',
+        color: state.isSelected ? '#047857' : '#334155',
+        cursor: 'pointer',
+        fontWeight: state.isSelected ? '700' : '500',
+        padding: '10px 12px',
+        '&:active': {
+            backgroundColor: '#d1fae5'
+        }
+    }),
+    singleValue: (provided) => ({
+        ...provided,
+        color: '#334155',
+        fontWeight: '600'
+    }),
+    placeholder: (provided) => ({
+        ...provided,
+        color: '#94a3b8',
+        fontSize: '14px'
     }),
     multiValue: (base) => ({
         ...base,
-        backgroundColor: '#eff6ff',
+        backgroundColor: '#ecfdf5',
         borderRadius: '0.5rem',
     }),
     multiValueLabel: (base) => ({
         ...base,
-        color: '#1d4ed8',
+        color: '#047857',
         fontWeight: 'bold',
         fontSize: '0.75rem',
     }),
     multiValueRemove: (base) => ({
         ...base,
-        color: '#1d4ed8',
+        color: '#047857',
         ':hover': {
-            backgroundColor: '#dbeafe',
-            color: '#1e40af',
+            backgroundColor: '#d1fae5',
+            color: '#064e3b',
             borderRadius: '0 0.5rem 0.5rem 0',
         },
     }),
@@ -341,7 +371,7 @@ export default function AttendanceReport({ logs, filters, divisions, grades, stu
                                     {/* Search */}
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5">البحث باسم الطالب</label>
-                                        <Select
+                                        <Select classNamePrefix="custom-select"
                                             options={[
                                                 { value: '', label: 'الكل' },
                                                 ...(availableStudents || [])
@@ -352,6 +382,7 @@ export default function AttendanceReport({ logs, filters, divisions, grades, stu
                                             isClearable
                                             styles={customSelectStyles}
                                             noOptionsMessage={() => "لا يوجد طلاب في هذا النطاق"}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
 
@@ -386,7 +417,7 @@ export default function AttendanceReport({ logs, filters, divisions, grades, stu
                                     {/* Status */}
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5">حالة الحضور</label>
-                                        <Select
+                                        <Select classNamePrefix="custom-select"
                                             isMulti
                                             options={[
                                                 { value: 'present', label: 'حاضر' },
@@ -399,13 +430,14 @@ export default function AttendanceReport({ logs, filters, divisions, grades, stu
                                             placeholder="كل الحالات"
                                             styles={customSelectStyles}
                                             noOptionsMessage={() => "لا يوجد خيارات"}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
 
                                     {/* Division */}
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5">الفصل / الشعبة</label>
-                                        <Select
+                                        <Select classNamePrefix="custom-select"
                                             isMulti
                                             options={[
                                                 ...(availableDivisions?.map(div => ({
@@ -418,6 +450,7 @@ export default function AttendanceReport({ logs, filters, divisions, grades, stu
                                             placeholder="كل الفصول"
                                             styles={customSelectStyles}
                                             noOptionsMessage={() => "لا توجد فصول"}
+                                            menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                         />
                                     </div>
 

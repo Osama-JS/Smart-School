@@ -68,7 +68,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
         menuList: () => 'p-1.5 space-y-0.5',
         dropdownIndicator: () => 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 cursor-pointer transition-colors',
         clearIndicator: () => 'text-slate-400 hover:text-red-500 p-2 cursor-pointer transition-colors',
-        indicatorSeparator: () => 'bg-slate-200 dark:bg-slate-800 w-[1px] my-2 mx-1'
+        indicatorSeparator: () => 'bg-slate-200 dark:bg-slate-800 w-[1px] my-2 mx-1',
+        menuPortal: () => 'z-[9999]'
     };
 
     const getFieldIcon = (type) => {
@@ -506,6 +507,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 isClearable
                                 unstyled
                                 classNames={selectClassNames}
+                                menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                menuPosition="fixed"
+                                styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                             />
                         </div>
                         <div className="flex flex-col sm:flex-row items-center gap-2 mt-1 sm:mt-0">
@@ -725,6 +729,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                         ...selectClassNames,
                                                         control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
+                                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                                    menuPosition="fixed"
+                                                    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                                                 />
                                             </div>
                                             {form.errors.job_grade_id && <p className="text-red-500 text-xs mt-1 font-bold">{form.errors.job_grade_id}</p>}
@@ -754,6 +761,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                         ...selectClassNames,
                                                         control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
+                                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                                    menuPosition="fixed"
+                                                    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                                                 />
                                             </div>
                                             {form.errors.period_type && <p className="text-red-500 text-xs mt-1 font-bold">{form.errors.period_type}</p>}
@@ -856,6 +866,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                         ...selectClassNames,
                                                         control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
+                                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                                    menuPosition="fixed"
+                                                    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                                                 />
                                             </div>
                                         </div>
@@ -884,6 +897,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                         ...selectClassNames,
                                                         control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
+                                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                                    menuPosition="fixed"
+                                                    styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                                                 />
                                             </div>
                                         </div>

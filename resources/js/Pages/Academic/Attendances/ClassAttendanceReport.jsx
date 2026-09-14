@@ -11,18 +11,42 @@ const customSelectStyles = {
         ...base,
         minHeight: '42px',
         borderRadius: '1rem',
-        borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+        borderColor: state.isFocused ? '#10b981' : '#e2e8f0',
         backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
-        boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+        boxShadow: state.isFocused ? '0 0 0 2px rgba(16, 185, 129, 0.2)' : 'none',
         '&:hover': {
-            borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
+            borderColor: state.isFocused ? '#10b981' : '#cbd5e1'
         }
+    }),
+    menuPortal: base => ({ ...base, zIndex: 9999 }),
+    menu: (provided) => ({
+        ...provided,
+        borderRadius: '0.75rem',
+        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        overflow: 'hidden',
+        border: '1px solid #e2e8f0',
+        marginTop: '4px'
     }),
     option: (base, state) => ({
         ...base,
-        backgroundColor: state.isSelected ? '#3b82f6' : state.isFocused ? '#eff6ff' : 'white',
+        backgroundColor: state.isSelected ? '#10b981' : state.isFocused ? '#ecfdf5' : 'white',
         color: state.isSelected ? 'white' : '#1e293b',
         fontWeight: state.isSelected ? 'bold' : 'normal',
+        cursor: 'pointer',
+        padding: '10px 12px',
+        '&:active': {
+            backgroundColor: '#d1fae5'
+        }
+    }),
+    singleValue: (provided) => ({
+        ...provided,
+        color: '#334155',
+        fontWeight: '600'
+    }),
+    placeholder: (provided) => ({
+        ...provided,
+        color: '#94a3b8',
+        fontSize: '14px'
     })
 };
 
@@ -387,7 +411,7 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
                         
                         <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto">
                             <div className="w-full sm:w-64">
-                                <Select
+                                <Select classNamePrefix="custom-select"
                                     options={[
                                         { value: '', label: 'الكل (بحث باسم الطالب)' },
                                         ...(students?.map(s => ({ value: s.id, label: s.name })) || [])
@@ -397,10 +421,11 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
                                     placeholder="بحث باسم الطالب..."
                                     isClearable
                                     styles={customSelectStyles}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                 />
                             </div>
                             <div className="w-full sm:w-48">
-                                <Select
+                                <Select classNamePrefix="custom-select"
                                     options={[
                                         { value: '', label: 'تصفية بالحصة' },
                                         ...(periods?.map(p => ({ value: p.id, label: p.period_name })) || [])
@@ -410,6 +435,7 @@ export default function ClassAttendanceReport({ students, periods, grades, divis
                                     placeholder="تصفية بالحصة..."
                                     isClearable
                                     styles={customSelectStyles}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                 />
                             </div>
                         </div>
