@@ -498,7 +498,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             )}
                         </div>
                         <div className="md:w-64">
-                            <Select
+                            <Select classNamePrefix="custom-select"
                                 options={jobGrades.map(grade => ({ value: grade.id, label: grade.name }))}
                                 value={filterForm.data.job_grade_id ? { value: filterForm.data.job_grade_id, label: jobGrades.find(g => g.id == filterForm.data.job_grade_id)?.name } : null}
                                 onChange={(selected) => filterForm.setData('job_grade_id', selected ? selected.value : '')}
@@ -714,7 +714,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             </label>
                                             <div className="relative group">
                                                 <ShieldCheck size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
-                                                <Select
+                                                <Select classNamePrefix="custom-select"
                                                     options={jobGrades.map(grade => ({ value: grade.id, label: grade.name }))}
                                                     value={form.data.job_grade_id ? { value: form.data.job_grade_id, label: jobGrades.find(g => g.id == form.data.job_grade_id)?.name } : null}
                                                     onChange={(selected) => form.setData('job_grade_id', selected ? selected.value : '')}
@@ -736,7 +736,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             </label>
                                             <div className="relative group">
                                                 <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
-                                                <Select
+                                                <Select classNamePrefix="custom-select"
                                                     options={[
                                                         { value: 'daily', label: 'يومي (Daily)' },
                                                         { value: 'weekly', label: 'أسبوعي (Weekly)' },
@@ -845,7 +845,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             </label>
                                             <div className="relative group">
                                                 <ShieldCheck size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
-                                                <Select
+                                                <Select classNamePrefix="custom-select"
                                                     options={jobGrades.map(grade => ({ value: grade.id, label: grade.name }))}
                                                     value={editForm.data.job_grade_id ? { value: editForm.data.job_grade_id, label: jobGrades.find(g => g.id == editForm.data.job_grade_id)?.name } : null}
                                                     onChange={(selected) => editForm.setData('job_grade_id', selected ? selected.value : '')}
@@ -866,7 +866,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             </label>
                                             <div className="relative group">
                                                 <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
-                                                <Select
+                                                <Select classNamePrefix="custom-select"
                                                     options={[
                                                         { value: 'daily', label: 'يومي (Daily)' },
                                                         { value: 'weekly', label: 'أسبوعي (Weekly)' },

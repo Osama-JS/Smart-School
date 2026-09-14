@@ -43,6 +43,9 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
 
     const [selectedStatuses, setSelectedStatuses] = useState(initialStatuses);
     const [violatorsOnly, setViolatorsOnly] = useState(filters.violators_only === true || filters.violators_only === 'true');
+    
+    const [roleCategory, setRoleCategory] = useState(filters?.role_category || 'teachers');
+
     const [showFilters, setShowFilters] = useState(false);
     
     // Print Settings State
@@ -87,35 +90,17 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
     const chartData = safeChartData || [];
     const mostAbsentDept = chartData.length > 0 && (chartData[0].absent > 0 || chartData[0].late > 0) ? chartData[0].name : 'لا يوجد';
 
-    // Group absences by teacher
-    const safeAbsences = Array.isArray(absences) ? absences : (absences ? Object.values(absences) : []);
+    // Process backend data (already grouped by teacher in the backend)
+    const safeAbsences = Array.isArray(absences) ? absences : (absences?.data ? absences.data : []);
     
-    const groupedByTeacher = safeAbsences.reduce((acc, curr) => {
-        if (!acc[curr.employee_name]) {
-            acc[curr.employee_name] = {
-                employee_name: curr.employee_name,
-                department: curr.department_name,
-                records: []
-            };
+    let sortedGroupedAbsences = safeAbsences.map(emp => [
+        emp.employee_name,
+        {
+            employee_name: emp.employee_name,
+            department: emp.department,
+            records: emp.records || []
         }
-        acc[curr.employee_name].records.push(curr);
-        return acc;
-    }, {});
-
-    let sortedGroupedAbsences = Object.entries(groupedByTeacher)
-        .sort((a, b) => {
-            const aViolations = a[1].records.filter(r => r.status_code === 'absent' || r.status_code === 'late').length;
-            const bViolations = b[1].records.filter(r => r.status_code === 'absent' || r.status_code === 'late').length;
-            return bViolations - aViolations;
-        });
-
-    if (violatorsOnly) {
-        sortedGroupedAbsences = sortedGroupedAbsences.filter(([_, data]) => {
-            const absentCount = data.records.filter(r => r.status_code === 'absent').length;
-            const lateCount = data.records.filter(r => r.status_code === 'late').length;
-            return absentCount >= 3 || lateCount >= 3;
-        });
-    }
+    ]);
 
     const handleFilter = (e) => {
         if(e) e.preventDefault();
@@ -125,7 +110,21 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
             department_id: selectedDepartment?.value || '',
             employee_id: selectedTeacher?.value || '',
             statuses: selectedStatuses ? selectedStatuses.map(s => s.value).join(',') : '',
-            violators_only: violatorsOnly
+            violators_only: violatorsOnly,
+            role_category: roleCategory
+        }, { preserveState: true });
+    };
+
+    const handleTabChange = (category) => {
+        setRoleCategory(category);
+        router.get(route('hr.reports.teacher-absences'), {
+            start_date: startDate,
+            end_date: endDate,
+            department_id: selectedDepartment?.value || '',
+            employee_id: selectedTeacher?.value || '',
+            statuses: selectedStatuses ? selectedStatuses.map(s => s.value).join(',') : '',
+            violators_only: violatorsOnly,
+            role_category: category
         }, { preserveState: true });
     };
 
@@ -136,7 +135,7 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
         setSelectedTeacher(null);
         setSelectedStatuses(statusOptions);
         setViolatorsOnly(false);
-        router.get(route('hr.reports.teacher-absences'));
+        router.get(route('hr.reports.teacher-absences'), { role_category: roleCategory });
     };
 
     const removeFilter = (filterId) => {
@@ -170,7 +169,7 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
             department_id: newDept?.value || '',
             employee_id: newTeacher?.value || '',
             statuses: newStatuses && newStatuses.length < statusOptions.length ? newStatuses.map(s => s.value).join(',') : '',
-            violators_only: violatorsOnly
+            role_category: roleCategory
         }, { preserveState: true });
     };
 
@@ -228,6 +227,7 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
                 employee_id: selectedTeacher?.value || '',
                 statuses: selectedStatuses ? selectedStatuses.map(s => s.value).join(',') : '',
                 violators_only: violatorsOnly ? '1' : '0',
+                role_category: roleCategory,
                 printSettings: JSON.stringify(printSettings)
             });
 
@@ -243,15 +243,78 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
     };
 
     const customStyles = {
-        control: (provided) => ({
+        control: (provided, state) => ({
             ...provided,
             borderRadius: '0.75rem',
-            borderColor: '#e2e8f0',
-            padding: '2px',
-            boxShadow: 'none',
+            borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+            backgroundColor: state.isFocused ? '#ffffff' : 'rgba(248, 250, 252, 0.5)',
+            padding: '0px 2px',
+            boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+            minHeight: '42px',
+            transition: 'all 0.2s ease',
             '&:hover': {
-                borderColor: '#cbd5e1'
+                borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
             }
+        }),
+        menu: (provided) => ({
+            ...provided,
+            borderRadius: '0.75rem',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden',
+            zIndex: 50
+        }),
+        menuList: (provided) => ({
+            ...provided,
+            maxHeight: 200,
+            padding: '4px',
+        }),
+        option: (provided, state) => ({
+            ...provided,
+            backgroundColor: state.isSelected 
+                ? '#eff6ff' 
+                : state.isFocused 
+                    ? '#f8fafc' 
+                    : 'transparent',
+            color: state.isSelected ? '#1d4ed8' : '#334155',
+            cursor: 'pointer',
+            fontWeight: state.isSelected ? '600' : '500',
+            fontSize: '0.875rem',
+            padding: '10px 12px',
+            '&:active': {
+                backgroundColor: '#e0f2fe'
+            }
+        }),
+        multiValue: (provided) => ({
+            ...provided,
+            backgroundColor: '#eff6ff',
+            borderRadius: '0.5rem',
+            border: '1px solid #bfdbfe'
+        }),
+        multiValueLabel: (provided) => ({
+            ...provided,
+            color: '#1d4ed8',
+            fontWeight: '600',
+            fontSize: '0.75rem'
+        }),
+        multiValueRemove: (provided) => ({
+            ...provided,
+            color: '#3b82f6',
+            '&:hover': {
+                backgroundColor: '#dbeafe',
+                color: '#1e40af'
+            }
+        }),
+        placeholder: (provided) => ({
+            ...provided,
+            color: '#94a3b8',
+            fontSize: '0.875rem'
+        }),
+        singleValue: (provided) => ({
+            ...provided,
+            color: '#334155',
+            fontSize: '0.875rem',
+            fontWeight: '500'
         })
     };
 
@@ -282,7 +345,7 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
 
     return (
         <AdminLayout activeMenu="التقارير">
-            <Head title="تقرير الغياب والتأخير للمعلمين" />
+            <Head title="تقرير غياب وتأخير الموظفين والمعلمين" />
 
             <div className="space-y-6">
                 <div className="print:hidden relative overflow-hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-2 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
@@ -299,11 +362,29 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
                         </div>
                         <div>
                             <h1 className="text-[22px] font-black text-slate-800 tracking-tight mb-1">
-                                تقرير الغياب والتأخير للمعلمين
+                                تقرير غياب وتأخير الموظفين والمعلمين
                             </h1>
-                            <p className="text-[13.5px] font-bold text-slate-500">عرض وطباعة سجلات الغياب، التأخير، والاستئذان للكادر التعليمي</p>
+                            <p className="text-[13.5px] font-bold text-slate-500">عرض وطباعة سجلات الغياب، التأخير، والاستئذان للكادر التعليمي والإداري</p>
                         </div>
                     </div>
+                </div>
+
+                {/* Tabs Section */}
+                <div className="flex bg-slate-100/80 p-1.5 rounded-xl border border-slate-200 w-full sm:w-fit mb-6">
+                    <button 
+                        onClick={() => handleTabChange('teachers')}
+                        className={`flex-1 sm:flex-none px-8 py-3 text-[15px] font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${roleCategory === 'teachers' ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                    >
+                        <span className="text-xl leading-none">👨‍🏫</span>
+                        كادر المعلمين
+                    </button>
+                    <button 
+                        onClick={() => handleTabChange('administrative')}
+                        className={`flex-1 sm:flex-none px-8 py-3 text-[15px] font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${roleCategory === 'administrative' ? 'bg-white text-primary-700 shadow-sm' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'}`}
+                    >
+                        <span className="text-xl leading-none">👨‍💼</span>
+                        الكادر الإداري
+                    </button>
                 </div>
 
                 <div className="print:hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative mb-6">
@@ -391,42 +472,26 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
                                         onChange={setSelectedDepartment}
                                         placeholder="اختر القسم..."
                                         isClearable
-                                        styles={{
-                                            ...customStyles,
-                                            control: (provided, state) => ({
-                                                ...provided,
-                                                borderRadius: '0.75rem',
-                                                borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
-                                                backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
-                                                boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
-                                                minHeight: '42px',
-                                            })
-                                        }}
+                                        classNamePrefix="custom-select"
+                                        styles={customStyles}
+                                        noOptionsMessage={() => 'لا يوجد أقسام'}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">المعلم</label>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">{roleCategory === 'administrative' ? 'الموظف' : 'المعلم'}</label>
                                     <Select
                                         options={safeTeachers.map(t => ({ value: t.id, label: t.name }))}
                                         value={selectedTeacher}
                                         onChange={setSelectedTeacher}
-                                        placeholder="ابحث عن معلم..."
+                                        placeholder={`ابحث عن ${roleCategory === 'administrative' ? 'موظف' : 'معلم'}...`}
                                         isClearable
-                                        styles={{
-                                            ...customStyles,
-                                            control: (provided, state) => ({
-                                                ...provided,
-                                                borderRadius: '0.75rem',
-                                                borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
-                                                backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
-                                                boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
-                                                minHeight: '42px',
-                                            })
-                                        }}
+                                        classNamePrefix="custom-select"
+                                        styles={customStyles}
+                                        noOptionsMessage={() => 'لا توجد نتائج'}
                                     />
                                 </div>
                                 
-                                <div className="xl:col-span-2">
+                                <div className="xl:col-span-4">
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">نوع الحالة</label>
                                     <Select
                                         isMulti
@@ -434,17 +499,9 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
                                         value={selectedStatuses}
                                         onChange={setSelectedStatuses}
                                         placeholder="جميع الحالات..."
-                                        styles={{
-                                            ...customStyles,
-                                            control: (provided, state) => ({
-                                                ...provided,
-                                                borderRadius: '0.75rem',
-                                                borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
-                                                backgroundColor: state.isFocused ? '#ffffff' : '#f8fafc',
-                                                boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
-                                                minHeight: '42px',
-                                            })
-                                        }}
+                                        isClearable
+                                        classNamePrefix="custom-select"
+                                        styles={customStyles}
                                     />
                                 </div>
                                 

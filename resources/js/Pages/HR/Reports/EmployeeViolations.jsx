@@ -347,7 +347,7 @@ export default function EmployeeViolations({ employeesData, kpis, departmentChar
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">القسم</label>
-                                    <Select
+                                    <Select classNamePrefix="custom-select"
                                         options={safeDepartments.map(d => ({ value: d.id, label: d.name }))}
                                         value={selectedDepartment}
                                         onChange={setSelectedDepartment}
@@ -368,7 +368,7 @@ export default function EmployeeViolations({ employeesData, kpis, departmentChar
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">الموظف</label>
-                                    <Select
+                                    <Select classNamePrefix="custom-select"
                                         options={safeAllEmployees.map(t => ({ value: t.id, label: t.name }))}
                                         value={selectedEmployee}
                                         onChange={setSelectedEmployee}

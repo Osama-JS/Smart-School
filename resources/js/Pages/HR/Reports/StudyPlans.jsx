@@ -9,6 +9,7 @@ import {
 import Select from 'react-select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import Swal from 'sweetalert2';
+import Pagination from '@/Components/Pagination';
 
 const formatDateStr = (dateString) => {
     if (!dateString) return '';
@@ -29,7 +30,7 @@ export default function StudyPlansReport({
     periodEnd = '',
     filters = {} 
 }) {
-    const safeTeachers = Array.isArray(teachers) ? teachers : (teachers ? Object.values(teachers) : []);
+    const safeTeachers = Array.isArray(teachers?.data) ? teachers.data : (Array.isArray(teachers) ? teachers : (teachers ? Object.values(teachers) : []));
     const safeAllTeachers = Array.isArray(allTeachers) ? allTeachers : (allTeachers ? Object.values(allTeachers) : []);
     const safeChartData = Array.isArray(departmentChartData) ? departmentChartData : (departmentChartData ? Object.values(departmentChartData) : []);
 
@@ -775,6 +776,12 @@ export default function StudyPlansReport({
                                     <Map className="mx-auto h-12 w-12 text-slate-300 mb-4" />
                                     <h3 className="text-lg font-bold text-slate-800 mb-1">لا توجد بيانات خطط دراسية</h3>
                                     <p className="text-slate-500">لم يتم العثور على أي سجلات خطط دراسية تطابق الفلاتر المحددة.</p>
+                                </div>
+                            )}
+
+                            {teachers?.data && teachers?.last_page > 1 && (
+                                <div className="mt-4 mb-2 print:hidden">
+                                    <Pagination data={teachers} />
                                 </div>
                             )}
 

@@ -64,8 +64,7 @@ class FollowupBookController extends Controller
         // Base Query for Teachers (supports role names like معلم, معلم أول, Teacher)
         $teachersQuery = User::whereHas('role', function ($query) {
                 $query->where('name', 'like', '%معلم%')
-                      ->orWhere('name', 'Teacher')
-                      ->orWhere('name', 'مشرف تربوي');
+                      ->orWhere('name', 'Teacher');
             })
             ->with(['employee.department']);
 
@@ -148,6 +147,16 @@ class FollowupBookController extends Controller
                 : 'القسم الأكاديمي';
 
             $preps = $allPreps->get($teacher->id, collect());
+            
+            // In-memory indexing of preps for O(1) lookups
+            $indexedPreps = [];
+            foreach ($preps as $p) {
+                $pDate = is_string($p->preparation_date) ? substr($p->preparation_date, 0, 10) : $p->preparation_date->format('Y-m-d');
+                $key = $pDate . '_' . $p->subject_id;
+                $indexedPreps[$key][] = $p;
+            }
+            $matchedPrepIds = [];
+
             $teacherTimetable = $timetables->get($teacher->id, collect());
             $expectedLessonsCount = $teacherTimetable->count();
 
@@ -156,6 +165,7 @@ class FollowupBookController extends Controller
             $lateCount = 0;
             $draftCount = 0;
             $missingCount = 0;
+            $expectedLessonsCountForPeriod = 0;
 
             // Iterate over each date in period
             foreach ($period as $date) {
@@ -168,14 +178,22 @@ class FollowupBookController extends Controller
                     $itemDay = strtolower(trim($item->day_of_week ?? ''));
                     return in_array($itemDay, $validDayNames);
                 });
+                
+                $expectedLessonsCountForPeriod += $lessonsForDay->count();
 
                 foreach ($lessonsForDay as $lesson) {
-                    $prep = $preps->first(function($p) use ($dateStr, $lesson) {
-                        $prepDate = is_string($p->preparation_date) ? $p->preparation_date : $p->preparation_date->format('Y-m-d');
-                        return $prepDate === $dateStr 
-                            && $p->subject_id == $lesson->subject_id 
-                            && ($p->division_id == $lesson->division_id || empty($p->division_id));
-                    });
+                    $lookupKey = $dateStr . '_' . $lesson->subject_id;
+                    $possiblePreps = $indexedPreps[$lookupKey] ?? [];
+                    $prep = null;
+                    foreach ($possiblePreps as $p) {
+                        if (empty($p->division_id) || $p->division_id == $lesson->division_id) {
+                            $prep = $p;
+                            break;
+                        }
+                    }
+                    if ($prep) {
+                        $matchedPrepIds[$prep->id] = true;
+                    }
 
                     $statusCode = 'missing';
                     if ($prep) {
@@ -216,9 +234,12 @@ class FollowupBookController extends Controller
             }
 
             // Also check any standalone preparations not matched to timetables
-            $unmatchedPreps = $preps->filter(function($p) use ($records) {
-                return !collect($records)->pluck('id')->contains($p->id);
-            });
+            $unmatchedPreps = [];
+            foreach ($preps as $p) {
+                if (!isset($matchedPrepIds[$p->id])) {
+                    $unmatchedPreps[] = $p;
+                }
+            }
 
             foreach ($unmatchedPreps as $p) {
                 $prepDateStr = is_string($p->preparation_date) ? $p->preparation_date : $p->preparation_date->format('Y-m-d');
@@ -254,7 +275,7 @@ class FollowupBookController extends Controller
                 ];
             }
 
-            $totalTeacherExpected = max($expectedLessonsCount, count($records));
+            $totalTeacherExpected = $expectedLessonsCountForPeriod + count($unmatchedPreps);
             $teacherNegligence = $missingCount;
 
             if ($violatorsOnly && $teacherNegligence == 0 && $lateCount == 0) {
@@ -315,8 +336,7 @@ class FollowupBookController extends Controller
         // All teachers list for filter dropdown
         $allTeachersList = User::whereHas('role', function ($query) {
                 $query->where('name', 'like', '%معلم%')
-                      ->orWhere('name', 'Teacher')
-                      ->orWhere('name', 'مشرف تربوي');
+                      ->orWhere('name', 'Teacher');
             })
             ->when($branchId, fn($q) => $q->where(fn($sub) => $sub->where('branch_id', $branchId)->orWhereNull('branch_id')))
             ->select('id', 'name')

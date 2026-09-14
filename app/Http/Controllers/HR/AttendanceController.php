@@ -342,12 +342,13 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
         $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         $userBranchId = ($isSystemAdmin || !$user) ? null : $user->branch_id;
 
-        $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $startDate = $request->get('start_date', Carbon::today()->subDays(30)->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
         $departmentId = $request->get('department_id');
         $employeeId = $request->get('employee_id');
         $statuses = $request->get('statuses');
         $violatorsOnly = filter_var($request->get('violators_only', false), FILTER_VALIDATE_BOOLEAN);
+        $roleCategory = $request->get('role_category', 'teachers'); // 'teachers', 'administrative'
 
         if (empty($statuses)) {
             $statuses = ['absent', 'late', 'excused', 'leave'];
@@ -355,13 +356,23 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
             $statuses = explode(',', $statuses);
         }
 
-        // Base Query
-        $query = \App\Models\Attendance::with(['employee.user', 'employee.department'])
-            ->whereHas('employee.user', function($q) use ($userBranchId) {
-                $q->where(function($subQ) {
-                    $subQ->where('name', 'like', '%معلم%')
-                         ->orWhere('name', 'like', '%مدرس%');
+        $applyRoleFilter = function($q) use ($roleCategory) {
+            if ($roleCategory === 'teachers') {
+                $q->whereHas('role', function($roleQ) {
+                    $roleQ->where('name', 'like', '%معلم%')
+                          ->orWhere('name', 'like', '%مدرس%');
                 });
+            } elseif ($roleCategory === 'administrative') {
+                $q->whereDoesntHave('role', function($roleQ) {
+                    $roleQ->where('name', 'like', '%معلم%')
+                          ->orWhere('name', 'like', '%مدرس%');
+                });
+            }
+        };
+
+        // Base Query for KPIs
+        $attendanceQuery = \App\Models\Attendance::whereHas('employee.user', function($q) use ($userBranchId, $applyRoleFilter) {
+                $applyRoleFilter($q);
                 if ($userBranchId) {
                     $q->where('branch_id', $userBranchId);
                 }
@@ -370,64 +381,116 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
             ->whereIn('status', $statuses);
 
         if ($departmentId) {
-            $query->whereHas('employee', function($q) use ($departmentId) {
+            $attendanceQuery->whereHas('employee', function($q) use ($departmentId) {
                 $q->where('department_id', $departmentId);
             });
         }
 
         if ($employeeId) {
-            $query->where('employee_id', $employeeId);
+            $attendanceQuery->where('employee_id', $employeeId);
         }
 
-        $absencesRaw = $query->orderBy('date', 'desc')->get();
+        // Kpis using a single aggregate query for ultimate performance
+        $kpisRaw = (clone $attendanceQuery)
+            ->selectRaw("
+                SUM(CASE WHEN status='absent' THEN 1 ELSE 0 END) as total_absent,
+                SUM(CASE WHEN status='late' THEN 1 ELSE 0 END) as total_late,
+                COUNT(DISTINCT employee_id) as unique_teachers
+            ")
+            ->first();
 
-        $absences = $absencesRaw->map(function($att) {
+        $total_absent = (int) ($kpisRaw->total_absent ?? 0);
+        $total_late = (int) ($kpisRaw->total_late ?? 0);
+        $unique_teachers = (int) ($kpisRaw->unique_teachers ?? 0);
+
+        // Department Chart Data using raw query for memory efficiency
+        $deptStatsRaw = (clone $attendanceQuery)
+            ->join('employees', 'attendances.employee_id', '=', 'employees.id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
+            ->selectRaw("COALESCE(departments.name, 'غير محدد') as name, 
+                         SUM(CASE WHEN status='absent' THEN 1 ELSE 0 END) as absent,
+                         SUM(CASE WHEN status='late' THEN 1 ELSE 0 END) as late,
+                         SUM(CASE WHEN status='excused' THEN 1 ELSE 0 END) as excused,
+                         SUM(CASE WHEN status='leave' THEN 1 ELSE 0 END) as `leave`")
+            ->groupBy('name')
+            ->get();
+            
+        $departmentChartData = $deptStatsRaw->toArray();
+        usort($departmentChartData, fn($a, $b) => ($b['absent'] + $b['late']) - ($a['absent'] + $a['late']));
+
+        // Paginated Employees Query with SQL sorting
+        $employeesQuery = \App\Models\Employee::with(['user', 'department', 'attendances' => function($q) use ($startDate, $endDate, $statuses) {
+            $q->whereBetween('date', [$startDate, $endDate])
+              ->whereIn('status', $statuses)
+              ->orderBy('date', 'desc');
+        }])
+        ->whereHas('user', function($q) use ($userBranchId, $applyRoleFilter) {
+            $applyRoleFilter($q);
+            if ($userBranchId) {
+                $q->where('branch_id', $userBranchId);
+            }
+        })
+        ->when($violatorsOnly, function($q) use ($startDate, $endDate) {
+            // If violators only, we just check for >= 3 absent/late
+            $q->whereHas('attendances', function($sq) use ($startDate, $endDate) {
+                $sq->whereBetween('date', [$startDate, $endDate])
+                   ->whereIn('status', ['absent', 'late']);
+            }, '>=', 3);
+        }, function($q) use ($startDate, $endDate, $statuses) {
+            // Otherwise, just check for existence of any requested status
+            $q->whereHas('attendances', function($sq) use ($startDate, $endDate, $statuses) {
+                $sq->whereBetween('date', [$startDate, $endDate])
+                  ->whereIn('status', $statuses);
+            });
+        });
+
+        if ($departmentId) {
+            $employeesQuery->where('department_id', $departmentId);
+        }
+        if ($employeeId) {
+            $employeesQuery->where('id', $employeeId);
+        }
+
+        // Sort by violations count
+        $employeesQuery->withCount([
+            'attendances as violations_count' => function($q) use ($startDate, $endDate) {
+                $q->whereBetween('date', [$startDate, $endDate])
+                  ->whereIn('status', ['absent', 'late']);
+            }
+        ]);
+
+        $employeesQuery->orderByDesc('violations_count');
+
+        $paginatedEmployees = $employeesQuery->paginate(15)->withQueryString();
+
+        $paginatedEmployees->getCollection()->transform(function($emp) {
             return [
-                'id' => $att->id,
-                'employee_name' => $att->employee->user->name ?? 'غير محدد',
-                'department_name' => $att->employee->department->name ?? 'غير محدد',
-                'date' => $att->date,
-                'day' => Carbon::parse($att->date)->locale('ar')->isoFormat('dddd'),
-                'status_code' => $att->status,
-                'status' => match($att->status) {
-                    'absent' => 'غياب بدون عذر',
-                    'late' => 'تأخير',
-                    'excused' => 'استئذان',
-                    'leave' => 'إجازة / مرضي',
-                    default => 'غير معروف'
-                },
-                'late_minutes' => $att->late_minutes,
-                'notes' => $att->notes,
+                'employee_name' => $emp->user->name ?? 'غير محدد',
+                'department' => $emp->department->name ?? 'غير محدد',
+                'violations_count' => $emp->violations_count,
+                'records' => $emp->attendances->map(function($att) {
+                    return [
+                        'date' => $att->date,
+                        'day' => Carbon::parse($att->date)->locale('ar')->isoFormat('dddd'),
+                        'status_code' => $att->status,
+                        'status' => match($att->status) {
+                            'absent' => 'غياب بدون عذر',
+                            'late' => 'تأخير',
+                            'excused' => 'استئذان',
+                            'leave' => 'إجازة / مرضي',
+                            default => 'غير معروف'
+                        },
+                        'late_minutes' => $att->late_minutes,
+                        'notes' => $att->notes,
+                    ];
+                })
             ];
         });
 
-        // Kpis
-        $total_absent = $absencesRaw->where('status', 'absent')->count();
-        $total_late = $absencesRaw->where('status', 'late')->count();
-        $unique_teachers = $absencesRaw->pluck('employee_id')->unique()->count();
-
-        // Department Chart
-        $deptStats = [];
-        foreach($absencesRaw as $att) {
-            $deptName = $att->employee->department->name ?? 'غير محدد';
-            if (!isset($deptStats[$deptName])) {
-                $deptStats[$deptName] = ['name' => $deptName, 'absent' => 0, 'late' => 0, 'excused' => 0, 'leave' => 0];
-            }
-            if ($att->status == 'absent') $deptStats[$deptName]['absent']++;
-            if ($att->status == 'late') $deptStats[$deptName]['late']++;
-            if ($att->status == 'excused') $deptStats[$deptName]['excused']++;
-            if ($att->status == 'leave') $deptStats[$deptName]['leave']++;
-        }
-        $departmentChartData = array_values($deptStats);
-        usort($departmentChartData, fn($a, $b) => ($b['absent'] + $b['late']) - ($a['absent'] + $a['late']));
-
         // Dropdowns
         $allTeachersQuery = \App\Models\Employee::with('user:id,name')
-            ->whereHas('user', function($q) use ($userBranchId) {
-                $q->where(function($subQ) {
-                    $subQ->where('name', 'like', '%معلم%')
-                         ->orWhere('name', 'like', '%مدرس%');
-                });
+            ->whereHas('user', function($q) use ($userBranchId, $applyRoleFilter) {
+                $applyRoleFilter($q);
                 if ($userBranchId) {
                     $q->where('branch_id', $userBranchId);
                 }
@@ -436,7 +499,7 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
         $departments = \App\Models\Department::when($userBranchId, fn($q) => $q->where('branch_id', $userBranchId))->select('id', 'name')->get();
 
         return inertia('HR/Reports/TeacherAbsences', [
-            'absences' => $absences,
+            'absences' => $paginatedEmployees,
             'kpis' => [
                 'total_absent' => $total_absent,
                 'total_late' => $total_late,
@@ -451,7 +514,8 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
                 'department_id' => $departmentId,
                 'employee_id' => $employeeId,
                 'statuses' => $request->get('statuses', ''),
-                'violators_only' => $violatorsOnly
+                'violators_only' => $violatorsOnly,
+                'role_category' => $roleCategory
             ]
         ]);
     }
@@ -465,11 +529,12 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
         $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
         $userBranchId = ($isSystemAdmin || !$user) ? null : $user->branch_id;
 
-        $startDate = $request->get('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $startDate = $request->get('start_date', Carbon::today()->subDays(30)->toDateString());
         $endDate = $request->get('end_date', Carbon::today()->toDateString());
         $departmentId = $request->get('department_id');
         $employeeId = $request->get('employee_id');
         $statuses = $request->get('statuses');
+        $roleCategory = $request->get('role_category', 'teachers');
         
         if (empty($statuses)) {
             $statuses = ['absent', 'late', 'excused', 'leave'];
@@ -477,30 +542,47 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
             $statuses = explode(',', $statuses);
         }
 
-        $query = \App\Models\Attendance::with(['employee.user', 'employee.department'])
-            ->whereHas('employee.user', function($q) use ($userBranchId) {
-                $q->where(function($subQ) {
-                    $subQ->where('name', 'like', '%معلم%')
-                         ->orWhere('name', 'like', '%مدرس%');
-                });
-                if ($userBranchId) {
-                    $q->where('branch_id', $userBranchId);
+        $rawQuery = \Illuminate\Support\Facades\DB::table('attendances')
+            ->join('employees', 'attendances.employee_id', '=', 'employees.id')
+            ->join('users', 'employees.user_id', '=', 'users.id')
+            ->leftJoin('roles', 'users.role_id', '=', 'roles.id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
+            ->where(function($q) use ($roleCategory) {
+                if ($roleCategory === 'teachers') {
+                    $q->where('roles.name', 'like', '%معلم%')
+                      ->orWhere('roles.name', 'like', '%مدرس%');
+                } elseif ($roleCategory === 'administrative') {
+                    $q->where(function($subQ) {
+                        $subQ->where('roles.name', 'not like', '%معلم%')
+                             ->where('roles.name', 'not like', '%مدرس%')
+                             ->orWhereNull('roles.id');
+                    });
                 }
             })
-            ->whereBetween('date', [$startDate, $endDate])
-            ->whereIn('status', $statuses);
+            ->whereBetween('attendances.date', [$startDate, $endDate])
+            ->whereIn('attendances.status', $statuses);
+
+        if ($userBranchId) {
+            $rawQuery->where('users.branch_id', $userBranchId);
+        }
 
         if ($departmentId) {
-            $query->whereHas('employee', function($q) use ($departmentId) {
-                $q->where('department_id', $departmentId);
-            });
+            $rawQuery->where('employees.department_id', $departmentId);
         }
 
         if ($employeeId) {
-            $query->where('employee_id', $employeeId);
+            $rawQuery->where('attendances.employee_id', $employeeId);
         }
 
-        $absencesRaw = $query->orderBy('date', 'desc')->get();
+        // Fetch as lightweight stdClass objects to prevent memory exhaustion
+        $absencesRaw = $rawQuery->select(
+            'users.name as employee_name',
+            'departments.name as department',
+            'attendances.date',
+            'attendances.status',
+            'attendances.late_minutes',
+            'attendances.employee_id'
+        )->orderBy('attendances.date', 'desc')->get();
 
         $total_absent = $absencesRaw->where('status', 'absent')->count();
         $total_late = $absencesRaw->where('status', 'late')->count();
@@ -508,11 +590,11 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
         // Group absences by teacher
         $groupedByTeacher = [];
         foreach ($absencesRaw as $att) {
-            $empName = $att->employee->user->name ?? 'غير محدد';
+            $empName = $att->employee_name ?? 'غير محدد';
             if (!isset($groupedByTeacher[$empName])) {
                 $groupedByTeacher[$empName] = [
                     'employee_name' => $empName,
-                    'department' => $att->employee->department->name ?? '-',
+                    'department' => $att->department ?? '-',
                     'records' => []
                 ];
             }
@@ -543,9 +625,8 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
 
         if ($violatorsOnly) {
             $sortedGroupedAbsences = array_filter($sortedGroupedAbsences, function($data) {
-                $absentCount = count(array_filter($data['records'], fn($r) => $r['status_code'] === 'absent'));
-                $lateCount = count(array_filter($data['records'], fn($r) => $r['status_code'] === 'late'));
-                return $absentCount >= 3 || $lateCount >= 3;
+                $violationsCount = count(array_filter($data['records'], fn($r) => in_array($r['status_code'], ['absent', 'late'])));
+                return $violationsCount >= 3;
             });
         }
 

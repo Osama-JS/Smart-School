@@ -657,6 +657,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/hr/reports/employee-leaves', [\App\Http\Controllers\HR\EmployeeLeavesReportController::class, 'report'])->name('hr.reports.employee-leaves');
         Route::get('/hr/reports/employee-leaves/pdf', [\App\Http\Controllers\HR\EmployeeLeavesReportController::class, 'downloadPdf'])->name('hr.reports.employee-leaves.pdf');
         Route::get('/hr/reports/administrative-requests', [\App\Http\Controllers\HR\AdministrativeRequestsReportController::class, 'report'])->name('hr.reports.administrative-requests');
+        Route::get('/hr/reports/administrative-requests/pdf', [\App\Http\Controllers\HR\AdministrativeRequestsReportController::class, 'downloadPdf'])->name('hr.reports.administrative-requests.pdf');
         Route::resource('/hr/employee-achievements', \App\Http\Controllers\HR\EmployeeAchievementController::class)->names([
             'index'   => 'hr.employee-achievements',
             'store'   => 'hr.employee-achievements.store',
@@ -748,6 +749,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/hr/appraisals/dashboard', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'dashboard'])->name('hr.appraisals.dashboard');
         Route::get('/hr/appraisals/report', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'report'])->name('hr.appraisals.report');
+        Route::get('/hr/appraisals/report/pdf', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'downloadPdf'])->name('hr.appraisals.report.pdf');
         Route::get('/hr/appraisals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'index'])->name('hr.appraisals.index');
         Route::post('/hr/appraisals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'store'])->name('hr.appraisals.store');
         Route::get('/hr/appraisals/{appraisal}', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'show'])->name('hr.appraisals.show');

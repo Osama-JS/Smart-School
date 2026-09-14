@@ -1490,3 +1490,32 @@ html:not(.dark) main .erp-table tbody tr:hover {
 .ql-toolbar {
     direction: rtl !important;
 }
+
+/* ======================================
+   Custom Scrollbar for React Select Menus
+   ====================================== */
+
+/* Force the dropdown to have a max height so scrollbar appears */
+.custom-select__menu-list {
+    max-height: 200px !important;
+    overflow-y: auto !important;
+    scrollbar-width: thin;                          /* Firefox */
+    scrollbar-color: #cbd5e1 transparent;           /* Firefox */
+}
+
+/* Chrome / Safari / Edge scrollbar */
+.custom-select__menu-list::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-select__menu-list::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+}
+.custom-select__menu-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+.custom-select__menu-list::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}

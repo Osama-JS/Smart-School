@@ -50,4 +50,31 @@ class EmployeeAppraisal extends Model
     {
         return $this->hasMany(EmployeeAppraisalScore::class, 'appraisal_id');
     }
+
+    public function scopeApplyFilters($query, $request)
+    {
+        if ($request->filled('cycle_id')) {
+            $query->where('cycle_id', $request->cycle_id);
+        }
+        
+        if ($request->filled('department_id')) {
+            $query->whereHas('employee', function ($q) use ($request) {
+                $q->where('department_id', $request->department_id);
+            });
+        }
+        
+        if ($request->filled('employee_id')) {
+            $query->where('employee_id', $request->employee_id);
+        }
+        
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+        
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+        
+        return $query;
+    }
 }

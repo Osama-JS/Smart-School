@@ -4,6 +4,7 @@ import { Head, router } from '@inertiajs/react';
 import { Printer, Filter, RefreshCw, FileText, Download, ChevronRight, ChevronLeft, Search } from 'lucide-react';
 import Pagination from '@/Components/Pagination'; // Adjust import based on the actual Pagination component
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
+import Select from 'react-select';
 
 export default function AppraisalsReport({ appraisals, cycles = [], departments = [], employees = [], filters = {} }) {
     const [filterData, setFilterData] = useState({
@@ -40,6 +41,61 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
         localStorage.setItem('AppraisalsPrintSettings', JSON.stringify(printSettings));
     }, [printSettings]);
 
+    const customStyles = {
+        control: (provided, state) => ({
+            ...provided,
+            borderRadius: '0.75rem',
+            borderColor: state.isFocused ? '#3b82f6' : '#e2e8f0',
+            backgroundColor: state.isFocused ? '#ffffff' : 'rgba(248, 250, 252, 0.5)',
+            padding: '0px 2px',
+            boxShadow: state.isFocused ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
+            minHeight: '42px',
+            transition: 'all 0.2s ease',
+            '&:hover': {
+                borderColor: state.isFocused ? '#3b82f6' : '#cbd5e1'
+            }
+        }),
+        menu: (provided) => ({
+            ...provided,
+            borderRadius: '0.75rem',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden',
+            zIndex: 50
+        }),
+        menuList: (provided) => ({
+            ...provided,
+            maxHeight: 200,
+            padding: '4px',
+        }),
+        option: (provided, state) => ({
+            ...provided,
+            backgroundColor: state.isSelected 
+                ? '#eff6ff' 
+                : state.isFocused 
+                    ? '#f8fafc' 
+                    : 'transparent',
+            color: state.isSelected ? '#1d4ed8' : '#334155',
+            cursor: 'pointer',
+            fontWeight: state.isSelected ? '600' : '500',
+            fontSize: '0.875rem',
+            padding: '10px 12px',
+            '&:active': {
+                backgroundColor: '#e0f2fe'
+            }
+        }),
+        singleValue: (provided) => ({
+            ...provided,
+            color: '#0f172a',
+            fontWeight: '600'
+        }),
+        placeholder: (provided) => ({
+            ...provided,
+            color: '#94a3b8',
+            fontWeight: '500'
+        })
+    };
+
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
     const handleDownloadPDF = async () => {
@@ -75,8 +131,9 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
     };
 
     const clearFilters = () => {
-        setFilterData({ cycle_id: '', department_id: '', employee_id: '', date_from: '', date_to: '', search: '' });
-        router.get(route('hr.appraisals.report'), {}, {
+        const resetState = { cycle_id: '', department_id: '', employee_id: '', date_from: '', date_to: '', search: '' };
+        setFilterData(resetState);
+        router.get(route('hr.appraisals.report'), resetState, {
             preserveState: true,
             preserveScroll: true
         });
@@ -125,7 +182,8 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                             <Filter size={18} /> خيارات التصفية والبحث
                         </div>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {/* Row 1 */}
                             <div className="col-span-1 lg:col-span-2">
                                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">بحث برقم الهوية أو الاسم</label>
                                 <div className="relative">
@@ -143,29 +201,41 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                             </div>
                             <div className="col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">دورة التقييم</label>
-                                <select 
-                                    value={filterData.cycle_id} 
-                                    onChange={e => setFilterData({...filterData, cycle_id: e.target.value})}
-                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                                >
-                                    <option value="">الكل</option>
-                                    {cycles.map(cycle => (
-                                        <option key={cycle.id} value={cycle.id}>{cycle.title}</option>
-                                    ))}
-                                </select>
+                                <Select
+                                    classNamePrefix="custom-select"
+                                    options={cycles.map(c => ({ value: c.id, label: c.title }))}
+                                    value={cycles.map(c => ({ value: c.id, label: c.title })).find(c => c.value == filterData.cycle_id) || null}
+                                    onChange={(opt) => setFilterData({...filterData, cycle_id: opt ? opt.value : ''})}
+                                    placeholder="الكل"
+                                    isClearable
+                                    styles={customStyles}
+                                />
                             </div>
                             <div className="col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">القسم</label>
-                                <select 
-                                    value={filterData.department_id} 
-                                    onChange={e => setFilterData({...filterData, department_id: e.target.value})}
-                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-                                >
-                                    <option value="">الكل</option>
-                                    {departments.map(dept => (
-                                        <option key={dept.id} value={dept.id}>{dept.name}</option>
-                                    ))}
-                                </select>
+                                <Select
+                                    classNamePrefix="custom-select"
+                                    options={departments.map(d => ({ value: d.id, label: d.name }))}
+                                    value={departments.map(d => ({ value: d.id, label: d.name })).find(d => d.value == filterData.department_id) || null}
+                                    onChange={(opt) => setFilterData({...filterData, department_id: opt ? opt.value : ''})}
+                                    placeholder="الكل"
+                                    isClearable
+                                    styles={customStyles}
+                                />
+                            </div>
+                            
+                            {/* Row 2 */}
+                            <div className="col-span-1 lg:col-span-2">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">تصفية بموظف معين</label>
+                                <Select
+                                    classNamePrefix="custom-select"
+                                    options={employees.map(e => ({ value: e.id, label: e.name }))}
+                                    value={employees.map(e => ({ value: e.id, label: e.name })).find(e => e.value == filterData.employee_id) || null}
+                                    onChange={(opt) => setFilterData({...filterData, employee_id: opt ? opt.value : ''})}
+                                    placeholder="ابحث واختر الموظف..."
+                                    isClearable
+                                    styles={customStyles}
+                                />
                             </div>
                             <div className="col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">من تاريخ</label>
@@ -173,7 +243,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                                     type="date"
                                     value={filterData.date_from} 
                                     onChange={e => setFilterData({...filterData, date_from: e.target.value})}
-                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                    className="w-full h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                                 />
                             </div>
                             <div className="col-span-1 lg:col-span-1">
@@ -182,7 +252,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                                     type="date"
                                     value={filterData.date_to} 
                                     onChange={e => setFilterData({...filterData, date_to: e.target.value})}
-                                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                    className="w-full h-[42px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-semibold text-slate-800 dark:text-white focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                                 />
                             </div>
                         </div>

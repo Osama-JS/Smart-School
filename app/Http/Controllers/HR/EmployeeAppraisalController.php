@@ -215,38 +215,27 @@ class EmployeeAppraisalController extends Controller
             });
         }
 
-        // Filters
-        if ($request->filled('cycle_id')) {
-            $query->where('cycle_id', $request->cycle_id);
-        }
-        if ($request->filled('department_id')) {
-            $query->whereHas('employee', function($q) use ($request) {
-                $q->where('department_id', $request->department_id);
-            });
-        }
-        if ($request->filled('employee_id')) {
-            $query->where('employee_id', $request->employee_id);
-        }
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
-        }
+        // Filters using the new Scope
+        $query->applyFilters($request);
 
-        // Search
+        // Optimized Search
         if ($request->filled('search')) {
             $search = $request->search;
             $query->whereHas('employee.user', function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('id_number', 'like', "%{$search}%");
+                if (is_numeric($search)) {
+                    // id_number is numeric, left-anchored allows index usage
+                    $q->where('id_number', 'like', "{$search}%");
+                } else {
+                    $q->where('name', 'like', "%{$search}%");
+                }
             });
         }
 
         if ($paginate) {
             $appraisals = $query->latest()->paginate(15)->withQueryString();
         } else {
-            $appraisals = $query->latest()->get();
+            // Memory Exhaustion Protection: Cap at 500 when exporting without filters
+            $appraisals = $query->latest()->limit(500)->get();
         }
 
         // Load filter lookups

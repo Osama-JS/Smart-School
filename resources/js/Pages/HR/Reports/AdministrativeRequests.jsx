@@ -17,7 +17,7 @@ const formatDateStr = (dateString) => {
 };
 
 export default function AdministrativeRequests({ employeesData, kpis, departmentChartData, allEmployees, departments, periodStart, periodEnd, filters }) {
-    const safeEmployees = Array.isArray(employeesData) ? employeesData : (employeesData ? Object.values(employeesData) : []);
+    const safeEmployees = Array.isArray(employeesData?.data) ? employeesData.data : (Array.isArray(employeesData) ? employeesData : (employeesData ? Object.values(employeesData) : []));
     const safeDepartments = Array.isArray(departments) ? departments : (departments ? Object.values(departments) : []);
     const safeChartData = Array.isArray(departmentChartData) ? departmentChartData : (departmentChartData ? Object.values(departmentChartData) : []);
     const safeAllEmployees = Array.isArray(allEmployees) ? allEmployees : (allEmployees ? Object.values(allEmployees) : []);
@@ -31,7 +31,9 @@ export default function AdministrativeRequests({ employeesData, kpis, department
         filters?.employee_id ? { value: filters.employee_id, label: safeAllEmployees.find(t => t.id == filters.employee_id)?.name } : null
     );
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    const [requestsOnly, setRequestsOnly] = useState(filters.requests_only === true || filters.requests_only === 'true');
+    const [requestsOnly, setRequestsOnly] = useState(
+        filters?.requests_only !== undefined ? (filters.requests_only === true || filters.requests_only === 'true') : true
+    );
     const [showFilters, setShowFilters] = useState(false);
     
     // Print Settings State
@@ -63,6 +65,10 @@ export default function AdministrativeRequests({ employeesData, kpis, department
     const uniqueAchievers = kpis?.unique_achievers || 0;
     
     const chartData = safeChartData || [];
+    
+    const mostAchievingDept = chartData.length > 0 
+        ? chartData.reduce((prev, current) => (prev.total_requests > current.total_requests) ? prev : current).name 
+        : '-';
 
     let sortedEmployeesData = [...safeEmployees].sort((a, b) => {
         return (b.total_requests || 0) - (a.total_requests || 0);
@@ -90,7 +96,7 @@ export default function AdministrativeRequests({ employeesData, kpis, department
         setEndDate('');
         setSelectedDepartment(null);
         setSelectedEmployee(null);
-        setRequestsOnly(false);
+        setRequestsOnly(true);
         router.get(route('hr.reports.administrative-requests'));
     };
 
@@ -308,7 +314,7 @@ export default function AdministrativeRequests({ employeesData, kpis, department
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">القسم</label>
-                                    <Select
+                                    <Select classNamePrefix="custom-select"
                                         options={safeDepartments.map(d => ({ value: d.id, label: d.name }))}
                                         value={selectedDepartment}
                                         onChange={setSelectedDepartment}
@@ -329,7 +335,7 @@ export default function AdministrativeRequests({ employeesData, kpis, department
                                 </div>
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-700 mb-1.5">الموظف</label>
-                                    <Select
+                                    <Select classNamePrefix="custom-select"
                                         options={safeAllEmployees.map(t => ({ value: t.id, label: t.name }))}
                                         value={selectedEmployee}
                                         onChange={setSelectedEmployee}
@@ -475,28 +481,36 @@ export default function AdministrativeRequests({ employeesData, kpis, department
                     )}
 
                     {sortedEmployeesData.length > 0 ? (
-                        <div className="overflow-x-auto mt-4 rounded-xl border border-slate-200 shadow-sm print:shadow-none print:border-none print:rounded-none bg-white">
-                            <table className="w-full text-right border-collapse text-sm">
-                                <thead className={`${printSettings.ecoMode ? 'bg-slate-100 text-slate-800 border-b-2 border-slate-800' : 'text-white'}`} style={!printSettings.ecoMode ? { backgroundColor: printSettings.brandColor } : {}}>
-                                    <tr>
-                                        <th className="py-3 px-4 font-bold text-center w-12 border-l border-white/20 first:rounded-tr-xl print:first:rounded-none">م</th>
-                                        <th className="py-3 px-4 font-bold border-l border-white/20">نوع الطلب</th>
-                                        <th className="py-3 px-4 font-bold text-center w-32 border-l border-white/20">حالة الطلب</th>
-                                        <th className="py-3 px-4 font-bold text-center w-32 border-l border-white/20 last:rounded-tl-xl print:last:rounded-none">التفاصيل</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {sortedEmployeesData.map((data) => (
-                                        <EmployeeRowGroup 
-                                            key={data.id} 
-                                            employeeName={data.employee_name} 
-                                            data={data} 
-                                            printSettings={printSettings}
-                                        />
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
+                        <>
+                            <div className="overflow-x-auto mt-4 rounded-xl border border-slate-200 shadow-sm print:shadow-none print:border-none print:rounded-none bg-white">
+                                <table className="w-full text-right border-collapse text-sm">
+                                    <thead className={`${printSettings.ecoMode ? 'bg-slate-100 text-slate-800 border-b-2 border-slate-800' : 'text-white'}`} style={!printSettings.ecoMode ? { backgroundColor: printSettings.brandColor } : {}}>
+                                        <tr>
+                                            <th className="py-3 px-4 font-bold text-center w-12 border-l border-white/20 first:rounded-tr-xl print:first:rounded-none">م</th>
+                                            <th className="py-3 px-4 font-bold border-l border-white/20">نوع الطلب</th>
+                                            <th className="py-3 px-4 font-bold text-center w-32 border-l border-white/20">حالة الطلب</th>
+                                            <th className="py-3 px-4 font-bold text-center w-32 border-l border-white/20 last:rounded-tl-xl print:last:rounded-none">التفاصيل</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {sortedEmployeesData.map((data) => (
+                                            <EmployeeRowGroup 
+                                                key={data.id} 
+                                                employeeName={data.employee_name} 
+                                                data={data} 
+                                                printSettings={printSettings}
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            {employeesData?.links && (
+                                <div className="mt-6 print:hidden">
+                                    <Pagination links={employeesData.links} />
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="text-center py-16 bg-slate-50 rounded-2xl border border-slate-100 border-dashed print:hidden">
                             <Calendar className="mx-auto h-12 w-12 text-slate-300 mb-4" />

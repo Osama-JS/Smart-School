@@ -357,7 +357,7 @@ export default function ClassroomVisitsReport({
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5">المعلم المزار</label>
-                                        <Select
+                                        <Select classNamePrefix="custom-select"
                                             options={safeAllTeachers.map(t => ({ value: t.id, label: t.name }))}
                                             value={selectedTeacher}
                                             onChange={setSelectedTeacher}
@@ -378,7 +378,7 @@ export default function ClassroomVisitsReport({
                                     </div>
                                     <div>
                                         <label className="block text-sm font-semibold text-slate-700 mb-1.5">المشرف الأكاديمي</label>
-                                        <Select
+                                        <Select classNamePrefix="custom-select"
                                             options={safeAllSupervisors.map(s => ({ value: s.id, label: s.name }))}
                                             value={selectedSupervisor}
                                             onChange={setSelectedSupervisor}

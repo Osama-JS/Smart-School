@@ -13,7 +13,7 @@ use Spatie\LaravelPdf\Facades\Pdf;
 
 class AdministrativeRequestsReportController extends Controller
 {
-    private function getFilterData(Request $request)
+    private function getFilterData(Request $request, $isPaginated = true)
     {
         $user = auth()->user();
         $branchId = $user ? $user->branch_id : null;
@@ -23,6 +23,7 @@ class AdministrativeRequestsReportController extends Controller
         $endDateInput = $request->input('end_date');
         $employeeId = $request->input('employee_id');
         $departmentId = $request->input('department_id');
+        $requestsOnly = filter_var($request->input('requests_only', true), FILTER_VALIDATE_BOOLEAN);
 
         if ($startDateInput && $endDateInput) {
             $startDate = Carbon::parse($startDateInput)->startOfDay();
@@ -33,44 +34,106 @@ class AdministrativeRequestsReportController extends Controller
         }
 
         // Base Query for Employees
-        $employeesQuery = User::whereHas('employee')
+        $baseEmployeesQuery = User::whereHas('employee')
             ->with(['employee.department']);
 
         if ($branchId) {
-            $employeesQuery->where(function($q) use ($branchId) {
+            $baseEmployeesQuery->where(function($q) use ($branchId) {
                 $q->where('branch_id', $branchId)->orWhereNull('branch_id');
             });
         }
             
         if ($search) {
-            $employeesQuery->where('name', 'like', '%' . $search . '%');
+            $baseEmployeesQuery->where('name', 'like', '%' . $search . '%');
         }
 
         if ($employeeId) {
-            $employeesQuery->where('id', $employeeId);
+            $baseEmployeesQuery->where('id', $employeeId);
         }
 
         if ($departmentId) {
-            $employeesQuery->whereHas('employee', function($q) use ($departmentId) {
+            $baseEmployeesQuery->whereHas('employee', function($q) use ($departmentId) {
                 $q->where('department_id', $departmentId);
             });
         }
 
-        $employees = $employeesQuery->get();
-        $employeeIds = $employees->pluck('employee.id')->toArray();
+        $employeesQuery = clone $baseEmployeesQuery;
 
-        // Fetch Requests
+        if ($requestsOnly) {
+            $employeesQuery->whereHas('employee.requests', function($q) use ($startDate, $endDate) {
+                $q->whereBetween('created_at', [$startDate, $endDate]);
+            });
+        }
+
+        // --- 1. Global KPIs ---
+        $baseEmployeeRecordIds = \App\Models\Employee::whereIn('user_id', $baseEmployeesQuery->pluck('users.id'))->pluck('id');
+
+        $requestsStats = EmployeeRequest::whereIn('employee_id', $baseEmployeeRecordIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->selectRaw('
+                COUNT(*) as total_requests,
+                COUNT(DISTINCT employee_id) as unique_employees
+            ')
+            ->first();
+
+        $kpis = [
+            'total_requests' => (int) ($requestsStats->total_requests ?? 0),
+            'unique_employees_with_requests' => (int) ($requestsStats->unique_employees ?? 0),
+        ];
+
+        // --- 2. Department Chart Data ---
+        $deptStatsRaw = \Illuminate\Support\Facades\DB::table('employees')
+            ->join('users', 'employees.user_id', '=', 'users.id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
+            ->join('employee_requests', function($join) use ($startDate, $endDate) {
+                $join->on('employees.id', '=', 'employee_requests.employee_id')
+                     ->whereBetween('employee_requests.created_at', [$startDate, $endDate]);
+            })
+            ->whereIn('employees.id', $baseEmployeeRecordIds)
+            ->select(
+                \Illuminate\Support\Facades\DB::raw('COALESCE(departments.name, "غير محدد") as name'),
+                \Illuminate\Support\Facades\DB::raw('COUNT(employee_requests.id) as total_requests')
+            )
+            ->groupBy(\Illuminate\Support\Facades\DB::raw('COALESCE(departments.name, "غير محدد")'))
+            ->get();
+
+        $departmentChartData = [];
+        foreach ($deptStatsRaw as $stat) {
+            $departmentChartData[] = [
+                'name' => $stat->name,
+                'total_requests' => (int) $stat->total_requests,
+            ];
+        }
+
+        // --- 3. Pagination & Fetching Requests ---
+        if ($isPaginated) {
+            $employees = clone $employeesQuery;
+            $employees = $employees->withCount(['employee' => function($q) {}]) // dummy just for avoiding orderby issues if any
+                ->paginate(15)->withQueryString();
+            
+            $employeesList = $employees->items();
+        } else {
+            $employees = clone $employeesQuery;
+            $employeesList = $employees->get();
+        }
+
+        $employeeIds = [];
+        foreach ($employeesList as $user) {
+            if ($user->employee) {
+                $employeeIds[] = $user->employee->id;
+            }
+        }
+
+        // Fetch Requests for paginated employees only
         $requestsQuery = EmployeeRequest::whereIn('employee_id', $employeeIds)
-            ->whereBetween('created_at', [$startDate, $endDate]);
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->get();
 
-        $allRequests = $requestsQuery->get()->groupBy('employee_id');
+        $allRequests = $requestsQuery->groupBy('employee_id');
 
         $teachersData = [];
-        $deptStatsMap = [];
 
-        $totalRequestsAll = 0;
-
-        foreach ($employees as $emp) {
+        foreach ($employeesList as $emp) {
             $deptName = $emp->employee && $emp->employee->department 
                 ? $emp->employee->department->name 
                 : 'غير محدد';
@@ -79,10 +142,9 @@ class AdministrativeRequestsReportController extends Controller
             if (!$empId) continue;
 
             $empRequests = $allRequests->get($empId, collect());
-
             $totalCount = $empRequests->count();
             
-            if ($totalCount === 0 && !$employeeId) {
+            if ($totalCount === 0 && $requestsOnly) {
                 continue;
             }
 
@@ -98,17 +160,6 @@ class AdministrativeRequestsReportController extends Controller
                 ];
             }
 
-            $totalRequestsAll += $totalCount;
-
-            // Department Stats Aggregation
-            if (!isset($deptStatsMap[$deptName])) {
-                $deptStatsMap[$deptName] = [
-                    'name' => $deptName,
-                    'total_requests' => 0,
-                ];
-            }
-            $deptStatsMap[$deptName]['total_requests'] += $totalCount;
-
             $teachersData[] = [
                 'id' => $emp->id,
                 'name' => $emp->name,
@@ -119,18 +170,18 @@ class AdministrativeRequestsReportController extends Controller
             ];
         }
 
-        $departmentChartData = [];
-        foreach ($deptStatsMap as $deptName => $data) {
-            $departmentChartData[] = [
-                'name' => $deptName,
-                'total_requests' => $data['total_requests'],
-            ];
-        }
+        // Ensure sorting by total_requests descending for the paginated slice
+        usort($teachersData, function($a, $b) {
+            return $b['total_requests'] <=> $a['total_requests'];
+        });
 
-        $kpis = [
-            'total_requests' => $totalRequestsAll,
-            'unique_employees_with_requests' => count(array_filter($teachersData, fn($t) => $t['total_requests'] > 0)),
-        ];
+        $paginatedData = [];
+        if ($isPaginated) {
+            $paginatedData = $employees->toArray();
+            $paginatedData['data'] = $teachersData;
+        } else {
+            $paginatedData = $teachersData;
+        }
 
         // All employees for filter dropdown
         $allEmployeesList = User::whereHas('employee')
@@ -141,7 +192,7 @@ class AdministrativeRequestsReportController extends Controller
         $departments = Department::when($branchId, fn($q) => $q->where('branch_id', $branchId))->select('id', 'name')->get();
 
         return [
-            'employeesData' => $teachersData,
+            'employeesData' => $paginatedData,
             'kpis' => $kpis,
             'departmentChartData' => $departmentChartData,
             'allEmployeesList' => $allEmployeesList,
@@ -169,13 +220,14 @@ class AdministrativeRequestsReportController extends Controller
                 'end_date' => $request->input('end_date', $data['periodEnd']),
                 'employee_id' => $request->input('employee_id', ''),
                 'department_id' => $request->input('department_id', ''),
+                'requests_only' => filter_var($request->input('requests_only', true), FILTER_VALIDATE_BOOLEAN),
             ]
         ]);
     }
 
     public function downloadPdf(Request $request)
     {
-        $data = $this->getFilterData($request);
+        $data = $this->getFilterData($request, false);
         
         $printSettings = json_decode($request->input('printSettings', '{}'), true);
         $paperSize = $printSettings['paperSize'] ?? 'A4';

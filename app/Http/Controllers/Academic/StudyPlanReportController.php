@@ -9,10 +9,11 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Illuminate\Support\Facades\DB;
 
 class StudyPlanReportController extends Controller
 {
-    private function getFilterData(Request $request)
+    private function getFilterData(Request $request, $isPaginated = true)
     {
         $user = auth()->user();
         $branchId = $user ? $user->branch_id : null;
@@ -40,8 +41,43 @@ class StudyPlanReportController extends Controller
             $endDate = now()->endOfMonth()->endOfDay();
         }
 
+        $targetMonths = [];
+        $currentDate = clone $startDate;
+        $currentDate->startOfMonth();
+        $endMonthDate = clone $endDate;
+        $endMonthDate->startOfMonth();
+
+        while ($currentDate->lte($endMonthDate)) {
+            $targetMonths[] = $currentDate->format('Y-m');
+            $currentDate->addMonth();
+        }
+        $monthsCount = max(1, count($targetMonths));
+
+        $studyPlansFilter = function($q) use ($targetMonths, $startDate, $endDate) {
+            $q->where(function ($subQ) use ($targetMonths, $startDate, $endDate) {
+                if (!empty($targetMonths)) {
+                    $subQ->whereIn('study_plans.month', $targetMonths)
+                         ->orWhere(function ($subQ2) use ($startDate, $endDate) {
+                             $subQ2->whereNull('study_plans.month')->whereBetween('study_plans.created_at', [$startDate, $endDate]);
+                         });
+                } else {
+                    $subQ->whereBetween('study_plans.created_at', [$startDate, $endDate]);
+                }
+            });
+        };
+
+        $targetPlansQuery = DB::table('master_timetable')
+            ->join('divisions', 'master_timetable.division_id', '=', 'divisions.id')
+            ->select('master_timetable.teacher_id', DB::raw('COUNT(DISTINCT CONCAT(master_timetable.subject_id, "-", divisions.grade_id)) * ' . $monthsCount . ' as expected_plans'))
+            ->groupBy('master_timetable.teacher_id');
+
+        $submittedPlansQuery = DB::table('study_plans')
+            ->where($studyPlansFilter)
+            ->select('study_plans.teacher_id', DB::raw('COUNT(DISTINCT CONCAT(study_plans.subject_id, "-", study_plans.grade_id, "-", COALESCE(study_plans.month, DATE_FORMAT(study_plans.created_at, "%Y-%m")))) as submitted_plans'))
+            ->groupBy('study_plans.teacher_id');
+
         // Fetch teachers query
-        $teachersQuery = User::whereHas('role', function ($query) {
+        $baseTeachersQuery = User::whereHas('role', function ($query) {
                 $query->where('name', 'like', '%معلم%')
                       ->orWhere('name', 'Teacher')
                       ->orWhere('name', 'مشرف تربوي');
@@ -49,39 +85,156 @@ class StudyPlanReportController extends Controller
             ->with(['employee.department']);
 
         if ($branchId) {
-            $teachersQuery->where(function($q) use ($branchId) {
+            $baseTeachersQuery->where(function($q) use ($branchId) {
                 $q->where('branch_id', $branchId)->orWhereNull('branch_id');
             });
         }
             
         if ($search) {
-            $teachersQuery->where('name', 'like', '%' . $search . '%');
+            $baseTeachersQuery->where('name', 'like', '%' . $search . '%');
         }
 
         if ($employeeId) {
-            $teachersQuery->where('id', $employeeId);
+            $baseTeachersQuery->where('id', $employeeId);
         }
 
-        $teachers = $teachersQuery->get();
+        $teachersQuery = clone $baseTeachersQuery;
+
+        if ($violatorsOnly) {
+            $teachersQuery->where(function($q) use ($targetPlansQuery, $submittedPlansQuery, $studyPlansFilter) {
+                // Teachers with rejected plans
+                $q->whereIn('users.id', function($sub) use ($studyPlansFilter) {
+                    $sub->select('teacher_id')
+                        ->from('study_plans')
+                        ->where($studyPlansFilter)
+                        ->where('status', 'rejected');
+                })
+                // Teachers with missing plans
+                ->orWhereIn('users.id', function($sub) use ($targetPlansQuery, $submittedPlansQuery) {
+                    $sub->select('users.id')
+                        ->from('users')
+                        ->leftJoinSub($targetPlansQuery, 'targets', 'users.id', '=', 'targets.teacher_id')
+                        ->leftJoinSub($submittedPlansQuery, 'submitted', 'users.id', '=', 'submitted.teacher_id')
+                        ->whereRaw('CAST(COALESCE(targets.expected_plans, 0) AS SIGNED) > CAST(COALESCE(submitted.submitted_plans, 0) AS SIGNED)');
+                });
+            });
+        }
+
+        // --- 1. Global KPIs (Aggregate Queries on Base Query) ---
+        $baseTeacherIds = $baseTeachersQuery->pluck('users.id');
+
+        $plansStats = StudyPlan::whereIn('teacher_id', $baseTeacherIds)
+            ->where($studyPlansFilter)
+            ->selectRaw('
+                COUNT(*) as total_plans,
+                SUM(CASE WHEN status = "approved" THEN 1 ELSE 0 END) as approved_plans,
+                SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending_plans,
+                SUM(CASE WHEN status = "rejected" THEN 1 ELSE 0 END) as rejected_plans,
+                SUM(CASE WHEN status = "draft" THEN 1 ELSE 0 END) as draft_plans
+            ')
+            ->first();
+
+        $totalPlansAll = (int) ($plansStats->total_plans ?? 0);
+        $approvedPlansAll = (int) ($plansStats->approved_plans ?? 0);
+        $pendingPlansAll = (int) ($plansStats->pending_plans ?? 0);
+        $rejectedPlansAll = (int) ($plansStats->rejected_plans ?? 0);
+        $draftPlansAll = (int) ($plansStats->draft_plans ?? 0);
+
+        // calc missing for KPI
+        $teacherMissingPlansRaw = DB::table('users')
+            ->whereIn('users.id', $baseTeacherIds)
+            ->leftJoinSub($targetPlansQuery, 'targets', 'users.id', '=', 'targets.teacher_id')
+            ->leftJoinSub($submittedPlansQuery, 'submitted', 'users.id', '=', 'submitted.teacher_id')
+            ->select('users.id', DB::raw('GREATEST(0, CAST(COALESCE(targets.expected_plans, 0) AS SIGNED) - CAST(COALESCE(submitted.submitted_plans, 0) AS SIGNED)) as missing_count'))
+            ->get();
+            
+        $missingPlansAll = (int) $teacherMissingPlansRaw->sum('missing_count');
+        $violatorsWithMissingCount = $teacherMissingPlansRaw->filter(fn($t) => $t->missing_count > 0)->pluck('id');
+        
+        $teachersWithRejectedPlansIds = StudyPlan::whereIn('teacher_id', $baseTeacherIds)
+            ->where($studyPlansFilter)
+            ->where('status', 'rejected')
+            ->distinct('teacher_id')
+            ->pluck('teacher_id');
+            
+        $violatorTeachersCount = $violatorsWithMissingCount->merge($teachersWithRejectedPlansIds)->unique()->count();
+
+        // --- 2. Department Chart Data (Aggregate Queries) ---
+        $deptStatsRaw = DB::table('users')
+            ->leftJoin('employees', 'users.id', '=', 'employees.user_id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
+            ->leftJoin('study_plans', function($join) use ($studyPlansFilter) {
+                $join->on('users.id', '=', 'study_plans.teacher_id');
+                // Apply the study plans filter properly within the join
+                $join->where($studyPlansFilter);
+            })
+            ->whereIn('users.id', $baseTeacherIds)
+            ->select(
+                DB::raw('COALESCE(departments.name, "القسم الأكاديمي") as name'),
+                DB::raw('COUNT(study_plans.id) as total'),
+                DB::raw('SUM(CASE WHEN study_plans.status = "approved" THEN 1 ELSE 0 END) as approved'),
+                DB::raw('SUM(CASE WHEN study_plans.status = "pending" THEN 1 ELSE 0 END) as pending'),
+                DB::raw('SUM(CASE WHEN study_plans.status = "rejected" THEN 1 ELSE 0 END) as rejected')
+            )
+            ->groupBy(DB::raw('COALESCE(departments.name, "القسم الأكاديمي")'))
+            ->get();
+
+        $deptMissingRaw = DB::table('users')
+            ->leftJoin('employees', 'users.id', '=', 'employees.user_id')
+            ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
+            ->whereIn('users.id', $baseTeacherIds)
+            ->leftJoinSub($targetPlansQuery, 'targets', 'users.id', '=', 'targets.teacher_id')
+            ->leftJoinSub($submittedPlansQuery, 'submitted', 'users.id', '=', 'submitted.teacher_id')
+            ->select(
+                DB::raw('COALESCE(departments.name, "القسم الأكاديمي") as name'),
+                DB::raw('SUM(GREATEST(0, CAST(COALESCE(targets.expected_plans, 0) AS SIGNED) - CAST(COALESCE(submitted.submitted_plans, 0) AS SIGNED))) as missing')
+            )
+            ->groupBy(DB::raw('COALESCE(departments.name, "القسم الأكاديمي")'))
+            ->get()->keyBy('name');
+
+        $departmentChartData = [];
+        foreach ($deptStatsRaw as $stat) {
+            $departmentChartData[] = [
+                'name' => $stat->name,
+                'approved' => (int) $stat->approved,
+                'pending' => (int) $stat->pending,
+                'rejected' => (int) $stat->rejected,
+                'missing' => (int) ($deptMissingRaw->get($stat->name)?->missing ?? 0),
+            ];
+        }
+
+        // --- 3. Pagination & Study Plans Fetching ---
+        if ($isPaginated) {
+            $teachers = $teachersQuery->paginate(15)->withQueryString();
+        } else {
+            $teachers = clone $teachersQuery;
+            $teachers = $teachers->get();
+        }
+
         $teacherIds = $teachers->pluck('id')->toArray();
 
-        // Fetch all study plans for these teachers
+        // Fetch study plans for ONLY these paginated teachers
         $studyPlans = StudyPlan::with(['subject', 'grade', 'teacher', 'template', 'comments'])
             ->whereIn('teacher_id', $teacherIds)
-            ->whereBetween('created_at', [$startDate, $endDate])
+            ->where($studyPlansFilter)
             ->get()
             ->groupBy('teacher_id');
 
-        $teachersData = [];
-        $deptStatsMap = [];
+        $paginatedTeacherTargets = DB::table('master_timetable')
+            ->join('divisions', 'master_timetable.division_id', '=', 'divisions.id')
+            ->whereIn('master_timetable.teacher_id', $teacherIds)
+            ->select('master_timetable.teacher_id', DB::raw('COUNT(DISTINCT CONCAT(master_timetable.subject_id, "-", divisions.grade_id)) * ' . $monthsCount . ' as expected_plans'))
+            ->groupBy('master_timetable.teacher_id')
+            ->get()->keyBy('teacher_id');
 
-        $totalPlansAll = 0;
-        $approvedPlansAll = 0;
-        $pendingPlansAll = 0;
-        $rejectedPlansAll = 0;
-        $draftPlansAll = 0;
-        $missingPlansAll = 0;
-        $violatorTeachersCount = 0;
+        $paginatedTeacherSubmitted = DB::table('study_plans')
+            ->whereIn('study_plans.teacher_id', $teacherIds)
+            ->where($studyPlansFilter)
+            ->select('study_plans.teacher_id', DB::raw('COUNT(DISTINCT CONCAT(study_plans.subject_id, "-", study_plans.grade_id, "-", COALESCE(study_plans.month, DATE_FORMAT(study_plans.created_at, "%Y-%m")))) as submitted_plans'))
+            ->groupBy('study_plans.teacher_id')
+            ->get()->keyBy('teacher_id');
+
+        $teachersData = [];
 
         $statusLabels = [
             'approved' => 'معتمدة',
@@ -103,8 +256,9 @@ class StudyPlanReportController extends Controller
             $rejectedCount = $teacherPlans->where('status', 'rejected')->count();
             $draftCount = $teacherPlans->where('status', 'draft')->count();
             
-            // If a teacher has 0 plans submitted in this period, mark as missing
-            $missingCount = $teacherPlans->count() === 0 ? 1 : 0;
+            $expected = $paginatedTeacherTargets->get($teacher->id)?->expected_plans ?? 0;
+            $submitted = $paginatedTeacherSubmitted->get($teacher->id)?->submitted_plans ?? 0;
+            $missingCount = (int) max(0, $expected - $submitted);
 
             $records = [];
             foreach ($teacherPlans as $plan) {
@@ -128,10 +282,10 @@ class StudyPlanReportController extends Controller
                 ];
             }
 
-            if ($teacherPlans->count() === 0 && in_array('missing', $statusesList)) {
+            if ($missingCount > 0 && in_array('missing', $statusesList)) {
                 $records[] = [
                     'id' => 'missing_' . $teacher->id,
-                    'title' => 'لم يقم برفع الخطة الدراسية',
+                    'title' => 'متأخر عن تسليم ' . $missingCount . ' خطة دراسية',
                     'subject_name' => '-',
                     'grade_name' => '-',
                     'month' => $startDate->format('Y-m'),
@@ -143,36 +297,6 @@ class StudyPlanReportController extends Controller
                     'verification_url' => '',
                 ];
             }
-
-            if ($violatorsOnly && $rejectedCount == 0 && $missingCount == 0) {
-                continue;
-            }
-
-            if ($rejectedCount > 0 || $missingCount > 0) {
-                $violatorTeachersCount++;
-            }
-
-            $totalPlansAll += $teacherPlans->count();
-            $approvedPlansAll += $approvedCount;
-            $pendingPlansAll += $pendingCount;
-            $rejectedPlansAll += $rejectedCount;
-            $draftPlansAll += $draftCount;
-            $missingPlansAll += $missingCount;
-
-            // Department Stats Aggregation
-            if (!isset($deptStatsMap[$deptName])) {
-                $deptStatsMap[$deptName] = [
-                    'name' => $deptName,
-                    'approved' => 0,
-                    'pending' => 0,
-                    'rejected' => 0,
-                    'missing' => 0,
-                ];
-            }
-            $deptStatsMap[$deptName]['approved'] += $approvedCount;
-            $deptStatsMap[$deptName]['pending'] += $pendingCount;
-            $deptStatsMap[$deptName]['rejected'] += $rejectedCount;
-            $deptStatsMap[$deptName]['missing'] += $missingCount;
 
             $teachersData[] = [
                 'id' => $teacher->id,
@@ -189,7 +313,12 @@ class StudyPlanReportController extends Controller
             ];
         }
 
-        $departmentChartData = array_values($deptStatsMap);
+        if ($isPaginated) {
+            $resultTeachersData = $teachers->toArray();
+            $resultTeachersData['data'] = $teachersData;
+        } else {
+            $resultTeachersData = $teachersData;
+        }
 
         $kpis = [
             'total_plans' => $totalPlansAll,
@@ -212,7 +341,7 @@ class StudyPlanReportController extends Controller
             ->get();
 
         return [
-            'teachersData' => $teachersData,
+            'teachersData' => $resultTeachersData,
             'kpis' => $kpis,
             'departmentChartData' => $departmentChartData,
             'allTeachersList' => $allTeachersList,
@@ -245,7 +374,7 @@ class StudyPlanReportController extends Controller
 
     public function downloadPdf(Request $request)
     {
-        $data = $this->getFilterData($request);
+        $data = $this->getFilterData($request, false);
         
         $printSettings = json_decode($request->input('printSettings', '{}'), true);
         $paperSize = $printSettings['paperSize'] ?? 'A4';
