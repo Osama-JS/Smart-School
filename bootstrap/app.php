@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\PerformanceTrackingMiddleware::class,
+            \App\Http\Middleware\EnsurePasswordIsChanged::class,
         ]);
 
         $middleware->api(prepend: [

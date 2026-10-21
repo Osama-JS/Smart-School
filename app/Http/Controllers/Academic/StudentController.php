@@ -22,39 +22,117 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
         public static function middleware(): array
     {
         return [
-            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الطلاب', only: ['index', 'show']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الطلاب', only: ['index', 'show', 'export', 'batchCredentials']),
             new \Illuminate\Routing\Controllers\Middleware('permission:إضافة طالب', only: ['create', 'store']),
             new \Illuminate\Routing\Controllers\Middleware('permission:تعديل طالب', only: ['edit', 'update']),
             new \Illuminate\Routing\Controllers\Middleware('permission:حذف طالب', only: ['destroy']),
         ];
     }
-    public function index(Request $request)
-    {
-        $query = Student::with(['user', 'currentEnrollment.division.grade.section', 'currentEnrollment.academicYear'])
-                        ->whereHas('user');
 
-        if ($request->has('search') && $request->search != '') {
-            $search = $request->search;
-            $query->whereHas('user', function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('national_id', 'like', '%' . $search . '%');
+    /**
+     * بناء استعلام فلترة الطلاب الموحد لكافة العمليات (العرض، التصدير، الطباعة المجمعة)
+     */
+    private function getFilteredStudentsQuery(Request $request)
+    {
+        $query = Student::with([
+            'user',
+            'currentEnrollment.division.grade.section',
+            'currentEnrollment.academicYear',
+            'parents:id,name,phone',
+            'medicalRecord'
+        ])->whereHas('user');
+
+        // 1. البحث الذكي متعدد الحقول (الاسم، الهوية، اسم المستخدم، هاتف الطالب أو ولي الأمر)
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($uq) use ($search) {
+                    $uq->where('name', 'like', "%{$search}%")
+                      ->orWhere('national_id', 'like', "%{$search}%")
+                      ->orWhere('username', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
+                })->orWhereHas('parents', function ($pq) use ($search) {
+                    $pq->where('name', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
+                });
             });
         }
 
-        // فلترة حسب القسم الأكاديمي أو السنة
-        if ($request->has('academic_year_id') && $request->academic_year_id != '') {
+        // 2. الفلترة الهرمية (السنة الدراسية -> القسم -> الصف -> الشعبة)
+        if ($request->filled('academic_year_id')) {
             $query->whereHas('currentEnrollment', function ($q) use ($request) {
                 $q->where('academic_year_id', $request->academic_year_id);
             });
         }
 
-        if ($request->has('section_id') && $request->section_id != '') {
+        if ($request->filled('section_id')) {
             $query->whereHas('currentEnrollment.division.grade.section', function ($q) use ($request) {
                 $q->where('id', $request->section_id);
             });
         }
 
-        $students = $query->paginate(15)->withQueryString();
+        if ($request->filled('grade_id')) {
+            $query->whereHas('currentEnrollment.division.grade', function ($q) use ($request) {
+                $q->where('id', $request->grade_id);
+            });
+        }
+
+        if ($request->filled('division_id')) {
+            $query->whereHas('currentEnrollment', function ($q) use ($request) {
+                $q->where('division_id', $request->division_id);
+            });
+        }
+
+        // 3. التبويبات السريعة لحالة القيد
+        $statusTab = $request->input('status_tab', 'all');
+        if ($statusTab === 'active') {
+            $query->whereHas('currentEnrollment', function ($q) {
+                $q->where('status', 'active');
+            });
+        } elseif ($statusTab === 'unregistered') {
+            $query->whereDoesntHave('currentEnrollment');
+        } elseif ($statusTab === 'transferred') {
+            $query->whereHas('currentEnrollment', function ($q) {
+                $q->whereIn('status', ['transferred', 'withdrawn', 'graduated']);
+            });
+        } elseif ($statusTab === 'blocked') {
+            $query->whereHas('currentEnrollment', function ($q) {
+                $q->where('is_result_blocked', true);
+            });
+        }
+
+        // 4. الفلاتر المتقدمة
+        if ($request->filled('transport')) {
+            $query->where('transport_subscription', $request->transport === '1' || $request->transport === 'true');
+        }
+
+        if ($request->filled('account_status')) {
+            if ($request->account_status === 'active') {
+                $query->whereHas('user', fn($uq) => $uq->where('is_active', true));
+            } elseif ($request->account_status === 'inactive') {
+                $query->whereHas('user', fn($uq) => $uq->where('is_active', false));
+            } elseif ($request->account_status === 'must_change_password') {
+                $query->whereHas('user', fn($uq) => $uq->where('must_change_password', true));
+            }
+        }
+
+        if ($request->filled('medical')) {
+            if ($request->medical === 'has_record') {
+                $query->whereHas('medicalRecord');
+            } elseif ($request->medical === 'no_record') {
+                $query->whereDoesntHave('medicalRecord');
+            }
+        }
+
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $query = $this->getFilteredStudentsQuery($request);
+
+        $perPage = in_array((int)$request->per_page, [15, 30, 50, 100]) ? (int)$request->per_page : 15;
+        $students = $query->paginate($perPage)->withQueryString();
         
         $academicYears = AcademicYear::latest()->get();
         
@@ -62,9 +140,167 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
             ? session('active_branch_id') 
             : auth()->user()->branch_id;
             
-        $sections = Section::forBranch($branchId)->get();
+        // جلب الأقسام محملة بالصفوف والشعب للربط الهرمي الفوري
+        $sections = Section::forBranch($branchId)->with('grades.divisions')->get();
 
-        return Inertia::render('Academic/Students/Index', compact('students', 'academicYears', 'sections'));
+        // حساب أعداد الطلاب لكل تبويب حالة
+        $baseStatusQuery = Student::whereHas('user');
+        $statusCounts = [
+            'all' => (clone $baseStatusQuery)->count(),
+            'active' => (clone $baseStatusQuery)->whereHas('currentEnrollment', fn($q) => $q->where('status', 'active'))->count(),
+            'unregistered' => (clone $baseStatusQuery)->whereDoesntHave('currentEnrollment')->count(),
+            'transferred' => (clone $baseStatusQuery)->whereHas('currentEnrollment', fn($q) => $q->whereIn('status', ['transferred', 'withdrawn', 'graduated']))->count(),
+            'blocked' => (clone $baseStatusQuery)->whereHas('currentEnrollment', fn($q) => $q->where('is_result_blocked', true))->count(),
+        ];
+
+        $filters = [
+            'search' => $request->search ?? '',
+            'academic_year_id' => $request->academic_year_id ?? '',
+            'section_id' => $request->section_id ?? '',
+            'grade_id' => $request->grade_id ?? '',
+            'division_id' => $request->division_id ?? '',
+            'status_tab' => $request->input('status_tab', 'all'),
+            'transport' => $request->transport ?? '',
+            'account_status' => $request->account_status ?? '',
+            'medical' => $request->medical ?? '',
+            'per_page' => $perPage,
+        ];
+
+        return Inertia::render('Academic/Students/Index', compact('students', 'academicYears', 'sections', 'filters', 'statusCounts'));
+    }
+
+    /**
+     * تصدير النتائج المفلترة الحالية إلى ملف إكسل بتنسيق مهني مجهز
+     */
+    public function export(Request $request)
+    {
+        $students = $this->getFilteredStudentsQuery($request)
+                         ->latest('id')
+                         ->get();
+
+        $filename = 'قائمة_الطلاب_المفلترة_' . date('Y-m-d_H-i') . '.xls';
+
+        $headers = [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ];
+
+        return response()->stream(function () use ($students) {
+            echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+            echo '<head>';
+            echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';
+            echo '<style>';
+            echo 'body { font-family: "Segoe UI", Arial, Tahoma, sans-serif; direction: rtl; }';
+            echo 'table { border-collapse: collapse; direction: rtl; width: 100%; }';
+            echo 'th { background-color: #0f172a; color: #ffffff; font-weight: bold; padding: 12px 10px; border: 1px solid #cbd5e1; text-align: center; font-size: 13px; }';
+            echo 'td { padding: 9px 10px; border: 1px solid #e2e8f0; text-align: center; font-size: 12px; }';
+            echo '.text-right { text-align: right; }';
+            echo '.badge { padding: 3px 8px; border-radius: 6px; font-weight: bold; font-size: 11px; }';
+            echo '.badge-active { background-color: #dcfce7; color: #15803d; }';
+            echo '.badge-blocked { background-color: #fee2e2; color: #b91c1c; }';
+            echo '.badge-transferred { background-color: #fef3c7; color: #b45309; }';
+            echo '.badge-unregistered { background-color: #f1f5f9; color: #64748b; }';
+            echo '.title-header { background-color: #1e293b; color: white; font-size: 16px; font-weight: bold; padding: 14px; text-align: center; }';
+            echo '.meta-header { background-color: #f8fafc; color: #475569; font-size: 12px; padding: 8px; text-align: center; }';
+            echo '</style>';
+            echo '</head>';
+            echo '<body>';
+            echo '<table>';
+
+            // Report Header
+            echo '<tr><th colspan="11" class="title-header">سجل الطلاب المفلتر - نظام القيم الأكاديمي</th></tr>';
+            echo '<tr><td colspan="11" class="meta-header">تاريخ استخراج التقرير: ' . now()->format('Y-m-d H:i') . ' • إجمالي النتائج: ' . $students->count() . ' طالب</td></tr>';
+            echo '<tr><td colspan="11"></td></tr>';
+
+            // Columns
+            echo '<tr>';
+            echo '<th width="40">#</th>';
+            echo '<th width="120">كود الطالب</th>';
+            echo '<th width="220" class="text-right">اسم الطالب</th>';
+            echo '<th width="120">رقم الهوية</th>';
+            echo '<th width="110">رقم الهاتف</th>';
+            echo '<th width="130">المرحلة / القسم</th>';
+            echo '<th width="120">الصف</th>';
+            echo '<th width="80">الشعبة</th>';
+            echo '<th width="100">حالة القيد</th>';
+            echo '<th width="140">ولي الأمر</th>';
+            echo '<th width="110">هاتف ولي الأمر</th>';
+            echo '</tr>';
+
+            $index = 1;
+            foreach ($students as $student) {
+                $enroll = $student->currentEnrollment;
+                $parent = $student->parents->first();
+
+                $statusLabel = 'غير مسجل';
+                $statusClass = 'badge-unregistered';
+                if ($enroll) {
+                    if ($enroll->is_result_blocked) {
+                        $statusLabel = 'محجوب النتيجة';
+                        $statusClass = 'badge-blocked';
+                    } elseif ($enroll->status === 'active') {
+                        $statusLabel = 'نشط';
+                        $statusClass = 'badge-active';
+                    } elseif ($enroll->status === 'transferred') {
+                        $statusLabel = 'منقول';
+                        $statusClass = 'badge-transferred';
+                    } else {
+                        $statusLabel = 'مسحوب/خريج';
+                        $statusClass = 'badge-transferred';
+                    }
+                }
+
+                echo '<tr>';
+                echo '<td>' . $index++ . '</td>';
+                echo '<td style="mso-number-format:\'@\';">' . htmlspecialchars($student->user->username ?? $student->id) . '</td>';
+                echo '<td class="text-right"><b>' . htmlspecialchars($student->user->name ?? '-') . '</b></td>';
+                echo '<td style="mso-number-format:\'@\';">' . htmlspecialchars($student->user->national_id ?? '-') . '</td>';
+                echo '<td style="mso-number-format:\'@\';">' . htmlspecialchars($student->user->phone ?? '-') . '</td>';
+                echo '<td>' . htmlspecialchars($enroll?->division?->grade?->section?->name ?? '-') . '</td>';
+                echo '<td>' . htmlspecialchars($enroll?->division?->grade?->name ?? '-') . '</td>';
+                echo '<td>' . htmlspecialchars($enroll?->division?->name ?? '-') . '</td>';
+                echo '<td><span class="badge ' . $statusClass . '">' . $statusLabel . '</span></td>';
+                echo '<td>' . htmlspecialchars($parent->name ?? '-') . '</td>';
+                echo '<td style="mso-number-format:\'@\';">' . htmlspecialchars($parent->phone ?? '-') . '</td>';
+                echo '</tr>';
+            }
+
+            echo '</table>';
+            echo '</body>';
+            echo '</html>';
+        }, $filename, $headers);
+    }
+
+    /**
+     * جلب بيانات الدخول لطباعة البطاقات المجمعة للطلاب المفلترين أو المحددين
+     */
+    public function batchCredentials(Request $request)
+    {
+        $query = $this->getFilteredStudentsQuery($request);
+
+        if ($request->filled('student_ids')) {
+            $ids = is_array($request->student_ids) ? $request->student_ids : explode(',', $request->student_ids);
+            $query->whereIn('id', $ids);
+        }
+
+        $students = $query->limit(500)->get();
+
+        $credentials = $students->map(function ($student) {
+            return [
+                'id' => $student->id,
+                'name' => $student->user?->name ?? 'طالب',
+                'username' => $student->user?->username ?? (string)$student->id,
+                'password' => null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'total' => $credentials->count(),
+            'credentials' => $credentials,
+        ]);
     }
 
     public function create()
@@ -369,9 +605,9 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
             echo '<td style="mso-number-format:\'@\';">1000000000</td>';
             echo '<td style="mso-number-format:\'@\';">0500000000</td>';
             echo '<td>ahmed@example.com</td>';
-            echo '<td>ابتدائي</td>';
-            echo '<td>الصف الأول</td>';
-            echo '<td>الشعبة أ</td>';
+            echo '<td>المرحلة الابتدائية</td>';
+            echo '<td>الصف الأول الابتدائي</td>';
+            echo '<td>أ</td>';
             echo '</tr>';
             
             echo '</table></body></html>';
@@ -383,7 +619,7 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
     public function import(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'max:5120'],
+            'file' => ['required', 'file', 'max:10240'],
         ]);
 
         $file = $request->file('file');
@@ -392,71 +628,6 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
         if (!in_array($extension, ['csv', 'txt', 'xlsx', 'xls'])) {
             return redirect()->back()->withErrors(['file' => 'يجب أن يكون الملف بصيغة csv, txt, xlsx, أو xls.']);
         }
-
-        $rows = [];
-
-        if (in_array($extension, ['csv', 'txt'])) {
-            if (($handle = fopen($file->getRealPath(), 'r')) !== false) {
-                $firstLine = fgets($handle);
-                $bom = "\xef\xbb\xbf";
-                if (strncmp($firstLine, $bom, 3) === 0) {
-                    $firstLine = substr($firstLine, 3);
-                }
-                $rows[] = str_getcsv($firstLine);
-                while (($data = fgetcsv($handle, 1000, ",")) !== false) {
-                    $rows[] = $data;
-                }
-                fclose($handle);
-            }
-        } else {
-            $content = file_get_contents($file->getRealPath());
-            if (stripos($content, '<html') !== false && stripos($content, '<table') !== false) {
-                // Parse HTML table
-                $dom = new \DOMDocument();
-                @$dom->loadHTML('<?xml encoding="UTF-8">' . $content);
-                $tables = $dom->getElementsByTagName('table');
-                if ($tables->length > 0) {
-                    $table = $tables->item(0);
-                    $trs = $table->getElementsByTagName('tr');
-                    foreach ($trs as $tr) {
-                        $rowData = [];
-                        $tds = $tr->childNodes;
-                        foreach ($tds as $td) {
-                            if ($td->nodeName === 'td' || $td->nodeName === 'th') {
-                                $rowData[] = trim($td->textContent);
-                            }
-                        }
-                        if (!empty($rowData)) {
-                            $rows[] = $rowData;
-                        }
-                    }
-                }
-            } else {
-                if ($xlsx = \Shuchkin\SimpleXLSX::parse($file->getRealPath())) {
-                    $rows = $xlsx->rows();
-                } else {
-                    return redirect()->back()->withErrors(['file' => 'فشل في قراءة ملف الإكسل. يرجى التأكد من الصيغة.']);
-                }
-            }
-            
-            if (empty($rows)) {
-                 return redirect()->back()->withErrors(['file' => 'الملف فارغ أو لا يمكن قراءة محتواه.']);
-            }
-        }
-
-        $headerIndex = -1;
-        foreach ($rows as $index => $row) {
-            if (isset($row[0]) && str_contains($row[0], 'الاسم الرباعي')) {
-                $headerIndex = $index;
-                break;
-            }
-        }
-
-        if ($headerIndex === -1) {
-            return redirect()->back()->withErrors(['file' => 'لم يتم العثور على ترويسة الأعمدة الصحيحة. يرجى استخدام النموذج المعتمد.']);
-        }
-
-        $dataRows = array_slice($rows, $headerIndex + 1);
 
         $activeYear = AcademicYear::where('is_active', true)->first();
         if (!$activeYear) {
@@ -467,112 +638,69 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
             ? session('active_branch_id') 
             : auth()->user()->branch_id;
 
-        $divisions = \App\Models\Division::with(['grade.section'])
-            ->where('branch_id', $branchId)
-            ->where('academic_year_id', $activeYear->id)
-            ->get();
+        $batchId = 'batch_' . time() . '_' . \Illuminate\Support\Str::random(6);
+        $storedPath = $file->storeAs('imports', "students_{$batchId}.{$extension}", 'local');
 
-        $divisionMap = [];
-        foreach ($divisions as $div) {
-            $key = mb_strtolower(trim($div->grade->section->name ?? '') . '|' . trim($div->grade->name ?? '') . '|' . trim($div->name ?? ''));
-            $divisionMap[$key] = $div->id;
+        // تنفيذ الاستيراد فوراً وبسرعة فائقة (يستغرق ثانية إلى ثانيتين بفضل التشفير المسبق)
+        \App\Jobs\ImportStudentsJob::dispatchSync(
+            $storedPath,
+            auth()->id(),
+            $branchId,
+            $activeYear->id,
+            $batchId
+        );
+
+        $status = \Illuminate\Support\Facades\Cache::get("import_status_{$batchId}");
+        $credentials = [];
+        $credPath = "imports/credentials_{$batchId}.json";
+        if (\Illuminate\Support\Facades\Storage::disk('local')->exists($credPath)) {
+            $credentials = json_decode(\Illuminate\Support\Facades\Storage::disk('local')->get($credPath), true) ?: [];
         }
 
-        $studentRole = Role::where('name', 'طالب')->first();
-        if (!$studentRole) {
-            return redirect()->back()->withErrors(['file' => 'لم يتم العثور على صلاحية (طالب) في النظام.']);
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success'     => true,
+                'batch_id'    => $batchId,
+                'status'      => $status['status'] ?? 'completed',
+                'total'       => $status['total'] ?? 0,
+                'count'       => $status['success'] ?? 0,
+                'errors'      => $status['errors'] ?? [],
+                'credentials' => $credentials,
+            ]);
         }
 
-        $successCount = 0;
-        $errors = [];
-        $importedCredentials = [];
+        return redirect()->back()
+            ->with('import_batch_id', $batchId)
+            ->with('info', 'بدأت معالجة ملف استيراد الطلاب بنجاح في الخلفية.');
+    }
 
-        foreach ($dataRows as $index => $row) {
-            if (empty(array_filter($row))) continue;
-            
-            $name = trim($row[0] ?? '');
-            $nationalId = trim($row[1] ?? '');
-            $phone = trim($row[2] ?? '');
-            $email = trim($row[3] ?? '');
-            $sectionName = trim($row[4] ?? '');
-            $gradeName = trim($row[5] ?? '');
-            $divisionName = trim($row[6] ?? '');
+    public function importStatus(Request $request, $batchId)
+    {
+        $status = \Illuminate\Support\Facades\Cache::get("import_status_{$batchId}");
 
-            $rowNumber = $headerIndex + 2 + $index;
-
-            if (empty($name) || empty($sectionName) || empty($gradeName) || empty($divisionName)) {
-                $errors[] = "الصف رقم $rowNumber: الاسم، المرحلة، الصف، والشعبة بيانات مطلوبة.";
-                continue;
-            }
-
-            $divKey = mb_strtolower($sectionName . '|' . $gradeName . '|' . $divisionName);
-            $divisionId = $divisionMap[$divKey] ?? null;
-
-            if (!$divisionId) {
-                $errors[] = "الصف رقم $rowNumber: الشعبة ($divisionName) في ($gradeName - $sectionName) غير موجودة.";
-                continue;
-            }
-
-            try {
-                DB::beginTransaction();
-
-                do {
-                    $username = date('Y') . mt_rand(1000, 9999);
-                } while (User::where('username', $username)->exists());
-                
-                $password = \Illuminate\Support\Str::random(8);
-
-                $user = User::create([
-                    'name'        => $name,
-                    'username'    => $username,
-                    'password'    => Hash::make($password),
-                    'email'       => !empty($email) ? $email : null,
-                    'phone'       => !empty($phone) ? $phone : null,
-                    'national_id' => !empty($nationalId) ? $nationalId : null,
-                    'role_id'     => $studentRole->id,
-                    'branch_id'   => $branchId,
-                    'is_active'   => true,
-                ]);
-
-                $student = Student::create([
-                    'user_id' => $user->id,
-                    'transport_subscription' => 0,
-                ]);
-
-                Enrollment::create([
-                    'student_id'       => $student->id,
-                    'division_id'      => $divisionId,
-                    'academic_year_id' => $activeYear->id,
-                    'status'           => 'active',
-                ]);
-
-                DB::commit();
-                $successCount++;
-                
-                $importedCredentials[] = [
-                    'name'     => $name,
-                    'username' => $username,
-                    'password' => $password
-                ];
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                $errors[] = "الصف رقم $rowNumber: خطأ تقني (" . $e->getMessage() . ").";
-            }
+        if (!$status) {
+            return response()->json([
+                'status'   => 'not_found',
+                'progress' => 0,
+                'total'    => 0,
+                'success'  => 0,
+                'errors'   => [],
+            ]);
         }
 
-        $message = "تم استيراد $successCount طالب بنجاح.";
-        
-        $redirect = redirect()->back()->with('success', $message);
-        
-        if (count($importedCredentials) > 0) {
-            $redirect->with('imported_credentials', $importedCredentials);
-        }
-        
-        if (count($errors) > 0) {
-            $redirect->with('import_errors', $errors);
+        return response()->json($status);
+    }
+
+    public function getBatchCredentials($batchId)
+    {
+        $path = "imports/credentials_{$batchId}.json";
+        if (!\Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+            return response()->json(['credentials' => []]);
         }
 
-        return $redirect;
+        $content = \Illuminate\Support\Facades\Storage::disk('local')->get($path);
+        $credentials = json_decode($content, true) ?: [];
+
+        return response()->json(['credentials' => $credentials]);
     }
 }

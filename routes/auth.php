@@ -54,6 +54,9 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
+    Route::get('force-change-password', [PasswordController::class, 'forceChange'])->name('password.force_change');
+    Route::post('force-change-password', [PasswordController::class, 'updateForced'])->name('password.force_change.update');
+
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 });

@@ -439,7 +439,11 @@ Route::middleware('auth')->group(function () {
         ]);
         Route::post('/academic/students/{student}/reset-password', [\App\Http\Controllers\Academic\StudentController::class, 'resetPassword'])->name('academic.students.reset-password');
         Route::get('/academic/students-template', [\App\Http\Controllers\Academic\StudentController::class, 'template'])->name('academic.students.template');
+        Route::get('/academic/students-export', [\App\Http\Controllers\Academic\StudentController::class, 'export'])->name('academic.students.export');
+        Route::get('/academic/students-credentials-batch', [\App\Http\Controllers\Academic\StudentController::class, 'batchCredentials'])->name('academic.students.credentials-batch');
         Route::post('/academic/students-import', [\App\Http\Controllers\Academic\StudentController::class, 'import'])->name('academic.students.import');
+        Route::get('/academic/students-import/status/{batchId}', [\App\Http\Controllers\Academic\StudentController::class, 'importStatus'])->name('academic.students.import-status');
+        Route::get('/academic/students-import/credentials/{batchId}', [\App\Http\Controllers\Academic\StudentController::class, 'getBatchCredentials'])->name('academic.students.import-credentials');
 
         // Student Discipline System
         Route::resource('/academic/student-violation-types', \App\Http\Controllers\Academic\StudentViolationTypeController::class)->names([

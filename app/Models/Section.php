@@ -25,6 +25,9 @@ class Section extends Model
 
     public function scopeForBranch($query, $branchId)
     {
-        return $query->where('branch_id', $branchId);
+        if ($branchId) {
+            return $query->where('branch_id', $branchId);
+        }
+        return $query;
     }
 }

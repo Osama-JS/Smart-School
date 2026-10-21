@@ -16,7 +16,12 @@ class User extends Authenticatable
     use HasApiTokens, Notifiable, BelongsToBranch;
 
     protected $fillable = [
-        'branch_id', 'role_id', 'name', 'username', 'password', 'is_active', 'email', 'phone', 'avatar'
+        'branch_id', 'role_id', 'name', 'username', 'password', 'must_change_password', 'is_active', 'email', 'phone', 'avatar'
+    ];
+
+    protected $casts = [
+        'must_change_password' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     protected $hidden = ['password', 'remember_token'];
