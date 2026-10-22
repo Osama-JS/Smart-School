@@ -178,16 +178,61 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
                          ->latest('id')
                          ->get();
 
+        if ($request->format === 'json' || $request->wantsJson()) {
+            $mapped = $students->map(function ($student) {
+                $enroll = $student->currentEnrollment;
+                $parent = $student->parents->first();
+
+                $statusLabel = 'غير مسجل';
+                $statusKey = 'unregistered';
+                if ($enroll) {
+                    if ($enroll->is_result_blocked) {
+                        $statusLabel = 'محجوب النتيجة';
+                        $statusKey = 'blocked';
+                    } elseif ($enroll->status === 'active') {
+                        $statusLabel = 'نشط';
+                        $statusKey = 'active';
+                    } elseif ($enroll->status === 'transferred') {
+                        $statusLabel = 'منقول';
+                        $statusKey = 'transferred';
+                    } else {
+                        $statusLabel = 'مسحوب/خريج';
+                        $statusKey = 'transferred';
+                    }
+                }
+
+                return [
+                    'id' => $student->id,
+                    'code' => $student->user->username ?? (string)$student->id,
+                    'name' => $student->user->name ?? 'غير محدد',
+                    'national_id' => $student->user->national_id ?? '-',
+                    'phone' => $student->user->phone ?? '-',
+                    'section' => $enroll?->division?->grade?->section?->name ?? '-',
+                    'grade' => $enroll?->division?->grade?->name ?? '-',
+                    'division' => $enroll?->division?->name ?? '-',
+                    'status' => $statusLabel,
+                    'status_key' => $statusKey,
+                    'parent_name' => $parent->name ?? '-',
+                    'parent_phone' => $parent->phone ?? '-',
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'total' => $mapped->count(),
+                'students' => $mapped,
+            ]);
+        }
+
         $filename = 'قائمة_الطلاب_المفلترة_' . date('Y-m-d_H-i') . '.xls';
 
         $headers = [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
             'Pragma' => 'no-cache',
             'Expires' => '0',
         ];
 
-        return response()->stream(function () use ($students) {
+        return response()->streamDownload(function () use ($students) {
             echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
             echo '<head>';
             echo '<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">';

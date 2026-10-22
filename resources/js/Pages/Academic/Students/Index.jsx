@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import ExcelJS from 'exceljs';
 import SelectInput from '@/Components/SelectInput';
 import ImportModal from './Components/ImportModal';
 
@@ -371,8 +372,8 @@ export default function StudentsIndex({
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [isPrintingBatch, setIsPrintingBatch] = useState(false);
 
-    const { flash, appSettings } = usePage().props;
-    const logoUrl = appSettings?.logo_url || '';
+    const { flash, appSettings, logo_url } = usePage().props;
+    const logoUrl = logo_url || appSettings?.logo_url || '';
 
     // 1. الفلترة الهرمية التتابعية: حساب الصفوف والشعب المتاحة
     const selectedSectionObj = (sections || []).find(s => String(s.id) === String(selectedSection));
@@ -406,20 +407,367 @@ export default function StudentsIndex({
         setPerPage(15);
     };
 
-    // 6. تصدير النتائج المفلترة فقط (Export Filtered to Excel)
-    const handleExportExcel = () => {
-        const query = new URLSearchParams();
-        if (debouncedSearch) query.set('search', debouncedSearch);
-        if (selectedYear) query.set('academic_year_id', selectedYear);
-        if (selectedSection) query.set('section_id', selectedSection);
-        if (selectedGrade) query.set('grade_id', selectedGrade);
-        if (selectedDivision) query.set('division_id', selectedDivision);
-        if (statusTab && statusTab !== 'all') query.set('status_tab', statusTab);
-        if (transportFilter) query.set('transport', transportFilter);
-        if (accountStatusFilter) query.set('account_status', accountStatusFilter);
-        if (medicalFilter) query.set('medical', medicalFilter);
+    // ─── تصدير إكسيل مطابق لدليل الموظفين (ExcelJS Export) ─────────────────────────
+    const [isExporting, setIsExporting] = useState(false);
 
-        window.location.href = route('academic.students.export') + '?' + query.toString();
+    const exportToExcel = async () => {
+        setIsExporting(true);
+        try {
+            // 1. جلب بيانات الطلاب المطابقين للفلاتر الحالية
+            const params = { format: 'json' };
+            if (debouncedSearch) params.search = debouncedSearch;
+            if (selectedYear) params.academic_year_id = selectedYear;
+            if (selectedSection) params.section_id = selectedSection;
+            if (selectedGrade) params.grade_id = selectedGrade;
+            if (selectedDivision) params.division_id = selectedDivision;
+            if (statusTab && statusTab !== 'all') params.status_tab = statusTab;
+            if (transportFilter) params.transport = transportFilter;
+            if (accountStatusFilter) params.account_status = accountStatusFilter;
+            if (medicalFilter) params.medical = medicalFilter;
+
+            let studentsList = [];
+            try {
+                const res = await axios.get(route('academic.students.export'), { params });
+                if (res.data?.students) {
+                    studentsList = res.data.students;
+                }
+            } catch (err) {
+                console.warn('Export endpoint fetch failed, falling back to page data:', err);
+                studentsList = (students?.data || []).map(student => {
+                    const enroll = student.currentEnrollment;
+                    const parent = student.parents?.[0];
+
+                    let statusLabel = 'غير مسجل';
+                    let statusKey = 'unregistered';
+                    if (enroll) {
+                        if (enroll.is_result_blocked) {
+                            statusLabel = 'محجوب النتيجة';
+                            statusKey = 'blocked';
+                        } else if (enroll.status === 'active') {
+                            statusLabel = 'نشط';
+                            statusKey = 'active';
+                        } else if (enroll.status === 'transferred') {
+                            statusLabel = 'منقول';
+                            statusKey = 'transferred';
+                        } else {
+                            statusLabel = 'مسحوب/خريج';
+                            statusKey = 'transferred';
+                        }
+                    }
+
+                    return {
+                        id: student.id,
+                        code: student.user?.username || String(student.id),
+                        name: student.user?.name || 'غير محدد',
+                        national_id: student.user?.national_id || '-',
+                        phone: student.user?.phone || '-',
+                        section: enroll?.division?.grade?.section?.name || '-',
+                        grade: enroll?.division?.grade?.name || '-',
+                        division: enroll?.division?.name || '-',
+                        status: statusLabel,
+                        status_key: statusKey,
+                        parent_name: parent?.name || '-',
+                        parent_phone: parent?.phone || '-',
+                    };
+                });
+            }
+
+            if (!studentsList || studentsList.length === 0) {
+                Swal.fire({
+                    title: 'لا توجد بيانات',
+                    text: 'لا توجد سجلات طلاب لتصديرها وفق الفلتر المحدد.',
+                    icon: 'info',
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#6b9b37'
+                });
+                return;
+            }
+
+            // 2. بناء ملف Excel منسق واحترافي عبر ExcelJS
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet('سجل الطلاب', {
+                views: [{ rightToLeft: true, state: 'frozen', ySplit: 9 }],
+                pageSetup: {
+                    paperSize: 9, // A4
+                    orientation: 'landscape',
+                    fitToPage: true,
+                    fitToWidth: 1,
+                    fitToHeight: 0,
+                    margins: { left: 0.25, right: 0.25, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 }
+                },
+                headerFooter: {
+                    oddFooter: '&Rتاريخ الطباعة: &D &T&Cالصفحة &P من &N&Lمدارس القيم الأهلية - النظام الأكاديمي',
+                    evenFooter: '&Rتاريخ الطباعة: &D &T&Cالصفحة &P من &N&Lمدارس القيم الأهلية - النظام الأكاديمي'
+                }
+            });
+
+            // 3. استخراج وإدراج الشعار
+            let logoId = null;
+            const logoPath = logo_url || appSettings?.logo_url || '/images/logo.png';
+            const getLogoBase64 = async (url) => {
+                try {
+                    const response = await fetch(url);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        if (blob.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            return await new Promise((resolve) => {
+                                reader.readAsDataURL(blob);
+                                reader.onloadend = () => resolve(reader.result);
+                            });
+                        }
+                    }
+                } catch (e) {}
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'Anonymous';
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+            };
+
+            const base64Clean = await getLogoBase64(logoPath);
+            if (base64Clean) {
+                logoId = workbook.addImage({ base64: base64Clean, extension: 'png' });
+            }
+
+            // تعيين عروض الأعمدة الـ 11
+            sheet.columns = [
+                { width: 8 },  // #
+                { width: 16 }, // كود الطالب
+                { width: 34 }, // اسم الطالب
+                { width: 18 }, // رقم الهوية
+                { width: 16 }, // رقم الهاتف
+                { width: 20 }, // المرحلة / القسم
+                { width: 20 }, // الصف
+                { width: 14 }, // الشعبة
+                { width: 16 }, // حالة القيد
+                { width: 24 }, // ولي الأمر
+                { width: 18 }  // هاتف ولي الأمر
+            ];
+
+            // الصف 1: شريط ترويسة أخضر رمزي
+            sheet.getRow(1).height = 10;
+            sheet.mergeCells('A1:K1');
+            sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+
+            sheet.getRow(2).height = 35;
+            sheet.getRow(3).height = 25;
+            sheet.getRow(4).height = 20;
+
+            if (logoId !== null) {
+                sheet.addImage(logoId, { tl: { col: 5.2, row: 1.1 }, ext: { width: 85, height: 85 } });
+            }
+
+            // ترويسة المدرسة الرسمية (يمين)
+            sheet.mergeCells('A2:D2');
+            const titleCell = sheet.getCell('A2');
+            titleCell.value = 'مدارس القيم الأهلية';
+            titleCell.font = { name: 'Segoe UI', size: 24, bold: true, color: { argb: 'FF6B9B37' } }; 
+            titleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            sheet.mergeCells('A3:D3');
+            const enTitleCell = sheet.getCell('A3');
+            enTitleCell.value = 'AL QIYAM CIVEL SCHOOLS';
+            enTitleCell.font = { name: 'Segoe UI', size: 18, bold: true, color: { argb: 'FF6B9B37' } }; 
+            enTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            sheet.mergeCells('A4:D4');
+            const subTitleCell = sheet.getCell('A4');
+            subTitleCell.value = 'النظام الأكاديمي - سجل الطلاب';
+            subTitleCell.font = { name: 'Segoe UI', size: 12, bold: true, color: { argb: 'FFE32636' } }; 
+            subTitleCell.alignment = { horizontal: 'right', vertical: 'middle' };
+
+            // ميتاداتا التقرير والاعتماد (يسار)
+            sheet.mergeCells('H2:K2');
+            const meta1Cell = sheet.getCell('H2');
+            meta1Cell.value = 'نوع التقرير: كشف الطلاب المفلتر';
+            meta1Cell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+            meta1Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            const exportDate = new Date().toLocaleString('ar-EG');
+            sheet.mergeCells('H3:K3');
+            const meta2Cell = sheet.getCell('H3');
+            meta2Cell.value = `تاريخ التصدير: ${exportDate}`;
+            meta2Cell.font = { size: 10, color: { argb: 'FF64748B' }, name: 'Segoe UI' };
+            meta2Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            sheet.mergeCells('H4:K4');
+            const meta3Cell = sheet.getCell('H4');
+            meta3Cell.value = 'حالة التقرير: معتمد ✔';
+            meta3Cell.font = { size: 11, bold: true, color: { argb: 'FF6B9B37' }, name: 'Segoe UI' };
+            meta3Cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+
+            sheet.getRow(5).height = 12;
+
+            // الصف 7: بطاقة الإحصائيات المدمجة
+            sheet.getRow(7).height = 30;
+            sheet.mergeCells('A7:K7');
+            const statsCell = sheet.getCell('A7');
+            const totalCount = studentsList.length;
+            const activeCount = studentsList.filter(s => s.status_key === 'active' || s.status === 'نشط').length;
+            const unregCount = studentsList.filter(s => s.status_key === 'unregistered' || s.status === 'غير مسجل').length;
+            const transCount = studentsList.filter(s => s.status_key === 'transferred' || s.status === 'منقول' || s.status === 'مسحوب/خريج').length;
+            const blockedCount = studentsList.filter(s => s.status_key === 'blocked' || s.status === 'محجوب النتيجة').length;
+
+            statsCell.value = `📊 إجمالي النتائج: ${totalCount} طالب   |   ✅ النشطون: ${activeCount}   |   ⚠️ غير مسجلين: ${unregCount}   |   🔄 منقولون/مسحوبون: ${transCount}   |   🚫 محجوبو النتيجة: ${blockedCount}`;
+            statsCell.font = { size: 11, bold: true, color: { argb: 'FF437020' }, name: 'Segoe UI' };
+            statsCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            statsCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F7EB' } };
+            statsCell.border = { 
+                top: { style: 'medium', color: { argb: 'FF96CF75' } }, 
+                bottom: { style: 'medium', color: { argb: 'FF96CF75' } }, 
+                left: { style: 'medium', color: { argb: 'FF96CF75' } }, 
+                right: { style: 'medium', color: { argb: 'FF96CF75' } } 
+            };
+
+            sheet.getRow(8).height = 10;
+
+            // الصف 9: ترويسة الجدول الرئيسية
+            const headers = [
+                "#",
+                "كود الطالب",
+                "اسم الطالب",
+                "رقم الهوية",
+                "رقم الهاتف",
+                "المرحلة / القسم",
+                "الصف الدراسي",
+                "الشعبة",
+                "حالة القيد",
+                "ولي الأمر",
+                "هاتف ولي الأمر"
+            ];
+            const headerRow = sheet.addRow(headers);
+            headerRow.height = 30;
+            headerRow.eachCell((cell) => {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6B9B37' } };
+                cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                cell.border = { 
+                    top: { style: 'thin', color: { argb: 'FFFFFFFF' } }, 
+                    left: { style: 'thin', color: { argb: 'FFFFFFFF' } }, 
+                    bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } }, 
+                    right: { style: 'thin', color: { argb: 'FFFFFFFF' } } 
+                };
+            });
+
+            // صفوف البيانات
+            studentsList.forEach((st, index) => {
+                const row = sheet.addRow([
+                    index + 1,
+                    st.code || '-',
+                    st.name || '-',
+                    st.national_id || '-',
+                    st.phone || '-',
+                    st.section || '-',
+                    st.grade || '-',
+                    st.division || '-',
+                    st.status || 'غير مسجل',
+                    st.parent_name || '-',
+                    st.parent_phone || '-'
+                ]);
+
+                row.height = 32;
+                row.eachCell((cell, colNumber) => {
+                    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+                    cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } };
+                    cell.border = { 
+                        bottom: { style: 'thin', color: { argb: 'FFDEE2E6' } }, 
+                        left: { style: 'thin', color: { argb: 'FFDEE2E6' } }, 
+                        right: { style: 'thin', color: { argb: 'FFDEE2E6' } } 
+                    };
+                    
+                    // محاذاة الأسماء لليمين
+                    if (colNumber === 3 || colNumber === 10) {
+                        cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+                        if (colNumber === 3) {
+                            cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF0F172A' } };
+                        }
+                    }
+
+                    // تنسيق نصي للأرقام (الهوية، الهاتف، الكود)
+                    if ([2, 4, 5, 11].includes(colNumber)) {
+                        cell.numFmt = '@';
+                        cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF334155' } };
+                    }
+
+                    // رقم المسلسل
+                    if (colNumber === 1) {
+                        cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: 'FF64748B' } };
+                    }
+                });
+
+                // تلوين تبادلي للصفوف
+                if (index % 2 === 0) {
+                    row.eachCell((cell, colNumber) => {
+                        if (colNumber !== 9) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FCF7' } };
+                        }
+                    });
+                }
+
+                // تلوين خلية حالة القيد (العمود 9)
+                const statusCell = row.getCell(9);
+                const sKey = st.status_key || '';
+                const sText = st.status || '';
+
+                if (sKey === 'active' || sText === 'نشط') {
+                    statusCell.font = { color: { argb: 'FF15803D' }, bold: true, name: 'Segoe UI', size: 10 };
+                    statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCFCE7' } };
+                } else if (sKey === 'blocked' || sText.includes('محجوب')) {
+                    statusCell.font = { color: { argb: 'FFB91C1C' }, bold: true, name: 'Segoe UI', size: 10 };
+                    statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEE2E2' } };
+                } else if (sKey === 'transferred' || sText.includes('منقول') || sText.includes('خريج')) {
+                    statusCell.font = { color: { argb: 'FFB45309' }, bold: true, name: 'Segoe UI', size: 10 };
+                    statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } };
+                } else {
+                    statusCell.font = { color: { argb: 'FF64748B' }, bold: true, name: 'Segoe UI', size: 10 };
+                    statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                }
+            });
+
+            // الفلترة التلقائية والحماية
+            sheet.autoFilter = `A9:K${9 + studentsList.length}`;
+            await sheet.protect('', { 
+                selectLockedCells: true, 
+                selectUnlockedCells: true, 
+                autoFilter: true, 
+                sort: true, 
+                formatCells: true, 
+                formatColumns: true, 
+                formatRows: true 
+            });
+
+            // 4. توليد وتنزيل ملف Excel
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `students_report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Export failed:", error);
+            Swal.fire({
+                title: 'خطأ',
+                text: 'حدث خطأ أثناء تصدير ملف الإكسل، يرجى المحاولة مرة أخرى.',
+                icon: 'error',
+                confirmButtonText: 'حسناً'
+            });
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     // طباعة بطاقات الحسابات للطلاب المطابقين للفلتر الحالي دفعة واحدة
@@ -727,12 +1075,12 @@ export default function StudentsIndex({
 
                         <div className="flex flex-wrap gap-2 sm:gap-3">
                             <button
-                                onClick={handleExportExcel}
-                                className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 px-4 py-3 rounded-2xl text-sm font-bold shadow-sm transition-all hover:-translate-y-0.5 shrink-0 active:scale-95"
-                                title="تصدير الطلاب المطابقين للفلاتر الحالية إلى ملف إكسل"
+                                onClick={exportToExcel}
+                                disabled={isExporting}
+                                className="flex items-center justify-center p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary-600 transition-colors shadow-sm disabled:opacity-50"
+                                title="تصدير إكسيل"
                             >
-                                <FileSpreadsheet size={18} />
-                                <span>تصدير إكسل</span>
+                                {isExporting ? <RotateCcw size={18} className="animate-spin" /> : <Download size={18} />}
                             </button>
                             <button
                                 onClick={handlePrintAllFiltered}
