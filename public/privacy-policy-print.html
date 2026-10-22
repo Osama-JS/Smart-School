@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سياسة الخصوصية — تطبيق مدارس القيم الأهلية</title>
+    <meta name="description" content="وثيقة سياسة الخصوصية الرسمية لتطبيق مدارس القيم الأهلية للهاتف المحمول.">
+    <link rel="icon" type="image/png" href="images/school_icon.png">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=tajawal:400,500,700,800,900&display=swap" rel="stylesheet">
+    <style>
+        /* ===== Brand tokens (من app.css — ألوان الشعار) ===== */
+        :root {
+            --p-50:  #f0f7eb;
+            --p-100: #dcefd1;
+            --p-200: #b9dfa3;
+            --p-400: #7cbf4f;
+            --p-500: #6b9b37;
+            --p-600: #558a2a;
+            --p-700: #437020;
+            --p-800: #325518;
+            --p-900: #1e3a0e;
+
+            --a-50:  #fef2f2;
+            --a-100: #fee2e2;
+            --a-200: #fecaca;
+            --a-500: #cc2b2b;
+            --a-700: #991b1b;
+
+            --d-50:  #f8f9fa;
+            --d-100: #e9ecef;
+            --d-200: #dee2e6;
+            --d-400: #adb5bd;
+            --d-500: #6c757d;
+            --d-600: #495057;
+            --d-700: #343a40;
+            --d-800: #212529;
+            --d-900: #0f1419;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 14mm 13mm 18mm 13mm;
+            @bottom-left {
+                content: counter(page) " / " counter(pages);
+                font-family: 'Tajawal', Tahoma, sans-serif;
+                font-size: 8.5pt;
+                color: #6c757d;
+            }
+            @bottom-right {
+                content: "مدارس القيم الأهلية — سياسة الخصوصية v1.0";
+                font-family: 'Tajawal', Tahoma, sans-serif;
+                font-size: 8.5pt;
+                color: #6c757d;
+            }
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+        body {
+            font-family: 'Tajawal', 'Segoe UI', Tahoma, Arial, sans-serif;
+            color: var(--d-700);
+            background: #e9ece6;
+            font-size: 10.5pt;
+            line-height: 1.75;
+        }
+
+        /* ===== Screen toolbar ===== */
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(15, 20, 25, 0.92);
+            backdrop-filter: blur(10px);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 24px;
+            font-size: 10pt;
+            border-bottom: 2px solid var(--p-500);
+        }
+        .toolbar strong { color: var(--p-200); }
+        .toolbar-actions { display: flex; gap: 8px; }
+        .btn {
+            font-family: inherit;
+            font-size: 10pt;
+            font-weight: 700;
+            border-radius: 10px;
+            padding: 8px 18px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-decoration: none;
+            transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+        }
+        .btn:hover { transform: translateY(-1px); }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--p-500), var(--p-700));
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(107, 155, 55, .4);
+        }
+        .btn-ghost {
+            background: transparent;
+            color: #fff;
+            border-color: rgba(255,255,255,.25);
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,.08); }
+
+        /* ===== Paper ===== */
+        .paper {
+            max-width: 210mm;
+            margin: 28px auto 48px;
+            background: #fff;
+            border-radius: 6px;
+            box-shadow: 0 20px 50px rgba(15, 20, 25, .12), 0 2px 6px rgba(15, 20, 25, .06);
+            overflow: hidden;
+        }
+
+        /* ===== Cover header ===== */
+        .cover {
+            position: relative;
+            background:
+                radial-gradient(circle at 12% 20%, rgba(124, 191, 79, .35) 0, transparent 45%),
+                radial-gradient(circle at 90% 110%, rgba(204, 43, 43, .18) 0, transparent 40%),
+                linear-gradient(135deg, var(--p-900) 0%, var(--p-800) 45%, var(--p-600) 100%);
+            color: #fff;
+            padding: 34px 40px 30px;
+            overflow: hidden;
+        }
+        .cover::after {
+            content: "";
+            position: absolute;
+            inset: auto 0 0 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--a-500) 0 22%, var(--p-400) 22% 100%);
+        }
+        .cover-pattern {
+            position: absolute;
+            left: -40px;
+            top: -40px;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            border: 38px solid rgba(255,255,255,.05);
+        }
+        .cover-top {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .brand-logo {
+            width: 64px;
+            height: 64px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 18px rgba(0,0,0,.18);
+        }
+        .brand-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .brand-name { font-size: 15pt; font-weight: 800; line-height: 1.2; }
+        .brand-sub { font-size: 9pt; color: var(--p-100); opacity: .9; }
+
+        .doc-type {
+            font-size: 8.5pt;
+            font-weight: 700;
+            letter-spacing: .5px;
+            background: rgba(255,255,255,.12);
+            border: 1px solid rgba(255,255,255,.22);
+            border-radius: 999px;
+            padding: 5px 14px;
+            white-space: nowrap;
+        }
+
+        .cover h1 {
+            position: relative;
+            font-size: 24pt;
+            font-weight: 900;
+            line-height: 1.3;
+            margin-top: 26px;
+        }
+        .cover .lead {
+            position: relative;
+            font-size: 10.5pt;
+            color: var(--p-100);
+            max-width: 560px;
+            margin-top: 6px;
+        }
+        .meta {
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 18px;
+        }
+        .chip {
+            font-size: 8.5pt;
+            font-weight: 600;
+            background: rgba(15, 20, 25, .28);
+            border: 1px solid rgba(255,255,255,.15);
+            padding: 4px 12px;
+            border-radius: 8px;
+        }
+        .chip b { color: var(--p-200); font-weight: 800; }
+
+        /* ===== Body ===== */
+        .content { padding: 28px 40px 34px; }
+
+        /* Highlights */
+        .highlights {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 26px;
+        }
+        .hl {
+            border: 1px solid var(--p-100);
+            background: linear-gradient(180deg, var(--p-50), #fff);
+            border-radius: 12px;
+            padding: 12px 12px 10px;
+            text-align: center;
+            break-inside: avoid;
+        }
+        .hl-icon {
+            width: 34px;
+            height: 34px;
+            margin: 0 auto 6px;
+            border-radius: 10px;
+            background: var(--p-500);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hl-icon svg { width: 18px; height: 18px; }
+        .hl-title { font-weight: 800; font-size: 9.5pt; color: var(--d-900); }
+        .hl-text { font-size: 8pt; color: var(--d-500); line-height: 1.5; }
+
+        /* Sections */
+        .sec { margin-bottom: 20px; }
+        .sec-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            break-after: avoid;
+        }
+        .sec-num {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--p-500);
+            color: #fff;
+            font-weight: 800;
+            font-size: 10pt;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sec-head h2 {
+            font-size: 13pt;
+            font-weight: 800;
+            color: var(--d-900);
+        }
+        .sec-head::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--p-200));
+        }
+        .sec p { text-align: justify; margin-bottom: 8px; }
+        .sec strong { color: var(--d-900); }
+
+        ul.list { list-style: none; margin: 4px 0 8px; }
+        ul.list li {
+            position: relative;
+            padding-right: 20px;
+            margin-bottom: 5px;
+        }
+        ul.list li::before {
+            content: "";
+            position: absolute;
+            right: 2px;
+            top: .7em;
+            width: 7px;
+            height: 7px;
+            border-radius: 2px;
+            background: var(--p-500);
+            transform: rotate(45deg);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .card {
+            border: 1px solid var(--d-100);
+            border-radius: 10px;
+            padding: 10px 14px;
+            background: var(--d-50);
+            break-inside: avoid;
+        }
+        .card h3 {
+            font-size: 10pt;
+            font-weight: 800;
+            color: var(--p-700);
+            margin-bottom: 2px;
+        }
+        .card p { font-size: 9pt; margin: 0; color: var(--d-600); text-align: right; }
+
+        /* Notes */
+        .note {
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 10px 0;
+            font-size: 9.5pt;
+            break-inside: avoid;
+            border: 1px solid;
+        }
+        .note-green { background: var(--p-50); border-color: var(--p-200); color: var(--p-900); }
+        .note-red   { background: var(--a-50); border-color: var(--a-200); color: var(--a-700); border-right: 4px solid var(--a-500); }
+        .note-title { font-weight: 800; margin-bottom: 4px; display: block; }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 9pt;
+            border: 1px solid var(--d-200);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 8px 0 4px;
+            break-inside: avoid;
+        }
+        th {
+            background: var(--p-700);
+            color: #fff;
+            font-weight: 700;
+            text-align: right;
+            padding: 9px 12px;
+        }
+        td {
+            padding: 9px 12px;
+            vertical-align: top;
+            border-top: 1px solid var(--d-100);
+        }
+        tr:nth-child(even) td { background: var(--d-50); }
+        .perm { font-weight: 800; color: var(--d-900); }
+        .code {
+            display: inline-block;
+            direction: ltr;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 7.5pt;
+            background: var(--d-100);
+            color: var(--d-600);
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-top: 3px;
+        }
+        .tag {
+            display: inline-block;
+            font-size: 8pt;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .tag-red   { background: var(--a-100); color: var(--a-700); }
+        .tag-green { background: var(--p-100); color: var(--p-800); }
+        .tag-grey  { background: var(--d-100); color: var(--d-600); }
+
+        /* Steps */
+        ol.steps { list-style: none; counter-reset: s; margin: 6px 0; }
+        ol.steps li {
+            counter-increment: s;
+            position: relative;
+            padding-right: 30px;
+            margin-bottom: 6px;
+        }
+        ol.steps li::before {
+            content: counter(s);
+            position: absolute;
+            right: 0;
+            top: 1px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--a-500);
+            color: #fff;
+            font-size: 8.5pt;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        a { color: var(--p-700); text-decoration: none; font-weight: 700; }
+        .ltr { direction: ltr; unicode-bidi: embed; }
+
+        /* Sign-off */
+        .signoff {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+            margin-top: 26px;
+            padding-top: 18px;
+            border-top: 2px solid var(--d-100);
+            break-inside: avoid;
+        }
+        .sign-box { font-size: 9pt; color: var(--d-600); }
+        .sign-box b { display: block; color: var(--d-900); margin-bottom: 4px; font-size: 9.5pt; }
+        .sign-line {
+            height: 54px;
+            border: 1.5px dashed var(--p-200);
+            border-radius: 10px;
+            background: var(--p-50);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--p-600);
+            font-size: 8pt;
+        }
+
+        /* English page */
+        .en {
+            direction: ltr;
+            text-align: left;
+            break-before: page;
+            margin-top: 30px;
+        }
+        .en .sec-head::after { background: linear-gradient(270deg, transparent, var(--p-200)); }
+        .en ul.list li { padding-right: 0; padding-left: 20px; }
+        .en ul.list li::before { right: auto; left: 2px; }
+        .en .sec p { text-align: left; }
+        .en-banner {
+            background: linear-gradient(135deg, var(--p-900), var(--p-700));
+            color: #fff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            border-left: 5px solid var(--a-500);
+        }
+        .en-banner h2 { font-size: 14pt; font-weight: 800; }
+        .en-banner p { font-size: 9pt; color: var(--p-100); margin: 0; }
+
+        .doc-footer {
+            background: var(--d-900);
+            color: var(--d-400);
+            font-size: 8.5pt;
+            padding: 12px 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .doc-footer b { color: var(--p-400); }
+
+        /* ===== Print ===== */
+        @media print {
+            body { background: #fff; }
+            .toolbar { display: none !important; }
+            .paper { max-width: none; margin: 0; box-shadow: none; border-radius: 0; }
+            .cover { border-radius: 12px; }
+            .content { padding: 22px 4px 0; }
+            .doc-footer { display: none; }
+        }
+
+        @media (max-width: 720px) {
+            .paper { margin: 0; border-radius: 0; }
+            .cover, .content { padding-left: 20px; padding-right: 20px; }
+            .highlights { grid-template-columns: repeat(2, 1fr); }
+            .grid-2, .signoff { grid-template-columns: 1fr; }
+            .toolbar { flex-direction: column; align-items: stretch; text-align: center; }
+            .toolbar-actions { justify-content: center; }
+            .cover h1 { font-size: 19pt; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="toolbar">
+        <div><strong>نسخة الطباعة الرسمية</strong> — اضغط «حفظ PDF» ثم اختر <b>Save as PDF</b> وفعّل <b>Background graphics</b>.</div>
+        <div class="toolbar-actions">
+            <a href="privacy-policy" class="btn btn-ghost" id="btn-web-version">النسخة الإلكترونية</a>
+            <button type="button" class="btn btn-primary" id="btn-save-pdf" onclick="window.print()">حفظ PDF</button>
+        </div>
+    </div>
+
+    <main class="paper">
+
+        <!-- ===== Cover ===== -->
+        <header class="cover">
+            <div class="cover-pattern"></div>
+            <div class="cover-top">
+                <div class="brand">
+                    <div class="brand-logo">
+                        <img src="images/school_logo.png" alt="شعار مدارس القيم الأهلية" onerror="this.src='images/logo.png'">
+                    </div>
+                    <div>
+                        <div class="brand-name">مدارس القيم الأهلية</div>
+                        <div class="brand-sub">نظام الإدارة المدرسية الذكي</div>
+                    </div>
+                </div>
+                <span class="doc-type">وثيقة رسمية • PRIVACY POLICY</span>
+            </div>
+
+            <h1>سياسة الخصوصية وحماية البيانات</h1>
+            <p class="lead">لتطبيق الهاتف المحمول الخاص بأولياء الأمور والطلاب والمعلمين والموظفين.</p>
+
+            <div class="meta">
+                <span class="chip">الإصدار <b>1.0</b></span>
+                <span class="chip">تاريخ السريان <b>2026-10-22</b></span>
+                <span class="chip">المنصات <b>Android • iOS</b></span>
+                <span class="chip">متوافقة مع <b>Google Play • App Store</b></span>
+            </div>
+        </header>
+
+        <div class="content">
+
+            <!-- ===== Highlights ===== -->
+            <div class="highlights">
+                <div class="hl">
+                    <div class="hl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></div>
+                    <div class="hl-title">بدون إعلانات</div>
+                    <div class="hl-text">بيئة تعليمية خالية من الإعلانات والمتتبعات</div>
+                </div>
+                <div class="hl">
+                    <div class="hl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+                    <div class="hl-title">لا بيع للبيانات</div>
+                    <div class="hl-text">لا نبيع ولا نؤجر بياناتك لأي طرف</div>
+                </div>
+                <div class="hl">
+                    <div class="hl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg></div>
+                    <div class="hl-title">اتصال مشفّر</div>
+                    <div class="hl-text">جميع البيانات تنتقل عبر HTTPS / TLS</div>
+                </div>
+                <div class="hl">
+                    <div class="hl-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></div>
+                    <div class="hl-title">حذف الحساب</div>
+                    <div class="hl-text">يحق لك طلب حذف حسابك في أي وقت</div>
+                </div>
+            </div>
+
+            <!-- 1 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">1</span><h2>مقدمة ونطاق السياسة</h2></div>
+                <p>
+                    توضح هذه الوثيقة كيف تجمع إدارة نظام <strong>مدارس القيم الأهلية</strong> («التطبيق»، «نحن») البيانات الشخصية والأكاديمية لمستخدمي تطبيق الهاتف المحمول، وكيف تستخدمها وتحميها.
+                    أُعدّت السياسة بما يتوافق مع سياسات متجر Google Play (بما فيها سياسة العائلات)، وإرشادات Apple App Store، ومبادئ حماية خصوصية الأطفال المعتمدة.
+                </p>
+                <div class="note note-green">
+                    <span class="note-title">إقرار عام</span>
+                    التطبيق أداة تعليمية وإدارية خاصة بالمؤسسة التعليمية، ولا يُستخدم لأي غرض تجاري أو إعلاني.
+                </div>
+            </section>
+
+            <!-- 2 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">2</span><h2>فئات المستخدمين</h2></div>
+                <div class="grid-2">
+                    <div class="card"><h3>أولياء الأمور</h3><p>متابعة الحضور والغياب، الدرجات، السلوك، الواجبات، والرسوم المدرسية للأبناء.</p></div>
+                    <div class="card"><h3>الطلاب</h3><p>الاطلاع على الجدول الدراسي، الواجبات، والنتائج.</p></div>
+                    <div class="card"><h3>المعلمون</h3><p>رصد الحضور الصفي، إدخال الدرجات، وتحضير الدروس.</p></div>
+                    <div class="card"><h3>الموظفون الإداريون</h3><p>تسجيل الحضور والانصراف ومتابعة الطلبات والمهام الإدارية.</p></div>
+                </div>
+            </section>
+
+            <!-- 3 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">3</span><h2>البيانات التي نجمعها</h2></div>
+                <ul class="list">
+                    <li><strong>بيانات الحساب:</strong> الاسم، اسم المستخدم، البريد الإلكتروني، رقم الهاتف، وصلة القرابة بين ولي الأمر والطالب.</li>
+                    <li><strong>البيانات الأكاديمية:</strong> الحضور والغياب، الدرجات والتقييمات، الملاحظات السلوكية والإنجازات، والجداول الدراسية.</li>
+                    <li><strong>البيانات المالية:</strong> عرض الرسوم المستحقة والمدفوعة فقط، دون جمع أو تخزين أي بيانات بطاقات بنكية.</li>
+                    <li><strong>البيانات التقنية:</strong> رمز الإشعارات (FCM Token)، نوع الجهاز وإصدار نظام التشغيل، وسجلات الأخطاء لتحسين الاستقرار.</li>
+                </ul>
+                <p>تُحفظ كلمات المرور مشفّرة بتشفير أحادي الاتجاه (Bcrypt) ولا يمكن لأي شخص الاطلاع عليها.</p>
+            </section>
+
+            <!-- 4 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">4</span><h2>أذونات الجهاز الحساسة</h2></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 27%;">الإذن</th>
+                            <th style="width: 22%;">من يُطلب منه</th>
+                            <th>الغرض والضوابط</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="perm">الموقع الجغرافي الدقيق</span><br><span class="code">ACCESS_FINE_LOCATION</span></td>
+                            <td><span class="tag tag-red">الموظفون والمعلمون فقط</span></td>
+                            <td>يُستخدم لحظياً عند الضغط على «تسجيل الحضور» أو «الانصراف» للتحقق من التواجد داخل نطاق المدرسة. <strong>لا يُجمع في الخلفية، ولا يُتتبّع خط السير، ولا يُطلب من الطلاب أو أولياء الأمور.</strong></td>
+                        </tr>
+                        <tr>
+                            <td><span class="perm">الإشعارات</span><br><span class="code">POST_NOTIFICATIONS</span></td>
+                            <td><span class="tag tag-green">جميع المستخدمين</span></td>
+                            <td>تنبيهات الغياب، الدرجات الجديدة، والتعاميم المدرسية. يمكن إيقافها من إعدادات الجهاز.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="perm">الكاميرا والصور</span><br><span class="code">CAMERA / READ_MEDIA</span></td>
+                            <td><span class="tag tag-grey">اختياري</span></td>
+                            <td>فقط عندما يختار المستخدم رفع مرفق (عذر طبي، واجب، صورة شخصية). لا وصول للمعرض دون اختيار مباشر.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- 5 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">5</span><h2>خصوصية الطلاب والأطفال</h2></div>
+                <ul class="list">
+                    <li>تُنشأ حسابات الطلاب من قِبل إدارة المدرسة وبموافقة ولي الأمر عند التسجيل.</li>
+                    <li>لا توجد إعلانات، ولا ملفات استهداف سلوكي، ولا روابط لشبكات خارجية غير تعليمية.</li>
+                    <li>التواصل محصور داخل المجتمع المدرسي المعتمد (ولي الأمر، المعلم، الإدارة).</li>
+                </ul>
+            </section>
+
+            <!-- 6 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">6</span><h2>أغراض استخدام البيانات</h2></div>
+                <ul class="list">
+                    <li>تمكين أولياء الأمور من متابعة المستوى الدراسي والسلوكي والمالي لأبنائهم.</li>
+                    <li>إدارة الحصص والحضور الصفي والدرجات والشهادات.</li>
+                    <li>التحقق من حضور الموظفين وانصرافهم.</li>
+                    <li>إرسال الإشعارات والتنبيهات المدرسية.</li>
+                    <li>حماية الحسابات وتحسين أداء النظام واستقراره.</li>
+                </ul>
+            </section>
+
+            <!-- 7 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">7</span><h2>مشاركة البيانات</h2></div>
+                <p>لا نبيع بيانات المستخدمين ولا نؤجرها ولا نتاجر بها. تقتصر المشاركة على:</p>
+                <ul class="list">
+                    <li><strong>Google Firebase Cloud Messaging:</strong> لإيصال الإشعارات إلى الأجهزة.</li>
+                    <li><strong>مزوّد الاستضافة:</strong> خوادم محمية لتخزين بيانات النظام.</li>
+                    <li><strong>الجهات الرسمية:</strong> عند وجود طلب قانوني ملزم فقط.</li>
+                </ul>
+            </section>
+
+            <!-- 8 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">8</span><h2>أمن البيانات</h2></div>
+                <div class="grid-2">
+                    <div class="card"><h3>تشفير الاتصال</h3><p>جميع الطلبات عبر HTTPS / TLS.</p></div>
+                    <div class="card"><h3>صلاحيات حسب الدور</h3><p>كل مستخدم يرى ما يخصه فقط (RBAC).</p></div>
+                    <div class="card"><h3>جلسات آمنة</h3><p>رموز دخول مؤمّنة قابلة للإلغاء (Sanctum).</p></div>
+                    <div class="card"><h3>نسخ احتياطي</h3><p>نسخ دورية لحماية البيانات من الفقدان.</p></div>
+                </div>
+            </section>
+
+            <!-- 9 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">9</span><h2>حذف الحساب والبيانات</h2></div>
+                <div class="note note-red">
+                    <span class="note-title">كيف تطلب حذف حسابك؟</span>
+                    <ol class="steps">
+                        <li>من داخل التطبيق: <strong>الملف الشخصي ← الإعدادات ← طلب حذف الحساب</strong>.</li>
+                        <li>أو عبر صفحة الحذف: <span class="ltr">your-domain.com/account-deletion</span></li>
+                        <li>أو بمراسلة الدعم: <span class="ltr">alqiamcivil@gmail.com</span> مع ذكر اسم المستخدم ورقم الهاتف.</li>
+                    </ol>
+                </div>
+                <p>عند تنفيذ الطلب يُعطَّل الحساب وتُحذف بيانات الدخول ورموز الأجهزة. أما السجلات الأكاديمية والمالية الرسمية فيُحتفظ بها وفق الأنظمة التعليمية المعمول بها.</p>
+            </section>
+
+            <!-- 10 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">10</span><h2>حقوق المستخدم وتحديث السياسة</h2></div>
+                <ul class="list">
+                    <li>الاطلاع على بياناتك وطلب تصحيح أي بيانات غير دقيقة عبر إدارة المدرسة.</li>
+                    <li>سحب الأذونات الاختيارية (الموقع، الكاميرا، الإشعارات) من إعدادات الجهاز في أي وقت.</li>
+                    <li>عند أي تعديل جوهري على هذه السياسة سنُعلمك داخل التطبيق ونحدّث تاريخ السريان.</li>
+                </ul>
+            </section>
+
+            <!-- 11 -->
+            <section class="sec">
+                <div class="sec-head"><span class="sec-num">11</span><h2>التواصل معنا</h2></div>
+                <div class="grid-2">
+                    <div class="card"><h3>البريد الإلكتروني</h3><p class="ltr" style="text-align:right;">alqiamcivil@gmail.com</p></div>
+                    <div class="card"><h3>رابط السياسة</h3><p class="ltr" style="text-align:right;">your-domain.com/privacy-policy</p></div>
+                </div>
+            </section>
+
+            <!-- Sign-off -->
+            <div class="signoff">
+                <div class="sign-box"><b>الجهة المصدِرة</b>إدارة مدارس القيم الأهلية<br>قسم تقنية المعلومات</div>
+                <div class="sign-box"><b>التوقيع</b><div class="sign-line">التوقيع المعتمد</div></div>
+                <div class="sign-box"><b>الختم</b><div class="sign-line">ختم المؤسسة</div></div>
+            </div>
+
+            <!-- ===== English summary ===== -->
+            <section class="en" id="english-summary">
+                <div class="en-banner">
+                    <h2>Privacy Policy — English Summary</h2>
+                    <p>For Google Play &amp; Apple App Store review teams • Al-Qiam Private Schools (Smart School) • v1.0</p>
+                </div>
+
+                <div class="sec">
+                    <div class="sec-head"><span class="sec-num">A</span><h2>Overview</h2></div>
+                    <p>Al-Qiam Private Schools (Smart School) is a school management app for parents, students, teachers and staff. It contains no ads, does not sell user data, and all traffic is encrypted over HTTPS.</p>
+                </div>
+
+                <div class="sec">
+                    <div class="sec-head"><span class="sec-num">B</span><h2>Permissions</h2></div>
+                    <ul class="list">
+                        <li><strong>Precise location:</strong> staff and teachers only, used at the moment of attendance check-in/out to verify they are inside the school geofence. Never collected in the background and never requested from students or parents.</li>
+                        <li><strong>Notifications:</strong> attendance alerts, grades and school announcements. Can be disabled in device settings.</li>
+                        <li><strong>Camera / photos:</strong> optional, only when the user chooses to upload an attachment.</li>
+                    </ul>
+                </div>
+
+                <div class="sec">
+                    <div class="sec-head"><span class="sec-num">C</span><h2>Children &amp; Account Deletion</h2></div>
+                    <ul class="list">
+                        <li>Student accounts are created by the school with guardian consent. No ads, behavioural profiling, or public social features.</li>
+                        <li>Users can request account deletion in-app (Profile → Settings → Delete account), at <strong>your-domain.com/account-deletion</strong>, or via <strong>alqiamcivil@gmail.com</strong>.</li>
+                    </ul>
+                </div>
+            </section>
+
+        </div>
+
+        <footer class="doc-footer">
+            <span>© 2026 <b>مدارس القيم الأهلية</b> — جميع الحقوق محفوظة</span>
+            <span>سياسة الخصوصية • الإصدار 1.0</span>
+        </footer>
+    </main>
+
+</body>
+</html>

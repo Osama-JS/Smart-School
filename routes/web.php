@@ -26,6 +26,23 @@ Route::get('/api/documentation', function () {
     return redirect('/docs/api');
 });
 
+// ── Public Legal & Store Compliance (Google Play & App Store) ──
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy.policy');
+
+Route::get('/privacy', function () {
+    return redirect()->route('privacy.policy');
+});
+
+Route::get('/account-deletion', function () {
+    return redirect('/privacy-policy#account-deletion');
+})->name('account.deletion');
+
+Route::get('/privacy-policy-print', function () {
+    return response()->file(public_path('privacy-policy-print.html'));
+})->name('privacy.policy.print');
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
