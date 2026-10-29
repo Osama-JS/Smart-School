@@ -45,6 +45,10 @@ export default function MyReportsCreate({ auth, template }) {
             });
         } else if (field.type === 'activities_matrix') {
             initialData[field.name] = [{ time: '', date: '', type: '', notes: '' }];
+        } else if (field.type === 'teacher_status_matrix') {
+            initialData[field.name] = [{ day_date: '', teacher_name: '', absence: false, permission: false, exit_during_work: false, reason: '' }];
+        } else if (field.type === 'teacher_discipline_matrix') {
+            initialData[field.name] = [{ day: '', date: '', teacher_name: '', problem_type: '' }];
         } else if (field.type === 'checkbox') {
             initialData[field.name] = false;
         } else if (field.type === 'data_source') {
@@ -550,6 +554,253 @@ export default function MyReportsCreate({ auth, template }) {
                         </div>
                     </div>
                 );
+            case 'teacher_status_matrix': {
+                const statusRows = Array.isArray(val) ? val : [];
+                const totalAbsence = statusRows.filter(r => r.absence).length;
+                const totalPermission = statusRows.filter(r => r.permission).length;
+                const totalExit = statusRows.filter(r => r.exit_during_work).length;
+                return (
+                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                    <tr>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-44">اليوم والتاريخ</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-52">اسم المعلم</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-center w-24">غياب</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-center w-24">استئذان</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 text-center w-36">خروج أثناء الدوام المدرسي</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">السبب</th>
+                                        <th className="px-4 py-3 w-16 text-center">إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {statusRows.map((row, idx) => (
+                                        <tr key={idx} className="group/row">
+                                            <td className="p-3 align-middle">
+                                                <FlatpickrInput
+                                                    type="date"
+                                                    value={row.day_date || ''}
+                                                    onChange={(dateStr) => {
+                                                        const updated = [...statusRows];
+                                                        updated[idx] = { ...updated[idx], day_date: dateStr };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-full !py-2 !px-3 text-sm bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg dark:text-white"
+                                                    placeholder="اختر التاريخ..."
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle">
+                                                <input
+                                                    type="text"
+                                                    value={row.teacher_name || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...statusRows];
+                                                        updated[idx] = { ...updated[idx], teacher_name: e.target.value };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-full bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg px-3 py-2 text-sm dark:text-white"
+                                                    placeholder="اسم المعلم..."
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!row.absence}
+                                                    onChange={(e) => {
+                                                        const updated = [...statusRows];
+                                                        updated[idx] = { ...updated[idx], absence: e.target.checked };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-5 h-5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!row.permission}
+                                                    onChange={(e) => {
+                                                        const updated = [...statusRows];
+                                                        updated[idx] = { ...updated[idx], permission: e.target.checked };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-5 h-5 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer"
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle text-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={!!row.exit_during_work}
+                                                    onChange={(e) => {
+                                                        const updated = [...statusRows];
+                                                        updated[idx] = { ...updated[idx], exit_during_work: e.target.checked };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle">
+                                                <input
+                                                    type="text"
+                                                    value={row.reason || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...statusRows];
+                                                        updated[idx] = { ...updated[idx], reason: e.target.value };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-full bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg px-3 py-2 text-sm dark:text-white"
+                                                    placeholder="اكتب السبب..."
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleFieldChange(field.name, statusRows.filter((_, i) => i !== idx))}
+                                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                                                    title="حذف الصف"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {statusRows.length === 0 && (
+                                        <tr>
+                                            <td colSpan="7" className="p-6 text-center text-slate-400 text-sm font-semibold">
+                                                لا توجد حالات مضافة
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                                <tfoot className="bg-slate-100/80 dark:bg-slate-800/70 border-t-2 border-slate-200 dark:border-slate-700 font-black text-slate-800 dark:text-white">
+                                    <tr>
+                                        <td colSpan="2" className="px-4 py-3 text-right">الإجمالي</td>
+                                        <td className="px-4 py-3 text-center text-rose-600 dark:text-rose-400">{totalAbsence}</td>
+                                        <td className="px-4 py-3 text-center text-amber-600 dark:text-amber-400">{totalPermission}</td>
+                                        <td className="px-4 py-3 text-center text-indigo-600 dark:text-indigo-400">{totalExit}</td>
+                                        <td colSpan="2" className="px-4 py-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-800/30 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={() => handleFieldChange(field.name, [...statusRows, { day_date: '', teacher_name: '', absence: false, permission: false, exit_during_work: false, reason: '' }])}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:text-primary-600 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm transition-all"
+                            >
+                                <Plus size={16} /> إضافة حالة معلم
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+            case 'teacher_discipline_matrix': {
+                const disciplineRows = Array.isArray(val) ? val : [];
+                const daysList = ['السبت', 'الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+                return (
+                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-right text-sm">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                                    <tr>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-36">اليوم</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-44">التاريخ</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300 w-56">اسم المعلم</th>
+                                        <th className="px-4 py-3 font-bold text-slate-600 dark:text-slate-300">نوع المشكلة</th>
+                                        <th className="px-4 py-3 w-16 text-center">إجراء</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900/30">
+                                    {disciplineRows.map((row, idx) => (
+                                        <tr key={idx} className="group/row">
+                                            <td className="p-3 align-middle">
+                                                <select
+                                                    value={row.day || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...disciplineRows];
+                                                        updated[idx] = { ...updated[idx], day: e.target.value };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-full bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg px-3 py-2 text-sm dark:text-white dark:bg-slate-900"
+                                                >
+                                                    <option value="">اختر اليوم...</option>
+                                                    {daysList.map(d => <option key={d} value={d}>{d}</option>)}
+                                                </select>
+                                            </td>
+                                            <td className="p-3 align-middle">
+                                                <FlatpickrInput
+                                                    type="date"
+                                                    value={row.date || ''}
+                                                    onChange={(dateStr) => {
+                                                        const updated = [...disciplineRows];
+                                                        updated[idx] = { ...updated[idx], date: dateStr };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-full !py-2 !px-3 text-sm bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg dark:text-white"
+                                                    placeholder="التاريخ..."
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle">
+                                                <input
+                                                    type="text"
+                                                    value={row.teacher_name || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...disciplineRows];
+                                                        updated[idx] = { ...updated[idx], teacher_name: e.target.value };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-full bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg px-3 py-2 text-sm dark:text-white"
+                                                    placeholder="اسم المعلم..."
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle">
+                                                <input
+                                                    type="text"
+                                                    value={row.problem_type || ''}
+                                                    onChange={(e) => {
+                                                        const updated = [...disciplineRows];
+                                                        updated[idx] = { ...updated[idx], problem_type: e.target.value };
+                                                        handleFieldChange(field.name, updated);
+                                                    }}
+                                                    className="w-full bg-transparent border border-slate-200 dark:border-slate-700 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 rounded-lg px-3 py-2 text-sm dark:text-white"
+                                                    placeholder="اكتب نوع المشكلة..."
+                                                />
+                                            </td>
+                                            <td className="p-3 align-middle text-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleFieldChange(field.name, disciplineRows.filter((_, i) => i !== idx))}
+                                                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                                                    title="حذف الصف"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {disciplineRows.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="p-6 text-center text-slate-400 text-sm font-semibold">
+                                                لا توجد ملاحظات انضباط مضافة
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-800/30 p-4 border-t border-slate-200 dark:border-slate-800 flex justify-center">
+                            <button
+                                type="button"
+                                onClick={() => handleFieldChange(field.name, [...disciplineRows, { day: '', date: '', teacher_name: '', problem_type: '' }])}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-primary-500 hover:text-primary-600 text-slate-600 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm transition-all"
+                            >
+                                <Plus size={16} /> إضافة سجل انضباط
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
             case 'file':
                 return (
                     <div className="relative group cursor-pointer">
@@ -594,6 +845,8 @@ export default function MyReportsCreate({ auth, template }) {
                 );
             case 'data_source': {
                 const sourceRows = Array.isArray(val) ? val : [];
+                const options = typeof field.options === 'string' ? JSON.parse(field.options) : (field.options || {});
+                const configuredCols = Array.isArray(options.columns) ? options.columns : [];
                 const columnHeaders = {
                     day: 'اليوم',
                     date: 'التاريخ',
@@ -602,10 +855,52 @@ export default function MyReportsCreate({ auth, template }) {
                     evaluation: 'التقييم',
                     discussed_points: 'نقاط النقاش',
                     notes: 'الملاحظات',
+                    employee_name: 'اسم الموظف',
+                    violation_type: 'نوع المخالفة',
+                    violation_date: 'التاريخ',
+                    repetition_level: 'مستوى التكرار',
+                    action_taken: 'الإجراء المتخذ',
+                    status: 'الحالة',
+                    details: 'التفاصيل',
+                    attendance_type: 'نوع الحالة',
+                    late_minutes: 'مدة التأخير',
+                    check_in: 'وقت الحضور',
+                    check_out: 'وقت الانصراف',
+                    subject_name: 'المادة',
+                    grade_name: 'الصف',
+                    plan_title: 'عنوان الخطة / الدرس',
+                    plan_status: 'مدى المطابقة للخطة',
+                    division_name: 'الشعبة',
+                    lesson_title: 'عنوان الدرس',
+                    homework: 'الواجب',
+                    leave_type: 'نوع الإجازة',
+                    start_date: 'من تاريخ',
+                    end_date: 'إلى تاريخ',
+                    days_count: 'المدة',
+                    reason: 'السبب',
+                    visitor_name: 'اسم الزائر',
+                    visitor_relation: 'الجهة / الصفة',
+                    student_name: 'اسم الطالب',
+                    purpose: 'سبب الزيارة',
+                    pledge_text: 'نص التعهد',
+                    student_signed: 'توقيع الطالب',
+                    parent_signed: 'توقيع ولي الأمر',
+                    symptoms: 'الأعراض / الحالة الصحية',
+                    period_name: 'الحصة',
+                    absent_teacher: 'المعلم الغائب',
+                    substitute_teacher: 'المعلم البديل (الاحتياط)',
+                    meeting_time: 'الوقت',
+                    meeting_title: 'عنوان اللقاء / الاجتماع',
+                    meeting_type: 'نوع الاجتماع',
+                    participants_count: 'عدد الحاضرين',
+                    outcomes: 'أبرز المخرجات',
+                    recommendations: 'التوصيات',
+                    achievement_type: 'نوع الإنجاز',
+                    points: 'النقاط',
                 };
-                const columns = sourceRows.length > 0
-                    ? Object.keys(sourceRows[0]).filter(k => k !== 'id')
-                    : Object.keys(columnHeaders);
+                const columns = configuredCols.length > 0
+                    ? configuredCols
+                    : (sourceRows.length > 0 ? Object.keys(sourceRows[0]).filter(k => k !== 'id') : ['day', 'date', 'teacher_name', 'notes']);
                 return (
                     <div className="border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden shadow-sm">
                         <div className="bg-primary-50 dark:bg-primary-900/10 p-4 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-3">

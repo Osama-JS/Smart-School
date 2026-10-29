@@ -11,6 +11,10 @@ export default function SubmitReport({ auth, template }) {
     template.fields.forEach(field => {
         if (field.type === 'activities_matrix') {
             initialData[`field_${field.id}`] = [{ time: '', date: '', type: '', notes: '' }];
+        } else if (field.type === 'teacher_status_matrix') {
+            initialData[`field_${field.id}`] = [{ day_date: '', teacher_name: '', absence: false, permission: false, exit_during_work: false, reason: '' }];
+        } else if (field.type === 'teacher_discipline_matrix') {
+            initialData[`field_${field.id}`] = [{ day: '', date: '', teacher_name: '', problem_type: '' }];
         } else if (field.type === 'data_source') {
             initialData[`field_${field.id}`] = field.prefilled_data || [];
         } else {
@@ -293,7 +297,49 @@ export default function SubmitReport({ auth, template }) {
                     visit_type: 'نوع الزيارة',
                     notes: 'الملاحظات والتوصيات',
                     evaluation: 'التقييم',
-                    discussed_points: 'نقاط النقاش'
+                    discussed_points: 'نقاط النقاش',
+                    employee_name: 'اسم الموظف',
+                    violation_type: 'نوع المخالفة',
+                    violation_date: 'التاريخ',
+                    repetition_level: 'مستوى التكرار',
+                    action_taken: 'الإجراء المتخذ',
+                    status: 'الحالة',
+                    details: 'التفاصيل',
+                    attendance_type: 'حالة الدوام',
+                    late_minutes: 'دقائق التأخر',
+                    check_in: 'وقت الحضور',
+                    check_out: 'وقت الانصراف',
+                    subject_name: 'المادة',
+                    grade_name: 'الصف',
+                    plan_title: 'عنوان الخطة / الموضوع',
+                    plan_status: 'حالة الخطة',
+                    division_name: 'الشعبة',
+                    lesson_title: 'عنوان الدرس',
+                    homework: 'الواجب',
+                    leave_type: 'نوع الإجازة',
+                    start_date: 'تاريخ البداية',
+                    end_date: 'تاريخ النهاية',
+                    days_count: 'عدد الأيام',
+                    reason: 'السبب',
+                    visitor_name: 'اسم الزائر',
+                    visitor_relation: 'صلة القرابة / الصفة',
+                    student_name: 'اسم الطالب',
+                    purpose: 'سبب الزيارة',
+                    pledge_text: 'نص التعهد',
+                    student_signed: 'توقيع الطالب',
+                    parent_signed: 'توقيع ولي الأمر',
+                    symptoms: 'الأعراض / الحالة الصحية',
+                    period_name: 'الحصة',
+                    absent_teacher: 'المعلم الغائب',
+                    substitute_teacher: 'المعلم البديل (الاحتياط)',
+                    meeting_time: 'الوقت',
+                    meeting_title: 'عنوان اللقاء / الاجتماع',
+                    meeting_type: 'نوع الاجتماع',
+                    participants_count: 'عدد الحاضرين',
+                    outcomes: 'أبرز المخرجات',
+                    recommendations: 'التوصيات',
+                    achievement_type: 'نوع الإنجاز',
+                    points: 'النقاط'
                 };
                 
                 inputElement = (

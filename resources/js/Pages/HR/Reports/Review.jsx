@@ -201,6 +201,78 @@ export default function ReviewReport({ auth, report }) {
                     );
                 }
                 return <span className="text-slate-400 font-bold">لا توجد أنشطة مدخلة</span>;
+            case 'teacher_status_matrix':
+                if (Array.isArray(value) && value.length > 0) {
+                    const totalAbsence = value.filter(r => r.absence).length;
+                    const totalPermission = value.filter(r => r.permission).length;
+                    const totalExit = value.filter(r => r.exit_during_work).length;
+                    return (
+                        <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 shadow-inner overflow-x-auto">
+                            <table className="w-full text-right text-sm min-w-[600px]">
+                                <thead className="bg-slate-100/50 dark:bg-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
+                                    <tr>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300">اليوم والتاريخ</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300">اسم المعلم</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300 text-center">غياب</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300 text-center">استئذان</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300 text-center">خروج أثناء الدوام المدرسي</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300">السبب</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                    {value.map((row, idx) => (
+                                        <tr key={idx} className="hover:bg-white/80 dark:hover:bg-slate-800/30 transition-colors">
+                                            <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">{row.day_date || '-'}</td>
+                                            <td className="px-4 py-3 font-bold text-slate-800 dark:text-white">{row.teacher_name || '-'}</td>
+                                            <td className="px-4 py-3 text-center font-black text-rose-600">{row.absence ? '✓' : '-'}</td>
+                                            <td className="px-4 py-3 text-center font-black text-amber-600">{row.permission ? '✓' : '-'}</td>
+                                            <td className="px-4 py-3 text-center font-black text-indigo-600">{row.exit_during_work ? '✓' : '-'}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-600 dark:text-slate-400">{row.reason || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot className="bg-slate-100/80 dark:bg-slate-800/70 border-t-2 border-slate-200 dark:border-slate-700 font-black text-slate-800 dark:text-white">
+                                    <tr>
+                                        <td colSpan="2" className="px-4 py-3">الإجمالي</td>
+                                        <td className="px-4 py-3 text-center text-rose-600">{totalAbsence}</td>
+                                        <td className="px-4 py-3 text-center text-amber-600">{totalPermission}</td>
+                                        <td className="px-4 py-3 text-center text-indigo-600">{totalExit}</td>
+                                        <td className="px-4 py-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    );
+                }
+                return <span className="text-slate-400 font-bold">لا توجد حالات مدخلة</span>;
+            case 'teacher_discipline_matrix':
+                if (Array.isArray(value) && value.length > 0) {
+                    return (
+                        <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 shadow-inner overflow-x-auto">
+                            <table className="w-full text-right text-sm min-w-[600px]">
+                                <thead className="bg-slate-100/50 dark:bg-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
+                                    <tr>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">اليوم</th>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">التاريخ</th>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">اسم المعلم</th>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">نوع المشكلة</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                    {value.map((row, idx) => (
+                                        <tr key={idx} className="hover:bg-white/80 dark:hover:bg-slate-800/30 transition-colors">
+                                            <td className="px-5 py-3.5 font-bold text-slate-700 dark:text-slate-300">{row.day || '-'}</td>
+                                            <td className="px-5 py-3.5 font-bold text-slate-700 dark:text-slate-300">{row.date || '-'}</td>
+                                            <td className="px-5 py-3.5 font-bold text-slate-800 dark:text-white">{row.teacher_name || '-'}</td>
+                                            <td className="px-5 py-3.5 font-medium text-slate-600 dark:text-slate-400">{row.problem_type || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
+                return <span className="text-slate-400 font-bold">لا توجد ملاحظات انضباط مدخلة</span>;
             case 'data_source':
                 const sourceData = value || [];
                 const options = typeof field.options === 'string' ? JSON.parse(field.options) : (field.options || {});
@@ -213,7 +285,49 @@ export default function ReviewReport({ auth, report }) {
                     visit_type: 'نوع الزيارة',
                     notes: 'الملاحظات والتوصيات',
                     evaluation: 'التقييم',
-                    discussed_points: 'نقاط النقاش'
+                    discussed_points: 'نقاط النقاش',
+                    employee_name: 'اسم الموظف',
+                    violation_type: 'نوع المخالفة',
+                    violation_date: 'التاريخ',
+                    repetition_level: 'مستوى التكرار',
+                    action_taken: 'الإجراء المتخذ',
+                    status: 'الحالة',
+                    details: 'التفاصيل',
+                    attendance_type: 'نوع الحالة',
+                    late_minutes: 'مدة التأخير',
+                    check_in: 'وقت الحضور',
+                    check_out: 'وقت الانصراف',
+                    subject_name: 'المادة',
+                    grade_name: 'الصف',
+                    plan_title: 'عنوان الخطة / الدرس',
+                    plan_status: 'مدى المطابقة للخطة',
+                    division_name: 'الشعبة',
+                    lesson_title: 'عنوان الدرس',
+                    homework: 'الواجب',
+                    leave_type: 'نوع الإجازة',
+                    start_date: 'من تاريخ',
+                    end_date: 'إلى تاريخ',
+                    days_count: 'المدة',
+                    reason: 'السبب',
+                    visitor_name: 'اسم الزائر',
+                    visitor_relation: 'الجهة / الصفة',
+                    student_name: 'اسم الطالب',
+                    purpose: 'سبب الزيارة',
+                    pledge_text: 'نص التعهد',
+                    student_signed: 'توقيع الطالب',
+                    parent_signed: 'توقيع ولي الأمر',
+                    symptoms: 'الأعراض / الحالة الصحية',
+                    period_name: 'الحصة',
+                    absent_teacher: 'المعلم الغائب',
+                    substitute_teacher: 'المعلم البديل (الاحتياط)',
+                    meeting_time: 'الوقت',
+                    meeting_title: 'عنوان اللقاء / الاجتماع',
+                    meeting_type: 'نوع الاجتماع',
+                    participants_count: 'عدد الحاضرين',
+                    outcomes: 'أبرز المخرجات',
+                    recommendations: 'التوصيات',
+                    achievement_type: 'نوع الإنجاز',
+                    points: 'النقاط',
                 };
                 
                 return (

@@ -87,6 +87,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
             case 'matrix_text': return <Table2 size={16} />;
             case 'tasks_matrix': return <ListTodo size={16} />;
             case 'activities_matrix': return <CalendarRange size={16} />;
+            case 'teacher_status_matrix': return <Table2 size={16} />;
+            case 'teacher_discipline_matrix': return <AlertCircle size={16} />;
             case 'data_source': return <Database size={16} />;
             default: return <AlignLeft size={16} />;
         }
@@ -244,6 +246,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     { value: 'matrix_text', label: 'جدول ملاحظات (Matrix Text)' },
                                                     { value: 'tasks_matrix', label: 'جدول الأعمال (Tasks Matrix)' },
                                                     { value: 'activities_matrix', label: 'جدول الأنشطة (Activities Matrix)' },
+                                                    { value: 'teacher_status_matrix', label: 'جدول حالة المعلمين: غياب/استئذان/خروج (Teacher Status)' },
+                                                    { value: 'teacher_discipline_matrix', label: 'جدول خلاصة انضباط المعلمين (Teacher Discipline)' },
                                                     { value: 'data_source', label: 'جدول بيانات آلي من النظام (Data Source)' }
                                                 ]}
                                                 isClearable={false}
@@ -285,6 +289,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 </div>
                             )}
 
+                            {(field.type === 'teacher_status_matrix' || field.type === 'teacher_discipline_matrix') && (
+                                <div className="mt-1 bg-primary-50/40 dark:bg-primary-900/10 p-3.5 rounded-2xl border border-primary-100 dark:border-primary-800/40 animate-slide-down">
+                                    <span className="text-xs text-primary-700 dark:text-primary-400 block font-bold">
+                                        {field.type === 'teacher_status_matrix'
+                                            ? 'جدول جاهز مطابق للنموذج الرسمي بأعمدة: (اليوم والتاريخ، اسم المعلم، غياب، استئذان، خروج أثناء الدوام المدرسي، السبب) مع حساب صف الإجمالي تلقائياً وإمكانية إضافة صفوف غير محدودة.'
+                                            : 'جدول جاهز مطابق للنموذج الرسمي بأعمدة: (اليوم، التاريخ، اسم المعلم، نوع المشكلة) مع إمكانية إضافة صفوف غير محدودة.'}
+                                    </span>
+                                </div>
+                            )}
+
                             {/* Data Source Configuration */}
                             {field.type === 'data_source' && (
                                 <div className="mt-1 bg-slate-50/50 dark:bg-slate-900/10 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 animate-slide-down">
@@ -292,64 +306,63 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <SelectInput 
                                         value={field.options?.source || ''}
                                         onChange={(val) => {
-                                            const currentOptions = Array.isArray(field.options) ? {} : (field.options || {});
-                                            updateField(index, 'options', { ...currentOptions, source: val });
+                                            const defaultColsBySource = {
+                                                classroom_visits: ['day', 'date', 'teacher_name', 'visit_type', 'notes', 'evaluation'],
+                                                employee_violations: ['employee_name', 'violation_type', 'violation_date', 'action_taken', 'details'],
+                                                teacher_absences: ['day', 'date', 'teacher_name', 'attendance_type', 'late_minutes'],
+                                                study_plans: ['date', 'teacher_name', 'subject_name', 'grade_name', 'plan_title', 'plan_status', 'notes'],
+                                                followup_books: ['day', 'date', 'teacher_name', 'subject_name', 'division_name', 'lesson_title', 'notes'],
+                                                employee_leaves: ['employee_name', 'leave_type', 'start_date', 'end_date', 'days_count', 'reason', 'status'],
+                                                parent_visits: ['day', 'date', 'visitor_name', 'visitor_relation', 'student_name', 'purpose', 'notes'],
+                                                student_absences: ['day', 'date', 'student_name', 'grade_name', 'division_name', 'attendance_type'],
+                                                student_violations: ['date', 'student_name', 'grade_name', 'division_name', 'violation_type', 'action_taken', 'status'],
+                                                parent_summons: ['date', 'student_name', 'grade_name', 'division_name', 'reason', 'status', 'notes'],
+                                                student_pledges: ['date', 'student_name', 'grade_name', 'division_name', 'pledge_text', 'student_signed', 'parent_signed'],
+                                                clinic_visits: ['date', 'student_name', 'grade_name', 'division_name', 'symptoms', 'action_taken', 'status'],
+                                                class_coverages: ['day', 'date', 'period_name', 'division_name', 'subject_name', 'absent_teacher', 'substitute_teacher'],
+                                                meetings: ['date', 'meeting_time', 'meeting_title', 'meeting_type', 'participants_count', 'recommendations'],
+                                                employee_achievements: ['date', 'employee_name', 'achievement_type', 'points', 'details'],
+                                            };
+                                            updateField(index, 'options', { source: val, columns: defaultColsBySource[val] || [] });
                                         }}
                                         options={[
                                             { value: 'classroom_visits', label: 'جدول الزيارات الصفية (للمشرف/الوكيل)' },
-                                            { value: 'employee_violations', label: 'جدول مخالفات الموظفين' }
+                                            { value: 'employee_violations', label: 'جدول مخالفات الموظفين' },
+                                            { value: 'teacher_absences', label: 'جدول غياب وتأخر واستئذان المعلمين' },
+                                            { value: 'study_plans', label: 'جدول الخطط الدراسية ومسح المقررات' },
+                                            { value: 'followup_books', label: 'جدول دفاتر المتابعة والتحضير' },
+                                            { value: 'employee_leaves', label: 'جدول إجازات الموظفين' },
+                                            { value: 'parent_visits', label: 'جدول سجل زيارات أولياء الأمور والزوار' },
+                                            { value: 'student_absences', label: 'جدول سجل غياب وتأخر الطلاب' },
+                                            { value: 'student_violations', label: 'جدول المخالفات السلوكية للطلاب' },
+                                            { value: 'parent_summons', label: 'جدول استدعاءات أولياء الأمور' },
+                                            { value: 'student_pledges', label: 'جدول التعهدات الخطية للطلاب' },
+                                            { value: 'clinic_visits', label: 'جدول زيارات العيادة المدرسية والحالات الصحية' },
+                                            { value: 'class_coverages', label: 'جدول حصص الانتظار والاحتياط وتغطية الحصص' },
+                                            { value: 'meetings', label: 'جدول الاجتماعات واللقاءات التربوية' },
+                                            { value: 'employee_achievements', label: 'جدول إنجازات الموظفين والمعلمين' }
                                         ]}
                                         placeholder="اختر مصدر البيانات..."
                                         className="mb-4"
                                     />
                                     
-                                    {field.options?.source === 'classroom_visits' && (
-                                        <div className="mt-4">
-                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الأعمدة المطلوب عرضها في الجدول</label>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                                {[
+                                    {(() => {
+                                        const sourceConfigMap = {
+                                            classroom_visits: {
+                                                note: 'ملاحظة: سيتم عرض جدول تلقائي يحتوي على زيارات الموظف للفترة المحددة في هذا القالب.',
+                                                cols: [
                                                     { id: 'day', label: 'اليوم' },
                                                     { id: 'date', label: 'التاريخ' },
                                                     { id: 'teacher_name', label: 'اسم المعلم' },
                                                     { id: 'visit_type', label: 'نوع الزيارة' },
                                                     { id: 'notes', label: 'الملاحظات والتوصيات' },
-                                                    { id: 'evaluation', label: 'التقييم' }
-                                                ].map(col => {
-                                                    const columns = Array.isArray(field.options?.columns) ? field.options.columns : [];
-                                                    const isChecked = columns.includes(col.id);
-                                                    return (
-                                                        <label key={col.id} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900/40 p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-400 transition-all">
-                                                            <input 
-                                                                type="checkbox" 
-                                                                checked={isChecked}
-                                                                onChange={(e) => {
-                                                                    const currentOptions = Array.isArray(field.options) ? {} : (field.options || {});
-                                                                    let newColumns = [...(currentOptions.columns || [])];
-                                                                    if (e.target.checked) {
-                                                                        newColumns.push(col.id);
-                                                                    } else {
-                                                                        newColumns = newColumns.filter(c => c !== col.id);
-                                                                    }
-                                                                    updateField(index, 'options', { ...currentOptions, columns: newColumns });
-                                                                }}
-                                                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                                                            />
-                                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{col.label}</span>
-                                                        </label>
-                                                    );
-                                                })}
-                                            </div>
-                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block font-semibold">
-                                                ملاحظة: سيتم عرض جدول تلقائي يحتوي على زيارات الموظف للفترة المحددة في هذا القالب.
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {field.options?.source === 'employee_violations' && (
-                                        <div className="mt-4 animate-fade-in">
-                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الأعمدة المطلوب عرضها في الجدول</label>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                                {[
+                                                    { id: 'evaluation', label: 'التقييم' },
+                                                    { id: 'discussed_points', label: 'نقاط النقاش' }
+                                                ]
+                                            },
+                                            employee_violations: {
+                                                note: 'ملاحظة: سيتم عرض جدول تلقائي يوضح جميع المخالفات خلال الفترة المحددة في هذا القالب.',
+                                                cols: [
                                                     { id: 'employee_name', label: 'اسم الموظف' },
                                                     { id: 'violation_type', label: 'نوع المخالفة' },
                                                     { id: 'violation_date', label: 'التاريخ' },
@@ -357,36 +370,205 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     { id: 'action_taken', label: 'الإجراء المتخذ' },
                                                     { id: 'status', label: 'الحالة' },
                                                     { id: 'details', label: 'التفاصيل' }
-                                                ].map(col => {
-                                                    const columns = Array.isArray(field.options?.columns) ? field.options.columns : [];
-                                                    const isChecked = columns.includes(col.id);
-                                                    return (
-                                                        <label key={col.id} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900/40 p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-400 transition-all">
-                                                            <input 
-                                                                type="checkbox" 
-                                                                checked={isChecked}
-                                                                onChange={(e) => {
-                                                                    const currentOptions = Array.isArray(field.options) ? {} : (field.options || {});
-                                                                    let newColumns = [...(currentOptions.columns || [])];
-                                                                    if (e.target.checked) {
-                                                                        newColumns.push(col.id);
-                                                                    } else {
-                                                                        newColumns = newColumns.filter(c => c !== col.id);
-                                                                    }
-                                                                    updateField(index, 'options', { ...currentOptions, columns: newColumns });
-                                                                }}
-                                                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                                                            />
-                                                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{col.label}</span>
-                                                        </label>
-                                                    );
-                                                })}
+                                                ]
+                                            },
+                                            teacher_absences: {
+                                                note: 'ملاحظة: يسحب تلقائياً حالات (الغياب، التأخر، الاستئذان، الإجازة) للمعلمين خلال فترة التقرير.',
+                                                cols: [
+                                                    { id: 'day', label: 'اليوم' },
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'teacher_name', label: 'اسم المعلم' },
+                                                    { id: 'attendance_type', label: 'نوع الحالة (غياب/تأخر/استئذان)' },
+                                                    { id: 'late_minutes', label: 'مدة التأخير' },
+                                                    { id: 'check_in', label: 'وقت الحضور' },
+                                                    { id: 'check_out', label: 'وقت الانصراف' }
+                                                ]
+                                            },
+                                            study_plans: {
+                                                note: 'ملاحظة: يسحب تلقائياً بيانات الخطط الدراسية ومسح المقررات وحالة مطابقتها للخطة خلال الفترة.',
+                                                cols: [
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'teacher_name', label: 'اسم المعلم' },
+                                                    { id: 'subject_name', label: 'المادة' },
+                                                    { id: 'grade_name', label: 'الصف' },
+                                                    { id: 'plan_title', label: 'عنوان الخطة / آخر درس' },
+                                                    { id: 'plan_status', label: 'مدى المطابقة للخطة' },
+                                                    { id: 'notes', label: 'الملاحظات' }
+                                                ]
+                                            },
+                                            followup_books: {
+                                                note: 'ملاحظة: يسحب تلقائياً سجلات دفاتر المتابعة والدروس المحضرة خلال فترة التقرير.',
+                                                cols: [
+                                                    { id: 'day', label: 'اليوم' },
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'teacher_name', label: 'اسم المعلم' },
+                                                    { id: 'subject_name', label: 'المادة' },
+                                                    { id: 'division_name', label: 'الشعبة' },
+                                                    { id: 'lesson_title', label: 'عنوان الدرس' },
+                                                    { id: 'homework', label: 'الواجب' },
+                                                    { id: 'notes', label: 'الملاحظات' }
+                                                ]
+                                            },
+                                            employee_leaves: {
+                                                note: 'ملاحظة: يسحب تلقائياً إجازات الموظفين المسجلة خلال فترة التقرير.',
+                                                cols: [
+                                                    { id: 'employee_name', label: 'اسم الموظف' },
+                                                    { id: 'leave_type', label: 'نوع الإجازة' },
+                                                    { id: 'start_date', label: 'من تاريخ' },
+                                                    { id: 'end_date', label: 'إلى تاريخ' },
+                                                    { id: 'days_count', label: 'المدة' },
+                                                    { id: 'reason', label: 'السبب' },
+                                                    { id: 'status', label: 'الحالة' }
+                                                ]
+                                            },
+                                            parent_visits: {
+                                                note: 'ملاحظة: يسحب تلقائياً سجل زيارات أولياء الأمور والزوار المسجلة خلال فترة التقرير.',
+                                                cols: [
+                                                    { id: 'day', label: 'اليوم' },
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'visitor_name', label: 'اسم الزائر' },
+                                                    { id: 'visitor_relation', label: 'الجهة / الصفة' },
+                                                    { id: 'student_name', label: 'اسم الطالب' },
+                                                    { id: 'purpose', label: 'سبب الزيارة' },
+                                                    { id: 'notes', label: 'التقرير / الملاحظات' }
+                                                ]
+                                            },
+                                            student_absences: {
+                                                note: 'ملاحظة: يسحب تلقائياً سجل الطلاب الغائبين والمتأخرين خلال فترة التقرير.',
+                                                cols: [
+                                                    { id: 'day', label: 'اليوم' },
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'student_name', label: 'اسم الطالب' },
+                                                    { id: 'grade_name', label: 'الصف' },
+                                                    { id: 'division_name', label: 'الشعبة' },
+                                                    { id: 'attendance_type', label: 'حالة الحضور (غائب/متأخر)' }
+                                                ]
+                                            },
+                                            student_violations: {
+                                                note: 'ملاحظة: يسحب تلقائياً المخالفات السلوكية المسجلة على الطلاب والإجراءات المتخذة خلال فترة التقرير.',
+                                                cols: [
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'student_name', label: 'اسم الطالب' },
+                                                    { id: 'grade_name', label: 'الصف' },
+                                                    { id: 'division_name', label: 'الشعبة' },
+                                                    { id: 'violation_type', label: 'نوع المخالفة' },
+                                                    { id: 'action_taken', label: 'الإجراء المتخذ' },
+                                                    { id: 'status', label: 'الحالة' },
+                                                    { id: 'details', label: 'التفاصيل' }
+                                                ]
+                                            },
+                                            parent_summons: {
+                                                note: 'ملاحظة: يسحب تلقائياً سجل استدعاءات أولياء الأمور وحالة حضورهم خلال فترة التقرير.',
+                                                cols: [
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'student_name', label: 'اسم الطالب' },
+                                                    { id: 'grade_name', label: 'الصف' },
+                                                    { id: 'division_name', label: 'الشعبة' },
+                                                    { id: 'reason', label: 'سبب الاستدعاء' },
+                                                    { id: 'status', label: 'حالة الحضور' },
+                                                    { id: 'notes', label: 'الملاحظات' }
+                                                ]
+                                            },
+                                            student_pledges: {
+                                                note: 'ملاحظة: يسحب تلقائياً سجل التعهدات الطلابية الخطية وحالة توقيع الطالب وولي الأمر خلال الفترة.',
+                                                cols: [
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'student_name', label: 'اسم الطالب' },
+                                                    { id: 'grade_name', label: 'الصف' },
+                                                    { id: 'division_name', label: 'الشعبة' },
+                                                    { id: 'pledge_text', label: 'نص التعهد' },
+                                                    { id: 'student_signed', label: 'توقيع الطالب' },
+                                                    { id: 'parent_signed', label: 'توقيع ولي الأمر' }
+                                                ]
+                                            },
+                                            clinic_visits: {
+                                                note: 'ملاحظة: يسحب تلقائياً سجل زيارات الطلاب للعيادة المدرسية والحالات الصحية المسجلة خلال الفترة.',
+                                                cols: [
+                                                    { id: 'date', label: 'التاريخ والوقت' },
+                                                    { id: 'student_name', label: 'اسم الطالب' },
+                                                    { id: 'grade_name', label: 'الصف' },
+                                                    { id: 'division_name', label: 'الشعبة' },
+                                                    { id: 'symptoms', label: 'الأعراض / الحالة الصحية' },
+                                                    { id: 'action_taken', label: 'الإجراء الطبي المتخذ' },
+                                                    { id: 'status', label: 'الحالة' }
+                                                ]
+                                            },
+                                            class_coverages: {
+                                                note: 'ملاحظة: يسحب تلقائياً جدول حصص الانتظار والاحتياط وتغطية الحصص للمعلمين الغائبين خلال الفترة.',
+                                                cols: [
+                                                    { id: 'day', label: 'اليوم' },
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'period_name', label: 'الحصة' },
+                                                    { id: 'division_name', label: 'الصف والشعبة' },
+                                                    { id: 'subject_name', label: 'المادة' },
+                                                    { id: 'absent_teacher', label: 'المعلم الغائب' },
+                                                    { id: 'substitute_teacher', label: 'المعلم البديل (الاحتياط)' },
+                                                    { id: 'notes', label: 'الملاحظات' }
+                                                ]
+                                            },
+                                            meetings: {
+                                                note: 'ملاحظة: يسحب تلقائياً محاضر الاجتماعات واللقاءات التربوية والتوصيات المسجلة خلال الفترة.',
+                                                cols: [
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'meeting_time', label: 'الوقت' },
+                                                    { id: 'meeting_title', label: 'عنوان اللقاء / الاجتماع' },
+                                                    { id: 'meeting_type', label: 'نوع الاجتماع' },
+                                                    { id: 'participants_count', label: 'عدد الحاضرين' },
+                                                    { id: 'outcomes', label: 'أبرز المخرجات' },
+                                                    { id: 'recommendations', label: 'التوصيات' },
+                                                    { id: 'status', label: 'الحالة' }
+                                                ]
+                                            },
+                                            employee_achievements: {
+                                                note: 'ملاحظة: يسحب تلقائياً سجل الإنجازات والمبادرات الموثقة للموظفين والمعلمين خلال الفترة.',
+                                                cols: [
+                                                    { id: 'date', label: 'التاريخ' },
+                                                    { id: 'employee_name', label: 'اسم الموظف / المعلم' },
+                                                    { id: 'achievement_type', label: 'نوع الإنجاز' },
+                                                    { id: 'points', label: 'النقاط' },
+                                                    { id: 'details', label: 'تفاصيل الإنجاز' }
+                                                ]
+                                            }
+                                        };
+
+                                        const activeSource = sourceConfigMap[field.options?.source];
+                                        if (!activeSource) return null;
+
+                                        return (
+                                            <div className="mt-4 animate-fade-in">
+                                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الأعمدة المطلوب عرضها في الجدول</label>
+                                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                    {activeSource.cols.map(col => {
+                                                        const columns = Array.isArray(field.options?.columns) ? field.options.columns : [];
+                                                        const isChecked = columns.includes(col.id);
+                                                        return (
+                                                            <label key={col.id} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900/40 p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-400 transition-all">
+                                                                <input 
+                                                                    type="checkbox" 
+                                                                    checked={isChecked}
+                                                                    onChange={(e) => {
+                                                                        const currentOptions = Array.isArray(field.options) ? {} : (field.options || {});
+                                                                        let newColumns = [...(currentOptions.columns || [])];
+                                                                        if (e.target.checked) {
+                                                                            newColumns.push(col.id);
+                                                                        } else {
+                                                                            newColumns = newColumns.filter(c => c !== col.id);
+                                                                        }
+                                                                        updateField(index, 'options', { ...currentOptions, columns: newColumns });
+                                                                    }}
+                                                                    className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                                                />
+                                                                <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{col.label}</span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block font-semibold">
+                                                    {activeSource.note}
+                                                </span>
                                             </div>
-                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block font-semibold">
-                                                ملاحظة: سيتم عرض جدول تلقائي يوضح جميع المخالفات خلال الفترة المحددة في هذا القالب.
-                                            </span>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
                                 </div>
                             )}
 

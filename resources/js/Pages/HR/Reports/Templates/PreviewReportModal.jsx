@@ -47,6 +47,15 @@ export default function PreviewReportModal({ template, onClose }) {
                     { time: '08:30 AM', date: '2026-07-20', type: 'اجتماع صباحي', notes: 'تمت مناقشة خطة العمل الأسبوعية' },
                     { time: '12:00 PM', date: '2026-07-21', type: 'ورشة عمل', notes: 'تدريب الفريق على النظام الجديد' }
                 ];
+            } else if (field.type === 'teacher_status_matrix') {
+                mockData[field.name] = [
+                    { day_date: '2026-07-20', teacher_name: 'أحمد علي', absence: true, permission: false, exit_during_work: false, reason: 'ظرف صحي طارئ' },
+                    { day_date: '2026-07-21', teacher_name: 'عمر خالد', absence: false, permission: true, exit_during_work: false, reason: 'موعد رسمي' }
+                ];
+            } else if (field.type === 'teacher_discipline_matrix') {
+                mockData[field.name] = [
+                    { day: 'الإثنين', date: '2026-07-20', teacher_name: 'أحمد علي', problem_type: 'تأخر عن الطابور الصباحي' }
+                ];
             } else if (field.type === 'checkbox') {
                 mockData[field.name] = true;
             } else if (field.type === 'data_source') {
@@ -240,6 +249,80 @@ export default function PreviewReportModal({ template, onClose }) {
                     );
                 }
                 return <span className="text-slate-400 italic">لا توجد بيانات</span>;
+
+            case 'teacher_status_matrix':
+                if (Array.isArray(value) && value.length > 0) {
+                    const totalAbsence = value.filter(r => r.absence).length;
+                    const totalPermission = value.filter(r => r.permission).length;
+                    const totalExit = value.filter(r => r.exit_during_work).length;
+                    return (
+                        <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 shadow-inner overflow-x-auto">
+                            <table className="w-full text-right text-sm min-w-[600px]">
+                                <thead className="bg-slate-100/50 dark:bg-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
+                                    <tr>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300">اليوم والتاريخ</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300">اسم المعلم</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300 text-center">غياب</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300 text-center">استئذان</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300 text-center">خروج أثناء الدوام المدرسي</th>
+                                        <th className="px-4 py-3.5 font-black text-slate-700 dark:text-slate-300">السبب</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                    {value.map((row, idx) => (
+                                        <tr key={idx}>
+                                            <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">{row.day_date || '-'}</td>
+                                            <td className="px-4 py-3 font-bold text-slate-800 dark:text-white">{row.teacher_name || '-'}</td>
+                                            <td className="px-4 py-3 text-center font-black text-rose-600">{row.absence ? '✓' : '-'}</td>
+                                            <td className="px-4 py-3 text-center font-black text-amber-600">{row.permission ? '✓' : '-'}</td>
+                                            <td className="px-4 py-3 text-center font-black text-indigo-600">{row.exit_during_work ? '✓' : '-'}</td>
+                                            <td className="px-4 py-3 font-medium text-slate-600 dark:text-slate-400">{row.reason || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot className="bg-slate-100/80 dark:bg-slate-800/70 border-t-2 border-slate-200 dark:border-slate-700 font-black text-slate-800 dark:text-white">
+                                    <tr>
+                                        <td colSpan="2" className="px-4 py-3">الإجمالي</td>
+                                        <td className="px-4 py-3 text-center text-rose-600">{totalAbsence}</td>
+                                        <td className="px-4 py-3 text-center text-amber-600">{totalPermission}</td>
+                                        <td className="px-4 py-3 text-center text-indigo-600">{totalExit}</td>
+                                        <td className="px-4 py-3"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    );
+                }
+                return <span className="text-slate-400 italic">لا توجد بيانات</span>;
+
+            case 'teacher_discipline_matrix':
+                if (Array.isArray(value) && value.length > 0) {
+                    return (
+                        <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 shadow-inner overflow-x-auto">
+                            <table className="w-full text-right text-sm min-w-[600px]">
+                                <thead className="bg-slate-100/50 dark:bg-slate-800/50 border-b border-slate-200/60 dark:border-slate-700/50">
+                                    <tr>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">اليوم</th>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">التاريخ</th>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">اسم المعلم</th>
+                                        <th className="px-5 py-3.5 font-black text-slate-700 dark:text-slate-300">نوع المشكلة</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                    {value.map((row, idx) => (
+                                        <tr key={idx}>
+                                            <td className="px-5 py-3.5 font-bold text-slate-700 dark:text-slate-300">{row.day || '-'}</td>
+                                            <td className="px-5 py-3.5 font-bold text-slate-700 dark:text-slate-300">{row.date || '-'}</td>
+                                            <td className="px-5 py-3.5 font-bold text-slate-800 dark:text-white">{row.teacher_name || '-'}</td>
+                                            <td className="px-5 py-3.5 font-medium text-slate-600 dark:text-slate-400">{row.problem_type || '-'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    );
+                }
+                return <span className="text-slate-400 italic">لا توجد بيانات</span>;
                 
             case 'data_source': {
                 const source = field.options?.source;
@@ -247,17 +330,69 @@ export default function PreviewReportModal({ template, onClose }) {
                 
                 const labelsDict = {
                     day: 'اليوم', date: 'التاريخ', teacher_name: 'اسم المعلم', visit_type: 'نوع الزيارة', notes: 'الملاحظات', evaluation: 'التقييم',
-                    employee_name: 'اسم الموظف', violation_type: 'نوع المخالفة', violation_date: 'التاريخ', repetition_level: 'مستوى التكرار', action_taken: 'الإجراء', status: 'الحالة', details: 'التفاصيل'
+                    employee_name: 'اسم الموظف', violation_type: 'نوع المخالفة', violation_date: 'التاريخ', repetition_level: 'مستوى التكرار', action_taken: 'الإجراء', status: 'الحالة', details: 'التفاصيل',
+                    attendance_type: 'حالة الدوام', late_minutes: 'دقائق التأخر', check_in: 'وقت الحضور', check_out: 'وقت الانصراف',
+                    subject_name: 'المادة', grade_name: 'الصف', plan_title: 'عنوان الخطة / الموضوع', plan_status: 'حالة الخطة',
+                    division_name: 'الشعبة', lesson_title: 'عنوان الدرس', homework: 'الواجب',
+                    leave_type: 'نوع الإجازة', start_date: 'تاريخ البداية', end_date: 'تاريخ النهاية', days_count: 'عدد الأيام', reason: 'السبب',
+                    visitor_name: 'اسم الزائر', visitor_relation: 'صلة القرابة / الصفة', student_name: 'اسم الطالب', purpose: 'سبب الزيارة',
+                    pledge_text: 'نص التعهد', student_signed: 'توقيع الطالب', parent_signed: 'توقيع ولي الأمر',
+                    symptoms: 'الأعراض / الحالة الصحية', period_name: 'الحصة', absent_teacher: 'المعلم الغائب', substitute_teacher: 'المعلم البديل',
+                    meeting_time: 'الوقت', meeting_title: 'عنوان اللقاء / الاجتماع', meeting_type: 'نوع الاجتماع', participants_count: 'عدد الحاضرين', outcomes: 'المخرجات', recommendations: 'التوصيات',
+                    achievement_type: 'نوع الإنجاز', points: 'النقاط'
+                };
+
+                const mockBySource = {
+                    employee_violations: [
+                        { employee_name: 'أحمد محمد', violation_type: 'تأخر صباحي', violation_date: '2023-10-15', repetition_level: 'أولى', action_taken: 'إنذار', status: 'مفتوحة', details: 'تأخر 30 دقيقة' },
+                        { employee_name: 'سالم عبدالله', violation_type: 'غياب بدون عذر', violation_date: '2023-10-16', repetition_level: 'ثانية', action_taken: 'خصم يوم', status: 'مغلقة', details: 'لم يحضر' }
+                    ],
+                    teacher_absences: [
+                        { day: 'الأحد', date: '2023-10-15', teacher_name: 'خالد الحربي', employee_name: 'خالد الحربي', attendance_type: 'تأخر', late_minutes: '20 دقيقة', check_in: '07:20', check_out: '13:30', notes: 'ظرف طارئ' }
+                    ],
+                    study_plans: [
+                        { date: '2023-10-15', teacher_name: 'سعيد الزهراني', subject_name: 'الرياضيات', grade_name: 'الأول الثانوي', plan_title: 'الوحدة الثانية - المعادلات', plan_status: 'معتمد', notes: 'مكتمل' }
+                    ],
+                    followup_books: [
+                        { day: 'الإثنين', date: '2023-10-16', teacher_name: 'عمر العتيبي', subject_name: 'الفيزياء', division_name: '1/أ', lesson_title: 'قوانين نيوتن', homework: 'حل تمارين ص 45', notes: 'تمت المتابعة' }
+                    ],
+                    employee_leaves: [
+                        { employee_name: 'فهد القحطاني', leave_type: 'إجازة اضطرارية', start_date: '2023-10-18', end_date: '2023-10-19', days_count: '2', status: 'مقبولة', reason: 'ظروف عائلية' }
+                    ],
+                    parent_visits: [
+                        { day: 'الثلاثاء', date: '2023-10-17', visitor_name: 'عبدالرحمن السالم', visitor_relation: 'ولي أمر', student_name: 'ريان عبدالرحمن', purpose: 'متابعة المستوى الدراسي', action_taken: 'الاجتماع مع المرشد والمعلم', notes: 'تم الاتفاق على خطة متابعة' }
+                    ],
+                    student_absences: [
+                        { day: 'الأحد', date: '2023-10-15', student_name: 'سلطان فهد', grade_name: 'الثاني الثانوي', division_name: '2/أ', attendance_type: 'غائب' }
+                    ],
+                    student_violations: [
+                        { date: '2023-10-15', student_name: 'نواف خالد', grade_name: 'الأول الثانوي', division_name: '1/ب', violation_type: 'عدم إحضار الكتاب المدرسي', action_taken: 'تنبيه شفهي', status: 'تمت المعالجة', details: '-' }
+                    ],
+                    parent_summons: [
+                        { date: '2023-10-16', student_name: 'ياسر عبدالله', grade_name: 'الثالث المتوسط', division_name: '3/أ', reason: 'تكرر الغياب', status: 'حضر ولي الأمر', notes: 'تم توقيع خطة علاجية' }
+                    ],
+                    student_pledges: [
+                        { date: '2023-10-16', student_name: 'راكان محمد', grade_name: 'الأول الثانوي', division_name: '1/أ', pledge_text: 'الالتزام بالحضور المبكر والزي المدرسي', student_signed: 'تم التوقيع', parent_signed: 'تم التوقيع' }
+                    ],
+                    clinic_visits: [
+                        { date: '2023-10-17 09:30', student_name: 'طلال سعد', grade_name: 'السادس الابتدائي', division_name: '6/أ', symptoms: 'صداع وإجهاد', action_taken: 'إعطاء مسكن وراحة', status: 'عاد للفصل' }
+                    ],
+                    class_coverages: [
+                        { day: 'الأحد', date: '2023-10-15', period_name: 'الحصة الثالثة', division_name: 'الأول الثانوي - 1/أ', subject_name: 'اللغة العربية', absent_teacher: 'محمد الشهري', substitute_teacher: 'علي الغامدي', notes: 'تمت التغطية' }
+                    ],
+                    meetings: [
+                        { date: '2023-10-18', meeting_time: '10:00', meeting_title: 'لقاء معلمي القسم الثانوي', meeting_type: 'تربوي', participants_count: '14', outcomes: 'مناقشة نتائج الاختبارات القصيرة', recommendations: 'تفعيل حصص التقوية', status: 'مكتمل' }
+                    ],
+                    employee_achievements: [
+                        { date: '2023-10-19', employee_name: 'سعيد الزهراني', achievement_type: 'مبادرة تعليمية', points: '50', details: 'تنفيذ درس تطبيقي نموذجي باستخدام التعلم النشط' }
+                    ],
                 };
 
                 let sourceRows = [];
                 if (Array.isArray(value) && value.length > 0) {
                     sourceRows = value;
                 } else {
-                    sourceRows = source === 'employee_violations' ? [
-                        { employee_name: 'أحمد محمد', violation_type: 'تأخر صباحي', violation_date: '2023-10-15', repetition_level: 'أولى', action_taken: 'إنذار', status: 'مفتوحة', details: 'تأخر 30 دقيقة' },
-                        { employee_name: 'سالم عبدالله', violation_type: 'غياب بدون عذر', violation_date: '2023-10-16', repetition_level: 'ثانية', action_taken: 'خصم يوم', status: 'مغلقة', details: 'لم يحضر' }
-                    ] : [
+                    sourceRows = mockBySource[source] || [
                         { day: 'الأحد', date: '2023-10-15', teacher_name: 'أحمد محمد', visit_type: 'توجيهية', evaluation: '95', notes: 'ممتاز', discussed_points: 'تنويع الاستراتيجيات' }
                     ];
                 }

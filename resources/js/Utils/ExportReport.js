@@ -237,6 +237,68 @@ export const exportReportToExcel = async (report, logoUrl = null) => {
                         });
                         currentRow++;
                     });
+                } else if (field.type === 'teacher_status_matrix' && Array.isArray(value)) {
+                    const hr = sheet.getRow(currentRow);
+                    hr.values = ['اليوم والتاريخ', 'اسم المعلم', 'غياب', 'استئذان', 'خروج أثناء الدوام المدرسي', 'السبب'];
+                    hr.font = { bold: true, name: 'Segoe UI', color: { argb: 'FF1E293B' } };
+                    hr.eachCell(cell => {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                        cell.border = { top: {style:'thin'}, bottom: {style:'thin'}, left: {style:'thin'}, right: {style:'thin'} };
+                        cell.alignment = { horizontal: 'center' };
+                    });
+                    currentRow++;
+
+                    value.forEach((row, idx) => {
+                        const vr = sheet.getRow(currentRow);
+                        vr.values = [
+                            row.day_date || '-',
+                            row.teacher_name || '-',
+                            row.absence ? '✔' : '-',
+                            row.permission ? '✔' : '-',
+                            row.exit_during_work ? '✔' : '-',
+                            row.reason || '-'
+                        ];
+                        vr.eachCell(cell => {
+                            cell.border = { top: {style:'thin', color:{argb:'FFE2E8F0'}}, bottom: {style:'thin', color:{argb:'FFE2E8F0'}}, left: {style:'thin', color:{argb:'FFE2E8F0'}}, right: {style:'thin', color:{argb:'FFE2E8F0'}} };
+                            cell.alignment = { horizontal: 'center', wrapText: true };
+                            if(idx % 2 === 0) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                        });
+                        currentRow++;
+                    });
+
+                    const totalAbsence = value.filter(r => r.absence).length;
+                    const totalPermission = value.filter(r => r.permission).length;
+                    const totalExit = value.filter(r => r.exit_during_work).length;
+                    const tr = sheet.getRow(currentRow);
+                    tr.values = ['الإجمالي', '', totalAbsence, totalPermission, totalExit, ''];
+                    tr.font = { bold: true, name: 'Segoe UI', color: { argb: 'FF1E293B' } };
+                    tr.eachCell(cell => {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+                        cell.border = { top: {style:'medium'}, bottom: {style:'medium'}, left: {style:'thin'}, right: {style:'thin'} };
+                        cell.alignment = { horizontal: 'center' };
+                    });
+                    currentRow++;
+                } else if (field.type === 'teacher_discipline_matrix' && Array.isArray(value)) {
+                    const hr = sheet.getRow(currentRow);
+                    hr.values = ['اليوم', 'التاريخ', 'اسم المعلم', 'نوع المشكلة'];
+                    hr.font = { bold: true, name: 'Segoe UI', color: { argb: 'FF1E293B' } };
+                    hr.eachCell(cell => {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+                        cell.border = { top: {style:'thin'}, bottom: {style:'thin'}, left: {style:'thin'}, right: {style:'thin'} };
+                        cell.alignment = { horizontal: 'center' };
+                    });
+                    currentRow++;
+
+                    value.forEach((row, idx) => {
+                        const vr = sheet.getRow(currentRow);
+                        vr.values = [row.day || '-', row.date || '-', row.teacher_name || '-', row.problem_type || '-'];
+                        vr.eachCell(cell => {
+                            cell.border = { top: {style:'thin', color:{argb:'FFE2E8F0'}}, bottom: {style:'thin', color:{argb:'FFE2E8F0'}}, left: {style:'thin', color:{argb:'FFE2E8F0'}}, right: {style:'thin', color:{argb:'FFE2E8F0'}} };
+                            cell.alignment = { horizontal: 'center', wrapText: true };
+                            if(idx % 2 === 0) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+                        });
+                        currentRow++;
+                    });
                 } else if (field.type === 'data_source' && Array.isArray(value)) {
                     if (value.length === 0) {
                         sheet.mergeCells(`A${currentRow}:D${currentRow}`);
@@ -245,7 +307,19 @@ export const exportReportToExcel = async (report, logoUrl = null) => {
                     } else {
                         const options = typeof field.options === 'string' ? JSON.parse(field.options) : (field.options || {});
                         const columns = options.columns || [];
-                        const columnHeaders = { day: 'اليوم', date: 'التاريخ', teacher_name: 'اسم المعلم', visit_type: 'نوع الزيارة', notes: 'الملاحظات والتوصيات', evaluation: 'التقييم', discussed_points: 'نقاط النقاش' };
+                        const columnHeaders = {
+                            day: 'اليوم', date: 'التاريخ', teacher_name: 'اسم المعلم', visit_type: 'نوع الزيارة', notes: 'الملاحظات والتوصيات', evaluation: 'التقييم', discussed_points: 'نقاط النقاش',
+                            employee_name: 'اسم الموظف', violation_type: 'نوع المخالفة', violation_date: 'التاريخ', repetition_level: 'مستوى التكرار', action_taken: 'الإجراء المتخذ', status: 'الحالة', details: 'التفاصيل',
+                            attendance_type: 'نوع الحالة', late_minutes: 'مدة التأخير', check_in: 'وقت الحضور', check_out: 'وقت الانصراف',
+                            subject_name: 'المادة', grade_name: 'الصف', plan_title: 'عنوان الخطة / الدرس', plan_status: 'مدى المطابقة للخطة',
+                            division_name: 'الشعبة', lesson_title: 'عنوان الدرس', homework: 'الواجب',
+                            leave_type: 'نوع الإجازة', start_date: 'من تاريخ', end_date: 'إلى تاريخ', days_count: 'المدة', reason: 'السبب',
+                            visitor_name: 'اسم الزائر', visitor_relation: 'الجهة / الصفة', student_name: 'اسم الطالب', purpose: 'سبب الزيارة',
+                            pledge_text: 'نص التعهد', student_signed: 'توقيع الطالب', parent_signed: 'توقيع ولي الأمر',
+                            symptoms: 'الأعراض / الحالة الصحية', period_name: 'الحصة', absent_teacher: 'المعلم الغائب', substitute_teacher: 'المعلم البديل',
+                            meeting_time: 'الوقت', meeting_title: 'عنوان اللقاء / الاجتماع', meeting_type: 'نوع الاجتماع', participants_count: 'عدد الحاضرين', outcomes: 'المخرجات', recommendations: 'التوصيات',
+                            achievement_type: 'نوع الإنجاز', points: 'النقاط'
+                        };
                         
                         const headers = columns.map(col => columnHeaders[col] || col);
                         const hr = sheet.getRow(currentRow);
