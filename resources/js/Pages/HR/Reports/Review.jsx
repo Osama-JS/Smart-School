@@ -328,6 +328,13 @@ export default function ReviewReport({ auth, report }) {
                     recommendations: 'التوصيات',
                     achievement_type: 'نوع الإنجاز',
                     points: 'النقاط',
+                    sat_status: 'السبت (ت/م)',
+                    sun_status: 'الأحد (ت/م)',
+                    mon_status: 'الإثنين (ت/م)',
+                    tue_status: 'الثلاثاء (ت/م)',
+                    wed_status: 'الأربعاء (ت/م)',
+                    weekly_eval: 'التقييم الأسبوعي',
+                    interactive_lessons_count: 'عدد الدروس التفاعلية',
                 };
                 
                 return (

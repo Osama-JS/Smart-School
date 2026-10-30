@@ -318,7 +318,9 @@ export const exportReportToExcel = async (report, logoUrl = null) => {
                             pledge_text: 'نص التعهد', student_signed: 'توقيع الطالب', parent_signed: 'توقيع ولي الأمر',
                             symptoms: 'الأعراض / الحالة الصحية', period_name: 'الحصة', absent_teacher: 'المعلم الغائب', substitute_teacher: 'المعلم البديل',
                             meeting_time: 'الوقت', meeting_title: 'عنوان اللقاء / الاجتماع', meeting_type: 'نوع الاجتماع', participants_count: 'عدد الحاضرين', outcomes: 'المخرجات', recommendations: 'التوصيات',
-                            achievement_type: 'نوع الإنجاز', points: 'النقاط'
+                            achievement_type: 'نوع الإنجاز', points: 'النقاط',
+                            sat_status: 'السبت (ت/م)', sun_status: 'الأحد (ت/م)', mon_status: 'الإثنين (ت/م)', tue_status: 'الثلاثاء (ت/م)', wed_status: 'الأربعاء (ت/م)',
+                            weekly_eval: 'التقييم الأسبوعي', interactive_lessons_count: 'عدد الدروس التفاعلية'
                         };
                         
                         const headers = columns.map(col => columnHeaders[col] || col);

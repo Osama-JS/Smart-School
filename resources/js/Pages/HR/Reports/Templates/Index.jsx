@@ -322,6 +322,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                 class_coverages: ['day', 'date', 'period_name', 'division_name', 'subject_name', 'absent_teacher', 'substitute_teacher'],
                                                 meetings: ['date', 'meeting_time', 'meeting_title', 'meeting_type', 'participants_count', 'recommendations'],
                                                 employee_achievements: ['date', 'employee_name', 'achievement_type', 'points', 'details'],
+                                                teacher_app_activation: ['teacher_name', 'subject_name', 'sat_status', 'sun_status', 'mon_status', 'tue_status', 'wed_status', 'weekly_eval', 'interactive_lessons_count', 'notes'],
                                             };
                                             updateField(index, 'options', { source: val, columns: defaultColsBySource[val] || [] });
                                         }}
@@ -340,7 +341,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             { value: 'clinic_visits', label: 'جدول زيارات العيادة المدرسية والحالات الصحية' },
                                             { value: 'class_coverages', label: 'جدول حصص الانتظار والاحتياط وتغطية الحصص' },
                                             { value: 'meetings', label: 'جدول الاجتماعات واللقاءات التربوية' },
-                                            { value: 'employee_achievements', label: 'جدول إنجازات الموظفين والمعلمين' }
+                                            { value: 'employee_achievements', label: 'جدول إنجازات الموظفين والمعلمين' },
+                                            { value: 'teacher_app_activation', label: 'جدول ملخص تفعيل التطبيق للمعلمين (أسبوعي آلي)' }
                                         ]}
                                         placeholder="اختر مصدر البيانات..."
                                         className="mb-4"
@@ -528,6 +530,21 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     { id: 'points', label: 'النقاط' },
                                                     { id: 'details', label: 'تفاصيل الإنجاز' }
                                                 ]
+                                            },
+                                            teacher_app_activation: {
+                                                note: 'ملاحظة: يفحص تلقائياً التزام كل معلم برفع التحضير (ت) والمتابعة (م) خلال أيام الأسبوع (السبت - الأربعاء) ويحسب التقييم الأسبوعي وعدد الدروس التفاعلية.',
+                                                cols: [
+                                                    { id: 'teacher_name', label: 'اسم المعلم' },
+                                                    { id: 'subject_name', label: 'المادة' },
+                                                    { id: 'sat_status', label: 'السبت (ت/م)' },
+                                                    { id: 'sun_status', label: 'الأحد (ت/م)' },
+                                                    { id: 'mon_status', label: 'الإثنين (ت/م)' },
+                                                    { id: 'tue_status', label: 'الثلاثاء (ت/م)' },
+                                                    { id: 'wed_status', label: 'الأربعاء (ت/م)' },
+                                                    { id: 'weekly_eval', label: 'التقييم الأسبوعي' },
+                                                    { id: 'interactive_lessons_count', label: 'عدد الدروس التفاعلية' },
+                                                    { id: 'notes', label: 'ملاحظات' }
+                                                ]
                                             }
                                         };
 
@@ -711,8 +728,17 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 </div>
 
                 {/* Templates List */}
+                <div className="flex items-center justify-between mb-3 px-1">
+                    <h3 className="text-sm font-black text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                        <FileText size={16} className="text-primary-500" />
+                        جميع القوالب
+                        <span className="px-2.5 py-0.5 rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 text-xs font-black border border-primary-100 dark:border-primary-500/20">
+                            {templates.data.length}
+                        </span>
+                    </h3>
+                </div>
                 <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl shadow-sm animate-fade-in mb-8 overflow-hidden">
-                    <div className="overflow-x-auto custom-scrollbar">
+                    <div className="overflow-x-auto overflow-y-auto max-h-[70vh] custom-scrollbar">
                         <table className="w-full text-right border-collapse min-w-[800px]">
                             <thead>
                                 <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
@@ -763,6 +789,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     </div>
                                                     <div>
                                                         <div className="font-bold text-slate-800 dark:text-white text-sm group-hover:text-primary-655 dark:group-hover:text-primary-400 transition-colors">{template.name}</div>
+                                                        <div className="mt-1 flex items-center gap-1.5">
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20">
+                                                                <Calendar size={10} />
+                                                                {({ daily: 'يومي', weekly: 'أسبوعي', monthly: 'شهري', quarterly: 'فصلي', yearly: 'سنوي', custom: 'مخصص' })[template.period_type] || 'غير محدد'}
+                                                            </span>
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
+                                                                <List size={10} />
+                                                                {template.fields_count || 0} حقل
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>

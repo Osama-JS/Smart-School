@@ -439,6 +439,108 @@ class ReportController extends Controller implements \Illuminate\Routing\Control
                         });
 
                     $fieldArr['prefilled_data'] = $achievements;
+                } elseif ($source === 'teacher_app_activation') {
+                    $teachers = \App\Models\User::whereHas('role', function ($q) {
+                            $q->where('name', 'like', '%معلم%')
+                              ->orWhere('name', 'like', '%مدرس%')
+                              ->orWhere('name', 'Teacher');
+                        })
+                        ->when($user->branch_id, function ($q) use ($user) {
+                            $q->where(fn($sq) => $sq->where('branch_id', $user->branch_id)->orWhereNull('branch_id'));
+                        })
+                        ->get();
+
+                    $teacherIds = $teachers->pluck('id')->toArray();
+
+                    $prepsByTeacher = \App\Models\LessonPreparation::with('subject')
+                        ->whereIn('teacher_id', $teacherIds)
+                        ->whereBetween('preparation_date', [$startDate->startOfDay(), $endDate->endOfDay()])
+                        ->get()
+                        ->groupBy('teacher_id');
+
+                    $booksByTeacher = \App\Models\FollowupBook::with('subject')
+                        ->whereIn('teacher_id', $teacherIds)
+                        ->whereBetween('date', [$startDate->startOfDay(), $endDate->endOfDay()])
+                        ->get()
+                        ->groupBy('teacher_id');
+
+                    $timetablesByTeacher = \App\Models\MasterTimetable::with('subject')
+                        ->whereIn('teacher_id', $teacherIds)
+                        ->get()
+                        ->groupBy('teacher_id');
+
+                    $libraryByTeacher = \App\Models\LibraryItem::whereIn('uploader_id', $teacherIds)
+                        ->whereBetween('created_at', [$startDate->startOfDay(), $endDate->endOfDay()])
+                        ->get()
+                        ->groupBy('uploader_id');
+
+                    $activationRows = $teachers->map(function ($teacher) use ($prepsByTeacher, $booksByTeacher, $timetablesByTeacher, $libraryByTeacher) {
+                        $tPreps = $prepsByTeacher->get($teacher->id, collect());
+                        $tBooks = $booksByTeacher->get($teacher->id, collect());
+                        $tTimetable = $timetablesByTeacher->get($teacher->id, collect());
+                        $tLibrary = $libraryByTeacher->get($teacher->id, collect());
+
+                        $subjects = $tTimetable->pluck('subject.name')
+                            ->merge($tPreps->pluck('subject.name'))
+                            ->merge($tBooks->pluck('subject.name'))
+                            ->filter()
+                            ->unique()
+                            ->implode('، ');
+
+                        $daysMap = [
+                            6 => 'sat_status', // السبت
+                            0 => 'sun_status', // الأحد
+                            1 => 'mon_status', // الإثنين
+                            2 => 'tue_status', // الثلاثاء
+                            3 => 'wed_status', // الأربعاء
+                        ];
+
+                        $dayResults = [];
+                        $activeDaysCount = 0;
+
+                        foreach ($daysMap as $dayNum => $colKey) {
+                            $hasPrep = $tPreps->contains(fn($p) => $p->preparation_date && $p->preparation_date->dayOfWeek === $dayNum);
+                            $hasBook = $tBooks->contains(fn($b) => $b->date && $b->date->dayOfWeek === $dayNum)
+                                || $tPreps->contains(fn($p) => $p->preparation_date && $p->preparation_date->dayOfWeek === $dayNum && !empty($p->homework));
+
+                            if ($hasPrep || $hasBook) {
+                                $activeDaysCount++;
+                                $dayResults[$colKey] = 'ت:' . ($hasPrep ? '✓' : '✗') . ' | م:' . ($hasBook ? '✓' : '✗');
+                            } else {
+                                $dayResults[$colKey] = '✗';
+                            }
+                        }
+
+                        $percentage = (int) round(($activeDaysCount / 5) * 100);
+                        if ($percentage >= 80) {
+                            $evalLabel = "ممتاز ({$percentage}%)";
+                        } elseif ($percentage >= 60) {
+                            $evalLabel = "جيد جداً ({$percentage}%)";
+                        } elseif ($percentage >= 40) {
+                            $evalLabel = "جيد ({$percentage}%)";
+                        } elseif ($percentage > 0) {
+                            $evalLabel = "ضعيف ({$percentage}%)";
+                        } else {
+                            $evalLabel = "لم يفعّل (0%)";
+                        }
+
+                        $interactiveCount = $tLibrary->count() + $tPreps->count() + $tBooks->count();
+                        $notesText = $interactiveCount > 0
+                            ? "تحضير: {$tPreps->count()} | متابعة: {$tBooks->count()} | مكتبة: {$tLibrary->count()}"
+                            : 'لم يتم رفع أي دروس خلال الفترة';
+
+                        return array_merge([
+                            'id'                        => $teacher->id,
+                            'teacher_name'              => $teacher->name,
+                            'subject_name'              => $subjects ?: 'غير محدد',
+                        ], $dayResults, [
+                            'weekly_eval'               => $evalLabel,
+                            'interactive_lessons_count' => $interactiveCount,
+                            'notes'                     => $notesText,
+                        ]);
+                    })->values();
+
+                    $fieldArr['prefilled_data'] = $activationRows;
                 }
             }
             return $fieldArr;

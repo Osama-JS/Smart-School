@@ -42,7 +42,8 @@ class ReportTemplateController extends Controller implements \Illuminate\Routing
             $query->where('job_grade_id', $request->job_grade_id);
         }
 
-        $templates = $query->latest()->paginate(10)->withQueryString();
+        // عرض جميع القوالب دفعة واحدة (بدون ترقيم صفحات) مع الحفاظ على نفس بنية البيانات { data: [...] }
+        $templates = ['data' => $query->orderBy('job_grade_id')->orderBy('name')->get()];
 
         // Stats
         $baseQuery = ReportTemplate::where(function($q) use ($branchId) {

@@ -404,7 +404,9 @@ export default function PreviewFormModal({ template, onClose }) {
                     pledge_text: 'نص التعهد', student_signed: 'توقيع الطالب', parent_signed: 'توقيع ولي الأمر',
                     symptoms: 'الأعراض / الحالة الصحية', period_name: 'الحصة', absent_teacher: 'المعلم الغائب', substitute_teacher: 'المعلم البديل',
                     meeting_time: 'الوقت', meeting_title: 'عنوان اللقاء / الاجتماع', meeting_type: 'نوع الاجتماع', participants_count: 'عدد الحاضرين', outcomes: 'المخرجات', recommendations: 'التوصيات',
-                    achievement_type: 'نوع الإنجاز', points: 'النقاط'
+                    achievement_type: 'نوع الإنجاز', points: 'النقاط',
+                    sat_status: 'السبت (ت/م)', sun_status: 'الأحد (ت/م)', mon_status: 'الإثنين (ت/م)', tue_status: 'الثلاثاء (ت/م)', wed_status: 'الأربعاء (ت/م)',
+                    weekly_eval: 'التقييم الأسبوعي', interactive_lessons_count: 'عدد الدروس التفاعلية'
                 };
 
                 const mockBySource = {
@@ -422,6 +424,7 @@ export default function PreviewFormModal({ template, onClose }) {
                     class_coverages: [{ day: 'الأحد', date: '2023-10-15', period_name: 'الحصة الثالثة', division_name: 'الأول الثانوي - 1/أ', subject_name: 'اللغة العربية', absent_teacher: 'محمد الشهري', substitute_teacher: 'علي الغامدي', notes: 'تمت التغطية' }],
                     meetings: [{ date: '2023-10-18', meeting_time: '10:00', meeting_title: 'لقاء معلمي القسم الثانوي', meeting_type: 'تربوي', participants_count: '14', outcomes: 'مناقشة نتائج الاختبارات القصيرة', recommendations: 'تفعيل حصص التقوية', status: 'مكتمل' }],
                     employee_achievements: [{ date: '2023-10-19', employee_name: 'سعيد الزهراني', achievement_type: 'مبادرة تعليمية', points: '50', details: 'تنفيذ درس تطبيقي نموذجي باستخدام التعلم النشط' }],
+                    teacher_app_activation: [{ teacher_name: 'سعيد الزهراني', subject_name: 'الرياضيات', sat_status: 'ت:✓ | م:✓', sun_status: 'ت:✓ | م:✓', mon_status: 'ت:✓ | م:✓', tue_status: 'ت:✓ | م:✓', wed_status: 'ت:✓ | م:✓', weekly_eval: 'ممتاز (100%)', interactive_lessons_count: '12', notes: 'تحضير: 5 | متابعة: 5 | مكتبة: 2' }],
                 };
 
                 const sourceRows = Array.isArray(val) && val.length > 0 ? val : (
