@@ -134,10 +134,37 @@ class StudentAchievementController extends Controller
         $afterData = $gamificationService->getStudentGamificationData($validated['student_id'], auth()->user()->branch_id);
         $afterTier = $afterData['current_tier'];
         
+        $student = \App\Models\Student::with(['user', 'parents'])->find($validated['student_id']);
+        if ($student) {
+            $targetUsers = [];
+            if ($student->user_id) {
+                $targetUsers[] = $student->user_id;
+            }
+            if ($student->parents) {
+                $targetUsers = array_merge($targetUsers, $student->parents->pluck('id')->toArray());
+            }
+            $targetUsers = array_values(array_unique(array_filter($targetUsers)));
+            if (!empty($targetUsers)) {
+                $studentName = $student->user?->name ?? 'الطالب';
+                \App\Models\Notification::create([
+                    'sender_id' => auth()->id(),
+                    'branch_id' => auth()->user()->branch_id,
+                    'title' => 'إنجاز جديد للطالب: ' . $studentName,
+                    'message' => 'حصل الطالب ' . $studentName . ' على إنجاز جديد بمقدار ' . $validated['points'] . ' نقطة.',
+                    'type' => 'achievement',
+                    'target_type' => 'users',
+                    'target_users' => $targetUsers,
+                    'is_read' => false,
+                ]);
+            }
+        }
+
         if ($afterTier && $beforeTierName !== $afterTier['name']) {
-            $student = \App\Models\Student::with('user')->find($validated['student_id']);
             if ($student && $student->user) {
-                $student->user->notify(new \App\Notifications\StudentTierUpgradedNotification($student, $afterTier['name']));
+                try {
+                    $student->user->notify(new \App\Notifications\StudentTierUpgradedNotification($student, $afterTier['name']));
+                } catch (\Throwable $e) {
+                }
             }
         }
 

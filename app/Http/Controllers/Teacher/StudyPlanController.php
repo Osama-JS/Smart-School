@@ -170,7 +170,7 @@ class StudyPlanController extends Controller
 
         $path = null;
         if ($request->hasFile('attachment')) {
-            $path = $request->file('attachment')->store('study_plans', 'local');
+            $path = $request->file('attachment')->store('study_plans', 'public');
         }
 
         $month = null;
@@ -249,9 +249,10 @@ class StudyPlanController extends Controller
 
         if ($request->hasFile('attachment')) {
             if ($studyPlan->attachment_path) {
+                Storage::disk('public')->delete($studyPlan->attachment_path);
                 Storage::disk('local')->delete($studyPlan->attachment_path);
             }
-            $updateData['attachment_path'] = $request->file('attachment')->store('study_plans', 'local');
+            $updateData['attachment_path'] = $request->file('attachment')->store('study_plans', 'public');
         }
 
         $studyPlan->update($updateData);
@@ -274,6 +275,7 @@ class StudyPlanController extends Controller
         }
 
         if ($studyPlan->attachment_path) {
+            Storage::disk('public')->delete($studyPlan->attachment_path);
             Storage::disk('local')->delete($studyPlan->attachment_path);
         }
 
@@ -288,10 +290,12 @@ class StudyPlanController extends Controller
             abort(403, 'لا تملك صلاحية تحميل هذه الخطة');
         }
 
-        if (!Storage::disk('local')->exists($studyPlan->attachment_path)) {
+        $disk = Storage::disk('public')->exists($studyPlan->attachment_path) ? 'public' : 'local';
+
+        if (!$studyPlan->attachment_path || !Storage::disk($disk)->exists($studyPlan->attachment_path)) {
             abort(404, 'الملف غير موجود');
         }
 
-        return Storage::disk('local')->download($studyPlan->attachment_path, $studyPlan->title . '.' . pathinfo($studyPlan->attachment_path, PATHINFO_EXTENSION));
+        return Storage::disk($disk)->download($studyPlan->attachment_path, $studyPlan->title . '.' . pathinfo($studyPlan->attachment_path, PATHINFO_EXTENSION));
     }
 }

@@ -37,9 +37,12 @@ class NotificationController extends Controller
                                   $rQ->where('target_type', 'role')->where('target_role', $roleName);
                               })
                               ->orWhere(function($uQ) use ($userId) {
-                                  // لأن JSON يخزن الأرقام كأرقام أو نصوص، نتحقق من الـ JSON
-                                  $uQ->where('target_type', 'users')->whereJsonContains('target_users', (string)$userId)
-                                     ->orWhereJsonContains('target_users', $userId);
+                                  // لأن JSON يخزن الأرقام كأرقام أو نصوص، نتحقق من الـ JSON لجميع مسميات المستهدفين
+                                  $uQ->whereIn('target_type', ['users', 'students', 'specific_users'])
+                                     ->where(function($jsonQ) use ($userId) {
+                                         $jsonQ->whereJsonContains('target_users', (string)$userId)
+                                               ->orWhereJsonContains('target_users', (int)$userId);
+                                     });
                               });
                     });
             });

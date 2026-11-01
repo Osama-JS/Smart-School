@@ -61,6 +61,18 @@ class StudentAppController extends Controller
 
         $data = $grades->map(function ($grade) use ($labelMap) {
             $rawScores = is_array($grade->scores) ? $grade->scores : [];
+            $weeklyScores = is_array($grade->weekly_scores) ? $grade->weekly_scores : [];
+
+            // If final monthly scores haven't been submitted yet, aggregate weekly_scores automatically
+            if (!empty($weeklyScores)) {
+                if (!isset($rawScores['oral_total']) && !isset($rawScores['oral'])) {
+                    $rawScores['oral_total'] = $grade->computeWeeklyOralTotal();
+                }
+                if (!isset($rawScores['homework_total']) && !isset($rawScores['homework'])) {
+                    $rawScores['homework_total'] = $grade->computeWeeklyHomeworkTotal();
+                }
+            }
+
             $total = 0;
             $breakdown = [];
 
@@ -69,7 +81,7 @@ class StudentAppController extends Controller
             }
 
             foreach ($rawScores as $key => $val) {
-                if ($key === 'grand_total' || $key === 'total') continue;
+                if ($key === 'grand_total' || $key === 'total' || $key === 'note') continue;
                 if (is_numeric($val)) {
                     $breakdown[$labelMap[$key] ?? $key] = (float)$val;
                     if (!isset($rawScores['grand_total'])) {
@@ -353,6 +365,7 @@ class StudentAppController extends Controller
 
         $results = \App\Models\SemesterResult::with(['subject', 'semester'])
             ->where('enrollment_id', $enrollment->id)
+            ->where('status', 'locked')
             ->orderBy('semester_id', 'desc')
             ->get();
 
@@ -476,7 +489,7 @@ class StudentAppController extends Controller
             return response()->json(['message' => 'User is not a student'], 403);
         }
 
-        $enrollment = Enrollment::where('student_id', $user->student->id)
+        $enrollment = Enrollment::with('division')->where('student_id', $user->student->id)
             ->where('status', 'active')
             ->first();
 
@@ -484,10 +497,20 @@ class StudentAppController extends Controller
             return response()->json(['message' => 'No active enrollment found'], 404);
         }
 
-        $schedules = \App\Models\ExamScheduleItem::with(['schedule.period', 'subject'])
-            ->where('division_id', $enrollment->division_id)
-            ->whereDate('exam_date', '>=', now()->subDays(7)) // Show recent and upcoming exams
-            ->orderBy('exam_date', 'asc')
+        $query = \App\Models\ExamScheduleItem::with(['schedule.period', 'subject', 'division.grade'])
+            ->where('division_id', $enrollment->division_id);
+
+        if ((clone $query)->count() === 0 && $enrollment->division?->grade_id) {
+            $gradeId = $enrollment->division->grade_id;
+            $query = \App\Models\ExamScheduleItem::with(['schedule.period', 'subject', 'division.grade'])
+                ->whereHas('division', fn($q) => $q->where('grade_id', $gradeId));
+        }
+
+        if ($request->boolean('upcoming_only')) {
+            $query->whereDate('exam_date', '>=', now()->subDays(7));
+        }
+
+        $schedules = $query->orderBy('exam_date', 'asc')
             ->orderBy('start_time', 'asc')
             ->get();
 
@@ -617,6 +640,23 @@ class StudentAppController extends Controller
 
         $studentId = $user->student->id;
 
+        // Automatically mark discipline/violation/pledge notifications as seen/read by this student
+        $unreadNotifications = \App\Models\Notification::whereIn('type', ['violation', 'pledge', 'discipline'])
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhereJsonContains('target_users', $user->id);
+            })
+            ->get();
+        foreach ($unreadNotifications as $notif) {
+            if ($notif->user_id === $user->id && !$notif->is_read) {
+                $notif->update(['is_read' => true]);
+            }
+            \App\Models\UserNotificationRead::firstOrCreate(
+                ['user_id' => $user->id, 'notification_id' => $notif->id],
+                ['read_at' => now()]
+            );
+        }
+
         // Get Violations
         $violations = StudentViolation::with(['violationType', 'supervisor'])
             ->where('student_id', $studentId)
@@ -632,6 +672,7 @@ class StudentAppController extends Controller
                     'details' => $violation->details,
                     'action_taken' => $violation->action_taken,
                     'status' => $violation->status,
+                    'attachment_url' => $violation->attachment_path ? asset('storage/' . $violation->attachment_path) : null,
                 ];
             });
 
@@ -648,6 +689,9 @@ class StudentAppController extends Controller
                     'date' => Carbon::parse($pledge->date)->format('Y-m-d'),
                     'is_signed_by_student' => (bool)$pledge->is_signed_by_student,
                     'is_signed_by_parent' => (bool)$pledge->is_signed_by_parent,
+                    'attachment_url' => $pledge->attachment_path ? asset('storage/' . $pledge->attachment_path) : null,
+                    'student_signature_url' => $pledge->student_signature_path ? asset('storage/' . $pledge->student_signature_path) : null,
+                    'parent_signature_url' => $pledge->parent_signature_path ? asset('storage/' . $pledge->parent_signature_path) : null,
                 ];
             });
 
@@ -689,9 +733,19 @@ class StudentAppController extends Controller
             return response()->json(['message' => 'تم توقيع هذا التعهد مسبقاً'], 400);
         }
 
-        $pledge->update([
-            'is_signed_by_student' => true,
-        ]);
+        $updateData = ['is_signed_by_student' => true];
+        $sigInput = $request->input('signature') ?? $request->input('signature_data');
+        if ($sigInput && is_string($sigInput)) {
+            $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $sigInput);
+            $decoded = base64_decode($base64);
+            if ($decoded) {
+                $fileName = 'pledges/signatures/student_' . $pledge->id . '_' . uniqid() . '.png';
+                \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $decoded);
+                $updateData['student_signature_path'] = $fileName;
+            }
+        }
+
+        $pledge->update($updateData);
 
         return response()->json([
             'status' => 'success',
@@ -710,6 +764,23 @@ class StudentAppController extends Controller
         }
 
         $studentId = $user->student->id;
+
+        // Automatically mark achievement notifications as seen/read by this student
+        $unreadNotifications = \App\Models\Notification::whereIn('type', ['achievement', 'gamification'])
+            ->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhereJsonContains('target_users', $user->id);
+            })
+            ->get();
+        foreach ($unreadNotifications as $notif) {
+            if ($notif->user_id === $user->id && !$notif->is_read) {
+                $notif->update(['is_read' => true]);
+            }
+            \App\Models\UserNotificationRead::firstOrCreate(
+                ['user_id' => $user->id, 'notification_id' => $notif->id],
+                ['read_at' => now()]
+            );
+        }
 
         $achievements = StudentAchievement::with(['type', 'awardedBy'])
             ->where('student_id', $studentId)

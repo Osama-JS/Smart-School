@@ -112,6 +112,7 @@ class StudyPlanController extends Controller
             abort(403, 'لا تملك صلاحية حذف هذه الخطة');
         }
         if ($studyPlan->attachment_path) {
+            Storage::disk('public')->delete($studyPlan->attachment_path);
             Storage::disk('local')->delete($studyPlan->attachment_path);
         }
 
@@ -159,10 +160,11 @@ class StudyPlanController extends Controller
         if (\Illuminate\Support\Facades\Auth::user()->cannot('download', $studyPlan)) {
             abort(403, 'لا تملك صلاحية تحميل هذه الخطة');
         }
-        if (empty($studyPlan->attachment_path) || !Storage::disk('local')->exists($studyPlan->attachment_path)) {
+        $disk = (!empty($studyPlan->attachment_path) && Storage::disk('public')->exists($studyPlan->attachment_path)) ? 'public' : 'local';
+        if (empty($studyPlan->attachment_path) || !Storage::disk($disk)->exists($studyPlan->attachment_path)) {
             abort(404, 'الملف غير موجود');
         }
 
-        return Storage::disk('local')->download($studyPlan->attachment_path, $studyPlan->title . '.' . pathinfo($studyPlan->attachment_path, PATHINFO_EXTENSION));
+        return Storage::disk($disk)->download($studyPlan->attachment_path, $studyPlan->title . '.' . pathinfo($studyPlan->attachment_path, PATHINFO_EXTENSION));
     }
 }

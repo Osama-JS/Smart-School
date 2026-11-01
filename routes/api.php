@@ -160,8 +160,11 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
 
     // Teacher Study Plans
     Route::get('/study-plans', [MobileFeaturesController::class, 'getStudyPlans']);
+    Route::get('/mobile/features/study-plans', [MobileFeaturesController::class, 'getStudyPlans']);
     Route::get('/study-plans/{studyPlan}', [MobileFeaturesController::class, 'getStudyPlanDetails']);
+    Route::get('/mobile/features/study-plans/{studyPlan}', [MobileFeaturesController::class, 'getStudyPlanDetails']);
     Route::post('/study-plans/{studyPlan}/comments', [MobileFeaturesController::class, 'storeStudyPlanComment']);
+    Route::post('/mobile/features/study-plans/{studyPlan}/comments', [MobileFeaturesController::class, 'storeStudyPlanComment']);
 
     // Teacher Monthly Grades Entry
     Route::get('/teacher/monthly-grades/form-data', [MobileFeaturesController::class, 'getMonthlyGradesFormData']);

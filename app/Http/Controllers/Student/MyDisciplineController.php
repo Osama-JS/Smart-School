@@ -81,14 +81,18 @@ class MyDisciplineController extends Controller
         $user = auth()->user();
         $studentId = $user->role->name === 'طالب' ? $user->student?->id : null;
         
-        // Let parents sign the pledge too if needed, or maybe just students. 
-        // For now, let's keep the existing logic or allow parents.
-        if ($user->role->name === 'ولي أمر') {
-            $studentId = $pledge->student_id; // Parent can sign any of their children's pledges?
-            // Optionally check if the pledge's student belongs to the parent
+        if (in_array($user->role?->name, ['ولي أمر', 'ولي امر'])) {
+            $studentId = $pledge->student_id;
             if (!$user->children()->where('students.id', $studentId)->exists()) {
                 abort(403);
             }
+            if ($pledge->student_id !== $studentId) {
+                abort(403);
+            }
+            $pledge->update([
+                'is_signed_by_parent' => true,
+            ]);
+            return back()->with('success', 'تم توقيع التعهد من قِبل ولي الأمر بنجاح');
         }
         
         if ($pledge->student_id !== $studentId) {

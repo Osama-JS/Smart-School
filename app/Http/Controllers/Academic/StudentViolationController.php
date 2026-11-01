@@ -198,6 +198,28 @@ class StudentViolationController extends Controller
                 'academic_supervisor'
             );
 
+            // In-App Notification to Student & Parents (tracked via UserNotificationRead when seen)
+            $targetUsers = [];
+            if ($violation->student?->user_id) {
+                $targetUsers[] = $violation->student->user_id;
+            }
+            if ($violation->student?->parents) {
+                $targetUsers = array_merge($targetUsers, $violation->student->parents->pluck('id')->toArray());
+            }
+            $targetUsers = array_values(array_unique(array_filter($targetUsers)));
+            if (!empty($targetUsers)) {
+                \App\Models\Notification::create([
+                    'sender_id' => auth()->id(),
+                    'branch_id' => $violation->branch_id,
+                    'title' => 'مخالفة سلوكية جديدة: ' . $studentName,
+                    'message' => 'تم تسجيل مخالفة سلوكية (' . ($violation->violationType?->name ?? 'مخالفة') . ') للطالب ' . $studentName,
+                    'type' => 'violation',
+                    'target_type' => 'users',
+                    'target_users' => $targetUsers,
+                    'is_read' => false,
+                ]);
+            }
+
             // Escalation Engine Logic
             $repetitionCount = $escalationService->processEscalation($violation);
             
