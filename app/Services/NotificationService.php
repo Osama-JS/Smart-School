@@ -192,8 +192,8 @@ class NotificationService
         }
 
         $now = time();
-        $header = base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
-        $claimSet = base64_encode(json_encode([
+        $header = $this->base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+        $claimSet = $this->base64UrlEncode(json_encode([
             'iss'   => $serviceAccount['client_email'],
             'scope' => 'https://www.googleapis.com/auth/firebase.messaging',
             'aud'   => 'https://oauth2.googleapis.com/token',
@@ -208,8 +208,8 @@ class NotificationService
         }
 
         $signature = '';
-        openssl_sign($rawHeaderAndPayload, $signature, $privateKey, 'SHA256');
-        $jwt = $rawHeaderAndPayload . '.' . base64_encode($signature);
+        openssl_sign($rawHeaderAndPayload, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+        $jwt = $rawHeaderAndPayload . '.' . $this->base64UrlEncode($signature);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, 'https://oauth2.googleapis.com/token');
@@ -231,6 +231,14 @@ class NotificationService
         }
 
         return null;
+    }
+
+    /**
+     * تشفير Base64URL متوافق مع معايير JWT (RFC 7519)
+     */
+    private function base64UrlEncode($data)
+    {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
     /**
