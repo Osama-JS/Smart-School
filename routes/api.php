@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/mobile/features/teacher/class-attendances/today', [ClassAttendanceController::class, 'getTeacherTodaySchedule']);
     Route::post('/teacher/class-attendances/get-students', [ClassAttendanceController::class, 'getStudents']);
     Route::post('/mobile/features/teacher/class-attendances/get-students', [ClassAttendanceController::class, 'getStudents']);
+    Route::post('/teacher/class-attendances/save', [ClassAttendanceController::class, 'store']);
     Route::post('/mobile/features/teacher/class-attendances/save', [ClassAttendanceController::class, 'store']);
 
     // Academic Daily Student Attendance (matching academic/attendances)
@@ -143,6 +144,7 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/parent/children/{student_id}/summons', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildSummons']);
     Route::get('/parent/children/{student_id}/visits', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildVisits']);
     Route::get('/parent/children/{student_id}/library', [\App\Http\Controllers\Api\ParentAppController::class, 'getChildLibraryItems']);
+    Route::get('/parent/library', [\App\Http\Controllers\Api\ParentAppController::class, 'getGeneralLibraryItems']);
     // Notifications (reusing NotificationController JSON responses)
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index']);
     Route::get('/notifications/all', [\App\Http\Controllers\NotificationController::class, 'myNotifications']);
@@ -157,6 +159,9 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/my-reports/templates/{id}', [MobileFeaturesController::class, 'getReportTemplateDetails']);
     Route::post('/my-reports/submit/{id}', [MobileFeaturesController::class, 'submitReport']);
     Route::get('/my-reports', [MobileFeaturesController::class, 'getMyReports']);
+    Route::get('/my-reports/reports', [MobileFeaturesController::class, 'getMyReports']);
+    Route::get('/mobile/features/my-reports', [MobileFeaturesController::class, 'getMyReports']);
+    Route::get('/mobile/features/my-reports/reports', [MobileFeaturesController::class, 'getMyReports']);
 
     // Teacher Study Plans
     Route::get('/study-plans', [MobileFeaturesController::class, 'getStudyPlans']);
@@ -249,5 +254,9 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::post('/teacher/parent-visits/{id}/convert-achievement', [MobileFeaturesController::class, 'convertParentVisitToAchievement']);
     Route::post('/teacher/parent-visits/{id}/convert-violation', [MobileFeaturesController::class, 'convertParentVisitToViolation']);
     Route::get('/teacher/students-list', [MobileFeaturesController::class, 'getTeacherStudentsList']);
+
+    // Leave Balances & Leave Consumption History
+    Route::get('/leave-balances', [MobileFeaturesController::class, 'getMyLeaveBalances']);
+    Route::get('/my-leave-balances', [MobileFeaturesController::class, 'getMyLeaveBalances']);
 });
 

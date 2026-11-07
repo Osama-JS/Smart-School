@@ -15,7 +15,6 @@ use Inertia\Inertia;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Spatie\LaravelPdf\Facades\Pdf;
 
 class FollowupBookController extends Controller
 {
@@ -455,7 +454,7 @@ class FollowupBookController extends Controller
         $data = $this->getFilterData($request);
         
         $printSettings = json_decode($request->input('printSettings', '{}'), true);
-        $paperSize = $printSettings['paperSize'] ?? 'A4';
+        $paperSize = $printSettings['paperSize'] ?? 'a4';
         $brandColor = $printSettings['brandColor'] ?? '#63a22f';
         $orientation = $printSettings['orientation'] ?? 'portrait';
         $marginSetting = $printSettings['margins'] ?? 'normal';
@@ -466,11 +465,6 @@ class FollowupBookController extends Controller
             '2cm' => [20, 20, 20, 20],
             default => [15, 15, 15, 15],
         };
-
-        if ($orientation === 'landscape') {
-            $paperSize = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
-            $margins = [$margins[0], $margins[1], $margins[2], $margins[3]];
-        }
 
         $data['printSettings'] = $printSettings;
         $data['brandColor'] = $brandColor;
@@ -495,23 +489,62 @@ class FollowupBookController extends Controller
             </div>
         ';
 
-        $pdf = Pdf::view('pdf.hr.followup-books', $data)
-            ->format($paperSize)
-            ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
-            ->footerHtml($footerHtml);
+        if (class_exists('\Spatie\LaravelPdf\Facades\Pdf')) {
+            try {
+                $format = $paperSize;
+                if ($orientation === 'landscape' && class_exists('\Spatie\LaravelPdf\Enums\Format')) {
+                    $format = \Spatie\LaravelPdf\Enums\Format::tryFrom(strtolower($paperSize)) ?? \Spatie\LaravelPdf\Enums\Format::A4;
+                }
 
-        if ($orientation === 'landscape') {
-            $pdf->landscape();
+                $pdf = \Spatie\LaravelPdf\Facades\Pdf::view('pdf.hr.followup-books', $data)
+                    ->format($format)
+                    ->margins($margins[0], $margins[1], $margins[2] + 12, $margins[3])
+                    ->footerHtml($footerHtml);
+
+                if ($orientation === 'landscape') {
+                    $pdf->landscape();
+                }
+
+                return $pdf->withBrowsershot(function ($browsershot) {
+                    if (PHP_OS_FAMILY === 'Windows') {
+                        $chromePaths = [
+                            'C:\Program Files\Google\Chrome\Application\chrome.exe',
+                            'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+                            'C:\Users\\' . get_current_user() . '\AppData\Local\Google\Chrome\Application\chrome.exe',
+                        ];
+                        foreach ($chromePaths as $path) {
+                            if (file_exists($path)) {
+                                $browsershot->setChromePath($path);
+                                break;
+                            }
+                        }
+                    } else {
+                        $linuxChromePaths = [
+                            '/usr/bin/google-chrome',
+                            '/usr/bin/google-chrome-stable',
+                            '/usr/bin/chromium-browser',
+                            '/usr/bin/chromium',
+                            '/snap/bin/chromium',
+                        ];
+                        foreach ($linuxChromePaths as $path) {
+                            if (file_exists($path)) {
+                                $browsershot->setChromePath($path);
+                                break;
+                            }
+                        }
+                        $browsershot->setIncludePath('$PATH:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin:/usr/local/nvm/current/bin');
+                    }
+                    $browsershot->noSandbox()
+                               ->showBackground()
+                               ->waitUntilNetworkIdle()
+                               ->delay(2000);
+                })->download('followup_books_report.pdf');
+            } catch (\Throwable $e) {
+                \Log::warning('PDF generation via Browsershot failed (' . $e->getMessage() . '), falling back to printable view.');
+            }
         }
 
-        return $pdf->withBrowsershot(function ($browsershot) {
-                $browsershot->setChromePath('C:\Program Files (x86)\Google\Chrome\Application\chrome.exe')
-                           ->noSandbox()
-                           ->showBackground()
-                           ->waitUntilNetworkIdle()
-                           ->delay(2000);
-            })
-            ->download('followup_books_report.pdf');
+        return response()->view('pdf.hr.followup-books', array_merge($data, ['autoPrint' => true]), 200, ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
     public function show(Request $request, User $teacher)

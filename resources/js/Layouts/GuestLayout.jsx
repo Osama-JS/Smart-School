@@ -23,7 +23,7 @@ export default function GuestLayout({ children }) {
                         />
                         <div>
                             <h2 className="font-extrabold text-white text-2xl tracking-tight">مدارس القيم</h2>
-                            <span className="text-xs text-primary-300 font-medium">نظام القيم ERP المتكامل</span>
+                            <span className="text-xs text-primary-300 font-medium">المنظومة المدرسية الذكية</span>
                         </div>
                     </Link>
 
@@ -99,7 +99,7 @@ export default function GuestLayout({ children }) {
                                 <h1 className="font-black text-slate-900 dark:text-white text-xl sm:text-2xl">مدارس القيم</h1>
                                 <p className="text-xs text-slate-500 mt-1 flex items-center justify-center gap-1">
                                     <Sparkles size={11} className="text-primary-500" />
-                                    نظام القيم ERP المتكامل
+                                    المنظومة المدرسية الذكية
                                 </p>
                             </div>
                         </Link>

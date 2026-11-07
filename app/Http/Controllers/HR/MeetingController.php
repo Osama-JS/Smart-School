@@ -403,7 +403,7 @@ class MeetingController extends Controller implements \Illuminate\Routing\Contro
         $validated = $request->validate([
             'participants' => 'required|array',
             'participants.*.id' => 'required|exists:meeting_participants,id',
-            'participants.*.status' => 'required|in:attended,absent,pending',
+            'participants.*.status' => 'required|in:attended,absent,pending,excused',
         ]);
 
         foreach ($validated['participants'] as $participantData) {

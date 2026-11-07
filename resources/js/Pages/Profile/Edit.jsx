@@ -8,7 +8,7 @@ import { User } from 'lucide-react';
 export default function Edit({ mustVerifyEmail, status }) {
     return (
         <AdminLayout activeMenu="الملف الشخصي">
-            <Head title="الملف الشخصي | نظام القيم ERP" />
+            <Head title="الملف الشخصي | مدارس القيم" />
 
             <div className="space-y-8 animate-fade-in pb-12">
                 {/* Header Section */}

@@ -74,6 +74,10 @@ class ParentAppController extends Controller
             ->where('status', 'active')
             ->first();
 
+        if (!$enrollment) {
+            $enrollment = Enrollment::with('division')->where('student_id', $student_id)->latest()->first();
+        }
+
         $academicYear = null;
         $activeSemester = null;
         if ($enrollment) {
@@ -92,13 +96,17 @@ class ParentAppController extends Controller
             $academicYear = $activeSemester ? $activeSemester->academicYear : \App\Models\AcademicYear::where('is_active', true)->first();
         }
 
+        if (!$academicYear) {
+            $academicYear = \App\Models\AcademicYear::latest()->first();
+        }
+
         $daily = collect();
 
-        if ($child->user_id && $activeSemester && $academicYear) {
+        if ($child->user_id && $academicYear) {
             $requestedStart = \Carbon\Carbon::create($year, $month, 1)->startOfDay();
             $requestedEnd = \Carbon\Carbon::create($year, $month, 1)->endOfMonth();
 
-            $boundStart = $activeSemester && $activeSemester->start_date ? \Carbon\Carbon::parse($activeSemester->start_date)->startOfDay() : \Carbon\Carbon::parse($academicYear->start_date)->startOfDay();
+            $boundStart = $activeSemester && $activeSemester->start_date ? \Carbon\Carbon::parse($activeSemester->start_date)->startOfDay() : ($academicYear->start_date ? \Carbon\Carbon::parse($academicYear->start_date)->startOfDay() : $requestedStart);
             
             $boundEndObj = null;
             if ($activeSemester && $activeSemester->end_date) {
@@ -111,6 +119,11 @@ class ParentAppController extends Controller
 
             $startDate = max($requestedStart, $boundStart);
             $endDate = min($requestedEnd, $boundEndObj, \Carbon\Carbon::today()->endOfDay());
+
+            if ($startDate->gt($endDate) && $requestedStart->lte(\Carbon\Carbon::today()->endOfDay())) {
+                $startDate = $requestedStart;
+                $endDate = min($requestedEnd, \Carbon\Carbon::today()->endOfDay());
+            }
             
             if ($startDate->lte($endDate)) {
                 $workingDays = $academicYear->working_days ?? [];
@@ -247,26 +260,48 @@ class ParentAppController extends Controller
             }
         } else {
             if ($child->user_id) {
-                $daily = AttendanceLog::where('user_id', $child->user_id)
-                    ->orderBy('attendance_date', 'desc')
-                    ->take(30)
+                $requestedStart = \Carbon\Carbon::create($year, $month, 1)->startOfDay();
+                $endDate = min(\Carbon\Carbon::create($year, $month, 1)->endOfMonth(), \Carbon\Carbon::today()->endOfDay());
+                $currentDate = $requestedStart->copy();
+                $arabicDays = [
+                    'Sunday' => 'الأحد', 'Monday' => 'الإثنين', 'Tuesday' => 'الثلاثاء', 
+                    'Wednesday' => 'الأربعاء', 'Thursday' => 'الخميس', 'Friday' => 'الجمعة', 'Saturday' => 'السبت'
+                ];
+                $workingDaysEnglish = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+
+                $actualLogs = AttendanceLog::where('user_id', $child->user_id)
+                    ->whereBetween('attendance_date', [$requestedStart->toDateString(), $endDate->toDateString()])
                     ->get()
-                    ->map(function ($log) {
-                        $dateStr = \Carbon\Carbon::parse($log->attendance_date)->toDateString();
-                        $arabicDays = [
-                            'Sunday' => 'الأحد', 'Monday' => 'الإثنين', 'Tuesday' => 'الثلاثاء', 
-                            'Wednesday' => 'الأربعاء', 'Thursday' => 'الخميس', 'Friday' => 'الجمعة', 'Saturday' => 'السبت'
-                        ];
-                        return [
-                            'id' => $log->id,
-                            'date' => $dateStr,
-                            'day_name' => $arabicDays[\Carbon\Carbon::parse($dateStr)->englishDayOfWeek] ?? '',
-                            'status' => $log->status,
-                            'total_classes' => 0,
-                            'attended_classes' => 0,
-                            'classes_details' => [],
-                        ];
+                    ->keyBy(function($log) {
+                        return \Carbon\Carbon::parse($log->attendance_date)->toDateString();
                     });
+
+                while ($currentDate->lte($endDate)) {
+                    $dateStr = $currentDate->toDateString();
+                    $dayName = $currentDate->englishDayOfWeek;
+                    $dayNameAr = $arabicDays[$dayName] ?? $dayName;
+
+                    $status = 'absent';
+                    if ($actualLogs->has($dateStr)) {
+                        $status = $actualLogs->get($dateStr)->status;
+                    } elseif (!in_array($dayName, $workingDaysEnglish)) {
+                        $status = 'weekend';
+                    }
+
+                    $daily->push([
+                        'id' => $actualLogs->has($dateStr) ? $actualLogs->get($dateStr)->id : 'day_' . $dateStr,
+                        'date' => $dateStr,
+                        'day_name' => $dayNameAr,
+                        'status' => $status,
+                        'total_classes' => 0,
+                        'attended_classes' => 0,
+                        'classes_details' => [],
+                    ]);
+
+                    $currentDate->addDay();
+                }
+
+                $daily = $daily->sortByDesc('date')->values();
             }
         }
 
@@ -997,17 +1032,20 @@ class ParentAppController extends Controller
             ->where('status', 'active')
             ->first();
 
-        if (!$enrollment || !$enrollment->division) {
-            return response()->json(['message' => 'No active enrollment or division found'], 404);
+        if (!$enrollment) {
+            $enrollment = Enrollment::with('division')->where('student_id', $student_id)->latest()->first();
         }
 
-        $gradeId = $enrollment->division->grade_id;
+        $gradeId = $enrollment?->division?->grade_id;
 
         $query = LibraryItem::with(['subject', 'uploader'])
             ->where(function($q) use ($gradeId) {
-                // Show items specifically for their grade, or items available for all grades (grade_id = null)
-                $q->where('grade_id', $gradeId)
-                  ->orWhereNull('grade_id');
+                if ($gradeId) {
+                    $q->where('grade_id', $gradeId)
+                      ->orWhereNull('grade_id');
+                } else {
+                    $q->whereNull('grade_id');
+                }
             })
             ->where(function($q) {
                 // Target audience can be null, 'all', 'students', or 'parents'
@@ -1017,19 +1055,97 @@ class ParentAppController extends Controller
                   ->orWhere('target_audience', 'parents');
             });
 
+        // Search query
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
         // Filter by subject if requested
-        if ($request->has('subject_id')) {
+        if ($request->has('subject_id') && $request->input('subject_id') != 'all') {
             $query->where('subject_id', $request->input('subject_id'));
         }
 
-        // Filter by category (e.g., video, document)
-        if ($request->has('category')) {
+        // Filter by category
+        if ($request->has('category') && $request->input('category') != 'all') {
             $query->where('category', $request->input('category'));
         }
 
         $items = $query->orderBy('created_at', 'desc')->paginate(15);
 
         // Transform pagination items cleanly
+        $items->getCollection()->transform(function ($item) {
+            return [
+                'id' => $item->id,
+                'title' => $item->title,
+                'category' => $item->category,
+                'item_type' => $item->item_type,
+                'file_url' => $item->file_url,
+                'thumbnail_url' => $item->thumbnail_url,
+                'subject_name' => $item->subject?->name ?? 'عام',
+                'uploader_name' => $item->uploader?->name ?? 'إدارة المدرسة',
+                'views_count' => $item->views_count,
+                'created_at_formatted' => $item->created_at->format('Y-m-d'),
+                'description' => $item->description,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $items
+        ]);
+    }
+
+    /**
+     * Get digital library items for parent (across their children's grades).
+     */
+    public function getGeneralLibraryItems(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $childrenIds = $user->children()->pluck('students.id')->toArray();
+        $gradeIds = Enrollment::whereIn('student_id', $childrenIds)
+            ->with('division')
+            ->get()
+            ->pluck('division.grade_id')
+            ->filter()
+            ->unique()
+            ->toArray();
+
+        $query = LibraryItem::with(['subject', 'uploader'])
+            ->where(function($q) use ($gradeIds) {
+                if (!empty($gradeIds)) {
+                    $q->whereIn('grade_id', $gradeIds)->orWhereNull('grade_id');
+                } else {
+                    $q->whereNull('grade_id');
+                }
+            })
+            ->where(function($q) {
+                $q->whereNull('target_audience')
+                  ->orWhere('target_audience', 'all')
+                  ->orWhere('target_audience', 'parents')
+                  ->orWhere('target_audience', 'students');
+            });
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('category') && $request->input('category') != 'all') {
+            $query->where('category', $request->input('category'));
+        }
+
+        $items = $query->orderBy('created_at', 'desc')->paginate(15);
         $items->getCollection()->transform(function ($item) {
             return [
                 'id' => $item->id,

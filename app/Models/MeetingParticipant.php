@@ -14,7 +14,8 @@ class MeetingParticipant extends Model
     protected $fillable = [
         'meeting_id',
         'user_id',
-        'attendance_status'
+        'attendance_status',
+        'notes',
     ];
 
     public function meeting()

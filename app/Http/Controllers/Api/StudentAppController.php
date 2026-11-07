@@ -136,6 +136,10 @@ class StudentAppController extends Controller
             ->where('status', 'active')
             ->first();
 
+        if (!$enrollment) {
+            $enrollment = Enrollment::with('division')->where('student_id', $user->student->id)->latest()->first();
+        }
+
         // Find the active semester and academic year
         $academicYear = null;
         $activeSemester = null;
@@ -155,13 +159,17 @@ class StudentAppController extends Controller
             $academicYear = $activeSemester ? $activeSemester->academicYear : \App\Models\AcademicYear::where('is_active', true)->first();
         }
 
+        if (!$academicYear) {
+            $academicYear = \App\Models\AcademicYear::latest()->first();
+        }
+
         $daily = collect();
 
         if ($academicYear) {
             $requestedStart = \Carbon\Carbon::create($year, $month, 1)->startOfDay();
             $requestedEnd = \Carbon\Carbon::create($year, $month, 1)->endOfMonth();
 
-            $boundStart = $activeSemester && $activeSemester->start_date ? \Carbon\Carbon::parse($activeSemester->start_date)->startOfDay() : \Carbon\Carbon::parse($academicYear->start_date)->startOfDay();
+            $boundStart = $activeSemester && $activeSemester->start_date ? \Carbon\Carbon::parse($activeSemester->start_date)->startOfDay() : ($academicYear->start_date ? \Carbon\Carbon::parse($academicYear->start_date)->startOfDay() : $requestedStart);
             
             $boundEndObj = null;
             if ($activeSemester && $activeSemester->end_date) {
@@ -174,6 +182,11 @@ class StudentAppController extends Controller
 
             $startDate = max($requestedStart, $boundStart);
             $endDate = min($requestedEnd, $boundEndObj, \Carbon\Carbon::today()->endOfDay());
+
+            if ($startDate->gt($endDate) && $requestedStart->lte(\Carbon\Carbon::today()->endOfDay())) {
+                $startDate = $requestedStart;
+                $endDate = min($requestedEnd, \Carbon\Carbon::today()->endOfDay());
+            }
             
             if ($startDate->lte($endDate)) {
                 $workingDays = $academicYear->working_days ?? [];
@@ -573,17 +586,20 @@ class StudentAppController extends Controller
             ->where('status', 'active')
             ->first();
 
-        if (!$enrollment || !$enrollment->division) {
-            return response()->json(['message' => 'No active enrollment or division found'], 404);
+        if (!$enrollment) {
+            $enrollment = Enrollment::with('division')->where('student_id', $user->student->id)->latest()->first();
         }
 
-        $gradeId = $enrollment->division->grade_id;
+        $gradeId = $enrollment?->division?->grade_id;
 
         $query = \App\Models\LibraryItem::with(['subject', 'uploader'])
             ->where(function($q) use ($gradeId) {
-                // Show items specifically for their grade, or items available for all grades (grade_id = null)
-                $q->where('grade_id', $gradeId)
-                  ->orWhereNull('grade_id');
+                if ($gradeId) {
+                    $q->where('grade_id', $gradeId)
+                      ->orWhereNull('grade_id');
+                } else {
+                    $q->whereNull('grade_id');
+                }
             })
             ->where(function($q) {
                 // Target audience can be null, 'all', or 'students'
@@ -592,13 +608,22 @@ class StudentAppController extends Controller
                   ->orWhere('target_audience', 'students');
             });
 
+        // Search query
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
         // Filter by subject if requested
-        if ($request->has('subject_id')) {
+        if ($request->has('subject_id') && $request->input('subject_id') != 'all') {
             $query->where('subject_id', $request->input('subject_id'));
         }
 
-        // Filter by category (e.g., video, document)
-        if ($request->has('category')) {
+        // Filter by category
+        if ($request->has('category') && $request->input('category') != 'all') {
             $query->where('category', $request->input('category'));
         }
 

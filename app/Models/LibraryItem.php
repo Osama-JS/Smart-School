@@ -20,7 +20,13 @@ class LibraryItem extends Model
         if ($this->external_url) {
             return $this->external_url;
         }
-        return $this->file_path ? asset('storage/' . $this->file_path) : null;
+        if (!$this->file_path) {
+            return null;
+        }
+        if (request() && request()->root() && !str_contains(request()->root(), 'localhost')) {
+            return request()->root() . '/storage/' . $this->file_path;
+        }
+        return asset('storage/' . $this->file_path);
     }
 
     public function getThumbnailUrlAttribute()

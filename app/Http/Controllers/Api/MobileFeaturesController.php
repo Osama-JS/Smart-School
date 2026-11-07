@@ -3281,6 +3281,7 @@ class MobileFeaturesController extends Controller
                     'name' => $p->user?->name ?? 'مستخدم',
                     'job_title' => $p->user?->employee?->jobGrade?->name ?? 'موظف',
                     'attendance_status' => $p->attendance_status ?? 'pending',
+                    'notes' => $p->notes,
                 ];
             });
 
@@ -3304,6 +3305,7 @@ class MobileFeaturesController extends Controller
                 'outcomes' => $m->outcomes,
                 'recommendations' => $m->recommendations,
                 'my_attendance_status' => $myParticipation ? ($myParticipation->attendance_status ?? 'pending') : 'pending',
+                'my_attendance_notes' => $myParticipation ? $myParticipation->notes : null,
                 'stats' => [
                     'total_participants' => $m->participants->count(),
                     'attended' => $attendedCount,
@@ -3343,6 +3345,7 @@ class MobileFeaturesController extends Controller
             ],
             [
                 'attendance_status' => $request->status,
+                'notes' => $request->notes,
             ]
         );
 
@@ -3350,11 +3353,12 @@ class MobileFeaturesController extends Controller
             'success' => true,
             'message' => $request->status === 'attended' 
                 ? 'تم تأكيد حضورك للاجتماع بنجاح ✓' 
-                : ($request->status === 'excused' ? 'تم تسجيل طلب الاعتذار عن الحضور' : 'تم تحديث حالة الحضور'),
+                : ($request->status === 'excused' ? 'تم تسجيل طلب الاعتذار عن الحضور بنجاح' : 'تم تحديث حالة الحضور'),
             'data' => [
                 'id' => $participant->id,
                 'meeting_id' => $meeting->id,
                 'attendance_status' => $participant->attendance_status,
+                'notes' => $participant->notes,
             ]
         ]);
     }
@@ -3561,9 +3565,9 @@ class MobileFeaturesController extends Controller
             'employee_id' => 'nullable|exists:users,id',
             'visit_date' => 'required|date',
             'visit_time' => 'nullable|string',
-            'purpose_category' => 'required|in:أكاديمي,سلوكي,مالي,إداري/أخرى',
+            'purpose_category' => 'required|string|max:100',
             'purpose' => 'nullable|string',
-            'status' => 'required|in:مجدولة,جارية,مكتملة,ملغاة',
+            'status' => 'required|string|max:50',
             'notes' => 'nullable|string',
         ]);
 
@@ -3604,11 +3608,15 @@ class MobileFeaturesController extends Controller
             'employee_id' => 'nullable|exists:users,id',
             'visit_date' => 'required|date',
             'visit_time' => 'nullable|string',
-            'purpose_category' => 'required|in:أكاديمي,سلوكي,مالي,إداري/أخرى',
+            'purpose_category' => 'required|string|max:100',
             'purpose' => 'nullable|string',
-            'status' => 'required|in:مجدولة,جارية,مكتملة,ملغاة',
+            'status' => 'required|string|max:50',
             'notes' => 'nullable|string',
         ]);
+
+        if (empty($validated['employee_id'])) {
+            $validated['employee_id'] = $visit->employee_id ?: $user->id;
+        }
 
         $originalStatus = $visit->status;
         $visit->update($validated);
@@ -3778,6 +3786,146 @@ class MobileFeaturesController extends Controller
         return response()->json([
             'success' => true,
             'data' => $students
+        ]);
+    }
+
+    /**
+     * Get Leave Balances and Consumption Records for current Employee / Staff
+     */
+    public function getMyLeaveBalances(Request $request)
+    {
+        $user = $request->user();
+
+        // Check permission: user must have permission to view leaves/balances
+        $hasPermission = $user->hasPermission('عرض أرصدة الإجازات') 
+            || $user->hasPermission('عرض الإجازات والعطلات')
+            || $user->hasPermission('إدارة الإجازات والعطلات')
+            || in_array($user->role?->name, ['مدير النظام', 'مدير الفرع', 'معلم', 'مدرس']);
+
+        if (!$hasPermission) {
+            return response()->json([
+                'success' => false,
+                'message' => 'عذراً، ليس لديك صلاحية للاطلاع على أرصدة الإجازات.',
+            ], 403);
+        }
+
+        // Find employee associated with user
+        $employee = \App\Models\Employee::where('user_id', $user->id)->first();
+        if (!$employee) {
+            return response()->json([
+                'success' => false,
+                'message' => 'لم يتم العثور على ملف وظيفي مرتبط بهذا الحساب.',
+            ], 404);
+        }
+
+        $branchId = $user->branch_id;
+
+        // Current active academic year
+        $academicYear = \App\Models\AcademicYear::where('is_active', true)
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->first();
+
+        if (!$academicYear) {
+            $academicYear = \App\Models\AcademicYear::when($branchId, fn($q) => $q->where('branch_id', $branchId))->latest()->first();
+        }
+
+        $academicYearId = $academicYear?->id;
+
+        // Fetch leave types for current branch or all
+        $leaveTypes = \App\Models\LeaveType::when($branchId, fn($q) => $q->where('branch_id', $branchId))->get();
+        if ($leaveTypes->isEmpty()) {
+            $leaveTypes = \App\Models\LeaveType::all();
+        }
+
+        // Fetch custom balances for this employee in this academic year
+        $existingBalances = \App\Models\LeaveBalance::where('employee_id', $employee->id)
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->get()
+            ->keyBy('leave_type_id');
+
+        // Fetch all leaves for this employee
+        $allLeaves = \App\Models\Leave::with(['leaveType', 'academicYear', 'semester'])
+            ->where('employee_id', $employee->id)
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        // Calculate balances per leave type
+        $balancesList = [];
+        $totalEntitled = 0;
+        $totalUsed = 0;
+
+        foreach ($leaveTypes as $type) {
+            $balRecord = $existingBalances->get($type->id);
+            $totalDays = $balRecord ? (int)$balRecord->total_days : (int)($type->default_days ?? 0);
+
+            // Approved leaves of this type in this academic year
+            $typeApprovedLeaves = $allLeaves->filter(function($l) use ($type, $academicYearId) {
+                return $l->leave_type_id == $type->id 
+                    && $l->status === 'approved' 
+                    && (!$academicYearId || $l->academic_year_id == $academicYearId);
+            });
+
+            $usedDays = $typeApprovedLeaves->sum(function($l) {
+                return \Carbon\Carbon::parse($l->start_date)->diffInDays(\Carbon\Carbon::parse($l->end_date)) + 1;
+            });
+
+            $remainingDays = max(0, $totalDays - $usedDays);
+            $percent = $totalDays > 0 ? min(100, round(($usedDays / $totalDays) * 100)) : 0;
+
+            $totalEntitled += $totalDays;
+            $totalUsed += $usedDays;
+
+            $balancesList[] = [
+                'leave_type_id' => $type->id,
+                'leave_type_name' => $type->name,
+                'total_days' => $totalDays,
+                'used_days' => $usedDays,
+                'remaining_days' => $remainingDays,
+                'usage_percentage' => $percent,
+            ];
+        }
+
+        $totalRemaining = max(0, $totalEntitled - $totalUsed);
+
+        // Format leave consumption history (كيف تم صرف هذه الأرصدة)
+        $history = $allLeaves->map(function($leave) {
+            $startDate = \Carbon\Carbon::parse($leave->start_date);
+            $endDate = \Carbon\Carbon::parse($leave->end_date);
+            $days = $startDate->diffInDays($endDate) + 1;
+
+            $statusLabels = [
+                'approved' => 'معتمدة ومصروفة',
+                'pending' => 'قيد المراجعة',
+                'rejected' => 'مرفوضة',
+                'cancelled' => 'ملغاة',
+            ];
+
+            return [
+                'id' => $leave->id,
+                'leave_type_name' => $leave->leaveType?->name ?? 'إجازة',
+                'start_date' => $startDate->format('Y-m-d'),
+                'end_date' => $endDate->format('Y-m-d'),
+                'days_count' => $days,
+                'status' => $leave->status,
+                'status_label' => $statusLabels[$leave->status] ?? $leave->status,
+                'reason' => $leave->reason ?? 'لا يوجد سبب محدد',
+                'academic_year' => $leave->academicYear?->name ?? '',
+                'semester' => $leave->semester?->name ?? '',
+                'created_at' => $leave->created_at ? $leave->created_at->format('Y-m-d H:i') : '',
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'summary' => [
+                'academic_year' => $academicYear?->name ?? 'العام الحالي',
+                'total_entitled_days' => $totalEntitled,
+                'total_used_days' => $totalUsed,
+                'total_remaining_days' => $totalRemaining,
+                'leaves_count' => $history->where('status', 'approved')->count(),
+            ],
+            'balances' => $balancesList,
+            'history' => $history,
         ]);
     }
 }

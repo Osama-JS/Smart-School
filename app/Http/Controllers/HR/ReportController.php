@@ -629,6 +629,37 @@ class ReportController extends Controller implements \Illuminate\Routing\Control
             'reviewer_id' => $request->user()->id,
         ]);
 
+        // إرسال إشعار فوري لمقدم التقرير (داخلي + Firebase Push Notification)
+        try {
+            $report->loadMissing(['submitter', 'template']);
+            $submitter = $report->submitter;
+            if ($submitter) {
+                $notificationService = app(\App\Services\NotificationService::class);
+                $templateName = $report->template ? $report->template->name : 'التقرير';
+                $isApproved = $validated['status'] === 'reviewed';
+
+                $title = $isApproved ? "تم اعتماد التقرير: {$templateName}" : "تمت إعادة التقرير: {$templateName}";
+                $message = $isApproved
+                    ? "تمت مراجعة واعتماد تقريرك ({$templateName}) بنجاح من قبل الإدارة."
+                    : "تمت إعادة تقريرك ({$templateName}) من قبل الإدارة لمراجعته وتعديله.";
+
+                if (!empty($validated['manager_notes'])) {
+                    $message .= "\nملاحظات الإدارة: " . $validated['manager_notes'];
+                }
+
+                $notificationService->sendComprehensiveNotification(
+                    $submitter,
+                    $title,
+                    $message,
+                    'report_review',
+                    true,
+                    $request->user()->id
+                );
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('فشل إرسال إشعار مراجعة التقرير: ' . $e->getMessage());
+        }
+
         $statusText = $validated['status'] === 'reviewed' ? 'مراجعة واعتماد' : 'إعادة';
         return redirect()->route('reports.index')->with('success', "تم $statusText التقرير بنجاح");
     }
