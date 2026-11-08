@@ -104,7 +104,10 @@ class EmployeeViolationController extends Controller implements \Illuminate\Rout
 
         $violation->save();
 
-        return back()->with('success', 'تم تسجيل المخالفة بنجاح.');
+        // إرسال الإشعار التلقائي للموظف (تطبيق الجوال وداخلي)
+        app(\App\Services\AutomaticNotificationService::class)->notifyEmployeeViolation($violation);
+
+        return back()->with('success', 'تم تسجيل المخالفة بنجاح وإشعار الموظف.');
     }
 
     public function update(Request $request, EmployeeViolation $employeeViolation)

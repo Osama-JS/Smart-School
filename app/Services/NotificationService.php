@@ -60,10 +60,12 @@ class NotificationService
 
     /**
      * إرسال إشعار دفع عبر فايربيس (Firebase Cloud Messaging HTTP v1 API)
+     * يدعم تمرير كائن User أو FCM Token نصي مباشرة
      */
-    public function sendFirebaseNotification(User $user, $title, $body, $data = [])
+    public function sendFirebaseNotification($userOrToken, $title, $body, $data = [])
     {
-        if (empty($user->fcm_token)) {
+        $token = is_string($userOrToken) ? $userOrToken : ($userOrToken->fcm_token ?? null);
+        if (empty($token)) {
             return false;
         }
 
@@ -93,7 +95,7 @@ class NotificationService
 
             // تجهيز حمولة الرسالة
             $message = [
-                'token' => (string)$user->fcm_token,
+                'token' => (string)$token,
                 'notification' => [
                     'title' => (string)$title,
                     'body'  => (string)$body,
@@ -146,7 +148,8 @@ class NotificationService
             curl_close($ch);
 
             if ($httpCode >= 200 && $httpCode < 300) {
-                Log::info("تم إرسال إشعار FCM بنجاح للمستخدم: {$user->name} ({$user->id})");
+                $recipientName = is_object($userOrToken) ? ($userOrToken->name . " ({$userOrToken->id})") : substr($token, 0, 15) . '...';
+                Log::info("تم إرسال إشعار FCM بنجاح للمستلم: {$recipientName}");
                 return true;
             } else {
                 Log::error("فشل إرسال إشعار FCM (كود: {$httpCode}): " . $response);

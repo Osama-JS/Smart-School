@@ -287,24 +287,7 @@ class MobileFeaturesController extends Controller
     private function checkAndSendHomeworkNotification(LessonPreparation $preparation, $wasDraft, $user)
     {
         if ($preparation->status === 'published' && $wasDraft && !empty($preparation->homework) && $preparation->division_id) {
-            $studentUserIds = \App\Models\Student::whereIn('id', 
-                \App\Models\Enrollment::where('division_id', $preparation->division_id)->pluck('student_id')
-            )->pluck('user_id')->toArray();
-
-            if (!empty($studentUserIds)) {
-                $subjectName = $preparation->subject ? $preparation->subject->name : 'المادة';
-                \App\Models\Notification::create([
-                    'sender_id' => $user->id,
-                    'branch_id' => $preparation->branch_id,
-                    'title' => 'واجب منزلي جديد: ' . $subjectName,
-                    'message' => 'تم تحديد واجب جديد: ' . $preparation->homework,
-                    'type' => 'homework',
-                    'target_type' => 'students',
-                    'target_role' => 'student',
-                    'target_users' => $studentUserIds,
-                    'is_read' => false
-                ]);
-            }
+            app(\App\Services\AutomaticNotificationService::class)->notifyHomeworkPublished($preparation);
         }
     }
 
@@ -379,6 +362,9 @@ class MobileFeaturesController extends Controller
         }
 
         $newRequest->save();
+
+        // إشعار فوري لمدير الفرع والـ HR بوجود طلب جديد بانتظار الاعتماد
+        app(\App\Services\AutomaticNotificationService::class)->notifyNewEmployeeRequest($newRequest);
 
         return response()->json([
             'success' => true,
@@ -2365,6 +2351,8 @@ class MobileFeaturesController extends Controller
             'attendances.*.status' => 'required|in:present,absent,late,excused',
         ]);
 
+        $autoNotifService = app(\App\Services\AutomaticNotificationService::class);
+
         foreach ($request->attendances as $attendance) {
             \App\Models\AttendanceLog::updateOrCreate(
                 [
@@ -2375,6 +2363,18 @@ class MobileFeaturesController extends Controller
                     'status' => $attendance['status'],
                 ]
             );
+
+            // إرسال إشعار فوري لولي الأمر في حال الغياب أو التأخر
+            if (in_array($attendance['status'], ['absent', 'late'])) {
+                $student = \App\Models\Student::where('user_id', $attendance['student_id'])->first();
+                if ($student) {
+                    $autoNotifService->notifyStudentAbsenceOrLate(
+                        $student,
+                        $attendance['status'],
+                        $request->date
+                    );
+                }
+            }
         }
 
         return response()->json([

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { 
     Search, Filter, Bell, User, Clock, 
     Shield, CheckCircle, AlertTriangle, Info,
-    Eye, ChevronLeft, ChevronRight, Activity, Users, Loader2, X, RefreshCw, Smartphone, Signal, Wifi, Battery, Lightbulb, Zap, SlidersHorizontal, Calendar, ChevronDown, LayoutGrid, List
+    Eye, ChevronLeft, ChevronRight, Activity, Users, Loader2, X, RefreshCw, Smartphone, Signal, Wifi, Battery, Lightbulb, Zap, SlidersHorizontal, Calendar, ChevronDown, LayoutGrid, List, Settings, Send
 } from 'lucide-react';
 import axios from 'axios';
 import Modal from '@/Components/Modal';
@@ -285,13 +285,16 @@ export default function GlobalMonitor({ notifications, stats, filters, roles = [
                                 </p>
                             </div>
 
-                            <div className="flex gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shrink-0">
+                            <div className="flex gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shrink-0 flex-wrap">
+                                <Link href={route('admin.notifications.send')} className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
+                                    <Send size={18} /> إرسال جديد
+                                </Link>
                                 <button className="flex items-center gap-2 px-8 py-3 rounded-xl font-black bg-white dark:bg-slate-800 text-primary-600 shadow-md scale-105 transition-all duration-300">
                                     <Activity size={18} /> نظرة عامة
                                 </button>
-                                <button onClick={() => window.location.reload()} className="flex items-center gap-2 px-8 py-3 rounded-xl font-black text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
-                                    <RefreshCw size={18} /> تحديث
-                                </button>
+                                <Link href={route('admin.notifications.settings')} className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
+                                    <Settings size={18} /> الإعدادات التلقائية
+                                </Link>
                             </div>
                         </div>
                     </div>

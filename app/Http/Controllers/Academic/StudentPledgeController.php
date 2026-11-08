@@ -59,36 +59,8 @@ class StudentPledgeController extends Controller
 
         $pledge = StudentPledge::create($data);
 
-        // Notify parent & student in-app
-        $student = Student::with(['user', 'parents'])->find($validated['student_id']);
-        if ($student) {
-            $targetUsers = [];
-            if ($student->user_id) {
-                $targetUsers[] = $student->user_id;
-            }
-            foreach ($student->parents as $parent) {
-                $targetUsers[] = $parent->id;
-                try {
-                    $parent->notify(new \App\Notifications\StudentPledgeIssuedNotification($pledge));
-                } catch (\Throwable $e) {
-                    // Ignore mail/whatsapp queue error if custom notifications table is used
-                }
-            }
-            $targetUsers = array_values(array_unique(array_filter($targetUsers)));
-            if (!empty($targetUsers)) {
-                $studentName = $student->user?->name ?? 'الطالب';
-                \App\Models\Notification::create([
-                    'sender_id' => auth()->id(),
-                    'branch_id' => $data['branch_id'],
-                    'title' => 'تسجيل تعهد سلوكي: ' . $studentName,
-                    'message' => 'تم إصدار تعهد سلوكي للطالب ' . $studentName . ' يرجى الاطلاع عليه وتوقيعه.',
-                    'type' => 'pledge',
-                    'target_type' => 'users',
-                    'target_users' => $targetUsers,
-                    'is_read' => false,
-                ]);
-            }
-        }
+        // إرسال إشعار فوري لولي الأمر والطالب (تطبيق الجوال وداخلي)
+        app(\App\Services\AutomaticNotificationService::class)->notifyStudentPledge($pledge);
 
         return redirect()->back()->with('success', 'تم إنشاء التعهد بنجاح وإرسال إشعار لولي الأمر');
     }

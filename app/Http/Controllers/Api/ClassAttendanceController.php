@@ -234,6 +234,10 @@ class ClassAttendanceController extends Controller
             }
         }
 
+        $subject = \App\Models\Subject::find($subjectId);
+        $period = \App\Models\DailyPeriod::find($periodId);
+        $autoNotifService = app(\App\Services\AutomaticNotificationService::class);
+
         foreach ($request->attendances as $attendance) {
             $studentId = $attendance['student_id'];
             $status = $attendance['status'];
@@ -254,6 +258,20 @@ class ClassAttendanceController extends Controller
                     'notes' => $notes,
                 ]
             );
+
+            // إرسال إشعار فوري لولي الأمر في حال الغياب أو التأخر
+            if (in_array($status, ['absent', 'late'])) {
+                $student = \App\Models\Student::where('user_id', $studentId)->first();
+                if ($student) {
+                    $autoNotifService->notifyStudentAbsenceOrLate(
+                        $student,
+                        $status,
+                        $date,
+                        $subject?->name,
+                        $period?->period_name ?? "الحصة $periodId"
+                    );
+                }
+            }
         }
 
         return response()->json([

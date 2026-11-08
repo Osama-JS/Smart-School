@@ -97,21 +97,8 @@ class EmployeeAchievementController extends Controller implements \Illuminate\Ro
 
         $achievement->save();
 
-        // إرسال الإشعار للموظف
-        $achievement->load('achievementType');
-        $employeeUser = User::find($achievement->user_id);
-        if ($employeeUser) {
-            // الإشعار الداخلي (لوحة التحكم)
-            $notificationService->sendInternalNotification(
-                $employeeUser->id,
-                'إنجاز جديد: ' . $achievement->achievementType->name,
-                'تم منحك ' . $achievement->points . ' نقطة تقديراً لجهودك.',
-                'achievement'
-            );
-            
-            // إشعار الإيميل (يعمل في الخلفية)
-            $employeeUser->notify(new \App\Notifications\EmployeeAchievementNotification($achievement));
-        }
+        // إرسال الإشعار التلقائي للموظف (تطبيق الجوال وداخلي وإيميل)
+        app(\App\Services\AutomaticNotificationService::class)->notifyEmployeeAchievement($achievement);
 
         return back()->with('success', 'تم تسجيل الإنجاز بنجاح وإشعار الموظف.');
     }

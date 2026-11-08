@@ -116,34 +116,12 @@ class EmployeeRequestController extends Controller
 
         $employeeRequest->save();
 
-        // إرسال إشعار للموظف (Notification & Email)
-        try {
-            $employeeRequest->loadMissing('employee.user');
-            if ($employeeRequest->employee && $employeeRequest->employee->user) {
-                $notificationService = app(\App\Services\NotificationService::class);
-                
-                $statusAr = $request->status === 'approved' ? 'اعتماد' : 'رفض';
-                $typeAr   = EmployeeRequest::TYPES[$employeeRequest->type] ?? 'الطلب';
-                
-                $title   = "تحديث حالة {$typeAr}";
-                $message = "تم {$statusAr} {$typeAr} الخاص بك.";
-                
-                if ($request->filled('manager_notes')) {
-                    $message .= "\nملاحظات المدير: " . $request->manager_notes;
-                }
-
-                $notificationService->sendComprehensiveNotification(
-                    $employeeRequest->employee->user,
-                    $title,
-                    $message,
-                    'leave_request',
-                    true, // تفعيل إرسال البريد الإلكتروني
-                    $request->user()->id
-                );
-            }
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('فشل إرسال إشعار تحديث طلب الموظف: ' . $e->getMessage());
-        }
+        // إرسال إشعار فوري للموظف بحالة الطلب (تطبيق الجوال، إشعار داخلي، بريد إلكتروني)
+        app(\App\Services\AutomaticNotificationService::class)->notifyEmployeeRequestDecision(
+            $employeeRequest,
+            $request->status,
+            $request->manager_notes
+        );
 
         return back()->with('success', $request->status === 'approved' ? 'تم اعتماد الطلب بنجاح.' : 'تم رفض الطلب.');
     }
@@ -309,6 +287,9 @@ class EmployeeRequestController extends Controller
         }
 
         $newRequest->save();
+
+        // إشعار فوري لمدير الفرع والـ HR بوجود طلب جديد بانتظار الاعتماد
+        app(\App\Services\AutomaticNotificationService::class)->notifyNewEmployeeRequest($newRequest);
 
         return back()->with('success', 'تم تقديم طلبك بنجاح وهو الآن قيد المراجعة.');
     }

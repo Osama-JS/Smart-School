@@ -78,6 +78,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('admin/notifications')->group(function () {
+        Route::get('/settings', [\App\Http\Controllers\Admin\NotificationSettingsController::class, 'index'])->name('admin.notifications.settings');
+        Route::post('/settings', [\App\Http\Controllers\Admin\NotificationSettingsController::class, 'update'])->name('admin.notifications.settings.update');
         Route::get('/send', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'create'])->name('admin.notifications.send');
         Route::post('/send', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'store'])->name('admin.notifications.store');
         Route::get('/users', [\App\Http\Controllers\Admin\NotificationSenderController::class, 'getUsers'])->name('admin.notifications.users');

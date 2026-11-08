@@ -133,6 +133,10 @@ class ClassAttendanceController extends Controller
             return response()->json(['success' => false, 'message' => 'غير مصرح لك بتحضير هذه الحصة'], 403);
         }
 
+        $subject = \App\Models\Subject::find($request->subject_id);
+        $period = \App\Models\DailyPeriod::find($request->period_id);
+        $autoNotifService = app(\App\Services\AutomaticNotificationService::class);
+
         foreach ($request->attendances as $attendance) {
             ClassAttendance::updateOrCreate(
                 [
@@ -148,6 +152,20 @@ class ClassAttendanceController extends Controller
                     'notes' => $attendance['notes'] ?? null,
                 ]
             );
+
+            // إرسال إشعار فوري لولي الأمر في حال الغياب أو التأخر
+            if (in_array($attendance['status'], ['absent', 'late'])) {
+                $student = \App\Models\Student::where('user_id', $attendance['student_id'])->first();
+                if ($student) {
+                    $autoNotifService->notifyStudentAbsenceOrLate(
+                        $student,
+                        $attendance['status'],
+                        $request->date,
+                        $subject?->name,
+                        $period?->name ?? "الحصة {$request->period_id}"
+                    );
+                }
+            }
         }
 
         return redirect()->back()->with('success', 'تم حفظ تحضير الحصة بنجاح.');

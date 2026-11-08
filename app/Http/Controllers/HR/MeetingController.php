@@ -326,49 +326,15 @@ class MeetingController extends Controller implements \Illuminate\Routing\Contro
             'agendas' => $validated['agendas'],
         ]);
 
-        $channels = $validated['notification_channels'] ?? [];
-        $notificationService = new \App\Services\NotificationService();
-        $meetingUrl = url('/meetings/' . $meeting->id); // Assuming this route exists or they can view it in their dashboard
-
         foreach ($validated['participants'] as $participantId) {
             $meeting->participants()->create([
                 'user_id' => $participantId,
                 'attendance_status' => 'pending',
             ]);
-            
-            $participantUser = User::find($participantId);
-            if ($participantUser) {
-                $title = "دعوة لاجتماع جديد: {$meeting->title}";
-                $message = "تمت دعوتك لحضور اجتماع بتاريخ {$meeting->date} الساعة {$meeting->time}. يرجى تأكيد حضورك.";
-
-                try {
-                    if (in_array('system', $channels)) {
-                        $notificationService->sendInternalNotification(
-                            $participantUser->id,
-                            $title,
-                            $message,
-                            'meeting',
-                            $user->id
-                        );
-                    }
-
-                    if (in_array('mail', $channels) && $participantUser->email) {
-                        Mail::to($participantUser->email)->queue(new MeetingInvitationMail($meeting));
-                    }
-
-                    if (in_array('firebase', $channels)) {
-                        $notificationService->sendFirebaseNotification(
-                            $participantUser,
-                            $title,
-                            $message,
-                            ['type' => 'meeting', 'url' => '/meetings/' . $meeting->id]
-                        );
-                    }
-                } catch (\Exception $e) {
-                    \Log::error('Failed to send meeting notification: ' . $e->getMessage());
-                }
-            }
         }
+
+        // إرسال الإشعار التلقائي لجميع المشاركين (تطبيق الجوال، إشعار داخلي، بريد إلكتروني)
+        app(\App\Services\AutomaticNotificationService::class)->notifyMeetingScheduled($meeting, $validated['participants']);
 
         return redirect()->back()->with('success', 'تم إنشاء الاجتماع وإرسال الدعوات بنجاح');
     }

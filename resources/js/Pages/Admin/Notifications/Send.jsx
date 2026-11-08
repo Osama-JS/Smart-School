@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Select from 'react-select';
-import { Send, Bell, Mail, Smartphone, Users, User, Shield, CheckCircle, AlertTriangle, Info, History, Eye, X, Wifi, Radio, Zap, Clock, Search } from 'lucide-react';
+import { Send, Bell, Mail, Smartphone, Users, User, Shield, CheckCircle, AlertTriangle, Info, History, Eye, X, Wifi, Radio, Zap, Clock, Search, Settings } from 'lucide-react';
 import axios from 'axios';
 import ToastNotification from '@/Components/ToastNotification';
 
@@ -114,13 +114,16 @@ export default function SendNotification({ roles }) {
                             </p>
                         </div>
 
-                        <div className="flex gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shrink-0">
+                        <div className="flex gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 backdrop-blur-xl shrink-0 flex-wrap">
                             <button onClick={() => setActiveTab('send')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-black transition-all duration-300 ${activeTab === 'send' ? 'bg-white dark:bg-slate-800 text-primary-600 shadow-md scale-105' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}>
                                 <Send size={18} /> إرسال جديد
                             </button>
                             <button onClick={() => setActiveTab('logs')} className={`flex items-center gap-2 px-8 py-3 rounded-xl font-black transition-all duration-300 ${activeTab === 'logs' ? 'bg-white dark:bg-slate-800 text-primary-600 shadow-md scale-105' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-800/50'}`}>
                                 <History size={18} /> السجل
                             </button>
+                            <Link href={route('admin.notifications.settings')} className="flex items-center gap-2 px-6 py-3 rounded-xl font-black text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/50 dark:hover:bg-slate-800/50 transition-all duration-300">
+                                <Settings size={18} /> الإعدادات التلقائية
+                            </Link>
                         </div>
                     </div>
                 </div>

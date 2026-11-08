@@ -166,24 +166,7 @@ class LessonPreparationController extends Controller
     private function checkAndSendHomeworkNotification(LessonPreparation $preparation, $wasDraft)
     {
         if ($preparation->status === 'published' && $wasDraft && !empty($preparation->homework) && $preparation->division_id) {
-            $studentUserIds = \App\Models\Student::whereIn('id', 
-                \App\Models\Enrollment::where('division_id', $preparation->division_id)->pluck('student_id')
-            )->pluck('user_id')->toArray();
-
-            if (!empty($studentUserIds)) {
-                $subjectName = $preparation->subject ? $preparation->subject->name : 'المادة';
-                \App\Models\Notification::create([
-                    'sender_id' => Auth::id(),
-                    'branch_id' => $preparation->branch_id,
-                    'title' => 'واجب منزلي جديد: ' . $subjectName,
-                    'message' => 'تم تحديد واجب جديد: ' . $preparation->homework,
-                    'type' => 'homework',
-                    'target_type' => 'students',
-                    'target_role' => 'student',
-                    'target_users' => $studentUserIds,
-                    'is_read' => false
-                ]);
-            }
+            app(\App\Services\AutomaticNotificationService::class)->notifyHomeworkPublished($preparation);
         }
     }
 }
