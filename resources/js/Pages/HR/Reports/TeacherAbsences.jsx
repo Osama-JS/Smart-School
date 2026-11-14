@@ -678,7 +678,8 @@ export default function TeacherAbsences({ absences, kpis, departmentChartData, t
                     )}
                 </div>
             </ReportPrintLayout>
-        </AdminLayout>
+        </div>
+    </AdminLayout>
     );
 }
 
