@@ -140,9 +140,6 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
         {
             title: 'التقارير والإحصائيات',
             items: [
-                { name: 'التقارير المرفوعة', icon: FileText, url: route('reports.index') },
-                { name: 'مركز التقارير', icon: FileText, url: route('reports.center') },
-                { name: 'مُنشئ التقارير', icon: Sliders, url: route('reports.custom') },
                 { name: 'تقارير الأداء', icon: BarChart, url: route('admin.performance.index') },
                 { name: 'إحصائيات المرور', icon: Users, url: route('admin.traffic.index') },
                 { name: 'سجلات النظام', icon: Activity, url: route('admin.activity-logs.index') },

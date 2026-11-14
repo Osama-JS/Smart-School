@@ -69,7 +69,7 @@
         <button onclick="window.print()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer">
             🖨️ طباعة / حفظ PDF
         </button>
-        <button onclick="window.close()" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-xl transition-colors cursor-pointer">
+        <button onclick="if(window.opener){window.close();}else if(window.history.length>1){window.history.back();}else{window.location.href='/hr/reports/followup-books';}" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-2 rounded-xl transition-colors cursor-pointer">
             ✕ إغلاق
         </button>
     </div>
@@ -88,76 +88,13 @@
         <div class="watermark">مســــودة</div>
     @endif
 
-    <!-- الترويسة العلوية الرسمية للمدرسة -->
-    <div class="relative mb-8 pb-4 border-b-2 brand-border">
-        <div class="absolute -top-6 inset-x-0 h-1.5 opacity-100 brand-bg"></div>
-        <div class="absolute top-0 right-0 w-24 h-24 opacity-5 pointer-events-none" style="background: linear-gradient(to bottom left, {{ $brandColor }}, transparent)"></div>
-        
-        <div class="flex justify-between items-start pt-4">
-            <div class="flex flex-col gap-0.5 z-10 w-[38%] pt-0.5">
-                <div class="flex items-center gap-2 mb-1">
-                    <div class="w-1.5 h-1.5 rounded-full brand-bg"></div>
-                    <h3 class="text-[11px] font-black text-slate-600 tracking-wide">الجمهورية اليمنية</h3>
-                </div>
-                <h3 class="text-[11px] font-bold text-slate-600 pr-3.5">وزارة التربية والتعليم والبحث العلمي</h3>
-                <h2 class="text-lg font-black text-slate-900 mt-1.5 pr-3.5 leading-tight tracking-tight">مدارس القيم الأهلية</h2>
-                <h3 class="text-[11px] font-semibold text-slate-500 pr-3.5 flex items-center gap-1.5 mt-0.5">المركز الرئيسي <span class="w-1 h-1 rounded-full bg-slate-300"></span> الشؤون الأكاديمية</h3>
-                
-                <div class="mt-3 pr-3 border-r-[3px] py-0.5 brand-border">
-                    <h1 class="text-xl font-black text-slate-900 tracking-tight whitespace-nowrap leading-none">
-                        {{ $printSettings['title'] ?? 'تقرير رفع دفتر المتابعة وانضباط التحضير' }}
-                    </h1>
-                </div>
-            </div>
-
-            <div class="flex flex-col items-center justify-start w-[24%] z-10">
-                @php
-                    $logoPath = public_path('images/logo.png');
-                    $schoolLogoPath = public_path('images/school_logo.png');
-                    $logoSrc = '';
-                    if (file_exists($logoPath)) {
-                        $logoSrc = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
-                    } elseif (file_exists($schoolLogoPath)) {
-                        $logoSrc = 'data:image/png;base64,' . base64_encode(file_get_contents($schoolLogoPath));
-                    } else {
-                        $logoSrc = asset('images/logo.png');
-                    }
-                @endphp
-                <div class="w-20 h-20 bg-white flex items-center justify-center p-1 relative group">
-                    <img src="{{ $logoSrc }}" alt="شعار المدرسة" class="w-full h-full object-contain filter drop-shadow-sm" />
-                </div>
-            </div>
-
-            <div class="flex flex-col items-end w-[38%] z-10">
-                <div class="w-full max-w-[230px] border border-slate-300 rounded-lg overflow-hidden">
-                    <div class="h-1 w-full brand-bg"></div>
-                    <div class="p-3 flex flex-col gap-2.5">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">رقم الوثيقة</span>
-                            <span class="font-black text-slate-800 text-[11px]" dir="ltr">AC-{{ date('y') }}0{{ rand(100, 999) }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">تاريخ الطباعة</span>
-                            <span class="font-bold text-slate-800 text-[11px] font-mono tracking-wide" dir="ltr">{{ date('d/m/Y') }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">العام الدراسي</span>
-                            <span class="font-bold text-slate-800 text-[11px] font-mono tracking-wide" dir="ltr">2026-2027</span>
-                        </div>
-                        <div class="h-px w-full bg-slate-300 my-0.5"></div>
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-1.5 text-slate-500">
-                                <span class="text-[10px] font-bold uppercase tracking-wider">الفترة</span>
-                            </div>
-                            <div class="flex flex-col items-end">
-                                <span class="font-bold text-[10px] text-slate-800 font-mono tracking-wider" dir="ltr">{{ $periodStart ? \Carbon\Carbon::parse($periodStart)->format('d/m/Y') : 'بداية' }}</span>
-                                <span class="font-bold text-[10px] text-slate-800 font-mono tracking-wider" dir="ltr">{{ $periodEnd ? \Carbon\Carbon::parse($periodEnd)->format('d/m/Y') : 'اليوم' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- الترويسة الموحدة القابلة للتخصيص من الإدارة -->
+    @include('pdf.components.header', [
+        'title' => $printSettings['title'] ?? 'تقرير رفع دفتر المتابعة وانضباط التحضير',
+        'departmentName' => 'الشؤون الأكاديمية والمتابعة',
+        'startDate' => $periodStart ?? null,
+        'endDate' => $periodEnd ?? null,
+    ])
     </div>
 
     <!-- الإحصائيات (KPIs) -->
@@ -240,5 +177,10 @@
             @endforelse
         </tbody>
     </table>
+
+    <!-- التذييل والتواقيع والختم المعتمد -->
+    @include('pdf.components.footer', [
+        'branchId' => $branchId ?? null,
+    ])
 </body>
 </html>

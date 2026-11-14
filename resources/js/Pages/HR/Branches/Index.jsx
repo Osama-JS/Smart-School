@@ -660,7 +660,14 @@ export default function BranchesIndex({ branches, users, filters }) {
                                                 <>
                                                     <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(branch.manager.name)}&background=0d9488&color=fff&bold=true`} alt={branch.manager.name} className="w-6 h-6 rounded-full" />
                                                     <div>
-                                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight">{branch.manager.name}</p>
+                                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight flex items-center gap-1.5 flex-wrap">
+                                                            <span>{branch.manager.name}</span>
+                                                            {branch.manager.username && (
+                                                                <span className="text-[10px] text-primary-600 dark:text-primary-400 font-semibold" dir="ltr">
+                                                                    (@{branch.manager.username})
+                                                                </span>
+                                                            )}
+                                                        </p>
                                                         <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">مدير الفرع</p>
                                                     </div>
                                                 </>
@@ -971,7 +978,7 @@ export default function BranchesIndex({ branches, users, filters }) {
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
                             الفرع: <span className="font-bold text-slate-700 dark:text-slate-300">{assignManagerBranch?.name}</span>
                             <br />
-                            المدير الحالي: {assignManagerBranch?.manager ? <span className="font-bold text-primary-600 dark:text-primary-400">{assignManagerBranch.manager.name}</span> : <span className="text-slate-400">لا يوجد</span>}
+                            المدير الحالي: {assignManagerBranch?.manager ? <span className="font-bold text-primary-600 dark:text-primary-400">{assignManagerBranch.manager.name} {assignManagerBranch.manager.username ? `(@${assignManagerBranch.manager.username})` : ''}</span> : <span className="text-slate-400">لا يوجد</span>}
                         </p>
 
                         <div>
@@ -990,9 +997,12 @@ export default function BranchesIndex({ branches, users, filters }) {
                                 onChange={(val) => setForm({ ...form, user_id: val })}
                                 options={users?.map(u => {
                                     const isOtherManager = u.branch_id && (u.role?.name === 'مدير فرع' || u.role?.name === 'مدير الفرع') && u.branch_id !== assignManagerBranch?.id;
+                                    const usernameStr = u.username ? ` (@${u.username})` : '';
+                                    const nationalIdStr = u.national_id ? ` [${u.national_id}]` : '';
+                                    const otherBranchStr = isOtherManager ? ` - (مدير لـ: ${u.branch?.name || 'فرع آخر'})` : '';
                                     return { 
                                         value: u.id, 
-                                        label: `${u.name} ${u.national_id ? '(' + u.national_id + ')' : ''} ${isOtherManager ? ` - (مدير لـ: ${u.branch?.name || 'فرع آخر'})` : ''}`,
+                                        label: `${u.name}${usernameStr}${nationalIdStr}${otherBranchStr}`,
                                         isDisabled: isOtherManager
                                     };
                                 }) || []}

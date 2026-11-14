@@ -1,4 +1,5 @@
 import React from 'react';
+import { usePage } from '@inertiajs/react';
 import { Printer, FileDown, Calendar, Loader2 } from 'lucide-react';
 
 const formatDateStr = (dateString) => {
@@ -21,24 +22,56 @@ export default function ReportPrintLayout({
     startDate,
     endDate,
     documentNumberPrefix = 'HR',
-    schoolInfo = {
-        republic: 'الجمهورية اليمنية',
-        ministry: 'وزارة التربية والتعليم والبحث العلمي',
-        schoolName: 'مدارس القيم الأهلية',
-        branch: 'المركز الرئيسي',
-        department: 'قسم شؤون المعلمين',
-        logo: '/Smart-School/public/images/logo.png',
-        fallbackLogo: '/Smart-School/public/images/school_logo.png'
-    }
+    schoolInfo: customSchoolInfo
 }) {
+    const { reportDesign, auth } = usePage().props;
+
+    // Merge system-wide report design settings from DB
+    const republic = reportDesign?.republic || 'الجمهورية اليمنية';
+    const ministry = reportDesign?.ministry || 'وزارة التربية والتعليم والبحث العلمي';
+    const schoolName = reportDesign?.school_name || 'مدارس القيم الأهلية';
+    const branchName = reportDesign?.branch_name || auth?.user?.branch?.name || 'المركز الرئيسي';
+    const departmentName = customSchoolInfo?.department || reportDesign?.department_name || 'الشؤون التعليمية والإدارية';
+    const logoSrc = reportDesign?.logo ? `/storage/${reportDesign.logo}` : '/images/logo.png';
+    const fallbackLogo = '/images/school_logo.png';
+    const stampSrc = reportDesign?.stamp_image ? `/storage/${reportDesign.stamp_image}` : null;
+    const showHeader = reportDesign?.show_header ?? true;
+    const showFooter = reportDesign?.show_footer ?? true;
+    const showSignatures = reportDesign?.show_signatures ?? true;
+    const showStamp = reportDesign?.show_stamp ?? true;
+    const showPageNumber = reportDesign?.show_page_number ?? true;
+    const footerNotice = reportDesign?.footer_notice || 'وثيقة رسمية صادرة آلياً من نظام مدارك الذكي - مدارس القيم الأهلية';
+
     const getPaperDimensions = () => {
-        if (printSettings.orientation === 'landscape') {
-            return printSettings.paperSize === 'A4' ? { maxWidth: '297mm', minHeight: '210mm' } : { maxWidth: '420mm', minHeight: '297mm' };
+        const sizes = {
+            A3: { width: '297mm', height: '420mm' },
+            A4: { width: '210mm', height: '297mm' },
+            A5: { width: '148mm', height: '210mm' },
+            B4: { width: '250mm', height: '353mm' },
+            B5: { width: '176mm', height: '250mm' },
+            letter: { width: '216mm', height: '279mm' },
+            legal: { width: '216mm', height: '356mm' },
+        };
+        const size = sizes[printSettings?.paperSize] || sizes.A4;
+        if (printSettings?.orientation === 'landscape') {
+            return { maxWidth: size.height, minHeight: size.width };
         }
-        return printSettings.paperSize === 'A4' ? { maxWidth: '210mm', minHeight: '297mm' } : { maxWidth: '297mm', minHeight: '420mm' };
+        return { maxWidth: size.width, minHeight: size.height };
+    };
+
+    const getMarginPadding = () => {
+        switch (printSettings?.margins) {
+            case 'none': return 'p-2 pt-2';
+            case '1cm': return 'p-4 pt-4';
+            case '2cm': return 'p-8 pt-8';
+            case 'normal':
+            default:
+                return 'p-6 pt-5';
+        }
     };
     
     const paperDims = getPaperDimensions();
+    const marginClasses = getMarginPadding();
     
     // Generate a consistent random document number for the session if not provided
     const docNumber = React.useMemo(() => {
@@ -211,107 +244,150 @@ export default function ReportPrintLayout({
                         transform: `scale(${printSettings.scale})`,
                         transformOrigin: 'top center'
                     }}
-                    className={`relative bg-white p-8 pt-6 border border-slate-200 w-full flex flex-col paper-container ${isGeneratingPdf ? 'shadow-none' : 'shadow-2xl'}`}
+                    className={`relative bg-white border border-slate-200 w-full flex flex-col paper-container ${marginClasses} ${isGeneratingPdf ? 'shadow-none' : 'shadow-2xl'}`}
                 >
                     {/* Watermark Overlay */}
                     {printSettings.watermark !== 'none' && (
                         <div className="absolute inset-0 z-0 flex items-center justify-center opacity-5 pointer-events-none print:opacity-[0.03]">
-                            <img src={schoolInfo.logo} className="w-[400px] h-[400px] object-contain grayscale" alt="watermark" onError={(e) => { e.target.onerror = null; e.target.src = schoolInfo.fallbackLogo }} />
+                            <img src={logoSrc} className="w-[400px] h-[400px] object-contain grayscale" alt="watermark" onError={(e) => { e.target.onerror = null; e.target.src = fallbackLogo }} />
                         </div>
                     )}
 
-                    <div className="relative mb-5 pb-4 border-b-2" style={{ borderColor: printSettings.brandColor }}>
-                        {/* Elegant Top Accent */}
-                        <div className="absolute -top-6 inset-x-0 h-1.5 print:opacity-100 opacity-100" style={{ backgroundColor: printSettings.brandColor }}></div>
-                        {!isGeneratingPdf && (
-                            <div className="absolute top-0 right-0 w-24 h-24 opacity-5 pointer-events-none" style={{ background: `linear-gradient(to bottom left, ${printSettings.brandColor}, transparent)` }}></div>
-                        )}
-                        
-                        <div className="flex justify-between items-start pt-4">
-                            {/* Right side: School info & Title */}
-                            <div className="flex flex-col gap-0.5 z-10 w-[38%] pt-0.5">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: printSettings.brandColor }}></div>
-                                    <h3 className="text-[11px] font-black text-slate-600 tracking-wide">{schoolInfo.republic}</h3>
-                                </div>
-                                <h3 className="text-[11px] font-bold text-slate-600 pr-3.5">{schoolInfo.ministry}</h3>
-                                <h2 className="text-lg font-black text-slate-900 mt-1.5 pr-3.5 leading-tight tracking-tight">{schoolInfo.schoolName}</h2>
-                                <h3 className="text-[11px] font-semibold text-slate-500 pr-3.5 flex items-center gap-1.5 mt-0.5">{schoolInfo.branch} <span className="w-1 h-1 rounded-full bg-slate-300"></span> {schoolInfo.department}</h3>
-                                
-                                <div className="mt-3 pr-3 border-r-[3px] py-0.5" style={{ borderColor: printSettings.brandColor }}>
-                                    <h1 className="text-xl font-black text-slate-900 tracking-tight whitespace-nowrap leading-none">
-                                        {printSettings.title}
-                                    </h1>
-                                </div>
-                            </div>
-
-                            {/* Center: Logo */}
-                            <div className="flex flex-col items-center justify-start w-[24%] z-10">
-                                <div className="w-20 h-20 bg-white flex items-center justify-center p-1 relative group">
-                                    <img src={schoolInfo.logo} alt="شعار المدرسة" className="w-full h-full object-contain filter drop-shadow-sm" onError={(e) => { e.target.onerror = null; e.target.src = schoolInfo.fallbackLogo }} />
-                                </div>
-                            </div>
-
-                            {/* Left side: Meta details & Period */}
-                            <div className="flex flex-col items-end w-[38%] z-10">
-                                <div className="w-full max-w-[230px] bg-slate-50/50 print:bg-transparent border border-slate-200 print:border-slate-300 rounded-lg overflow-hidden shadow-sm print:shadow-none">
-                                    <div className="h-1 w-full" style={{ backgroundColor: printSettings.brandColor }}></div>
+                    {/* Official Dynamic Header */}
+                    {showHeader ? (
+                        <div className="relative mb-5 pb-4 border-b-2" style={{ borderColor: printSettings.brandColor }}>
+                            {/* Elegant Top Accent */}
+                            <div className="absolute -top-6 inset-x-0 h-1.5 print:opacity-100 opacity-100" style={{ backgroundColor: printSettings.brandColor }}></div>
+                            {!isGeneratingPdf && (
+                                <div className="absolute top-0 right-0 w-24 h-24 opacity-5 pointer-events-none" style={{ background: `linear-gradient(to bottom left, ${printSettings.brandColor}, transparent)` }}></div>
+                            )}
+                            
+                            <div className="flex justify-between items-start pt-4">
+                                {/* Right side: School info & Title */}
+                                <div className="flex flex-col gap-0.5 z-10 w-[38%] pt-0.5">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: printSettings.brandColor }}></div>
+                                        <h3 className="text-[11px] font-black text-slate-600 tracking-wide">{republic}</h3>
+                                    </div>
+                                    <h3 className="text-[11px] font-bold text-slate-600 pr-3.5">{ministry}</h3>
+                                    <h2 className="text-lg font-black text-slate-900 mt-1.5 pr-3.5 leading-tight tracking-tight">{schoolName}</h2>
+                                    <h3 className="text-[11px] font-semibold text-slate-500 pr-3.5 flex items-center gap-1.5 mt-0.5">{branchName} <span className="w-1 h-1 rounded-full bg-slate-300"></span> {departmentName}</h3>
                                     
-                                    <div className="p-3 flex flex-col gap-2.5">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">رقم الوثيقة</span>
-                                            <span className="font-black text-slate-800 text-[11px]" dir="ltr">{docNumber}</span>
-                                        </div>
-                                        
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">تاريخ الطباعة</span>
-                                            <span className="font-bold text-slate-800 text-[11px] font-mono tracking-wide" dir="ltr">{formatDateStr(new Date().toISOString().split('T')[0])}</span>
-                                        </div>
-                                        
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">العام الدراسي</span>
-                                            <span className="font-bold text-slate-800 text-[11px] font-mono tracking-wide" dir="ltr">2026-2027</span>
-                                        </div>
+                                    <div className="mt-3 pr-3 border-r-[3px] py-0.5" style={{ borderColor: printSettings.brandColor }}>
+                                        <h1 className="text-xl font-black text-slate-900 tracking-tight whitespace-nowrap leading-none">
+                                            {printSettings.title}
+                                        </h1>
+                                    </div>
+                                </div>
 
-                                        <div className="h-px w-full bg-slate-200 print:bg-slate-300 my-0.5"></div>
+                                {/* Center: Logo */}
+                                <div className="flex flex-col items-center justify-start w-[24%] z-10">
+                                    <div className="w-20 h-20 bg-white flex items-center justify-center p-1 relative group">
+                                        <img src={logoSrc} alt="شعار المدرسة" className="w-full h-full object-contain filter drop-shadow-sm" onError={(e) => { e.target.onerror = null; e.target.src = fallbackLogo }} />
+                                    </div>
+                                </div>
+
+                                {/* Left side: Meta details & Period */}
+                                <div className="flex flex-col items-end w-[38%] z-10">
+                                    <div className="w-full max-w-[230px] bg-slate-50/50 print:bg-transparent border border-slate-200 print:border-slate-300 rounded-lg overflow-hidden shadow-sm print:shadow-none">
+                                        <div className="h-1 w-full" style={{ backgroundColor: printSettings.brandColor }}></div>
                                         
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex items-center gap-1.5 text-slate-500">
-                                                <Calendar size={12} className="text-slate-400" />
-                                                <span className="text-[10px] font-bold uppercase tracking-wider">الفترة</span>
+                                        <div className="p-3 flex flex-col gap-2.5">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">رقم الوثيقة</span>
+                                                <span className="font-black text-slate-800 text-[11px]" dir="ltr">{docNumber}</span>
                                             </div>
-                                            <div className="flex flex-col items-end">
-                                                <span className="font-bold text-[10px] text-slate-800 font-mono tracking-wider" dir="ltr">{startDate ? formatDateStr(startDate) : 'بداية'}</span>
-                                                <span className="font-bold text-[10px] text-slate-800 font-mono tracking-wider" dir="ltr">{endDate ? formatDateStr(endDate) : 'اليوم'}</span>
+                                            
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">تاريخ الطباعة</span>
+                                                <span className="font-bold text-slate-800 text-[11px] font-mono tracking-wide" dir="ltr">{formatDateStr(new Date().toISOString().split('T')[0])}</span>
+                                            </div>
+                                            
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">العام الدراسي</span>
+                                                <span className="font-bold text-slate-800 text-[11px] font-mono tracking-wide" dir="ltr">2026-2027</span>
+                                            </div>
+
+                                            <div className="h-px w-full bg-slate-200 print:bg-slate-300 my-0.5"></div>
+                                            
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-1.5 text-slate-500">
+                                                    <Calendar size={12} className="text-slate-400" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider">الفترة</span>
+                                                </div>
+                                                <div className="flex flex-col items-end">
+                                                    <span className="font-bold text-[10px] text-slate-800 font-mono tracking-wider" dir="ltr">{startDate ? formatDateStr(startDate) : 'بداية'}</span>
+                                                    <span className="font-bold text-[10px] text-slate-800 font-mono tracking-wider" dir="ltr">{endDate ? formatDateStr(endDate) : 'اليوم'}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="h-24 w-full border-b border-dashed border-slate-300 mb-6 flex items-center justify-between text-slate-400 text-xs font-semibold px-4">
+                            <span>[مساحة مخصصة للورق الرسمي المروس مسبقاً - الترويسة مخفية]</span>
+                            <span dir="ltr">{docNumber}</span>
+                        </div>
+                    )}
 
                     {/* Report Content */}
                     <div className="flex-1 w-full flex flex-col">
                         {children}
                     </div>
 
-                    {/* System Footer Bar */}
-                    <div className="mt-auto pt-16 relative">
-                        {/* Elegant separator */}
-                        <div className="absolute top-0 inset-x-0 h-px bg-slate-200"></div>
-                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1.5 rounded-b-lg" style={{ backgroundColor: printSettings.brandColor }}></div>
+                    {/* Official Dynamic Footer & Signatures */}
+                    {showFooter && (
+                        <div className="mt-auto pt-10 relative">
+                            {/* Signatures & Stamp Grid */}
+                            {showSignatures && (
+                                <div className="grid grid-cols-3 gap-6 mb-8 text-center text-xs">
+                                    {reportDesign?.sig1_active ? (
+                                        <div className="flex flex-col items-center justify-between border border-slate-200 rounded-xl p-3 bg-slate-50/50 min-h-[90px]">
+                                            <span className="font-bold text-slate-700 pb-1 border-b border-slate-200 w-full">{reportDesign?.sig1_title || 'إعداد / المختص'}</span>
+                                            <span className="text-[11px] text-slate-400 italic">{reportDesign?.sig1_name || 'التوقيع: .....................'}</span>
+                                        </div>
+                                    ) : <div></div>}
 
-                        <div className="mt-8 pt-6 border-t-2 border-slate-100 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 font-medium pb-2 gap-4">
-                            <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: printSettings.brandColor }}></span>
-                                <span>أُصدر هذا التقرير آلياً من نظام <strong className="px-1" style={{ color: printSettings.brandColor }}>SMART SCHOOL ERP</strong></span>
-                            </div>
-                            <div className="flex items-center gap-4" dir="ltr">
-                                <span>{new Date().toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                    {reportDesign?.sig2_active ? (
+                                        <div className="flex flex-col items-center justify-between border border-slate-200 rounded-xl p-3 bg-slate-50/50 min-h-[90px]">
+                                            <span className="font-bold text-slate-700 pb-1 border-b border-slate-200 w-full">{reportDesign?.sig2_title || 'مراجعة / وكيل المدرسة'}</span>
+                                            <span className="text-[11px] text-slate-400 italic">{reportDesign?.sig2_name || 'التوقيع: .....................'}</span>
+                                        </div>
+                                    ) : <div></div>}
+
+                                    {reportDesign?.sig3_active ? (
+                                        <div className="flex flex-col items-center justify-between border border-slate-200 rounded-xl p-3 bg-slate-50/50 min-h-[90px] relative overflow-hidden">
+                                            <span className="font-bold text-slate-700 pb-1 border-b border-slate-200 w-full">{reportDesign?.sig3_title || 'اعتماد / مدير الفرع'}</span>
+                                            <div className="h-8 flex items-center justify-center relative w-full">
+                                                {showStamp && stampSrc ? (
+                                                    <img src={stampSrc} alt="School Stamp" className="h-12 w-12 object-contain absolute opacity-80 -rotate-6 pointer-events-none" />
+                                                ) : (
+                                                    <span className="text-[11px] text-slate-400 italic">{reportDesign?.sig3_name || 'الختم والتوقيع: .....................'}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : <div></div>}
+                                </div>
+                            )}
+
+                            {/* Separator Accent */}
+                            <div className="absolute top-0 inset-x-0 h-px bg-slate-200"></div>
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-1.5 rounded-b-lg" style={{ backgroundColor: printSettings.brandColor }}></div>
+
+                            <div className="pt-4 border-t-2 border-slate-100 flex flex-col sm:flex-row justify-between items-center text-[11px] text-slate-500 font-medium pb-2 gap-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: printSettings.brandColor }}></span>
+                                    <span>{footerNotice}</span>
+                                </div>
+                                <div className="flex items-center gap-4" dir="ltr">
+                                    {showPageNumber && <span className="font-mono text-slate-400">Page 1 of 1</span>}
+                                    <span className="font-mono text-slate-400">{new Date().toLocaleString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
 
@@ -330,7 +406,7 @@ export default function ReportPrintLayout({
                 @media print {
                     @page {
                         size: ${paperDims.maxWidth} ${paperDims.minHeight};
-                        margin: ${printSettings.margins};
+                        margin: ${printSettings.margins === 'none' ? '0mm' : printSettings.margins === '1cm' ? '10mm' : printSettings.margins === '2cm' ? '20mm' : '15mm'};
                     }
                     
                     body {

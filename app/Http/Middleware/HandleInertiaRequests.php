@@ -58,6 +58,7 @@ class HandleInertiaRequests extends Middleware
             'isAdmin' => $isAdmin,
             'isSystemAdmin' => $isSystemAdmin,
             'logo_url' => asset('images/logo.png') . '?v=' . (file_exists(public_path('images/logo.png')) ? filemtime(public_path('images/logo.png')) : time()),
+            'reportDesign' => fn () => \App\Services\ReportDesignService::getDesignConfig($user?->branch_id),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

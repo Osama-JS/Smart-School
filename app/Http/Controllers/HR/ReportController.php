@@ -14,6 +14,12 @@ class ReportController extends Controller implements \Illuminate\Routing\Control
         public static function middleware(): array
     {
         return [
+            new \Illuminate\Routing\Controllers\Middleware(function ($request, $next) {
+                if (auth()->user()?->role?->name === 'مدير النظام') {
+                    abort(403, 'غير مصرح لمدير النظام بالوصول إلى صفحة التقارير.');
+                }
+                return $next($request);
+            }),
             new \Illuminate\Routing\Controllers\Middleware('permission:عرض التقارير', only: ['index', 'showTemplate', 'show']),
             new \Illuminate\Routing\Controllers\Middleware('permission:إضافة تقرير', only: ['store']),
             new \Illuminate\Routing\Controllers\Middleware('permission:تعديل تقرير', only: ['review']),
@@ -24,7 +30,7 @@ class ReportController extends Controller implements \Illuminate\Routing\Control
         $user = $request->user();
         $employee = $user->employee;
         
-        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير الفرع', 'مدير النظام', 'مدير عام']);
+        $isAdmin = $user && $user->role && in_array($user->role->name, ['مدير الفرع', 'مدير عام']);
         $branchId = session('active_branch_id') ?: $user->branch_id;
 
         $reportsQuery = Report::with(['template', 'submitter.employee.jobGrade', 'reviewer'])

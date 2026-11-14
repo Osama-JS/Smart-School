@@ -69,7 +69,7 @@ class BranchController extends Controller
             ->whereHas('role', function($q) use ($excludedRoles) {
                 $q->whereNotIn('name', $excludedRoles);
             })
-            ->select('id', 'name', 'national_id', 'role_id', 'branch_id')
+            ->select('id', 'name', 'username', 'national_id', 'role_id', 'branch_id')
             ->get();
         return Inertia::render('HR/Branches/Index', [
             'branches' => $branches,

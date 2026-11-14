@@ -847,6 +847,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/reports-center', [\App\Http\Controllers\Admin\ReportCenterController::class, 'index'])->name('reports.center');
         Route::get('/reports-center/custom', [\App\Http\Controllers\Admin\ReportCenterController::class, 'customBuilder'])->name('reports.custom');
         Route::post('/reports-center/custom/generate', [\App\Http\Controllers\Admin\ReportCenterController::class, 'generateCustomReport'])->name('reports.custom.generate');
+        Route::get('/reports-center/design-settings', [\App\Http\Controllers\Admin\ReportDesignSettingsController::class, 'index'])->name('reports.design-settings');
+        Route::post('/reports-center/design-settings', [\App\Http\Controllers\Admin\ReportDesignSettingsController::class, 'update'])->name('reports.design-settings.update');
     });
 
     // ── Clinic Routes ──

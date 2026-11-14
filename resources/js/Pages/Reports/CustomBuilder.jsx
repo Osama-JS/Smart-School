@@ -4,7 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { 
     Settings, Download, FileText, ArrowRight,
     Users, GraduationCap, Calendar, CheckSquare, Eye, Save, Bookmark, GripVertical,
-    Filter, Plus, Trash2, Briefcase, ShieldCheck, ChevronRight, ChevronLeft, Check, Layers, List, PieChart, ChevronDown
+    Filter, Plus, Trash2, Briefcase, ShieldCheck, ChevronRight, ChevronLeft, Check, Layers, List, PieChart, ChevronDown, Printer
 } from 'lucide-react';
 import axios from 'axios';
 import ExcelJS from 'exceljs';
@@ -12,15 +12,52 @@ import { saveAs } from 'file-saver';
 import html2pdf from 'html2pdf.js';
 import toast from 'react-hot-toast';
 import Select from 'react-select';
+import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 
 export default function CustomBuilder({ auth, teachersList = [], studentsList = [], employeesList = [], supervisorsList = [], gradesList = [] }) {
-    const { logo_url, app_name } = usePage().props;
+    const { logo_url, app_name, reportDesign } = usePage().props;
     const [entity, setEntity] = useState('teachers');
     const [selectedGrade, setSelectedGrade] = useState([]);
     const [selectedDivision, setSelectedDivision] = useState([]);
     const [fields, setFields] = useState(['name', 'department', 'absences']);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+
+    const [printSettings, setPrintSettings] = useState(() => {
+        const defaultSettings = {
+            title: 'تقرير مخصص',
+            showKPIs: true,
+            showDetails: true,
+            orientation: 'landscape',
+            ecoMode: false,
+            watermark: 'none',
+            paperSize: 'A4',
+            margins: 'normal',
+            scale: 1,
+            pagesPerSheet: 1,
+            brandColor: reportDesign?.default_brand_color || '#059669',
+        };
+        try {
+            const saved = localStorage.getItem('CustomBuilderPrintSettings');
+            if (saved) return { ...defaultSettings, ...JSON.parse(saved) };
+        } catch (e) {}
+        return defaultSettings;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('CustomBuilderPrintSettings', JSON.stringify(printSettings));
+    }, [printSettings]);
+
+    // Keep title updated when entity changes if user hasn't heavily customized it
+    useEffect(() => {
+        const entityLabel = entity === 'teachers' ? 'تقرير المعلمين المخصص' : 
+                            entity === 'students' ? 'تقرير الطلاب المخصص' : 
+                            entity === 'supervisors' ? 'تقرير المشرفين المخصص' : 'تقرير الموظفين المخصص';
+        setPrintSettings(prev => ({
+            ...prev,
+            title: prev.title === 'تقرير مخصص' || prev.title.includes('المخصص') ? entityLabel : prev.title
+        }));
+    }, [entity]);
     
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState([]);
@@ -594,104 +631,123 @@ export default function CustomBuilder({ auth, teachersList = [], studentsList = 
                 }
             }
 
-            const summaryCardsHTML = `
-                <div style="margin-bottom: 30px;">
-                    <h4 style="margin: 0 0 12px 0; color: #0f172a; font-size: 14px; font-weight: 700;">الملخص التنفيذي للبيانات:</h4>
-                    <div style="display: flex; gap: 20px;">
-                        <div style="flex: 1; background-color: #ffffff; border: 1px solid #e2e8f0; border-right: 4px solid #6b9b37; border-radius: 8px; padding: 18px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="color: #64748b; font-size: 13px; font-weight: 700; margin-bottom: 8px;">إجمالي السجلات</div>
-                            <div style="color: #0f172a; font-size: 30px; font-weight: 900; line-height: 1;">${totalRecords} <span style="font-size: 14px; font-weight: 600; color: #94a3b8;">سجل</span></div>
+            // Resolve organization settings from system reportDesign
+            const republic = reportDesign?.republic || 'الجمهورية اليمنية';
+            const ministry = reportDesign?.ministry || 'وزارة التربية والتعليم والبحث العلمي';
+            const schoolName = reportDesign?.school_name || 'مدارس القيم الأهلية';
+            const branchName = reportDesign?.branch_name || auth?.user?.branch?.name || 'المركز الرئيسي';
+            const departmentName = reportDesign?.department_name || 'إدارة المدرسة';
+            const brandColor = printSettings.brandColor || reportDesign?.default_brand_color || '#059669';
+            const showHeader = reportDesign?.show_header ?? true;
+            const showFooter = reportDesign?.show_footer ?? true;
+            const showSignatures = reportDesign?.show_signatures ?? true;
+            const showStamp = reportDesign?.show_stamp ?? true;
+            const showPageNumber = reportDesign?.show_page_number ?? true;
+            const footerNotice = reportDesign?.footer_notice || 'وثيقة رسمية صادرة آلياً من نظام مدارك الذكي - مدارس القيم الأهلية';
+            const stampSrc = reportDesign?.stamp_image ? `/storage/${reportDesign.stamp_image}` : null;
+            const effectiveLogo = reportDesign?.logo ? `/storage/${reportDesign.logo}` : (logo_url || '/images/logo.png');
+
+            const summaryCardsHTML = printSettings.showKPIs ? `
+                <div style="margin-bottom: 25px;">
+                    <h4 style="margin: 0 0 10px 0; color: #0f172a; font-size: 13px; font-weight: 700;">الملخص التنفيذي للبيانات:</h4>
+                    <div style="display: flex; gap: 15px;">
+                        <div style="flex: 1; background-color: #ffffff; border: 1px solid #e2e8f0; border-right: 4px solid ${brandColor}; border-radius: 8px; padding: 14px 16px;">
+                            <div style="color: #64748b; font-size: 12px; font-weight: 700; margin-bottom: 4px;">إجمالي السجلات</div>
+                            <div style="color: #0f172a; font-size: 24px; font-weight: 900; line-height: 1;">${totalRecords} <span style="font-size: 13px; font-weight: 600; color: #94a3b8;">سجل</span></div>
                         </div>
                         ${avgAbsencesText ? `
-                        <div style="flex: 1; background-color: #ffffff; border: 1px solid #e2e8f0; border-right: 4px solid #f59e0b; border-radius: 8px; padding: 18px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="color: #64748b; font-size: 13px; font-weight: 700; margin-bottom: 8px;">متوسط الغياب</div>
-                            <div style="color: #0f172a; font-size: 30px; font-weight: 900; line-height: 1;">${avgAbsencesText} <span style="font-size: 14px; font-weight: 600; color: #94a3b8;">أيام</span></div>
+                        <div style="flex: 1; background-color: #ffffff; border: 1px solid #e2e8f0; border-right: 4px solid #f59e0b; border-radius: 8px; padding: 14px 16px;">
+                            <div style="color: #64748b; font-size: 12px; font-weight: 700; margin-bottom: 4px;">متوسط الغياب</div>
+                            <div style="color: #0f172a; font-size: 24px; font-weight: 900; line-height: 1;">${avgAbsencesText} <span style="font-size: 13px; font-weight: 600; color: #94a3b8;">أيام</span></div>
                         </div>
                         ` : ''}
                         ${topCategoryText ? `
-                        <div style="flex: 1; background-color: #ffffff; border: 1px solid #e2e8f0; border-right: 4px solid #558a2a; border-radius: 8px; padding: 18px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                            <div style="color: #64748b; font-size: 13px; font-weight: 700; margin-bottom: 8px;">${topCategoryName}</div>
-                            <div style="color: #0f172a; font-size: 22px; font-weight: 900; line-height: 1.2;">${topCategoryText}</div>
+                        <div style="flex: 1; background-color: #ffffff; border: 1px solid #e2e8f0; border-right: 4px solid ${brandColor}; border-radius: 8px; padding: 14px 16px;">
+                            <div style="color: #64748b; font-size: 12px; font-weight: 700; margin-bottom: 4px;">${topCategoryName}</div>
+                            <div style="color: #0f172a; font-size: 20px; font-weight: 900; line-height: 1.2;">${topCategoryText}</div>
                         </div>
                         ` : ''}
                     </div>
                 </div>
-            `;
+            ` : '';
+
+            // Margin conversion
+            let marginVal = [10, 10, 10, 10];
+            if (printSettings.margins === 'none') marginVal = [3, 3, 3, 3];
+            else if (printSettings.margins === '1cm') marginVal = [10, 10, 10, 10];
+            else if (printSettings.margins === '2cm') marginVal = [20, 20, 20, 20];
+            else marginVal = [12, 12, 12, 12];
 
             // Create a temporary container for the PDF content
             const element = document.createElement('div');
-            // Adding a class to prevent it from displaying in the actual DOM if it was appended (though we just pass it to html2pdf)
             element.innerHTML = `
                 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
                 <style>
-                    /* Settings for repeating table headers across pages */
                     @media print {
                         thead { display: table-header-group; }
                         tr { page-break-inside: avoid; }
                     }
                 </style>
-                <div style="font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; padding: 40px; color: #1e293b; background-color: white; position: relative; z-index: 1;">
+                <div style="font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; direction: rtl; text-align: right; padding: 25px; color: #1e293b; background-color: white; position: relative; z-index: 1; ${printSettings.ecoMode ? 'filter: grayscale(100%);' : ''}">
                     
                     <!-- Watermark -->
-                    ${logo_url ? `
+                    ${printSettings.watermark !== 'none' ? `
                     <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: -1; pointer-events: none; opacity: 0.04;">
-                        <img src="${logo_url}" style="width: 50%; max-width: 450px; filter: grayscale(100%);" />
+                        <img src="${effectiveLogo}" style="width: 50%; max-width: 450px; filter: grayscale(100%);" />
                     </div>
                     ` : ''}
 
                     <!-- Official Document Header -->
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 10px; margin-bottom: 10px;">
+                    ${showHeader ? `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; margin-bottom: 15px; border-bottom: 2px solid ${brandColor};">
                         
                         <!-- Right side: Organization Details -->
-                        <div style="text-align: right; line-height: 1.7; width: 33%;">
-                            <div style="font-size: 13px; font-weight: 800; color: #0f172a;">الجمهورية اليمنية</div>
-                            <div style="font-size: 12px; font-weight: 600; color: #334155;">وزارة التربية والتعليم والبحث العلمي</div>
-                            <div style="font-size: 12px; font-weight: 600; color: #6b9b37; margin-top: 4px;">إدارة نظام مدارس القيم الأهلية</div>
-                            <div style="font-size: 11px; font-weight: 500; color: #64748b;">نظام الإدارة المدرسية الشامل</div>
+                        <div style="text-align: right; line-height: 1.6; width: 38%;">
+                            <div style="font-size: 11px; font-weight: 800; color: #334155;">${republic}</div>
+                            <div style="font-size: 11px; font-weight: 700; color: #475569;">${ministry}</div>
+                            <div style="font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 2px;">${schoolName}</div>
+                            <div style="font-size: 10px; font-weight: 600; color: #64748b;">${branchName} - ${departmentName}</div>
+                            <div style="font-size: 14px; font-weight: 900; color: ${brandColor}; margin-top: 6px; border-right: 3px solid ${brandColor}; padding-right: 6px;">
+                                ${printSettings.title || 'تقرير مخصص'}
+                            </div>
                         </div>
 
                         <!-- Center: Logo -->
-                        <div style="text-align: center; width: 33%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                            ${logo_url ? `<img src="${logo_url}" style="height: 90px; object-fit: contain;" />` : `<div style="font-size: 28px; font-weight: 900; color: #6b9b37; letter-spacing: -1px; border: 2px solid #6b9b37; padding: 10px 20px; border-radius: 8px;">مدارس القيم</div>`}
+                        <div style="text-align: center; width: 24%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                            <img src="${effectiveLogo}" style="height: 75px; object-fit: contain;" />
                         </div>
 
                         <!-- Left side: Report Metadata -->
-                        <div style="text-align: left; width: 33%;">
-                            <div style="display: inline-block; text-align: right; min-width: 160px; font-size: 11px; line-height: 1.6; color: #1e293b;">
-                                <div style="font-size: 15px; font-weight: 900; color: #6b9b37; margin-bottom: 6px; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px;">تقرير ${entity === 'teachers' ? 'المعلمين' : entity === 'students' ? 'الطلاب' : 'الموظفين'}</div>
-                                <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">المرجع:</span> <strong style="font-family: monospace; font-size: 12px;">#${Math.floor(Math.random() * 900000) + 100000}</strong></div>
-                                <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">التاريخ:</span> <strong>${new Date().toLocaleDateString('ar-EG')}</strong></div>
-                                <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">الوقت:</span> <strong>${new Date().toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}</strong></div>
+                        <div style="text-align: left; width: 38%;">
+                            <div style="display: inline-block; text-align: right; min-width: 170px; font-size: 10px; line-height: 1.6; color: #1e293b; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 3px;"><span style="color: #64748b;">رقم الوثيقة:</span> <strong style="font-family: monospace;">#${Math.floor(Math.random() * 900000) + 100000}</strong></div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 3px;"><span style="color: #64748b;">تاريخ الطباعة:</span> <strong>${new Date().toLocaleDateString('ar-EG')}</strong></div>
+                                <div style="display: flex; justify-content: space-between;"><span style="color: #64748b;">الفترة:</span> <strong>${(startDate || endDate) ? `${startDate || 'البداية'} إلى ${endDate || 'الآن'}` : 'الكل'}</strong></div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Decorative Official Divider -->
-                    <div style="height: 4px; background-color: #6b9b37; width: 100%; margin-bottom: 2px;"></div>
-                    <div style="height: 1px; background-color: #558a2a; width: 100%; margin-bottom: 25px;"></div>
+                    ` : `
+                    <div style="height: 60px; border-bottom: 1px dashed #cbd5e1; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; color: #94a3b8; font-size: 11px;">
+                        <span>[الترويسة الرسمية مخفية - طباعة على ورق رسمي مروس مسبقاً]</span>
+                    </div>
+                    `}
 
                     <!-- Filters Summary (Optional) -->
                     ${filters.length > 0 ? `
-                    <div style="margin-bottom: 25px; background-color: #f8fafc; padding: 15px 20px; border-radius: 8px; border: 1px solid #e2e8f0; border-right: 4px solid #6b9b37;">
-                        <h4 style="margin: 0 0 12px 0; color: #0f172a; font-size: 14px; font-weight: 700;">نطاق التقرير والبيانات المفلترة:</h4>
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            ${filters.map(f => {
-                                let opStr = f.operator;
-                                if (opStr === '=') opStr = ':';
-                                else if (opStr === 'LIKE') opStr = 'يحتوي على';
-                                else if (opStr === '>') opStr = 'أكبر من';
-                                else if (opStr === '<') opStr = 'أصغر من';
-                                else if (opStr === '>=') opStr = 'أكبر أو يساوي';
-                                else if (opStr === '<=') opStr = 'أصغر أو يساوي';
-                                else if (opStr === '!=') opStr = 'لا يساوي';
-                                
-                                return `<span style="display: inline-block; background-color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; border: 1px solid #dcefd1; color: #1e293b; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">
-                                    <span style="color: #64748b;">${availableFields.find(af => af.id === f.field)?.label || f.field}</span> 
-                                    <strong style="color: #6b9b37; margin: 0 4px;">${opStr}</strong> 
-                                    <strong>${f.value}</strong>
-                                </span>`;
-                            }).join('')}
-                        </div>
+                    <div style="margin-bottom: 18px; background-color: #f8fafc; padding: 10px 14px; border-radius: 6px; border: 1px solid #e2e8f0; border-right: 3px solid ${brandColor};">
+                        <span style="color: #0f172a; font-size: 12px; font-weight: 700; margin-left: 8px;">نطاق الفلترة:</span>
+                        ${filters.map(f => {
+                            let opStr = f.operator;
+                            if (opStr === '=') opStr = ':';
+                            else if (opStr === 'LIKE') opStr = 'يحتوي';
+                            else if (opStr === '>') opStr = '>';
+                            else if (opStr === '<') opStr = '<';
+                            return `<span style="display: inline-block; background-color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; border: 1px solid #e2e8f0; margin-left: 6px;">
+                                <span style="color: #64748b;">${availableFields.find(af => af.id === f.field)?.label || f.field}</span> 
+                                <strong style="color: ${brandColor};">${opStr}</strong> 
+                                <strong>${f.value}</strong>
+                            </span>`;
+                        }).join('')}
                     </div>
                     ` : ''}
 
@@ -699,11 +755,11 @@ export default function CustomBuilder({ auth, teachersList = [], studentsList = 
                     ${summaryCardsHTML}
 
                     <!-- Data Table -->
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 13px; border: 1px solid #dcefd1;">
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 11px; border: 1px solid #e2e8f0;">
                         <thead>
                             <tr>
                                 ${exportColumns.map((col, i) => `
-                                    <th style="background-color: #6b9b37; color: #ffffff; padding: 14px 12px; border: 1px solid #558a2a; font-weight: 800; text-align: right;">
+                                    <th style="background-color: ${brandColor}; color: #ffffff; padding: 10px 8px; border: 1px solid rgba(255,255,255,0.2); font-weight: 800; text-align: center;">
                                         ${col}
                                     </th>
                                 `).join('')}
@@ -711,15 +767,14 @@ export default function CustomBuilder({ auth, teachersList = [], studentsList = 
                         </thead>
                         <tbody>
                             ${exportData.map((row, index) => `
-                                <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f0f7eb'}; transition: background-color 0.2s; page-break-inside: avoid;">
+                                <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f8fafc'}; page-break-inside: avoid;">
                                     ${exportColumns.map(col => {
-                                        let cellStyle = "padding: 12px; border: 1px solid #e2e8f0; color: #1e293b; font-weight: 600;";
-                                        // Critical value highlighting
+                                        let cellStyle = "padding: 8px 10px; border: 1px solid #e2e8f0; color: #1e293b; text-align: center; font-weight: 600;";
                                         if ((col.includes('غياب') || col.includes('absences')) && Number(row[col]) > 5) {
-                                            cellStyle += " background-color: #fee2e2; color: #b91c1c; font-weight: 800; border-color: #fca5a5;";
+                                            cellStyle += " background-color: #fee2e2; color: #b91c1c; font-weight: 800;";
                                         }
                                         return `<td style="${cellStyle}">
-                                            ${row[col] !== null && row[col] !== undefined && row[col] !== '' ? row[col] : '<span style="color: #cbd5e1;">-</span>'}
+                                            ${row[col] !== null && row[col] !== undefined && row[col] !== '' ? row[col] : '-'}
                                         </td>`;
                                     }).join('')}
                                 </tr>
@@ -728,54 +783,59 @@ export default function CustomBuilder({ auth, teachersList = [], studentsList = 
                     </table>
                     
                     <!-- Signatures Section -->
-                    <div style="margin-top: 50px; padding: 25px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; page-break-inside: avoid;">
-                        <h4 style="margin: 0 0 30px 0; color: #0f172a; font-size: 15px; font-weight: 800; text-align: right; border-bottom: 2px solid #6b9b37; display: inline-block; padding-bottom: 6px;">الاعتمادات والتوقيعات الرسمية</h4>
-                        <div style="display: flex; justify-content: space-between; align-items: flex-end; text-align: center; margin-top: 10px;">
-                            <div style="width: 25%;">
-                                <div style="color: #334155; font-size: 13px; font-weight: 700; margin-bottom: 50px;">مُعِد التقرير</div>
-                                <div style="border-bottom: 1px dashed #94a3b8; margin-bottom: 10px;"></div>
-                                <div style="color: #64748b; font-size: 11px;">الاسم / التوقيع</div>
+                    ${showFooter && showSignatures ? `
+                    <div style="margin-top: 30px; padding: 15px 20px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; page-break-inside: avoid;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; text-align: center;">
+                            ${reportDesign?.sig1_active ?? true ? `
+                            <div style="width: 28%; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div style="color: #334155; font-size: 11px; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">${reportDesign?.sig1_title || 'إعداد / المختص'}</div>
+                                <div style="color: #64748b; font-size: 10px; italic">${reportDesign?.sig1_name || 'التوقيع: .....................'}</div>
                             </div>
-                            <div style="width: 25%;">
-                                <div style="color: #334155; font-size: 13px; font-weight: 700; margin-bottom: 50px;">المراجع / المدقق</div>
-                                <div style="border-bottom: 1px dashed #94a3b8; margin-bottom: 10px;"></div>
-                                <div style="color: #64748b; font-size: 11px;">الاسم / التوقيع</div>
-                            </div>
-                            <div style="width: 25%;">
-                                <div style="color: #334155; font-size: 13px; font-weight: 700; margin-bottom: 50px;">المدير العام (يعتمد)</div>
-                                <div style="border-bottom: 1px solid #64748b; margin-bottom: 10px;"></div>
-                                <div style="color: #475569; font-size: 11px; font-weight: 600;">الختم الرسمي والتوقيع</div>
-                            </div>
-                        </div>
-                    </div>
+                            ` : '<div></div>'}
 
-                    <!-- Footer -->
-                    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: #64748b; position: relative;">
-                        <!-- Accent line -->
-                        <div style="position: absolute; top: -1px; right: 0; width: 120px; height: 3px; background-color: #6b9b37;"></div>
-                        
-                        <div>
-                            <strong style="color: #1e293b;">وثيقة رسمية</strong> - تم الاستخراج آلياً من نظام <strong style="color: #6b9b37;">القيم ERP</strong>
-                        </div>
-                        <div style="display: flex; gap: 15px; align-items: center;">
-                            <span>جميع الحقوق محفوظة &copy; ${new Date().getFullYear()}</span>
-                            <span style="color: #cbd5e1;">|</span>
-                            <span style="color: #1e293b; font-weight: 700;">مدارس القيم الأهلية</span>
+                            ${reportDesign?.sig2_active ?? true ? `
+                            <div style="width: 28%; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between;">
+                                <div style="color: #334155; font-size: 11px; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">${reportDesign?.sig2_title || 'مراجعة / وكيل المدرسة'}</div>
+                                <div style="color: #64748b; font-size: 10px; italic">${reportDesign?.sig2_name || 'التوقيع: .....................'}</div>
+                            </div>
+                            ` : '<div></div>'}
+
+                            ${reportDesign?.sig3_active ?? true ? `
+                            <div style="width: 28%; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+                                <div style="color: #334155; font-size: 11px; font-weight: 700; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;">${reportDesign?.sig3_title || 'اعتماد / مدير الفرع'}</div>
+                                <div style="height: 35px; display: flex; align-items: center; justify-content: center; position: relative;">
+                                    ${showStamp && stampSrc ? `<img src="${stampSrc}" style="height: 45px; object-fit: contain; opacity: 0.85;" />` : `<span style="color: #64748b; font-size: 10px;">${reportDesign?.sig3_name || 'الختم والتوقيع: .....................'}</span>`}
+                                </div>
+                            </div>
+                            ` : '<div></div>'}
                         </div>
                     </div>
+                    ` : ''}
+
+                    <!-- Footer Note -->
+                    ${showFooter ? `
+                    <div style="margin-top: 25px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #64748b;">
+                        <div>
+                            <span>${footerNotice}</span>
+                        </div>
+                        <div style="display: flex; gap: 12px; align-items: center;" dir="ltr">
+                            ${showPageNumber ? '<span>Page 1 of 1</span>' : ''}
+                            <span>${new Date().toLocaleDateString('en-US')}</span>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             `;
 
             const opt = {
-                margin:       [10, 10, 10, 10],
-                filename:     `تقرير_${entity}_${new Date().getTime()}.pdf`,
+                margin:       marginVal,
+                filename:     `${printSettings.title || 'تقرير'}_${new Date().getTime()}.pdf`,
                 image:        { type: 'jpeg', quality: 1 },
                 pagebreak:    { mode: ['css', 'legacy'] },
                 html2canvas:  { scale: 2, useCORS: true, logging: false, letterRendering: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                jsPDF:        { unit: 'mm', format: (printSettings.paperSize || 'a4').toLowerCase(), orientation: printSettings.orientation || 'landscape' }
             };
 
-            // إعطاء المتصفح فرصة لتحديث واجهة المستخدم قبل عملية الرندر الثقيلة جداً
             await new Promise(resolve => setTimeout(resolve, 100));
 
             await html2pdf().set(opt).from(element).save();
@@ -1285,155 +1345,152 @@ export default function CustomBuilder({ auth, teachersList = [], studentsList = 
                     </div>
 
                     {/* 4. Grouping & Preview */}
-
-                        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col overflow-hidden">
+                        
+                        {/* Grouping */}
+                        <div className="pt-6 border-t border-slate-100 dark:border-slate-800 px-6 pb-2">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                                        <Layers size={18} />
+                                    </div>
+                                    <h3 className="font-bold text-slate-800 dark:text-white">نمط العرض والتجميع (Grouping)</h3>
+                                </div>
+                            </div>
                             
-                            {/* Grouping */}
-                            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 px-6 pb-2">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="p-2 rounded-lg bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                                            <Layers size={18} />
-                                        </div>
-                                        <h3 className="font-bold text-slate-800 dark:text-white">نمط العرض والتجميع (Grouping)</h3>
-                                    </div>
+                            <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl shadow-inner">
+                                <button
+                                    onClick={() => setGroupBy('')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
+                                        groupBy === '' 
+                                            ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-sm' 
+                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                                    }`}
+                                >
+                                    <List size={18} />
+                                    <span>عرض تفصيلي (سجلات)</span>
+                                </button>
+                                <button
+                                    onClick={() => setGroupBy(entity === 'students' ? 'grade' : 'department')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
+                                        groupBy !== '' 
+                                            ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-sm' 
+                                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
+                                    }`}
+                                >
+                                    <PieChart size={18} />
+                                    <span>تجميع إحصائي حسب ({entity === 'students' ? 'الصف' : 'القسم'})</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Export Header */}
+                        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                                    <Eye size={20} strokeWidth={2.5} />
                                 </div>
-                                
-                                <div className="flex p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl shadow-inner">
-                                    <button
-                                        onClick={() => setGroupBy('')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
-                                            groupBy === '' 
-                                                ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-sm' 
-                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
-                                        }`}
-                                    >
-                                        <List size={18} />
-                                        <span>عرض تفصيلي (سجلات)</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setGroupBy(entity === 'students' ? 'grade' : 'department')}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all duration-300 ${
-                                            groupBy !== '' 
-                                                ? 'bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-400 shadow-sm' 
-                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
-                                        }`}
-                                    >
-                                        <PieChart size={18} />
-                                        <span>تجميع إحصائي حسب ({entity === 'students' ? 'الصف' : 'القسم'})</span>
-                                    </button>
+                                <div>
+                                    <h3 className="font-bold text-lg text-slate-800 dark:text-white">المعاينة المسبقة وإعدادات الطباعة</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">مطابقة حية ودقيقة مع مخرجات الـ PDF والورق المطبوع</p>
                                 </div>
                             </div>
-
-                            {/* Export Header */}
-                            <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 rounded-xl bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                                        <Eye size={20} strokeWidth={2.5} />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-lg text-slate-800 dark:text-white">المعاينة المسبقة</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">شكل التقرير النهائي قبل التصدير</p>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex gap-3">
-                                    <button 
-                                        onClick={exportToPDF}
-                                        disabled={results.length === 0}
-                                        className="px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-red-100 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-200 dark:hover:border-red-900/50 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm disabled:opacity-50 disabled:hover:bg-white"
-                                    >
-                                        <Download size={18} />
-                                        <span>تصدير PDF</span>
-                                    </button>
-                                    <button 
-                                        onClick={exportToExcel}
-                                        disabled={results.length === 0}
-                                        className="px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-900/50 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm disabled:opacity-50 disabled:hover:bg-white"
-                                    >
-                                        <Download size={18} />
-                                        <span>تصدير Excel</span>
-                                    </button>
-                                </div>
+                            
+                            <div className="flex gap-3">
+                                <button 
+                                    onClick={exportToExcel}
+                                    disabled={results.length === 0}
+                                    className="px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-emerald-100 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-900/50 rounded-xl font-bold flex items-center gap-2 transition-all shadow-sm disabled:opacity-50 disabled:hover:bg-white"
+                                >
+                                    <Download size={18} />
+                                    <span>تصدير Excel</span>
+                                </button>
                             </div>
+                        </div>
 
-                            {/* Table Content */}
-                            <div className="p-6 flex-1 overflow-auto bg-slate-50/50 dark:bg-[#0f172a]">
-                                {results.length === 0 ? (
-                                    <div className="h-[400px] flex flex-col items-center justify-center text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 m-2">
-                                        <div className="w-24 h-24 mb-6 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center shadow-inner">
-                                            <FileText size={48} className="text-slate-300 dark:text-slate-600" />
-                                        </div>
-                                        <h4 className="text-lg font-bold text-slate-600 dark:text-slate-300 mb-2">لا توجد بيانات للعرض</h4>
-                                        <p className="text-sm text-center max-w-md leading-relaxed">حدد الخيارات المطلوبة من الأعلى واضغط على زر <br/> "جلب ومعاينة البيانات" لإنشاء التقرير الخاص بك.</p>
+                        {/* Preview and Print Layout */}
+                        <div className="p-6 flex-1 overflow-auto bg-slate-50/50 dark:bg-[#0f172a]">
+                            {results.length === 0 ? (
+                                <div className="h-[400px] flex flex-col items-center justify-center text-slate-400 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700 m-2">
+                                    <div className="w-24 h-24 mb-6 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center shadow-inner">
+                                        <FileText size={48} className="text-slate-300 dark:text-slate-600" />
                                     </div>
-                                ) : (
-                                    <div id="report-table-container" className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm" dir="rtl">
-                                        <div className="p-6 border-b border-slate-200 dark:border-slate-700 text-center font-bold text-xl hidden print:block text-slate-800">
-                                            تقرير {
-                                                entity === 'teachers' ? 'المعلمين' : 
-                                                entity === 'supervisors' ? 'المشرفين' :
-                                                entity === 'employees' ? 'الموظفين' :
-                                                'الطلاب'
-                                            }
-                                        </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-right">
-                                                <thead>
-                                                    <tr className="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 text-sm">
-                                                        {columns.map((col, i) => (
-                                                            <th key={i} className="px-6 py-4 font-bold border-b border-slate-200 dark:border-slate-700 whitespace-nowrap">
-                                                                {col}
-                                                            </th>
-                                                        ))}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {results.map((row, i) => (
-                                                        <tr key={i} className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-colors group">
-                                                            {columns.map((col, j) => (
-                                                                <td key={j} className="px-6 py-4 text-slate-700 dark:text-slate-300 text-sm font-medium">
-                                                                    {row[col]}
-                                                                </td>
-                                                            ))}
-                                                        </tr>
+                                    <h4 className="text-lg font-bold text-slate-600 dark:text-slate-300 mb-2">لا توجد بيانات للعرض</h4>
+                                    <p className="text-sm text-center max-w-md leading-relaxed">حدد الخيارات المطلوبة من الأعلى واضغط على زر <br/> "جلب ومعاينة البيانات" لإنشاء التقرير الخاص بك.</p>
+                                </div>
+                            ) : (
+                                <ReportPrintLayout
+                                    title={printSettings.title}
+                                    printSettings={printSettings}
+                                    setPrintSettings={setPrintSettings}
+                                    onPrint={() => window.print()}
+                                    onDownloadPdf={exportToPDF}
+                                    isGeneratingPdf={loading}
+                                    startDate={startDate}
+                                    endDate={endDate}
+                                    documentNumberPrefix="CST"
+                                >
+                                    <div className="overflow-x-auto bg-white rounded-xl">
+                                        <table className="w-full text-right text-xs">
+                                            <thead>
+                                                <tr className="text-white border-b" style={{ backgroundColor: printSettings.brandColor }}>
+                                                    {columns.map((col, i) => (
+                                                        <th key={i} className="px-4 py-3 font-black text-center border-r border-white/20 whitespace-nowrap">
+                                                            {col}
+                                                        </th>
                                                     ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100">
+                                                {results.map((row, i) => (
+                                                    <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                                        {columns.map((col, j) => {
+                                                            const val = row[col];
+                                                            const isCritical = (col.includes('غياب') || col.includes('absences')) && Number(val) > 5;
+                                                            return (
+                                                                <td key={j} className={`px-4 py-3 text-center font-medium ${isCritical ? 'bg-rose-50 text-rose-700 font-bold' : 'text-slate-700'}`}>
+                                                                    {val !== null && val !== undefined && val !== '' ? val : '-'}
+                                                                </td>
+                                                            );
+                                                        })}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                )}
-                            </div>
-                            
-                            {/* Pagination */}
-                            {paginationMeta && (
-                                <div className="p-4 px-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                    <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                                        إجمالي السجلات: <span className="font-bold text-slate-800 dark:text-white px-1">{paginationMeta.total}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                                        <button 
-                                            onClick={() => handlePageChange(page - 1)}
-                                            disabled={page === 1}
-                                            className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                                        >
-                                            <ChevronRight size={18} />
-                                        </button>
-                                        <div className="text-xs font-bold text-slate-600 dark:text-slate-300 px-4 min-w-[100px] text-center">
-                                            {page} / {paginationMeta.last_page}
-                                        </div>
-                                        <button 
-                                            onClick={() => handlePageChange(page + 1)}
-                                            disabled={page === paginationMeta.last_page}
-                                            className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-                                        >
-                                            <ChevronLeft size={18} />
-                                        </button>
-                                    </div>
-                                </div>
+                                </ReportPrintLayout>
                             )}
                         </div>
+                        
+                        {/* Pagination */}
+                        {paginationMeta && (
+                            <div className="p-4 px-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    إجمالي السجلات: <span className="font-bold text-slate-800 dark:text-white px-1">{paginationMeta.total}</span>
+                                </div>
+                                <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <button 
+                                        onClick={() => handlePageChange(page - 1)}
+                                        disabled={page === 1}
+                                        className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                                    >
+                                        <ChevronRight size={18} />
+                                    </button>
+                                    <div className="text-xs font-bold text-slate-600 dark:text-slate-300 px-4 min-w-[100px] text-center">
+                                        {page} / {paginationMeta.last_page}
+                                    </div>
+                                    <button 
+                                        onClick={() => handlePageChange(page + 1)}
+                                        disabled={page === paginationMeta.last_page}
+                                        className="p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                                    >
+                                        <ChevronLeft size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     </div>
                 </div>
         </AdminLayout>

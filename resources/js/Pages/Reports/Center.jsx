@@ -1,24 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { 
     FileText, Users, BookOpen, Map, Star, AlertTriangle, 
     CheckSquare, Clock, GraduationCap, Award, Eye, Calendar,
     BarChart3, Search, Settings, CalendarDays, ClipboardList, AlertOctagon, Trophy,
     Megaphone, UserCheck, ShieldAlert, Scale, Table, RefreshCcw, Pin, Sparkles, ChevronLeft, ChevronRight,
-    Check, X, FileSpreadsheet, File, Loader2, PlayCircle, Lightbulb, Zap
+    Check, X, PlayCircle, Lightbulb, ChevronDown, ChevronUp, Building2, Stethoscope, Activity, Sparkle, Palette
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export default function ReportsCenter({ auth, stats, chartData }) {
+export default function ReportsCenter({ 
+    auth, 
+    stats, 
+    chartData: initialChartData = [], 
+    filters = {}, 
+    academicYears = [], 
+    semesters = [], 
+    userBranch 
+}) {
     const [searchQuery, setSearchQuery] = useState('');
     const [pinnedReports, setPinnedReports] = useState([]);
     const [recentReports, setRecentReports] = useState([]);
     const [currentInsightIdx, setCurrentInsightIdx] = useState(0);
-    const [selectedReports, setSelectedReports] = useState([]);
-    const [isExporting, setIsExporting] = useState(false);
-    const [exportSuccess, setExportSuccess] = useState(null);
-    const [chartFilter, setChartFilter] = useState('5days');
+    const [chartFilter, setChartFilter] = useState(filters.chart_period || '5days');
+    const [chartData, setChartData] = useState(initialChartData);
+    const [loadingChart, setLoadingChart] = useState(false);
+    
+    // Toggle Section for School KPIs & Analytics (Hidden by default as requested)
+    const [showKPIsSection, setShowKPIsSection] = useState(false);
+
+    // Academic Year & Semester filter states
+    const [selectedYear, setSelectedYear] = useState(filters.academic_year_id || '');
+    const [selectedSemester, setSelectedSemester] = useState(filters.semester_id || '');
     
     // Interactive Tour State
     const [showTour, setShowTour] = useState(false);
@@ -27,31 +41,31 @@ export default function ReportsCenter({ auth, stats, chartData }) {
     const tourSteps = [
         {
             title: 'مرحباً بك في مركز التقارير المتقدم 👋',
-            desc: 'لقد قمنا بتصميم هذا المركز ليكون غرفة العمليات الخاصة بك. من هنا يمكنك مراقبة كل تفاصيل المدرسة واتخاذ قرارات مبنية على بيانات دقيقة بشكل احترافي.',
+            desc: 'لقد قمنا بتصميم هذا المركز ليكون غرفة العمليات الخاصة بك في إطار فرعك. يمكنك مراقبة كل تفاصيل المدرسة واستخراج التقارير المعتمدة بدقة وسرعة.',
             icon: Sparkles,
             color: 'text-primary-500 dark:text-primary-400',
             bg: 'bg-primary-50 dark:bg-primary-500/10'
         },
         {
-            title: 'الرؤى الذكية (Smart Insights) 🧠',
-            desc: 'لا حاجة للبحث المعقد في الأرقام، نظامنا الذكي يحلل البيانات يومياً ويعطيك تنبيهات نصية سريعة حول أهم التغيرات في مدرستك.',
-            icon: Lightbulb,
-            color: 'text-yellow-500 dark:text-yellow-400',
-            bg: 'bg-yellow-50 dark:bg-yellow-500/10'
-        },
-        {
-            title: 'الوصول السريع والتصدير المجمع ⚡',
-            desc: 'ثبّت تقاريرك المفضلة للوصول لها فوراً. كما يمكنك تحديد أكثر من تقرير بتحديد المربع بجانب كل تقرير، وتصديرها معاً بصيغة PDF أو Excel.',
-            icon: Zap,
+            title: 'مؤشرات الأداء المدرسية والرسوم البيانية 📊',
+            desc: 'يمكنك إظهار أو إخفاء قسم مؤشرات الأداء بنقرة زر واحدة لتصفح مريح والتركيز على ما يهمك، مع رسوم بيانية تفاعلية تدعم فترات زمنية متعددة.',
+            icon: BarChart3,
             color: 'text-emerald-500 dark:text-emerald-400',
             bg: 'bg-emerald-50 dark:bg-emerald-500/10'
         },
         {
-            title: 'مُنشئ التقارير المخصص 🛠️',
-            desc: 'لم تجد التقرير الذي تريده؟ استخدم "مُنشئ التقارير" لبناء تقريرك الخاص بالكامل، اختر الأعمدة والفلاتر وقم بحفظ القوالب لاستخدامها لاحقاً.',
-            icon: Settings,
+            title: 'عزل البيانات وفقاً للفرع والفصل الدراسي 🏫',
+            desc: 'بيانات المركز معزولة ومحمية بالكامل في إطار فرع مدرستك فقط. كما يمكنك تصفية المؤشرات بناءً على العام الدراسي والفصل المختار.',
+            icon: Building2,
             color: 'text-blue-500 dark:text-blue-400',
             bg: 'bg-blue-50 dark:bg-blue-500/10'
+        },
+        {
+            title: 'مُنشئ التقارير المخصص 🛠️',
+            desc: 'لم تجد التقرير الذي تريده؟ استخدم "مُنشئ التقارير" لبناء تقريرك الخاص بالكامل، اختر الحقول والشروط والفلاتر وصدر النتائج مباشرة.',
+            icon: Settings,
+            color: 'text-purple-500 dark:text-purple-400',
+            bg: 'bg-purple-50 dark:bg-purple-500/10'
         }
     ];
 
@@ -64,45 +78,60 @@ export default function ReportsCenter({ auth, stats, chartData }) {
         }
     };
 
-    const toggleSelection = (e, report) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (selectedReports.find(r => r.name === report.name)) {
-            setSelectedReports(selectedReports.filter(r => r.name !== report.name));
-        } else {
-            setSelectedReports([...selectedReports, report]);
+    // Filter by Academic Year or Semester
+    const handleYearChange = (yearId) => {
+        setSelectedYear(yearId);
+        router.get(route('reports.center'), {
+            academic_year_id: yearId,
+            chart_period: chartFilter
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    const handleSemesterChange = (semesterId) => {
+        setSelectedSemester(semesterId);
+        router.get(route('reports.center'), {
+            academic_year_id: selectedYear,
+            semester_id: semesterId,
+            chart_period: chartFilter
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
+    // Handle Timeframe changes for Chart with Real Server Queries
+    const handleChartFilterChange = async (period) => {
+        setChartFilter(period);
+        setLoadingChart(true);
+        try {
+            const url = new URL(route('reports.center'), window.location.origin);
+            url.searchParams.set('chart_period', period);
+            if (selectedYear) url.searchParams.set('academic_year_id', selectedYear);
+            if (selectedSemester) url.searchParams.set('semester_id', selectedSemester);
+
+            const res = await fetch(url.toString(), {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.chartData) {
+                    setChartData(data.chartData);
+                }
+            }
+        } catch (err) {
+            console.error('Error fetching chart data:', err);
+        } finally {
+            setLoadingChart(false);
         }
     };
 
-    const handleBulkExport = (format) => {
-        setIsExporting(true);
-        setExportSuccess(null);
-        // Simulate API compilation time for bulk export
-        setTimeout(() => {
-            setIsExporting(false);
-            setExportSuccess(`تم تجميع ${selectedReports.length} تقارير وتصديرها بصيغة ${format.toUpperCase()} بنجاح!`);
-            
-            // Generate dummy file to trigger browser download
-            const content = `تم إنشاء هذا الملف التجريبي (${format}) لتمثيل عملية التصدير المجمع لـ ${selectedReports.length} تقارير.\nملاحظة: في بيئة الإنتاج الفعلية، سيقوم نظام Laravel بتوليد هذا الملف باستخدام مكتبات مثل DomPDF أو Laravel Excel ودمج البيانات الحقيقية.`;
-            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), content], { type: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `reports_bulk_export_${new Date().toISOString().split('T')[0]}.${format}`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-
-            // Clear selection and success message after delay
-            setTimeout(() => {
-                setSelectedReports([]);
-                setExportSuccess(null);
-            }, 4000);
-        }, 2500);
-    };
-
-    // Generate dynamic insights based on data
+    // Generate dynamic insights based on real server data
     const generateInsights = () => {
         let insights = [];
         
@@ -110,23 +139,23 @@ export default function ReportsCenter({ auth, stats, chartData }) {
             const today = chartData[chartData.length - 1];
             const yesterday = chartData[chartData.length - 2];
             
-            if (today.student_absences > yesterday.student_absences) {
+            if (today && yesterday && today.student_absences > yesterday.student_absences) {
                 const diff = today.student_absences - yesterday.student_absences;
                 const percent = Math.round((diff / (yesterday.student_absences || 1)) * 100);
                 insights.push({
                     type: 'warning',
                     icon: AlertTriangle,
-                    text: `لوحظت زيادة بنسبة ${percent}% في غياب الطلاب اليوم مقارنة بالأمس (${diff} طالب إضافي).`,
+                    text: `لوحظت زيادة بنسبة ${percent}% في غياب الطلاب اليوم مقارنة بالأمس (${diff} طالب إضافي في الفرع).`,
                     color: 'text-orange-600 dark:text-orange-400',
                     bg: 'bg-orange-50 dark:bg-orange-900/20',
                     border: 'border-orange-200 dark:border-orange-800/50',
                     glow: 'shadow-orange-500/20'
                 });
-            } else if (today.student_absences < yesterday.student_absences) {
+            } else if (today && yesterday && today.student_absences < yesterday.student_absences) {
                 insights.push({
                     type: 'success',
                     icon: Trophy,
-                    text: `مؤشر إيجابي: انخفاض ملحوظ في غياب الطلاب اليوم مقارنة بالأمس!`,
+                    text: `مؤشر إيجابي: انخفاض ملحوظ في غياب الطلاب اليوم في الفرع مقارنة بالأمس!`,
                     color: 'text-emerald-600 dark:text-emerald-400',
                     bg: 'bg-emerald-50 dark:bg-emerald-900/20',
                     border: 'border-emerald-200 dark:border-emerald-800/50',
@@ -139,7 +168,7 @@ export default function ReportsCenter({ auth, stats, chartData }) {
             insights.push({
                 type: 'info',
                 icon: BookOpen,
-                text: `تم رفع ${stats.followup_books_today} دفتر متابعة اليوم، معدل التزام المعلمين ممتاز ويساهم في استقرار العملية التعليمية.`,
+                text: `تم رفع ${stats.followup_books_today} دفتر متابعة اليوم من أصل ${stats?.expected_followups || 0} متوقع، معدل التزام المعلمين يساهم في ضبط جودة الحصص.`,
                 color: 'text-blue-600 dark:text-blue-400',
                 bg: 'bg-blue-50 dark:bg-blue-900/20',
                 border: 'border-blue-200 dark:border-blue-800/50',
@@ -151,7 +180,7 @@ export default function ReportsCenter({ auth, stats, chartData }) {
             insights.push({
                 type: 'info',
                 icon: Eye,
-                text: `نشاط إشرافي جيد: تم تنفيذ ${stats.classroom_visits_this_week} زيارات صفية هذا الأسبوع.`,
+                text: `نشاط إشرافي نشط: تم إنجاز ${stats.classroom_visits_this_week} زيارة صفية هذا الأسبوع في الفرع.`,
                 color: 'text-primary-600 dark:text-primary-400',
                 bg: 'bg-primary-50 dark:bg-primary-900/20',
                 border: 'border-primary-200 dark:border-primary-800/50',
@@ -163,7 +192,7 @@ export default function ReportsCenter({ auth, stats, chartData }) {
             insights.push({
                 type: 'info',
                 icon: Sparkles,
-                text: `جميع مؤشرات الأداء المدرسية ضمن المعدلات الطبيعية والمستقرة لهذا اليوم.`,
+                text: `جميع مؤشرات الأداء لفرعك (${userBranch?.name || 'الفرع الحالي'}) ضمن المعدلات الطبيعية والمستقرة لهذا اليوم.`,
                 color: 'text-primary-600 dark:text-primary-400',
                 bg: 'bg-primary-50 dark:bg-primary-900/20',
                 border: 'border-primary-200 dark:border-primary-800/50',
@@ -201,7 +230,6 @@ export default function ReportsCenter({ auth, stats, chartData }) {
         if (pinnedReports.find(r => r.name === report.name)) {
             newPinned = pinnedReports.filter(r => r.name !== report.name);
         } else {
-            // Save report along with some category context for styling
             newPinned = [...pinnedReports, { ...report, categoryColor: category.color }];
         }
         setPinnedReports(newPinned);
@@ -215,72 +243,96 @@ export default function ReportsCenter({ auth, stats, chartData }) {
         localStorage.setItem('smart_school_recent_reports', JSON.stringify(newRecent));
     };
 
+    // Calculate real dynamic rates based on actual database totals
+    const studentAbsenceCount = stats?.student_absences_today || 0;
+    const totalStudents = stats?.total_students || 0;
+    const studentAttendanceRate = totalStudents > 0 
+        ? Math.max(0, Math.round(((totalStudents - studentAbsenceCount) / totalStudents) * 100))
+        : 100;
+    const studentAbsenceRate = totalStudents > 0 
+        ? Math.round((studentAbsenceCount / totalStudents) * 100)
+        : 0;
+
+    const teacherAbsenceCount = stats?.teacher_absences_today || 0;
+    const totalTeachers = stats?.total_teachers || 0;
+    const teacherAttendanceRate = totalTeachers > 0
+        ? Math.max(0, Math.round(((totalTeachers - teacherAbsenceCount) / totalTeachers) * 100))
+        : 100;
+
+    const followupBooksCount = stats?.followup_books_today || 0;
+    const expectedFollowups = stats?.expected_followups || 1;
+    const followupRate = Math.min(100, Math.round((followupBooksCount / expectedFollowups) * 100));
+
+    const classroomVisitsCount = stats?.classroom_visits_this_week || 0;
+    const expectedVisits = stats?.expected_visits_per_week || 1;
+    const visitRate = Math.min(100, Math.round((classroomVisitsCount / expectedVisits) * 100));
+
+    // Full Complete Categorized Report Registry (including newly added reports)
     const reportCategories = [
         {
             title: 'تقارير المعلمين والموظفين',
             icon: Users,
             color: 'from-primary-500 to-primary-700',
-            bgGlow: 'bg-primary-500/10',
             reports: [
                 {
                     name: 'تقرير غياب المعلمين',
-                    description: 'متابعة سجلات الحضور والانصراف والغياب للمعلمين',
+                    description: 'متابعة سجلات الحضور والانصراف والغياب اليومي والتراكمي للمعلمين',
                     icon: Clock,
                     url: route('hr.reports.teacher-absences'),
                     permission: 'إدارة الحضور والانصراف',
                 },
                 {
                     name: 'تقارير رفع دفتر المتابعة',
-                    description: 'متابعة انضباط المعلمين في رفع دفاتر التحضير والمتابعة',
+                    description: 'متابعة انضباط المعلمين في رفع دفاتر التحضير والمتابعة والواجبات',
                     icon: BookOpen,
                     url: route('hr.reports.followup-books'),
                     permission: 'إدارة دفاتر المتابعة',
                 },
                 {
                     name: 'تقارير الخطط الدراسية',
-                    description: 'متابعة الخطط الدراسية المرفوعة من قبل المعلمين',
+                    description: 'متابعة الخطط الفصلية والأسبوعية المرفوعة من قبل المعلمين واعتمادها',
                     icon: Map,
                     url: route('hr.reports.study-plans'),
                     permission: 'إدارة الخطط الدراسية',
                 },
                 {
-                    name: 'الزيارات الصفية (المشرف)',
-                    description: 'تقارير وسجلات الزيارات الصفية للمشرفين الأكاديميين',
+                    name: 'الزيارات الصفية الأكاديمية',
+                    description: 'تقارير وسجلات الزيارات الصفية للمشرفين التربويين وتقييم الأداء',
                     icon: Eye,
                     url: route('hr.reports.classroom-visits'),
                     permission: 'إدارة الزيارات الصفية',
                 },
                 {
-                    name: 'كشف تقييمات الموظفين',
-                    description: 'استعراض تفصيلي لدرجات التقييم لجميع الموظفين بشكل جدولي',
+                    name: 'كشف تقييمات الموظفين (Appraisals)',
+                    description: 'استعراض تفصيلي لدرجات التقييم لجميع الموظفين بشكل جدولي ورسومي',
                     icon: FileText,
                     url: route('hr.appraisals.report'),
                     permission: 'عرض التقييمات الإدارية',
                 },
                 {
                     name: 'تقارير إجازات الموظفين',
-                    description: 'تقارير الإجازات (مرضي، اعتيادي) والرصيد المتبقي للموظفين',
+                    description: 'تقارير الإجازات المعتمدة (مرضي، اعتيادي، اضطراري) والرصيد المتبقي',
                     icon: CalendarDays,
                     url: route('hr.reports.employee-leaves'),
                     permission: null,
                 },
                 {
-                    name: 'الطلبات الإدارية',
-                    description: 'طلبات الاستئذان، خطابات التعريف، وحالتها',
+                    name: 'تقرير الطلبات الإدارية',
+                    description: 'سجل طلبات الاستئذان، السلف، وشهادات التعريف وحالات الموافقة',
                     icon: ClipboardList,
                     url: route('hr.reports.administrative-requests'),
                     permission: null,
                 },
                 {
-                    name: 'مخالفات الموظفين',
-                    description: 'حالات لفت النظر والإنذارات الموجهة للكادر',
+                    name: 'سجل مخالفات الموظفين',
+                    description: 'حالات لفت النظر، التنبيهات، والإنذارات الموجهة للكادر الوظيفي',
                     icon: AlertOctagon,
                     url: route('hr.reports.employee-violations'),
                     permission: null,
                 },
                 {
-                    name: 'إنجازات الموظفين',
-                    description: 'سجلات الدورات التدريبية والتميز في الأداء',
+                    name: 'سجل إنجازات وتكريم الموظفين',
+                    description: 'سجلات الدورات التدريبية، شهادات الشكر والتميز في الأداء المهني',
                     icon: Trophy,
                     url: route('hr.reports.employee-achievements'),
                     permission: null,
@@ -288,72 +340,69 @@ export default function ReportsCenter({ auth, stats, chartData }) {
             ]
         },
         {
-            title: 'تقارير الطلاب والأكاديمية',
+            title: 'تقارير الطلاب والحضور المدرسي',
             icon: GraduationCap,
-            color: 'from-primary-600 to-primary-800',
-            bgGlow: 'bg-primary-600/10',
+            color: 'from-emerald-600 to-teal-800',
             reports: [
                 {
-                    name: 'تقرير غياب الطلاب',
-                    description: 'سجلات الغياب اليومي وحسب الحصص للطلاب',
+                    name: 'تقرير غياب الطلاب اليومي',
+                    description: 'سجلات الحضور والغياب اليومي للطلاب حسب الشعب والصفوف',
                     icon: AlertTriangle,
                     url: route('academic.attendances.report'),
                     permission: 'إدارة الطلاب',
                 },
                 {
-                    name: 'تقرير الغياب بالحصص',
-                    description: 'تقرير تفصيلي لغياب الطلاب بالحصص مخصص للطباعة',
+                    name: 'تقرير الغياب بالحصص (Class Attendance)',
+                    description: 'تقرير تفصيلي لغياب الطلاب لكل حصة دراسية مع اسم المعلم المسجل',
                     icon: FileText,
                     url: route('academic.attendances.class-report'),
                     permission: 'إدارة الطلاب',
                 },
                 {
                     name: 'كشف الغياب الأسبوعي للطلاب',
-                    description: 'كشف تفصيلي لحضور الطلاب يطبع نهاية كل أسبوع',
-                    icon: FileText,
+                    description: 'كشف تفصيلي لحضور الطلاب يطبع نهاية كل أسبوع للمتابعة الدورية',
+                    icon: Calendar,
                     url: route('academic.attendances.weekly-report'),
                     permission: 'إدارة الطلاب',
                 }
             ]
         },
         {
-            title: 'تقارير الشؤون الطبية والعيادة',
-            icon: Settings, 
-            color: 'from-accent-500 to-accent-700',
-            bgGlow: 'bg-accent-500/10',
+            title: 'تقارير الشؤون الطبية والعيادة المدرسية 🩺',
+            icon: Stethoscope, 
+            color: 'from-rose-500 to-rose-700',
             reports: [
                 {
-                    name: 'السجل الطبي ومتابعة الزيارات اليومية',
-                    description: 'كشف مخصص لإدارة السجلات الطبية للطلاب ومتابعة الزيارات والحالات الطارئة للعيادة',
-                    icon: Calendar,
+                    name: 'تقرير سجلات وزيارات العيادة المدرسية',
+                    description: 'كشف شامل للحالات المرضية، الإسعافات الأولية، ومتابعة الأمراض المزمنة للطلاب',
+                    icon: Activity,
                     url: route('clinic.report'),
                     permission: null,
                 }
             ]
         },
         {
-            title: 'تقارير التوجيه والإرشاد',
+            title: 'تقارير التوجيه والإرشاد الطلابي والانتظام',
             icon: Scale,
-            color: 'from-slate-700 to-slate-900',
-            bgGlow: 'bg-slate-700/10',
+            color: 'from-amber-600 to-orange-800',
             reports: [
                 {
-                    name: 'استدعاء أولياء الأمور',
-                    description: 'كشف مخصص لطباعة ومتابعة الاستدعاءات التي تمت لأولياء الأمور',
+                    name: 'كشف استدعاء أولياء الأمور',
+                    description: 'كشف مخصص لطباعة ومتابعة الاستدعاءات الرسمية لأولياء الأمور مع أسبابها',
                     icon: Megaphone,
                     url: route('academic.parent-summons.report'),
                     permission: null,
                 },
                 {
-                    name: 'زيارات أولياء الأمور',
-                    description: 'سجل توثيق الآباء الذين حضروا للمدرسة لمتابعة أبنائهم',
+                    name: 'سجل زيارات أولياء الأمور',
+                    description: 'سجل توثيق أولياء الأمور الذين حضروا للمدرسة لمتابعة أبنائهم وتوصيات اللقاء',
                     icon: UserCheck,
                     url: route('academic.parent-visits.report'),
                     permission: null,
                 },
                 {
-                    name: 'كشف تعهدات الطلاب',
-                    description: 'كشف موحد لتوثيق التعهدات السلوكية وحالة توقيع الطلاب وأولياء الأمور',
+                    name: 'كشف تعهدات الطلاب السلوكية',
+                    description: 'كشف موحد لتوثيق التعهدات السلوكية وحالة توقيع الطلاب وأولياء الأمور إلكترونياً',
                     icon: ShieldAlert,
                     url: route('academic.student-pledges.report'),
                     permission: null,
@@ -361,59 +410,55 @@ export default function ReportsCenter({ auth, stats, chartData }) {
             ]
         },
         {
-            title: 'تقارير الاختبارات والدرجات 💯',
+            title: 'تقارير الاختبارات والنتائج والدرجات 💯',
             icon: Award,
-            color: 'from-primary-400 to-primary-600',
-            bgGlow: 'bg-primary-500/10',
+            color: 'from-indigo-600 to-blue-800',
             reports: [
                 {
-                    name: 'الدرجات الشهرية',
-                    description: 'تقارير تفصيلية لمستوى الطلاب خلال الفترات',
+                    name: 'تقرير الدرجات الشهرية',
+                    description: 'تقارير تفصيلية لدرجات الطلاب خلال الفترات والشهور الدراسية',
                     icon: BarChart3,
                     url: route('academic.monthly-grades.report.index'),
                     permission: 'إدارة الدرجات',
                 },
                 {
-                    name: 'كشف العلامات المجمع',
-                    description: 'كشف درجات ونتائج الطلاب في جميع المواد',
+                    name: 'كشف العلامات المجمع الفصلي',
+                    description: 'كشف درجات ونتائج الطلاب الشامل لكافة المواد والنسب المئوية والترتيب',
                     icon: FileText,
                     url: route('academic.semester-results.report'),
                     permission: 'إدارة الدرجات',
-                },
+                }
             ]
         },
         {
             title: 'تقارير الجدول المدرسي وحصص الاحتياط 🗓️',
             icon: Table,
-            color: 'from-slate-800 to-slate-950',
-            bgGlow: 'bg-slate-800/10',
+            color: 'from-slate-700 to-slate-900',
             reports: [
                 {
                     name: 'الجدول المدرسي العام',
-                    description: 'تقرير شامل يعرض نصاب كل معلم من الحصص',
+                    description: 'تقرير شامل يعرض نصاب كل معلم من الحصص وجداول الفصول الدراسية',
                     icon: Table,
                     url: route('academic.timetable.report'),
                     permission: null,
                 },
                 {
-                    name: 'حصص الانتظار والاحتياط',
-                    description: 'تقرير يوضح المعلمين الذين غطوا الحصص الاحتياطية',
+                    name: 'حصص الانتظار والاحتياط (Coverage)',
+                    description: 'تقرير يوضح المعلمين الذين غطوا الحصص الاحتياطية ونصاب التغطية الإضافي',
                     icon: RefreshCcw,
                     url: route('academic.coverage.report'),
                     permission: null,
-                },
+                }
             ]
-
         },
         {
-            title: 'تقارير الاجتماعات والمجالس 🤝',
+            title: 'تقارير الاجتماعات والمجالس المدرسية 🤝',
             icon: Users,
-            color: 'from-accent-600 to-accent-800',
-            bgGlow: 'bg-accent-600/10',
+            color: 'from-cyan-600 to-blue-800',
             reports: [
                 {
-                    name: 'محاضر الاجتماعات',
-                    description: 'تقرير يوثق المجالس المدرسية، حضورها وغيابها ومقرراتها',
+                    name: 'محاضر الاجتماعات والمجالس',
+                    description: 'تقرير يوثق المجالس المدرسية، حضورها وغيابها، والقرارات والتوصيات المعتمدة',
                     icon: Users,
                     url: route('meetings.report'),
                     permission: null,
@@ -432,97 +477,153 @@ export default function ReportsCenter({ auth, stats, chartData }) {
         <AdminLayout activeMenu="التقارير">
             <Head title="مركز التقارير" />
             
-            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="max-w-7xl mx-auto space-y-6">
                 
-                {/* 1. Stunning Hero Banner */}
-                <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-l from-primary-900 via-primary-800 to-primary-600 p-8 sm:p-14 shadow-2xl shadow-primary-900/20 text-white border border-primary-500/30">
-                    {/* Abstract Shapes */}
-                    <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
-                    <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-accent-500/20 rounded-full blur-3xl translate-y-1/3 -translate-x-1/4 pointer-events-none"></div>
+                {/* 1. Header Banner with Branch Isolation Badge & Year/Semester Selectors */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
+                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
-                    <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-10">
-                        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-right w-full lg:w-auto">
-                            <div className="w-20 h-20 rounded-[1.5rem] bg-white/10 backdrop-blur-xl flex items-center justify-center border border-white/20 shadow-inner transform -rotate-6 hover:rotate-0 transition-transform duration-500">
-                                <FileText size={40} className="text-white drop-shadow-md" />
+                    <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div>
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">مركز التقارير الموحد</h1>
+                                {userBranch && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary-100 text-primary-800 dark:bg-primary-900/40 dark:text-primary-300 border border-primary-200 dark:border-primary-700/50">
+                                        <Building2 size={13} />
+                                        <span>فرع: {userBranch.name}</span>
+                                    </span>
+                                )}
                             </div>
-                            <div>
-                                <h1 className="text-4xl sm:text-5xl font-black mb-4 tracking-tight text-white drop-shadow-sm">مركز التقارير المتقدم</h1>
-                                <p className="text-primary-100 font-medium text-lg max-w-xl leading-relaxed">
-                                    منصة تحليلية شاملة لاستعراض وتقييم الأداء المدرسي. استخرج التقارير بدقة وسرعة لاتخاذ قرارات مدعومة بالبيانات.
-                                </p>
-                            </div>
+                            <p className="text-primary-700/80 dark:text-primary-300/80 text-sm font-semibold max-w-2xl">
+                                منصة تحليلية موحدة لاستعراض ومتابعة تقارير المدرسة وإدارتها بدقة وسرعة في إطار فرعك
+                            </p>
                         </div>
                         
-                        <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                            <button
-                                onClick={() => { setShowTour(true); setTourStep(0); }}
-                                className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 backdrop-blur-md"
-                            >
-                                <PlayCircle size={20} />
-                                <span>كيف أستفيد من المركز؟</span>
-                            </button>
-                            
-                            <div className="relative w-full sm:w-72 group">
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-5 pointer-events-none text-white/60 group-focus-within:text-white transition-colors">
-                                    <Search size={22} />
+                        <div className="flex flex-wrap items-center gap-3">
+                            {/* Academic Year Selector */}
+                            {academicYears.length > 0 && (
+                                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-2xl shadow-sm">
+                                    <Calendar size={15} className="text-primary-600 dark:text-primary-400" />
+                                    <select
+                                        value={selectedYear}
+                                        onChange={(e) => handleYearChange(e.target.value)}
+                                        className="bg-transparent border-0 text-xs font-bold text-slate-700 dark:text-slate-200 focus:ring-0 cursor-pointer p-0"
+                                    >
+                                        {academicYears.map(year => (
+                                            <option key={year.id} value={year.id} className="dark:bg-slate-800">
+                                                العام: {year.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
+                            )}
+
+                            {/* Semester Selector */}
+                            {semesters.length > 0 && (
+                                <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-2xl shadow-sm">
+                                    <CalendarDays size={15} className="text-primary-600 dark:text-primary-400" />
+                                    <select
+                                        value={selectedSemester}
+                                        onChange={(e) => handleSemesterChange(e.target.value)}
+                                        className="bg-transparent border-0 text-xs font-bold text-slate-700 dark:text-slate-200 focus:ring-0 cursor-pointer p-0"
+                                    >
+                                        {semesters.map(sem => (
+                                            <option key={sem.id} value={sem.id} className="dark:bg-slate-800">
+                                                {sem.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+
+                            {/* Search Input */}
+                            <div className="relative w-full sm:w-56 group">
+                                <Search size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors pointer-events-none" />
                                 <input
                                     type="text"
-                                    className="block w-full pl-5 pr-14 py-4 rounded-2xl bg-black/10 backdrop-blur-xl border border-white/10 text-white placeholder-white/60 focus:bg-black/20 focus:border-white/30 focus:ring-4 focus:ring-white/10 transition-all font-medium text-lg shadow-inner"
+                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl pr-10 pl-4 py-2.5 text-xs focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400"
                                     placeholder="ابحث عن تقرير..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
+                                {searchQuery && (
+                                    <button 
+                                        type="button"
+                                        onClick={() => setSearchQuery('')}
+                                        className="absolute left-2.5 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
+                                    >
+                                        <X size={13} />
+                                    </button>
+                                )}
                             </div>
-                            
+
+                            {/* Report Design Settings Link */}
+                            <Link
+                                href={route('reports.design-settings')}
+                                className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xs text-xs font-bold transition-all shrink-0"
+                                title="تخصيص هوية وترويسة وتواقيع ملفات الـ PDF"
+                            >
+                                <Palette size={16} className="text-primary-600 dark:text-primary-400" />
+                                <span className="hidden md:inline">هوية وتصميم التقارير</span>
+                            </Link>
+
+                            {/* Report Builder Link */}
                             <Link
                                 href={route('reports.custom')}
-                                className="w-full sm:w-auto flex items-center justify-center gap-3 bg-white text-primary-900 hover:bg-slate-50 px-8 py-4 rounded-2xl font-black transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 border border-white/50"
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl shadow-md shadow-primary-500/20 text-xs font-bold transition-all shrink-0 active:scale-95"
                             >
-                                <Settings size={22} className="animate-spin-slow text-primary-600" />
-                                <span className="text-lg">مُنشئ التقارير</span>
+                                <Settings size={16} />
+                                <span>مُنشئ التقارير</span>
                             </Link>
+
+                            {/* Guide Tour Button */}
+                            <button
+                                onClick={() => { setShowTour(true); setTourStep(0); }}
+                                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold text-xs transition-all border border-slate-200 dark:border-slate-700/60"
+                                title="دليل استخدام مركز التقارير"
+                            >
+                                <PlayCircle size={16} className="text-primary-500" />
+                                <span className="hidden sm:inline">دليل المركز</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 {/* AI Smart Insights Banner */}
                 {insights.length > 0 && (
-                    <div className={`relative overflow-hidden rounded-2xl border ${insights[currentInsightIdx % insights.length].border} ${insights[currentInsightIdx % insights.length].bg} transition-all duration-500 shadow-lg ${insights[currentInsightIdx % insights.length].glow} flex items-center justify-between p-4 sm:p-5 group`}>
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/20 dark:bg-white/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                        
-                        <div className="flex items-center gap-4 relative z-10 w-full">
-                            <div className={`w-12 h-12 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center ${insights[currentInsightIdx % insights.length].color} shadow-sm flex-shrink-0 animate-pulse-slow`}>
-                                {React.createElement(insights[currentInsightIdx % insights.length].icon, { size: 24, strokeWidth: 2.5 })}
+                    <div className={`relative overflow-hidden rounded-2xl border ${insights[currentInsightIdx % insights.length].border} ${insights[currentInsightIdx % insights.length].bg} transition-all duration-500 shadow-sm flex items-center justify-between p-4 group`}>
+                        <div className="flex items-center gap-3.5 relative z-10 w-full">
+                            <div className={`w-10 h-10 rounded-xl bg-white dark:bg-slate-800 flex items-center justify-center ${insights[currentInsightIdx % insights.length].color} shadow-sm flex-shrink-0`}>
+                                {React.createElement(insights[currentInsightIdx % insights.length].icon, { size: 20, strokeWidth: 2.5 })}
                             </div>
                             
                             <div className="flex-1 overflow-hidden">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <Sparkles size={14} className={insights[currentInsightIdx % insights.length].color} />
-                                    <span className={`text-xs font-bold uppercase tracking-wider ${insights[currentInsightIdx % insights.length].color}`}>رؤى ذكية (Smart Insights)</span>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                    <Sparkles size={13} className={insights[currentInsightIdx % insights.length].color} />
+                                    <span className={`text-[11px] font-bold uppercase tracking-wider ${insights[currentInsightIdx % insights.length].color}`}>تحليلات ذكية (Insights)</span>
                                 </div>
-                                <p className={`text-sm sm:text-base font-bold text-slate-800 dark:text-slate-200 leading-snug transition-all duration-300 transform`}>
+                                <p className={`text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 leading-snug`}>
                                     {insights[currentInsightIdx % insights.length].text}
                                 </p>
                             </div>
                             
-                            {/* Controls */}
+                            {/* Carousel Controls */}
                             {insights.length > 1 && (
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-md rounded-lg p-1 border border-white/20">
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-lg p-1 border border-white/20">
                                     <button 
                                         onClick={() => setCurrentInsightIdx(prev => prev === 0 ? insights.length - 1 : prev - 1)}
-                                        className={`w-8 h-8 rounded-md flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 transition-colors ${insights[currentInsightIdx % insights.length].color}`}
+                                        className={`w-7 h-7 rounded-md flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 transition-colors ${insights[currentInsightIdx % insights.length].color}`}
                                     >
-                                        <ChevronRight size={18} />
+                                        <ChevronRight size={16} />
                                     </button>
-                                    <div className="text-xs font-bold text-slate-500 px-1 w-8 text-center" dir="ltr">
+                                    <div className="text-[11px] font-bold text-slate-500 px-1 w-7 text-center" dir="ltr">
                                         {(currentInsightIdx % insights.length) + 1}/{insights.length}
                                     </div>
                                     <button 
                                         onClick={() => setCurrentInsightIdx(prev => (prev + 1) % insights.length)}
-                                        className={`w-8 h-8 rounded-md flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 transition-colors ${insights[currentInsightIdx % insights.length].color}`}
+                                        className={`w-7 h-7 rounded-md flex items-center justify-center hover:bg-white dark:hover:bg-slate-700 transition-colors ${insights[currentInsightIdx % insights.length].color}`}
                                     >
-                                        <ChevronLeft size={18} />
+                                        <ChevronLeft size={16} />
                                     </button>
                                 </div>
                             )}
@@ -530,205 +631,244 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     </div>
                 )}
 
-                {/* 2. Bento Grid Summary */}
-                {(stats || (chartData && chartData.length > 0)) && (
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        
-                        {/* KPIs Bento (5 Columns) */}
-                        <div className="lg:col-span-5 grid grid-cols-2 gap-4 sm:gap-6">
-                            {/* Student Absences */}
-                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/50 rounded-[2rem] p-5 sm:p-6 flex flex-col justify-between group hover:shadow-[0_8px_30px_rgb(239,68,68,0.12)] hover:border-red-200 dark:hover:border-red-900/50 hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                                <div className="flex justify-between items-start relative z-10 mb-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform duration-500">
-                                        <AlertTriangle size={24} />
-                                    </div>
-                                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400">اليوم</span>
-                                </div>
-                                <div className="relative z-10 mt-auto">
-                                    <div className="flex items-end gap-3 mb-2">
-                                        <div className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{stats?.student_absences_today || 0}</div>
-                                        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">الهدف: &lt; 20</div>
-                                    </div>
-                                    <div className="flex items-center justify-between mb-2.5">
-                                        <div className="text-sm text-slate-600 dark:text-slate-400 font-bold">غياب الطلاب</div>
-                                        <div className={`text-xs font-black ${((stats?.student_absences_today || 0) > 20) ? 'text-red-500' : 'text-emerald-500'}`}>
-                                            {Math.round(((stats?.student_absences_today || 0) / 20) * 100)}%
-                                        </div>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
-                                        <div 
-                                            className={`h-full rounded-full transition-all duration-1000 ${((stats?.student_absences_today || 0) > 20) ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                            style={{ width: `${Math.min(((stats?.student_absences_today || 0) / 20) * 100, 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
+                {/* 2. Collapsible KPIs & Analytics Section (Hidden by default as requested by user) */}
+                <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/80 rounded-3xl overflow-hidden shadow-sm transition-all duration-300">
+                    {/* Toggle Header Button */}
+                    <button
+                        onClick={() => setShowKPIsSection(prev => !prev)}
+                        className="w-full px-6 py-4 flex items-center justify-between bg-gradient-to-r from-slate-50 via-white to-slate-50 dark:from-slate-800/50 dark:via-slate-800/30 dark:to-slate-800/50 hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                <BarChart3 size={20} />
                             </div>
-
-                            {/* Teacher Absences */}
-                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/50 rounded-[2rem] p-5 sm:p-6 flex flex-col justify-between group hover:shadow-[0_8px_30px_rgb(249,115,22,0.12)] hover:border-orange-200 dark:hover:border-orange-900/50 hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                                <div className="flex justify-between items-start relative z-10 mb-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 transition-transform duration-500">
-                                        <Clock size={24} />
-                                    </div>
-                                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">اليوم</span>
+                            <div className="text-right">
+                                <div className="flex items-center gap-2">
+                                    <h2 className="text-base font-black text-slate-800 dark:text-white">مؤشرات الأداء المدرسية والرسوم البيانية</h2>
+                                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-200/70 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                        {showKPIsSection ? 'انقر للإخفاء' : 'انقر للعرض'}
+                                    </span>
                                 </div>
-                                <div className="relative z-10 mt-auto">
-                                    <div className="flex items-end gap-3 mb-2">
-                                        <div className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{stats?.teacher_absences_today || 0}</div>
-                                        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">الهدف: 0</div>
-                                    </div>
-                                    <div className="flex items-center justify-between mb-2.5">
-                                        <div className="text-sm text-slate-600 dark:text-slate-400 font-bold">غياب المعلمين</div>
-                                        <div className={`text-xs font-black ${((stats?.teacher_absences_today || 0) > 3) ? 'text-red-500' : 'text-orange-500'}`}>
-                                            {Math.round(((stats?.teacher_absences_today || 0) / 10) * 100)}%
-                                        </div>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
-                                        <div 
-                                            className={`h-full rounded-full transition-all duration-1000 ${((stats?.teacher_absences_today || 0) > 3) ? 'bg-red-500' : 'bg-orange-500'}`}
-                                            style={{ width: `${Math.min(((stats?.teacher_absences_today || 0) / 10) * 100, 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Follow-up Books */}
-                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/50 rounded-[2rem] p-5 sm:p-6 flex flex-col justify-between group hover:shadow-[0_8px_30px_rgb(107,155,55,0.12)] hover:border-primary-200 dark:hover:border-primary-900/50 hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                                <div className="flex justify-between items-start relative z-10 mb-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-400 group-hover:scale-110 transition-transform duration-500">
-                                        <BookOpen size={24} />
-                                    </div>
-                                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-400">مرفوعة اليوم</span>
-                                </div>
-                                <div className="relative z-10 mt-auto">
-                                    <div className="flex items-end gap-3 mb-2">
-                                        <div className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{stats?.followup_books_today || 0}</div>
-                                        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">الهدف: 40 دفتر</div>
-                                    </div>
-                                    <div className="flex items-center justify-between mb-2.5">
-                                        <div className="text-sm text-slate-600 dark:text-slate-400 font-bold">دفاتر المتابعة</div>
-                                        <div className={`text-xs font-black ${((stats?.followup_books_today || 0) >= 35) ? 'text-emerald-500' : 'text-primary-500'}`}>
-                                            {Math.round(((stats?.followup_books_today || 0) / 40) * 100)}%
-                                        </div>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
-                                        <div 
-                                            className={`h-full rounded-full transition-all duration-1000 ${((stats?.followup_books_today || 0) >= 35) ? 'bg-emerald-500' : 'bg-primary-500'}`}
-                                            style={{ width: `${Math.min(((stats?.followup_books_today || 0) / 40) * 100, 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Classroom Visits */}
-                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/50 rounded-[2rem] p-5 sm:p-6 flex flex-col justify-between group hover:shadow-[0_8px_30px_rgb(16,185,129,0.12)] hover:border-emerald-200 dark:hover:border-emerald-900/50 hover:-translate-y-1 transition-all duration-500 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                                <div className="flex justify-between items-start relative z-10 mb-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-500">
-                                        <Eye size={24} />
-                                    </div>
-                                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">هذا الأسبوع</span>
-                                </div>
-                                <div className="relative z-10 mt-auto">
-                                    <div className="flex items-end gap-3 mb-2">
-                                        <div className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{stats?.classroom_visits_this_week || 0}</div>
-                                        <div className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1.5">الهدف: 15 زيارة</div>
-                                    </div>
-                                    <div className="flex items-center justify-between mb-2.5">
-                                        <div className="text-sm text-slate-600 dark:text-slate-400 font-bold">الزيارات الصفية</div>
-                                        <div className={`text-xs font-black text-emerald-500`}>
-                                            {Math.round(((stats?.classroom_visits_this_week || 0) / 15) * 100)}%
-                                        </div>
-                                    </div>
-                                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
-                                        <div 
-                                            className={`h-full rounded-full bg-emerald-500 transition-all duration-1000`}
-                                            style={{ width: `${Math.min(((stats?.classroom_visits_this_week || 0) / 15) * 100, 100)}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                                    متابعة نسبة حضور الطلاب والمعلمين، دفاتر التحضير والزيارات الصفية الحقيقية لفرعك
+                                </p>
                             </div>
                         </div>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-500">
+                            {showKPIsSection ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        </div>
+                    </button>
 
-                        {/* Chart (7 Columns) */}
-                        {chartData && chartData.length > 0 && (
-                            <div className="lg:col-span-7 bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 flex flex-col shadow-sm">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 border border-slate-100 dark:border-slate-700/50 shadow-inner">
-                                            <BarChart3 size={24} />
+                    {/* Collapsible Content */}
+                    {showKPIsSection && (
+                        <div className="p-6 border-t border-slate-200/60 dark:border-slate-800/60 space-y-6 animate-in fade-in duration-300">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                                
+                                {/* Real Dynamic KPIs Bento (5 Columns) */}
+                                <div className="lg:col-span-5 grid grid-cols-2 gap-4">
+                                    
+                                    {/* 1. Student Absences Card */}
+                                    <div className="bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/50 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-red-300 transition-all">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 flex items-center justify-center text-red-500">
+                                                <AlertTriangle size={20} />
+                                            </div>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">اليوم</span>
                                         </div>
                                         <div>
-                                            <h2 className="text-xl font-black text-slate-800 dark:text-white mb-1 tracking-tight">مقارنة الحضور والغياب</h2>
-                                            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">انقر على الأعمدة للتعمق في التفاصيل (Drill-down)</p>
+                                            <div className="flex items-baseline gap-2 mb-1">
+                                                <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">{studentAbsenceCount}</div>
+                                                <div className="text-[11px] font-bold text-slate-400">من أصل {totalStudents} طالب</div>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs mb-1.5">
+                                                <span className="font-bold text-slate-600 dark:text-slate-400">غياب الطلاب</span>
+                                                <span className={`font-black ${studentAbsenceRate > 10 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                    نسبة الحضور {studentAttendanceRate}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full rounded-full transition-all duration-700 ${studentAbsenceRate > 10 ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                                    style={{ width: `${studentAttendanceRate}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. Teacher Absences Card */}
+                                    <div className="bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/50 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-orange-300 transition-all">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center text-orange-500">
+                                                <Clock size={20} />
+                                            </div>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">اليوم</span>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-baseline gap-2 mb-1">
+                                                <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">{teacherAbsenceCount}</div>
+                                                <div className="text-[11px] font-bold text-slate-400">من أصل {totalTeachers} معلم</div>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs mb-1.5">
+                                                <span className="font-bold text-slate-600 dark:text-slate-400">غياب المعلمين</span>
+                                                <span className={`font-black ${teacherAbsenceCount > 0 ? 'text-orange-500' : 'text-emerald-500'}`}>
+                                                    نسبة الحضور {teacherAttendanceRate}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full rounded-full transition-all duration-700 ${teacherAbsenceCount > 0 ? 'bg-orange-500' : 'bg-emerald-500'}`}
+                                                    style={{ width: `${teacherAttendanceRate}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 3. Followup Books Card */}
+                                    <div className="bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/50 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-primary-300 transition-all">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-500/10 flex items-center justify-center text-primary-600">
+                                                <BookOpen size={20} />
+                                            </div>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">مرفوعة اليوم</span>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-baseline gap-2 mb-1">
+                                                <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">{followupBooksCount}</div>
+                                                <div className="text-[11px] font-bold text-slate-400">الهدف: {expectedFollowups} دفتر</div>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs mb-1.5">
+                                                <span className="font-bold text-slate-600 dark:text-slate-400">دفاتر المتابعة</span>
+                                                <span className="font-black text-primary-600 dark:text-primary-400">
+                                                    إنجاز {followupRate}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full rounded-full bg-primary-500 transition-all duration-700"
+                                                    style={{ width: `${followupRate}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 4. Classroom Visits Card */}
+                                    <div className="bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/50 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-emerald-300 transition-all">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600">
+                                                <Eye size={20} />
+                                            </div>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">هذا الأسبوع</span>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-baseline gap-2 mb-1">
+                                                <div className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white">{classroomVisitsCount}</div>
+                                                <div className="text-[11px] font-bold text-slate-400">المستهدف: {expectedVisits} زيارة</div>
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs mb-1.5">
+                                                <span className="font-bold text-slate-600 dark:text-slate-400">الزيارات الصفية</span>
+                                                <span className="font-black text-emerald-600 dark:text-emerald-400">
+                                                    إنجاز {visitRate}%
+                                                </span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full rounded-full bg-emerald-500 transition-all duration-700"
+                                                    style={{ width: `${visitRate}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                {/* Dynamic Attendance Chart with Server-Side Time Filters (7 Columns) */}
+                                <div className="lg:col-span-7 bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/50 rounded-2xl p-5 flex flex-col justify-between">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                        <div>
+                                            <h3 className="text-base font-black text-slate-800 dark:text-white">منحنى الحضور والغياب للفرع</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">استعراض حركة غياب الطلاب والمعلمين حسب الفترة الزمنية المحددة</p>
+                                        </div>
+                                        
+                                        {/* Accurate Time Period Buttons connected to Server */}
+                                        <div className="flex bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
+                                            <button 
+                                                onClick={() => handleChartFilterChange('5days')} 
+                                                disabled={loadingChart}
+                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${chartFilter === '5days' ? 'bg-primary-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-primary-600'}`}
+                                            >
+                                                آخر 5 أيام
+                                            </button>
+                                            <button 
+                                                onClick={() => handleChartFilterChange('week')} 
+                                                disabled={loadingChart}
+                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${chartFilter === 'week' ? 'bg-primary-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-primary-600'}`}
+                                            >
+                                                أسبوع (7 أيام)
+                                            </button>
+                                            <button 
+                                                onClick={() => handleChartFilterChange('month')} 
+                                                disabled={loadingChart}
+                                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${chartFilter === 'month' ? 'bg-primary-500 text-white shadow-sm' : 'text-slate-600 dark:text-slate-300 hover:text-primary-600'}`}
+                                            >
+                                                شهر (30 يوماً)
+                                            </button>
                                         </div>
                                     </div>
                                     
-                                    {/* Time Filters */}
-                                    <div className="flex bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl shadow-inner border border-slate-200/50 dark:border-slate-700/50">
-                                        <button onClick={() => setChartFilter('5days')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-300 ${chartFilter === '5days' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>آخر 5 أيام</button>
-                                        <button onClick={() => setChartFilter('week')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-300 ${chartFilter === 'week' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>الأسبوع</button>
-                                        <button onClick={() => setChartFilter('month')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all duration-300 ${chartFilter === 'month' ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>الشهر</button>
+                                    <div className="relative w-full h-60" dir="ltr">
+                                        {loadingChart && (
+                                            <div className="absolute inset-0 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-10 rounded-xl">
+                                                <span className="text-xs font-bold text-primary-600">جارٍ تحديث البيانات...</span>
+                                            </div>
+                                        )}
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                                <XAxis dataKey="name" tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}} axisLine={false} tickLine={false} />
+                                                <YAxis tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}} axisLine={false} tickLine={false} allowDecimals={false} />
+                                                <Tooltip 
+                                                    contentStyle={{borderRadius: '12px', border: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '12px'}}
+                                                    cursor={{fill: '#f1f5f9'}}
+                                                />
+                                                <Legend wrapperStyle={{paddingTop: '8px', fontWeight: 'bold', fontSize: '12px'}} iconType="circle" />
+                                                <Bar 
+                                                    dataKey="student_absences" 
+                                                    name="غياب الطلاب" 
+                                                    fill="#ef4444" 
+                                                    radius={[4, 4, 0, 0]} 
+                                                    barSize={chartFilter === 'month' ? 8 : 18} 
+                                                />
+                                                <Bar 
+                                                    dataKey="teacher_absences" 
+                                                    name="غياب المعلمين" 
+                                                    fill="#f97316" 
+                                                    radius={[4, 4, 0, 0]} 
+                                                    barSize={chartFilter === 'month' ? 8 : 18} 
+                                                />
+                                            </BarChart>
+                                        </ResponsiveContainer>
                                     </div>
                                 </div>
-                                
-                                <div className="flex-1 w-full min-h-[250px]" dir="ltr">
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                            <XAxis dataKey="name" tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} axisLine={false} tickLine={false} dy={10} />
-                                            <YAxis tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} axisLine={false} tickLine={false} dx={-10} />
-                                            <Tooltip 
-                                                contentStyle={{borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', fontWeight: 'bold'}}
-                                                cursor={{fill: '#f1f5f9'}}
-                                            />
-                                            <Legend wrapperStyle={{paddingTop: '10px', fontWeight: 'bold', fontSize: '13px'}} iconType="circle" />
-                                            <Bar 
-                                                dataKey="student_absences" 
-                                                name="غياب الطلاب" 
-                                                fill="#ef4444" 
-                                                radius={[6, 6, 0, 0]} 
-                                                barSize={20} 
-                                                onClick={() => window.location.href = route('academic.attendances.index')}
-                                                cursor="pointer"
-                                                className="hover:opacity-80 transition-opacity"
-                                            />
-                                            <Bar 
-                                                dataKey="teacher_absences" 
-                                                name="غياب المعلمين" 
-                                                fill="#f97316" 
-                                                radius={[6, 6, 0, 0]} 
-                                                barSize={20} 
-                                                onClick={() => window.location.href = route('hr.reports.teacher-absences')}
-                                                cursor="pointer"
-                                                className="hover:opacity-80 transition-opacity"
-                                            />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                )}
 
-                {/* Quick Access Section (Pinned & Recent) */}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Quick Access Section (Pinned & Recent Reports) */}
                 {(pinnedReports.length > 0 || recentReports.length > 0) && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Pinned Reports */}
                         {pinnedReports.length > 0 && (
-                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-500/10 flex items-center justify-center text-yellow-500">
-                                        <Pin size={20} className="fill-current" />
+                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-8 h-8 rounded-lg bg-yellow-50 dark:bg-yellow-500/10 flex items-center justify-center text-yellow-500">
+                                        <Pin size={16} className="fill-current" />
                                     </div>
-                                    <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">التقارير المثبتة</h2>
+                                    <h2 className="text-base font-black text-slate-800 dark:text-white">التقارير المثبتة المفضلة</h2>
                                 </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {pinnedReports.map((report, idx) => {
-                                        // Lookup original report to get the valid React component icon
                                         const originalCategory = reportCategories.find(c => c.reports.some(r => r.name === report.name));
                                         const originalReport = originalCategory?.reports.find(r => r.name === report.name);
                                         const ReportIcon = originalReport?.icon || FileText;
@@ -737,19 +877,20 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                                             key={idx}
                                             href={report.url}
                                             onClick={() => handleReportClick(report, { color: report.categoryColor })}
-                                            className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all group"
+                                            className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 transition-all group"
                                         >
-                                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${report.categoryColor || 'from-slate-500 to-slate-700'} flex items-center justify-center text-white flex-shrink-0`}>
-                                                <ReportIcon size={20} />
+                                            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${report.categoryColor || 'from-slate-500 to-slate-700'} flex items-center justify-center text-white shrink-0`}>
+                                                <ReportIcon size={16} />
                                             </div>
                                             <div className="flex-1 overflow-hidden">
-                                                <h4 className="font-bold text-slate-800 dark:text-white truncate group-hover:text-primary-600 transition-colors text-sm">{report.name}</h4>
+                                                <h4 className="font-bold text-slate-800 dark:text-white truncate group-hover:text-primary-600 transition-colors text-xs">{report.name}</h4>
                                             </div>
                                             <button 
                                                 onClick={(e) => togglePin(e, report, { color: report.categoryColor })}
-                                                className="w-8 h-8 flex items-center justify-center text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-500/20 rounded-lg transition-colors"
+                                                className="w-7 h-7 flex items-center justify-center text-yellow-500 hover:bg-yellow-100 dark:hover:bg-yellow-500/20 rounded-lg transition-colors"
+                                                title="إلغاء التثبيت"
                                             >
-                                                <Pin size={16} className="fill-current" />
+                                                <Pin size={14} className="fill-current" />
                                             </button>
                                         </Link>
                                     )})}
@@ -759,16 +900,15 @@ export default function ReportsCenter({ auth, stats, chartData }) {
 
                         {/* Recent Reports */}
                         {recentReports.length > 0 && (
-                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-700/50 rounded-[2rem] p-6 sm:p-8 shadow-sm">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-500">
-                                        <Clock size={20} />
+                            <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-500">
+                                        <Clock size={16} />
                                     </div>
-                                    <h2 className="text-xl font-black text-slate-800 dark:text-white tracking-tight">تم استعراضها مؤخراً</h2>
+                                    <h2 className="text-base font-black text-slate-800 dark:text-white">تم استعراضها مؤخراً</h2>
                                 </div>
-                                <div className="flex flex-col gap-3">
+                                <div className="flex flex-col gap-2.5">
                                     {recentReports.map((report, idx) => {
-                                        // Lookup original report to get the valid React component icon
                                         const originalCategory = reportCategories.find(c => c.reports.some(r => r.name === report.name));
                                         const originalReport = originalCategory?.reports.find(r => r.name === report.name);
                                         const ReportIcon = originalReport?.icon || FileText;
@@ -776,16 +916,16 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                                         <Link
                                             key={idx}
                                             href={report.url}
-                                            className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-3.5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-all group"
+                                            className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-2xl hover:bg-white dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 transition-all group"
                                         >
-                                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${report.categoryColor || 'from-slate-500 to-slate-700'} flex items-center justify-center text-white flex-shrink-0 opacity-80 group-hover:opacity-100 transition-opacity`}>
-                                                <ReportIcon size={18} />
+                                            <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${report.categoryColor || 'from-slate-500 to-slate-700'} flex items-center justify-center text-white shrink-0`}>
+                                                <ReportIcon size={15} />
                                             </div>
                                             <div className="flex-1 overflow-hidden">
-                                                <h4 className="font-bold text-slate-800 dark:text-white truncate group-hover:text-primary-600 transition-colors text-sm">{report.name}</h4>
-                                                <p className="text-xs text-slate-500 truncate">{report.description}</p>
+                                                <h4 className="font-bold text-slate-800 dark:text-white truncate group-hover:text-primary-600 transition-colors text-xs">{report.name}</h4>
+                                                <p className="text-[11px] text-slate-500 truncate">{report.description}</p>
                                             </div>
-                                            <div className="w-8 h-8 flex items-center justify-center text-slate-400 group-hover:text-primary-500 transition-colors">
+                                            <div className="w-6 h-6 flex items-center justify-center text-slate-400 group-hover:text-primary-500 transition-colors">
                                                 <span className="rtl:-scale-x-100 inline-block font-black">&rarr;</span>
                                             </div>
                                         </Link>
@@ -796,8 +936,8 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                     </div>
                 )}
 
-                {/* 3. Asymmetrical Magazine-style Categories Layout */}
-                <div className="space-y-12 mt-8">
+                {/* 3. Comprehensive Categorized Reports Grid */}
+                <div className="space-y-10 mt-6">
                     {reportCategories.map((category, catIdx) => {
                         const filteredReports = category.reports.filter(report => {
                             const matchesPermission = hasPermission(report.permission);
@@ -809,72 +949,65 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                         if (filteredReports.length === 0) return null;
 
                         return (
-                            <div key={catIdx} className="flex flex-col gap-6 relative pt-10 border-t border-slate-200/60 dark:border-slate-800/60 first:border-0 first:pt-0">
+                            <div key={catIdx} className="flex flex-col gap-4 relative pt-8 border-t border-slate-200/60 dark:border-slate-800/60 first:border-0 first:pt-0">
                                 {/* Category Header */}
-                                <div className="flex items-center gap-5 mb-2">
-                                    <div className={`flex-shrink-0 flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${category.color} text-white shadow-lg shadow-${category.color.split('-')[1]}-500/20 border border-white/10`}>
-                                        <category.icon size={28} strokeWidth={2.5} />
+                                <div className="flex items-center gap-3.5 mb-1">
+                                    <div className={`flex-shrink-0 flex items-center justify-center w-11 h-11 rounded-2xl bg-gradient-to-br ${category.color} text-white shadow-md border border-white/10`}>
+                                        <category.icon size={22} strokeWidth={2.2} />
                                     </div>
                                     <div>
-                                        <h2 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">
+                                        <h2 className="text-lg font-black text-slate-800 dark:text-white tracking-tight">
                                             {category.title}
                                         </h2>
-                                        <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">
-                                            التقارير الخاصة بهذا القسم لتحليل الأداء بدقة
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                                            تقارير معتمدة لتحليل وضبط مخرجات هذا القسم
                                         </p>
                                     </div>
                                 </div>
                                 
-                                {/* Category Reports Grid */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                                {/* Category Reports Cards */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                     {filteredReports.map((report, idx) => {
                                         const isPinned = pinnedReports.some(r => r.name === report.name);
-                                        const isSelected = selectedReports.some(r => r.name === report.name);
                                         return (
                                         <Link
                                             key={idx}
                                             href={report.url}
                                             onClick={() => handleReportClick(report, category)}
-                                            className={`group relative bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl border ${isSelected ? 'border-primary-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'border-slate-200/80 dark:border-slate-700/50 hover:border-primary-200 dark:hover:border-primary-800/50 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] dark:hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.3)]'} rounded-[1.5rem] p-6 transition-all duration-500 hover:-translate-y-1.5 overflow-hidden flex flex-col h-full`}
+                                            className="group relative bg-white dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 hover:border-primary-300 dark:hover:border-primary-700/60 rounded-2xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md flex flex-col justify-between"
                                         >
-                                            {/* Selection Checkbox */}
-                                            <button
-                                                onClick={(e) => toggleSelection(e, report)}
-                                                className={`absolute top-5 left-5 z-20 w-6 h-6 rounded-md border flex items-center justify-center transition-all duration-300 ${isSelected ? 'bg-primary-500 border-primary-500 text-white shadow-md shadow-primary-500/30' : 'border-slate-300 dark:border-slate-600 opacity-0 group-hover:opacity-100 bg-white/50 dark:bg-slate-800/50 hover:border-primary-400'}`}
-                                            >
-                                                {isSelected && <Check size={14} strokeWidth={4} />}
-                                            </button>
-
-                                            <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${category.color} rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none`}></div>
-                                            
-                                            <div className="relative z-10 flex-1 flex flex-col">
-                                                <div className="flex justify-between items-start mb-6">
-                                                    <div className="w-14 h-14 rounded-[1.1rem] bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-white transition-colors duration-500 relative overflow-hidden border border-slate-100 dark:border-slate-700">
-                                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br ${category.color} transition-opacity duration-500`}></div>
-                                                        <report.icon size={26} strokeWidth={2} className="relative z-10" />
+                                            <div>
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="w-11 h-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 group-hover:text-white transition-colors duration-300 relative overflow-hidden border border-slate-200/50 dark:border-slate-700">
+                                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br ${category.color} transition-opacity duration-300`}></div>
+                                                        <report.icon size={20} strokeWidth={2} className="relative z-10" />
                                                     </div>
                                                     
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1.5">
                                                         <button
                                                             onClick={(e) => togglePin(e, report, category)}
-                                                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isPinned ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-500/10' : 'text-slate-300 dark:text-slate-600 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-500/10'} shadow-sm border border-transparent ${isPinned ? 'border-yellow-200 dark:border-yellow-900/50' : ''}`}
+                                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${isPinned ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-500/10' : 'text-slate-300 dark:text-slate-600 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-500/10'}`}
                                                             title={isPinned ? 'إلغاء التثبيت' : 'تثبيت التقرير'}
                                                         >
-                                                            <Pin size={18} className={isPinned ? 'fill-current' : ''} />
+                                                            <Pin size={15} className={isPinned ? 'fill-current' : ''} />
                                                         </button>
-                                                        <div className="w-10 h-10 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 opacity-0 group-hover:opacity-100 group-hover:bg-primary-50 group-hover:text-primary-600 transition-all duration-500 shadow-sm">
-                                                            <span className="rtl:-scale-x-100 inline-block font-black">&rarr;</span>
+                                                        <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-400 opacity-0 group-hover:opacity-100 group-hover:bg-primary-50 group-hover:text-primary-600 transition-all">
+                                                            <span className="rtl:-scale-x-100 inline-block font-black text-xs">&rarr;</span>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                
-                                                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-300">
+                                                <h3 className="text-base font-bold text-slate-800 dark:text-white mb-1.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
                                                     {report.name}
                                                 </h3>
-                                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium mt-auto">
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
                                                     {report.description}
                                                 </p>
+                                            </div>
+
+                                            <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-bold text-primary-600 dark:text-primary-400">
+                                                <span>فتح التقرير</span>
+                                                <span className="rtl:-scale-x-100">&larr;</span>
                                             </div>
                                         </Link>
                                     );
@@ -886,114 +1019,55 @@ export default function ReportsCenter({ auth, stats, chartData }) {
                 </div>
             </div>
 
-            {/* Bulk Export Floating Action Bar */}
-            {selectedReports.length > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-10 duration-500 fade-in w-full max-w-2xl px-4">
-                    <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl border border-white/10 p-2 sm:pl-6 rounded-2xl sm:rounded-full shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6 overflow-hidden relative">
-                        {/* Success Overlay */}
-                        {exportSuccess && (
-                            <div className="absolute inset-0 bg-emerald-600 z-10 flex items-center justify-center gap-3 animate-in fade-in duration-300">
-                                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">
-                                    <Check size={20} strokeWidth={3} />
-                                </div>
-                                <span className="text-white font-bold">{exportSuccess}</span>
-                            </div>
-                        )}
-                        
-                        <div className="flex items-center gap-3 w-full sm:w-auto px-2 sm:px-0">
-                            <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-primary-500/30">
-                                {selectedReports.length}
-                            </div>
-                            <div>
-                                <h4 className="text-white font-bold text-sm">تقارير محددة للتصدير</h4>
-                                <p className="text-slate-400 text-xs">سيتم دمجها في ملف واحد</p>
-                            </div>
-                        </div>
-                        
-                        <div className="hidden sm:block h-8 w-px bg-white/10"></div>
-                        
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                            <button 
-                                onClick={() => handleBulkExport('pdf')}
-                                disabled={isExporting}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group border border-red-500/20 hover:border-red-500/50"
-                            >
-                                {isExporting ? <Loader2 size={18} className="animate-spin" /> : <File size={18} className="group-hover:scale-110 transition-transform" />}
-                                <span className="text-sm font-bold">PDF مجمع</span>
-                            </button>
-                            <button 
-                                onClick={() => handleBulkExport('excel')}
-                                disabled={isExporting}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group border border-emerald-500/20 hover:border-emerald-500/50"
-                            >
-                                {isExporting ? <Loader2 size={18} className="animate-spin" /> : <FileSpreadsheet size={18} className="group-hover:scale-110 transition-transform" />}
-                                <span className="text-sm font-bold">Excel (Sheets)</span>
-                            </button>
-                            <button 
-                                onClick={() => setSelectedReports([])}
-                                className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700/50 hover:bg-slate-600 text-slate-300 ml-1 transition-colors border border-white/5"
-                                title="إلغاء التحديد"
-                            >
-                                <X size={18} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Product Tour Modal */}
             {showTour && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-500">
+                    <div className="bg-white dark:bg-slate-900 rounded-[2rem] w-full max-w-lg shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
                         {/* Header */}
-                        <div className="flex justify-between items-center p-6 border-b border-slate-100 dark:border-slate-800">
-                            <h3 className="font-black text-lg text-slate-800 dark:text-white">جولة تعريفية</h3>
-                            <button onClick={() => setShowTour(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 p-2 rounded-full transition-colors">
-                                <X size={20} />
+                        <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-800">
+                            <h3 className="font-black text-base text-slate-800 dark:text-white">دليل مركز التقارير</h3>
+                            <button onClick={() => setShowTour(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-full transition-colors">
+                                <X size={18} />
                             </button>
                         </div>
                         
                         {/* Body */}
-                        <div className="p-8 sm:p-12 text-center relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-primary-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
-                            
-                            <div className={`mx-auto w-24 h-24 rounded-[2rem] ${tourSteps[tourStep].bg} ${tourSteps[tourStep].color} flex items-center justify-center mb-8 shadow-inner transform transition-transform duration-500 hover:scale-110`}>
-                                {React.createElement(tourSteps[tourStep].icon, { size: 48, strokeWidth: 1.5 })}
+                        <div className="p-8 text-center relative overflow-hidden">
+                            <div className={`mx-auto w-20 h-20 rounded-2xl ${tourSteps[tourStep].bg} ${tourSteps[tourStep].color} flex items-center justify-center mb-6 shadow-inner`}>
+                                {React.createElement(tourSteps[tourStep].icon, { size: 40, strokeWidth: 1.8 })}
                             </div>
                             
-                            <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-4 leading-tight tracking-tight">
+                            <h2 className="text-xl font-black text-slate-800 dark:text-white mb-3">
                                 {tourSteps[tourStep].title}
                             </h2>
                             
-                            <p className="text-slate-500 dark:text-slate-400 font-medium text-lg leading-relaxed">
+                            <p className="text-slate-500 dark:text-slate-400 font-medium text-sm leading-relaxed">
                                 {tourSteps[tourStep].desc}
                             </p>
                         </div>
                         
-                        {/* Footer (Controls) */}
-                        <div className="bg-slate-50 dark:bg-slate-800/50 p-6 flex items-center justify-between">
-                            {/* Dots */}
-                            <div className="flex gap-2" dir="ltr">
+                        {/* Footer */}
+                        <div className="bg-slate-50 dark:bg-slate-800/50 p-5 flex items-center justify-between">
+                            <div className="flex gap-1.5" dir="ltr">
                                 {tourSteps.map((_, i) => (
-                                    <div key={i} className={`h-2 rounded-full transition-all duration-300 ${i === tourStep ? 'w-6 bg-primary-500' : 'w-2 bg-slate-300 dark:bg-slate-700'}`}></div>
+                                    <div key={i} className={`h-1.5 rounded-full transition-all ${i === tourStep ? 'w-5 bg-primary-500' : 'w-1.5 bg-slate-300 dark:bg-slate-700'}`}></div>
                                 ))}
                             </div>
                             
-                            {/* Buttons */}
-                            <div className="flex gap-3">
+                            <div className="flex gap-2">
                                 {tourStep > 0 && (
                                     <button 
                                         onClick={() => setTourStep(prev => prev - 1)}
-                                        className="px-5 py-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 font-bold transition-colors"
+                                        className="px-4 py-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition-colors"
                                     >
                                         السابق
                                     </button>
                                 )}
                                 <button 
                                     onClick={nextTourStep}
-                                    className="px-6 py-2.5 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-bold transition-colors shadow-md shadow-primary-500/20"
+                                    className="px-5 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white text-xs font-bold transition-colors shadow-sm"
                                 >
-                                    {tourStep === tourSteps.length - 1 ? 'ابدأ الآن' : 'التالي'}
+                                    {tourStep === tourSteps.length - 1 ? 'فهمت ذلك' : 'التالي'}
                                 </button>
                             </div>
                         </div>

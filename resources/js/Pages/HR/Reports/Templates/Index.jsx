@@ -53,14 +53,14 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
     // Helper for react-select tailwind classes
     const selectClassNames = {
-        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
-        menu: () => 'bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl mt-2 overflow-hidden z-[100] animate-scale-in',
+        control: (state) => `bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+        menu: () => 'bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl mt-2 overflow-hidden z-[100] animate-scale-in',
         option: (state) => `px-4 py-2.5 text-sm cursor-pointer transition-all duration-200 ${
             state.isSelected 
-                ? 'bg-primary-600 text-white font-bold shadow-sm shadow-primary-500/10' 
+                ? 'bg-primary-500 text-white font-bold' 
                 : state.isFocused 
-                    ? 'bg-primary-50 dark:bg-primary-600/15 text-primary-700 dark:text-primary-400 font-semibold' 
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 font-medium'
+                    ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-semibold' 
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium'
         }`,
         singleValue: () => 'text-slate-800 dark:text-slate-200 text-sm font-semibold',
         input: () => 'text-slate-800 dark:text-slate-200 text-sm font-semibold',
@@ -200,7 +200,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
             ) : (
                 <div className="space-y-4">
                     {fieldsForm.data.fields.map((field, index) => (
-                        <div key={index} className="relative p-5 bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 group/card">
+                        <div key={index} className="relative p-5 bg-white dark:bg-[#121820]/60 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 group/card">
                             {/* Card number badge */}
                             <div className="absolute -right-3 -top-3 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-black shadow-sm group-hover/card:bg-primary-500 group-hover/card:text-white group-hover/card:border-primary-400 transition-all duration-300">
                                 {index + 1}
@@ -217,13 +217,13 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             type="text" 
                                             value={field.name}
                                             onChange={(e) => updateField(index, 'name', e.target.value)}
-                                            className="w-full bg-slate-50/50 dark:bg-slate-900/20 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2.5 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400"
+                                            className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400"
                                             placeholder="مثال: إجمالي المبيعات، ملاحظات العمل..."
                                             required
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-1.5">نوع الحقل</label>
+                                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">نوع الحقل</label>
                                         <div className="relative">
                                             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10">
                                                 {getFieldIcon(field.type)}
@@ -621,10 +621,10 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
         <AdminLayout activeMenu="إدارة القوالب">
             <Head title="إدارة قوالب التقارير" />
 
-            <div className="p-6 space-y-6" style={{ direction: 'rtl' }}>
+            <div className="max-w-7xl mx-auto space-y-6">
                 
                 {/* Header Section */}
-                <div className="relative overflow-hidden bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 mb-4 sm:mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
                     
                     {/* Visual geometric lines */}
@@ -636,15 +636,15 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                         </svg>
                     </div>
 
-                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">إدارة قوالب التقارير</h1>
-                            <p className="text-primary-705/80 dark:text-primary-300/80 mt-1.5 sm:mt-2 text-xs sm:text-sm font-semibold">قم بإنشاء وتصميم النماذج التي سيقوم الموظفون بتعبئتها بناءً على درجاتهم الوظيفية</p>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">إدارة قوالب التقارير</h1>
+                            <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">قم بإنشاء وتصميم النماذج التي سيقوم الموظفون بتعبئتها بناءً على درجاتهم الوظيفية</p>
                         </div>
                         
                         <button 
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl sm:rounded-2xl hover:from-primary-600 hover:to-primary-700 hover:shadow-lg hover:shadow-primary-500/10 text-sm font-bold transition-all shrink-0 active:scale-95 w-full sm:w-auto"
+                            className="flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl shadow-md shadow-primary-500/20 text-sm font-bold transition-all shrink-0 active:scale-95"
                         >
                             <Plus size={18} /> 
                             <span>إنشاء قالب جديد</span>
@@ -654,22 +654,19 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Dashboard Stats */}
                 {stats && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 mb-4 sm:mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {[
-                            { label: 'إجمالي القوالب', value: stats.total_templates, icon: FileText, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-500/10', glow: 'bg-primary-500/5 dark:bg-primary-500/10', grad: 'from-primary-400 to-primary-600' },
-                            { label: 'الحقول المخصصة', value: stats.total_fields, icon: Settings, color: 'text-accent-600 dark:text-accent-400', bg: 'bg-accent-50 dark:bg-accent-500/10', glow: 'bg-accent-500/5 dark:bg-accent-500/10', grad: 'from-accent-400 to-accent-600' },
-                            { label: 'التقارير المرفوعة', value: stats.total_reports, icon: CheckSquare, color: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800/40', glow: 'bg-slate-500/5 dark:bg-slate-800/10', grad: 'from-slate-400 to-slate-600 dark:from-slate-600 dark:to-slate-800' }
+                            { label: 'إجمالي القوالب', value: stats.total_templates, icon: FileText, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-500/10' },
+                            { label: 'الحقول المخصصة', value: stats.total_fields, icon: Settings, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-500/10' },
+                            { label: 'التقارير المرفوعة', value: stats.total_reports, icon: CheckSquare, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' }
                         ].map((stat, idx) => (
-                            <div key={idx} className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 flex items-center justify-between gap-4 relative overflow-hidden group cursor-default bg-[radial-gradient(#e2e8f0_1.2px,transparent_1.2px)] dark:bg-[radial-gradient(#27313f_1.2px,transparent_1.2px)] [background-size:16px_16px]">
-                                <div className={`absolute top-0 right-0 left-0 h-1 bg-gradient-to-r ${stat.grad} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                                <div className={`absolute -left-6 -top-6 w-24 h-24 ${stat.glow} rounded-full blur-xl group-hover:scale-150 transition-all duration-500 pointer-events-none`} />
-                                
-                                <div className="relative z-10 min-w-0">
-                                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1 sm:mb-1.5">{stat.label}</p>
-                                    <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white leading-none font-mono tracking-tight">{stat.value}</h3>
+                            <div key={idx} className="bg-white dark:bg-[#121820]/60 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+                                <div className={`w-12 h-12 ${stat.bg} rounded-2xl flex items-center justify-center shrink-0`}>
+                                    <stat.icon size={22} className={stat.color} />
                                 </div>
-                                <div className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 border border-transparent dark:border-white/5 ${stat.bg} ${stat.color} transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-3`}>
-                                    <stat.icon size={18} className="sm:w-5 sm:h-5" strokeWidth={2.5} />
+                                <div>
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{stat.label}</p>
+                                    <h3 className={`text-2xl font-black ${stat.color}`}>{stat.value}</h3>
                                 </div>
                             </div>
                         ))}
@@ -677,16 +674,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 )}
 
                 {/* Filters Panel */}
-                <div className="relative z-20 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-sm bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px] mb-4 sm:mb-8">
-                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3 sm:gap-4">
-                        <div className="flex-1 relative group">
+                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 p-4">
+                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3 sm:gap-4 items-center">
+                        <div className="flex-1 w-full relative group">
                             <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
                             <input
                                 type="text"
                                 value={filterForm.data.search}
                                 onChange={(e) => filterForm.setData('search', e.target.value)}
                                 placeholder="ابحث عن قالب..."
-                                className="w-full bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl pr-11 pl-4 py-2.5 sm:py-3 text-[16px] sm:text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl pr-11 pl-4 py-2.5 sm:py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
                             />
                             {filterForm.data.search && (
                                 <button 
@@ -697,7 +694,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 </button>
                             )}
                         </div>
-                        <div className="md:w-64">
+                        <div className="w-full md:w-72">
                             <Select classNamePrefix="custom-select"
                                 options={jobGrades.map(grade => ({ value: grade.id, label: grade.name }))}
                                 value={filterForm.data.job_grade_id ? { value: filterForm.data.job_grade_id, label: jobGrades.find(g => g.id == filterForm.data.job_grade_id)?.name } : null}
@@ -711,14 +708,14 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 styles={{ menuPortal: base => ({ ...base, zIndex: 9999 }) }}
                             />
                         </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-2 mt-1 sm:mt-0">
-                            <button type="submit" className="w-full sm:w-auto bg-primary-600 text-white hover:bg-primary-700 px-6 py-3 sm:py-3 rounded-xl sm:rounded-2xl text-sm font-bold transition-all shrink-0 active:scale-95 shadow-sm hover:shadow-lg hover:shadow-primary-500/10">
+                        <div className="flex items-center gap-2 w-full md:w-auto">
+                            <button type="submit" className="flex-1 md:flex-initial bg-primary-500 text-white hover:bg-primary-600 px-6 py-2.5 sm:py-3 rounded-2xl text-sm font-bold transition-all shrink-0 active:scale-95 shadow-sm shadow-primary-500/20">
                                 بحث
                             </button>
                             {(filterForm.data.search || filterForm.data.job_grade_id) && (
                                 <Link 
                                     href={route('reports.templates')}
-                                    className="w-full sm:w-auto text-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 px-5 py-3 sm:py-3 rounded-xl sm:rounded-2xl text-sm font-bold transition-all active:scale-95"
+                                    className="flex-1 md:flex-initial text-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 px-5 py-2.5 sm:py-3 rounded-2xl text-sm font-bold transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </Link>
@@ -728,107 +725,83 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 </div>
 
                 {/* Templates List */}
-                <div className="flex items-center justify-between mb-3 px-1">
-                    <h3 className="text-sm font-black text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                        <FileText size={16} className="text-primary-500" />
-                        جميع القوالب
-                        <span className="px-2.5 py-0.5 rounded-full bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 text-xs font-black border border-primary-100 dark:border-primary-500/20">
-                            {templates.data.length}
-                        </span>
-                    </h3>
-                </div>
-                <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 rounded-2xl sm:rounded-3xl shadow-sm animate-fade-in mb-8 overflow-hidden">
-                    <div className="overflow-x-auto overflow-y-auto max-h-[70vh] custom-scrollbar">
-                        <table className="w-full text-right border-collapse min-w-[800px]">
+                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-right">
                             <thead>
-                                <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">
                                         <div className="flex items-center gap-1.5">
-                                            <FileText size={14} className="text-primary-500" />
+                                            <FileText size={15} className="text-primary-500" />
                                             <span>اسم القالب</span>
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">
                                         <div className="flex items-center gap-1.5">
-                                            <ShieldCheck size={14} className="text-indigo-500" />
-                                            <span>الدرجة الوظيفية المستهدفة</span>
+                                            <ShieldCheck size={15} className="text-indigo-500" />
+                                            <span>الدرجة الوظيفية</span>
                                         </div>
                                     </th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        <div className="flex items-center gap-1.5">
-                                            <AlignLeft size={14} className="text-slate-400" />
-                                            <span>الوصف</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                                        <div className="flex items-center gap-1.5">
-                                            <Calendar size={14} className="text-slate-400" />
-                                            <span>تاريخ الإنشاء</span>
-                                        </div>
-                                    </th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider w-40 text-center">
-                                        <div className="flex items-center justify-center gap-1.5">
-                                            <Settings size={14} className="text-slate-400" />
-                                            <span>الإجراءات</span>
-                                        </div>
-                                    </th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الوصف</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">تاريخ الإنشاء</th>
+                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 text-center">الإجراءات</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100/70 dark:divide-slate-800/60">
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {templates.data.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-8 text-center text-slate-400 dark:text-slate-500 font-bold">لا توجد قوالب حتى الآن.</td>
+                                        <td colSpan="5" className="py-16 text-center">
+                                            <FileText size={48} className="text-slate-300 mx-auto mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-600 dark:text-slate-400">لا توجد قوالب حتى الآن</h3>
+                                        </td>
                                     </tr>
                                 ) : (
                                     templates.data.map((template) => (
-                                        <tr key={template.id} className="group border-r-4 border-r-transparent hover:border-r-primary-500 hover:bg-slate-50/40 dark:hover:bg-primary-500/10 transition-all duration-200">
-                                            <td className="px-6 py-4.5 whitespace-nowrap">
+                                        <tr key={template.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                                            <td className="py-4 px-6">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-100 dark:border-primary-500/20 shadow-sm transition-transform group-hover:scale-110">
+                                                    <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200 dark:border-primary-500/30">
                                                         <FileText size={16} />
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-slate-800 dark:text-white text-sm group-hover:text-primary-655 dark:group-hover:text-primary-400 transition-colors">{template.name}</div>
-                                                        <div className="mt-1 flex items-center gap-1.5">
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20">
-                                                                <Calendar size={10} />
+                                                        <div className="font-bold text-slate-800 dark:text-white text-sm">{template.name}</div>
+                                                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
+                                                                <Calendar size={11} />
                                                                 {({ daily: 'يومي', weekly: 'أسبوعي', monthly: 'شهري', quarterly: 'فصلي', yearly: 'سنوي', custom: 'مخصص' })[template.period_type] || 'غير محدد'}
                                                             </span>
-                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
-                                                                <List size={10} />
+                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-500/30">
+                                                                <List size={11} />
                                                                 {template.fields_count || 0} حقل
                                                             </span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4.5 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20">
+                                            <td className="py-4 px-6">
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">
                                                     <ShieldCheck size={12} className="shrink-0" />
-                                                    <span>{template.job_grade?.name || 'غير حدد'}</span>
+                                                    <span>{template.job_grade?.name || 'عام'}</span>
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4.5 text-sm font-semibold text-slate-500 dark:text-slate-400 max-w-xs truncate">
+                                            <td className="py-4 px-6 text-sm text-slate-500 dark:text-slate-400 max-w-xs truncate">
                                                 {template.description || '-'}
                                             </td>
-                                            <td className="px-6 py-4.5 whitespace-nowrap text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">
-                                                <div className="flex items-center gap-1.5">
-                                                    <Calendar size={13} className="text-slate-400" />
-                                                    <span>{new Date(template.created_at).toLocaleDateString('ar-EG')}</span>
-                                                </div>
+                                            <td className="py-4 px-6 text-sm text-slate-500 dark:text-slate-400">
+                                                {new Date(template.created_at).toLocaleDateString('ar-EG')}
                                             </td>
-                                            <td className="px-6 py-4.5 text-center whitespace-nowrap">
+                                            <td className="py-4 px-6 text-center">
                                                 <div className="flex items-center justify-center gap-2">
                                                     <Dropdown>
                                                         <Dropdown.Trigger>
                                                             <button 
                                                                 type="button"
-                                                                className="flex items-center gap-1.5 bg-indigo-50 text-indigo-655 hover:bg-indigo-500 hover:text-white dark:bg-indigo-500/10 dark:text-indigo-450 dark:hover:bg-indigo-500 dark:hover:text-white px-3 py-1.5 rounded-xl text-xs font-black transition-all border border-indigo-100 dark:border-indigo-500/20 shadow-sm active:scale-95"
+                                                                className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700"
                                                                 title="خيارات المعاينة"
                                                             >
-                                                                <Eye size={14} />
+                                                                <Eye size={13} />
                                                                 <span>معاينة</span>
-                                                                <ChevronDown size={14} />
+                                                                <ChevronDown size={13} />
                                                             </button>
                                                         </Dropdown.Trigger>
 
@@ -839,7 +812,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                                     onClick={() => setPreviewFormTemplate(template)}
                                                                     className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
                                                                 >
-                                                                    <FileText size={16} className="text-indigo-500" />
+                                                                    <FileText size={16} className="text-primary-500" />
                                                                     معاينة التعبئة
                                                                 </button>
                                                                 <button
@@ -847,7 +820,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                                     onClick={() => setPreviewReportTemplate(template)}
                                                                     className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
                                                                 >
-                                                                    <FileSpreadsheet size={16} className="text-sky-500" />
+                                                                    <FileSpreadsheet size={16} className="text-emerald-500" />
                                                                     معاينة التقرير
                                                                 </button>
                                                             </div>
@@ -855,25 +828,25 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     </Dropdown>
                                                     <button 
                                                         onClick={() => openFieldsModal(template)}
-                                                        className="flex items-center gap-1.5 bg-emerald-50 text-emerald-655 hover:bg-emerald-500 hover:text-white dark:bg-emerald-500/10 dark:text-emerald-450 dark:hover:bg-emerald-500 dark:hover:text-white px-3 py-1.5 rounded-xl text-xs font-black transition-all border border-emerald-100 dark:border-emerald-500/20 active:scale-95 shadow-sm"
+                                                        className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-emerald-200 dark:border-emerald-500/30"
                                                         title="إدارة الحقول"
                                                     >
-                                                        <List size={14} />
+                                                        <List size={13} />
                                                         <span>الحقول ({template.fields_count || 0})</span>
                                                     </button>
                                                     <button 
                                                         onClick={() => openEditModal(template)}
-                                                        className="text-blue-500 hover:text-white hover:bg-blue-500 dark:hover:bg-blue-500/10 p-2.5 rounded-xl transition-all border border-slate-200 dark:border-slate-800 hover:border-blue-500 dark:hover:border-blue-500/20 active:scale-95 shadow-sm"
+                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
                                                         title="تعديل القالب"
                                                     >
-                                                        <Edit size={16} />
+                                                        <Edit size={14} />
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDelete(template.id)}
-                                                        className="text-red-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-500/10 p-2.5 rounded-xl transition-all border border-slate-200 dark:border-slate-800 hover:border-red-500 dark:hover:border-red-500/20 active:scale-95 shadow-sm"
+                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                                                         title="حذف القالب"
                                                     >
-                                                        <Trash2 size={16} />
+                                                        <Trash2 size={14} />
                                                     </button>
                                                 </div>
                                             </td>
@@ -888,13 +861,13 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 {/* Modal Create */}
                 {isCreateModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
-                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-3xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
-                            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600 z-50" />
+                        <div className="relative bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 w-full max-w-3xl rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
+                            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 z-50" />
                             
-                            <div className="relative p-4 sm:p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-6 sm:pt-8">
+                            <div className="relative p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary-500 to-primary-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-primary-500/20 border border-primary-400/20">
-                                        <PlusCircle size={20} className="animate-pulse" />
+                                    <div className="w-10 h-10 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200 dark:border-primary-500/30">
+                                        <PlusCircle size={20} />
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-black text-slate-800 dark:text-white leading-none">إنشاء قالب تقرير جديد</h2>
@@ -908,21 +881,21 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <X size={16} />
                                 </button>
                             </div>
-                            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+                            <div className="p-5 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
                                 <form id="createForm" onSubmit={handleCreateSubmit} className="space-y-4 sm:space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-2 flex items-center gap-1">
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>اسم القالب</span>
                                                 <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative group">
-                                                <FileText size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none" />
+                                                <FileText size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none" />
                                                 <input 
                                                     type="text" 
                                                     value={form.data.name}
                                                     onChange={e => form.setData('name', e.target.value)}
-                                                    className="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600 shadow-inner-sm"
+                                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                                     placeholder="مثال: التقرير اليومي للمبيعات"
                                                     required
                                                 />
@@ -930,12 +903,12 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             {form.errors.name && <p className="text-red-500 text-xs mt-1 font-bold">{form.errors.name}</p>}
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-2 flex items-center gap-1">
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>الدرجة الوظيفية المستهدفة</span>
                                                 <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative group">
-                                                <ShieldCheck size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
+                                                <ShieldCheck size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none z-10" />
                                                 <Select classNamePrefix="custom-select"
                                                     options={jobGrades.map(grade => ({ value: grade.id, label: grade.name }))}
                                                     value={form.data.job_grade_id ? { value: form.data.job_grade_id, label: jobGrades.find(g => g.id == form.data.job_grade_id)?.name } : null}
@@ -945,7 +918,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     unstyled
                                                     classNames={{
                                                         ...selectClassNames,
-                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+                                                        control: (state) => `bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
                                                     menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                     menuPosition="fixed"
@@ -955,12 +928,12 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             {form.errors.job_grade_id && <p className="text-red-500 text-xs mt-1 font-bold">{form.errors.job_grade_id}</p>}
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-2 flex items-center gap-1">
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>دورية التقرير</span>
                                                 <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative group">
-                                                <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
+                                                <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none z-10" />
                                                 <Select classNamePrefix="custom-select"
                                                     options={[
                                                         { value: 'daily', label: 'يومي (Daily)' },
@@ -977,7 +950,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     unstyled
                                                     classNames={{
                                                         ...selectClassNames,
-                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+                                                        control: (state) => `bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
                                                     menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                     menuPosition="fixed"
@@ -990,11 +963,11 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الوصف (اختياري)</label>
                                         <div className="relative group">
-                                            <AlignLeft size={16} className="absolute right-4 top-4 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none" />
+                                            <AlignLeft size={16} className="absolute right-4 top-4 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none" />
                                             <textarea 
                                                 value={form.data.description}
                                                 onChange={e => form.setData('description', e.target.value)}
-                                                className="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600 shadow-inner-sm"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600"
                                                 placeholder="اكتب وصفاً مختصراً للقالب وأهداف استخدامه..."
                                                 rows="3"
                                             ></textarea>
@@ -1002,11 +975,11 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     </div>
                                 </form>
                             </div>
-                            <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/20 flex flex-col-reverse sm:flex-row justify-end gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
                                 <button 
                                     type="button" 
                                     onClick={() => setIsCreateModalOpen(false)}
-                                    className="w-full sm:w-auto px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
+                                    className="px-6 py-2.5 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 bg-slate-100 dark:bg-slate-800 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
@@ -1014,7 +987,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     form="createForm" 
                                     type="submit" 
                                     disabled={form.processing}
-                                    className="w-full sm:w-auto justify-center px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white disabled:opacity-50 transition-all shadow-md shadow-primary-500/15 hover:shadow-lg hover:shadow-primary-500/25 active:scale-95 flex items-center gap-1.5"
+                                    className="px-6 py-2.5 rounded-2xl text-sm font-bold bg-primary-500 hover:bg-primary-600 text-white disabled:opacity-50 transition-all shadow-md shadow-primary-500/20 active:scale-95 flex items-center gap-1.5"
                                 >
                                     <Plus size={16} />
                                     <span>حفظ القالب</span>
@@ -1026,13 +999,13 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Modal Edit */}
                 {isEditModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-3xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
-                            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 z-50" />
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
+                        <div className="relative bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 w-full max-w-3xl rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
+                            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 z-50" />
                             
-                            <div className="relative p-4 sm:p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-6 sm:pt-8">
+                            <div className="relative p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-500 to-blue-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20 border border-blue-400/20">
+                                    <div className="w-10 h-10 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200 dark:border-primary-500/30">
                                         <Edit size={20} />
                                     </div>
                                     <div>
@@ -1047,21 +1020,21 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <X size={16} />
                                 </button>
                             </div>
-                            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+                            <div className="p-5 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
                                 <form id="editForm" onSubmit={handleEditSubmit} className="space-y-4 sm:space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                                         <div>
                                             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>اسم القالب</span>
-                                                <span className="text-red-505">*</span>
+                                                <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative group">
-                                                <FileText size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none" />
+                                                <FileText size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none" />
                                                 <input 
                                                     type="text" 
                                                     value={editForm.data.name}
                                                     onChange={e => editForm.setData('name', e.target.value)}
-                                                    className="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 shadow-inner-sm"
+                                                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400"
                                                     required
                                                 />
                                             </div>
@@ -1072,7 +1045,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                 <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative group">
-                                                <ShieldCheck size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
+                                                <ShieldCheck size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none z-10" />
                                                 <Select classNamePrefix="custom-select"
                                                     options={jobGrades.map(grade => ({ value: grade.id, label: grade.name }))}
                                                     value={editForm.data.job_grade_id ? { value: editForm.data.job_grade_id, label: jobGrades.find(g => g.id == editForm.data.job_grade_id)?.name } : null}
@@ -1082,7 +1055,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     unstyled
                                                     classNames={{
                                                         ...selectClassNames,
-                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+                                                        control: (state) => `bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
                                                     menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                     menuPosition="fixed"
@@ -1091,12 +1064,12 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-505 dark:text-slate-400 mb-2 flex items-center gap-1">
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center gap-1">
                                                 <span>دورية التقرير</span>
                                                 <span className="text-red-500">*</span>
                                             </label>
                                             <div className="relative group">
-                                                <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
+                                                <Calendar size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none z-10" />
                                                 <Select classNamePrefix="custom-select"
                                                     options={[
                                                         { value: 'daily', label: 'يومي (Daily)' },
@@ -1113,7 +1086,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     unstyled
                                                     classNames={{
                                                         ...selectClassNames,
-                                                        control: (state) => `bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
+                                                        control: (state) => `bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-10 pl-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
                                                     }}
                                                     menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                                                     menuPosition="fixed"
@@ -1125,22 +1098,22 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الوصف (اختياري)</label>
                                         <div className="relative group">
-                                            <AlignLeft size={16} className="absolute right-4 top-4 text-slate-400 group-focus-within:text-primary-500 group-focus-within:scale-110 transition-all duration-300 pointer-events-none" />
+                                            <AlignLeft size={16} className="absolute right-4 top-4 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none" />
                                             <textarea 
                                                 value={editForm.data.description}
                                                 onChange={e => editForm.setData('description', e.target.value)}
-                                                className="w-full bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 shadow-inner-sm"
+                                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400"
                                                 rows="3"
                                             ></textarea>
                                         </div>
                                     </div>
                                 </form>
                             </div>
-                            <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/20 flex flex-col-reverse sm:flex-row justify-end gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
                                 <button 
                                     type="button" 
                                     onClick={() => setIsEditModalOpen(false)}
-                                    className="w-full sm:w-auto px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
+                                    className="px-6 py-2.5 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 bg-slate-100 dark:bg-slate-800 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
@@ -1148,7 +1121,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     form="editForm" 
                                     type="submit" 
                                     disabled={editForm.processing}
-                                    className="w-full sm:w-auto justify-center px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white disabled:opacity-50 transition-all shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 active:scale-95 flex items-center gap-1.5"
+                                    className="px-6 py-2.5 rounded-2xl text-sm font-bold bg-primary-500 hover:bg-primary-600 text-white disabled:opacity-50 transition-all shadow-md shadow-primary-500/20 active:scale-95 flex items-center gap-1.5"
                                 >
                                     <Edit size={16} />
                                     <span>حفظ التعديلات</span>
@@ -1160,20 +1133,20 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Modal Fields */}
                 {isFieldsModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
-                        <div className="relative bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/20 dark:border-slate-800/80 w-full max-w-4xl rounded-t-[32px] sm:rounded-[32px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
-                            <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-600 z-50" />
+                    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
+                        <div className="relative bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 w-full max-w-4xl rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
+                            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 z-50" />
                             
-                            <div className="relative p-4 sm:p-6 md:p-7 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/40 dark:bg-slate-900/20 pt-6 sm:pt-8">
+                            <div className="relative p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
                                 <div className="flex items-center gap-3.5">
-                                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-emerald-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20 border border-emerald-400/20">
+                                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-500/30">
                                         <List size={20} />
                                     </div>
                                     <div>
                                         <h2 className="text-lg font-black text-slate-800 dark:text-white leading-none">إدارة حقول التقرير</h2>
                                         <div className="flex items-center gap-2 mt-1.5">
                                             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">القالب المستهدف:</span>
-                                            <span className="px-2 py-0.5 text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 rounded-md font-bold">
+                                            <span className="px-2.5 py-0.5 text-xs bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 rounded-lg font-bold">
                                                 {editingTemplate?.name}
                                             </span>
                                         </div>
@@ -1183,19 +1156,19 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     onClick={() => setIsFieldsModalOpen(false)} 
                                     className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors duration-300 hover:rotate-90 active:scale-90"
                                 >
-                                    <X size={20} />
+                                    <X size={18} />
                                 </button>
                             </div>
-                            <div className="p-4 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
+                            <div className="p-5 sm:p-6 overflow-y-auto flex-1 custom-scrollbar">
                                 <form id="fieldsForm" onSubmit={handleFieldsSubmit}>
                                     {renderFieldBuilder()}
                                 </form>
                             </div>
-                            <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20 flex flex-col-reverse sm:flex-row justify-end gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
                                 <button 
                                     type="button" 
                                     onClick={() => setIsFieldsModalOpen(false)}
-                                    className="w-full sm:w-auto px-6 py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-all active:scale-95"
+                                    className="px-6 py-2.5 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 bg-slate-100 dark:bg-slate-800 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
@@ -1203,7 +1176,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     form="fieldsForm" 
                                     type="submit" 
                                     disabled={fieldsForm.processing}
-                                    className="w-full sm:w-auto justify-center px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-750 text-white disabled:opacity-50 transition-all shadow-md shadow-emerald-500/15 hover:shadow-lg hover:shadow-emerald-500/25 active:scale-95 flex items-center gap-1.5"
+                                    className="px-6 py-2.5 rounded-2xl text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50 transition-all shadow-md shadow-emerald-500/20 active:scale-95 flex items-center gap-1.5"
                                 >
                                     <CheckSquare size={16} />
                                     <span>حفظ حقول التقرير</span>

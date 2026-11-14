@@ -71,7 +71,14 @@ class User extends Authenticatable
         if (!$this->role) {
             return false;
         }
-        if ($this->role->name === 'مدير النظام' || $this->role->name === 'مدير عام') {
+        if ($this->role->name === 'مدير النظام') {
+            // مدير النظام مسؤول عن البنية التقنية والإعدادات العامة فقط ولا يملك وصولاً للتقارير المدرسية والتشغيلية
+            if (in_array($permissionName, ['إدارة التقارير', 'عرض التقارير', 'إضافة تقرير', 'تعديل تقرير', 'إدارة قوالب التقارير'])) {
+                return false;
+            }
+            return true;
+        }
+        if ($this->role->name === 'مدير عام') {
             return true;
         }
         if ($this->role->name === 'طالب' && $permissionName === 'عرض المكتبة الرقمية') {

@@ -5,55 +5,191 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
-class ReportCenterController extends Controller
+class ReportCenterController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware(function ($request, $next) {
+                if (auth()->user()?->role?->name === 'مدير النظام') {
+                    abort(403, 'غير مصرح لمدير النظام بالوصول إلى مركز أو منشئ التقارير.');
+                }
+                return $next($request);
+            }),
+        ];
+    }
+
     /**
      * Display the centralized reports dashboard.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $today = now()->toDateString();
-        
-        // 1. غياب الطلاب اليوم
-        $studentAbsencesToday = \App\Models\AttendanceLog::whereDate('attendance_date', $today)
-            ->where('status', 'absent')
-            ->count();
+        $user = auth()->user();
+        $branchId = $user->branch_id;
 
-        // 2. غياب المعلمين/الموظفين اليوم
-        $teacherAbsencesToday = \App\Models\Attendance::whereDate('date', $today)
-            ->where('status', 'absent')
-            ->count();
+        // Years and Semesters for the user's branch
+        $academicYears = \App\Models\AcademicYear::where('branch_id', $branchId)
+            ->select('id', 'name', 'is_active')
+            ->orderBy('id', 'desc')
+            ->get();
 
-        // 3. عدد دفاتر المتابعة المرفوعة اليوم (أو الأسبوع)
-        $followupBooksToday = \App\Models\FollowupBook::whereDate('uploaded_at', $today)->count();
+        $selectedYearId = $request->filled('academic_year_id') 
+            ? (int)$request->academic_year_id 
+            : ($academicYears->firstWhere('is_active', true)?->id ?? $academicYears->first()?->id);
 
-        // 4. الزيارات الصفية المجدولة هذا الأسبوع
-        $classroomVisitsThisWeek = \App\Models\ClassroomVisit::whereBetween('visit_date', [now()->startOfWeek(), now()->endOfWeek()])->count();
-
-        // بيانات الرسم البياني للـ 5 أيام الماضية
-        $last5Days = [];
-        for ($i = 4; $i >= 0; $i--) {
-            $last5Days[] = now()->subDays($i)->format('Y-m-d');
+        $semesters = [];
+        if ($selectedYearId) {
+            $semesters = \App\Models\Semester::where('academic_year_id', $selectedYearId)
+                ->select('id', 'name', 'term_number', 'is_active')
+                ->orderBy('term_number')
+                ->get();
         }
 
-        $chartData = collect($last5Days)->map(function ($date) {
-            return [
-                'name' => \Carbon\Carbon::parse($date)->locale('ar')->translatedFormat('l'), // e.g., الأحد
-                'student_absences' => \App\Models\AttendanceLog::whereDate('attendance_date', $date)->where('status', 'absent')->count(),
-                'teacher_absences' => \App\Models\Attendance::whereDate('date', $date)->where('status', 'absent')->count(),
-            ];
-        });
+        $selectedSemesterId = $request->filled('semester_id')
+            ? (int)$request->semester_id
+            : ($semesters->firstWhere('is_active', true)?->id ?? $semesters->first()?->id);
+
+        $today = now()->toDateString();
+        
+        // 1. Total Students in current branch and selected academic year (or active enrollments)
+        $totalStudents = \App\Models\Student::whereHas('user', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            })
+            ->when($selectedYearId, function($q) use ($selectedYearId) {
+                $q->whereHas('enrollments', function($eq) use ($selectedYearId) {
+                    $eq->where('academic_year_id', $selectedYearId);
+                });
+            })
+            ->count();
+
+        // 2. Total Teachers/Employees in current branch
+        $totalTeachers = \App\Models\Employee::whereHas('user', function($q) use ($branchId) {
+            $q->where('branch_id', $branchId);
+        })->count();
+
+        // 3. Expected Followup Books per day in this branch (number of division-subject allocations or active teachers)
+        $expectedFollowups = \App\Models\DivisionSubjectTeacher::whereHas('division', function($q) use ($branchId, $selectedYearId) {
+                $q->where('branch_id', $branchId);
+                if ($selectedYearId) $q->where('academic_year_id', $selectedYearId);
+            })
+            ->when($selectedSemesterId, function($q) use ($selectedSemesterId) {
+                $q->where('semester_id', $selectedSemesterId);
+            })
+            ->count();
+        if ($expectedFollowups === 0) {
+            $expectedFollowups = max($totalTeachers, 1);
+        }
+
+        // 4. Expected Classroom Visits per week (realistic target based on teachers count)
+        $expectedVisitsPerWeek = max(round($totalTeachers * 0.25), 1); // 25% of teachers per week, at least 1
+
+        // 5. غياب الطلاب اليوم (ضمن فرع المستخدم)
+        $studentAbsencesToday = \App\Models\AttendanceLog::whereDate('attendance_date', $today)
+            ->where('status', 'absent')
+            ->whereHas('user', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            })
+            ->count();
+
+        // 6. غياب المعلمين/الموظفين اليوم (ضمن فرع المستخدم)
+        $teacherAbsencesToday = \App\Models\Attendance::whereDate('date', $today)
+            ->where('status', 'absent')
+            ->where('branch_id', $branchId)
+            ->count();
+
+        // 7. عدد دفاتر المتابعة المرفوعة اليوم (ضمن فرع المستخدم والسنة/الفصل إن وجد)
+        $followupBooksToday = \App\Models\FollowupBook::whereDate('uploaded_at', $today)
+            ->where('branch_id', $branchId)
+            ->when($selectedYearId, function($q) use ($selectedYearId) {
+                $q->where('academic_year_id', $selectedYearId);
+            })
+            ->count();
+
+        // 8. الزيارات الصفية المنفذة أو المجدولة هذا الأسبوع (ضمن فرع المستخدم)
+        $classroomVisitsThisWeek = \App\Models\ClassroomVisit::whereBetween('visit_date', [now()->startOfWeek(), now()->endOfWeek()])
+            ->where('branch_id', $branchId)
+            ->when($selectedYearId, function($q) use ($selectedYearId) {
+                $q->where('academic_year_id', $selectedYearId);
+            })
+            ->count();
+
+        // رسم بياني ديناميكي حسب الفلتر المختار
+        $chartPeriod = $request->input('chart_period', '5days');
+        $chartData = $this->generateAttendanceChartData($chartPeriod, $branchId);
+
+        // If it's an AJAX / Partial reload for chart data
+        if ($request->wantsJson() && $request->has('chart_period')) {
+            return response()->json([
+                'chartData' => $chartData
+            ]);
+        }
 
         return Inertia::render('Reports/Center', [
             'stats' => [
                 'student_absences_today' => $studentAbsencesToday,
+                'total_students' => $totalStudents,
                 'teacher_absences_today' => $teacherAbsencesToday,
+                'total_teachers' => $totalTeachers,
                 'followup_books_today' => $followupBooksToday,
+                'expected_followups' => $expectedFollowups,
                 'classroom_visits_this_week' => $classroomVisitsThisWeek,
+                'expected_visits_per_week' => $expectedVisitsPerWeek,
             ],
-            'chartData' => $chartData
+            'chartData' => $chartData,
+            'filters' => [
+                'academic_year_id' => $selectedYearId,
+                'semester_id' => $selectedSemesterId,
+                'chart_period' => $chartPeriod,
+            ],
+            'academicYears' => $academicYears,
+            'semesters' => $semesters,
+            'userBranch' => $user->branch ? [
+                'id' => $user->branch->id,
+                'name' => $user->branch->name,
+            ] : null,
         ]);
+    }
+
+    /**
+     * Generate dynamic chart data based on selected timeframe
+     */
+    protected function generateAttendanceChartData(string $period, int $branchId): array
+    {
+        $daysCount = match($period) {
+            'week' => 7,
+            'month' => 30,
+            default => 5,
+        };
+
+        $dates = [];
+        for ($i = $daysCount - 1; $i >= 0; $i--) {
+            $dates[] = now()->subDays($i)->format('Y-m-d');
+        }
+
+        return collect($dates)->map(function ($date) use ($branchId, $period) {
+            $carbonDate = \Carbon\Carbon::parse($date)->locale('ar');
+            $label = $period === 'month' 
+                ? $carbonDate->isoFormat('D MMM') 
+                : $carbonDate->translatedFormat('l');
+
+            return [
+                'name' => $label,
+                'date' => $date,
+                'student_absences' => \App\Models\AttendanceLog::whereDate('attendance_date', $date)
+                    ->where('status', 'absent')
+                    ->whereHas('user', function($q) use ($branchId) {
+                        $q->where('branch_id', $branchId);
+                    })
+                    ->count(),
+                'teacher_absences' => \App\Models\Attendance::whereDate('date', $date)
+                    ->where('status', 'absent')
+                    ->where('branch_id', $branchId)
+                    ->count(),
+            ];
+        })->values()->toArray();
     }
 
     public function customBuilder()
