@@ -350,6 +350,8 @@ class AttendanceController extends Controller implements \Illuminate\Routing\Con
         $violatorsOnly = filter_var($request->get('violators_only', false), FILTER_VALIDATE_BOOLEAN);
         $roleCategory = $request->get('role_category', 'teachers'); // 'teachers', 'administrative'
 
+        $this->autoGenerateMissingAttendance($startDate, $endDate, $userBranchId);
+
         if (empty($statuses)) {
             $statuses = ['absent', 'late', 'excused', 'leave'];
         } else if (is_string($statuses)) {
