@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::get('/preparations/form-data', [MobileFeaturesController::class, 'getPreparationFormData']);
     Route::post('/preparations', [MobileFeaturesController::class, 'storePreparation']);
     Route::put('/preparations/{lessonPreparation}', [MobileFeaturesController::class, 'updatePreparation']);
+    Route::post('/preparations/{lessonPreparation}/update', [MobileFeaturesController::class, 'updatePreparation']);
     Route::delete('/preparations/{lessonPreparation}', [MobileFeaturesController::class, 'deletePreparation']);
     
     // Teacher Class Attendance
@@ -227,6 +228,14 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::post('/mobile/features/appraisals/{id}/submit-self', [MobileFeaturesController::class, 'submitAppraisalSelf']);
     Route::post('/appraisals/{id}/submit-manager', [MobileFeaturesController::class, 'submitAppraisalManager']);
     Route::post('/mobile/features/appraisals/{id}/submit-manager', [MobileFeaturesController::class, 'submitAppraisalManager']);
+    Route::post('/appraisals/{id}/evaluators', [MobileFeaturesController::class, 'addAppraisalEvaluator']);
+    Route::post('/mobile/features/appraisals/{id}/evaluators', [MobileFeaturesController::class, 'addAppraisalEvaluator']);
+    Route::delete('/appraisals/{id}/evaluators/{evaluatorId}', [MobileFeaturesController::class, 'removeAppraisalEvaluator']);
+    Route::delete('/mobile/features/appraisals/{id}/evaluators/{evaluatorId}', [MobileFeaturesController::class, 'removeAppraisalEvaluator']);
+    Route::post('/appraisals/{id}/return', [MobileFeaturesController::class, 'returnAppraisalFromMobile']);
+    Route::post('/mobile/features/appraisals/{id}/return', [MobileFeaturesController::class, 'returnAppraisalFromMobile']);
+    Route::post('/appraisals/{id}/approve-hr', [MobileFeaturesController::class, 'approveAppraisalHrFromMobile']);
+    Route::post('/mobile/features/appraisals/{id}/approve-hr', [MobileFeaturesController::class, 'approveAppraisalHrFromMobile']);
     Route::post('/appraisals/{id}/scores/{score}/goals', [MobileFeaturesController::class, 'storeAppraisalGoal']);
     Route::post('/mobile/features/appraisals/{id}/scores/{score}/goals', [MobileFeaturesController::class, 'storeAppraisalGoal']);
     Route::post('/appraisals/{id}/goals/{goal}/progress', [MobileFeaturesController::class, 'updateAppraisalGoalProgress']);

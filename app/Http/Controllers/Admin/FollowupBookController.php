@@ -183,13 +183,7 @@ class FollowupBookController extends Controller
                 foreach ($lessonsForDay as $lesson) {
                     $lookupKey = $dateStr . '_' . $lesson->subject_id;
                     $possiblePreps = $indexedPreps[$lookupKey] ?? [];
-                    $prep = null;
-                    foreach ($possiblePreps as $p) {
-                        if (empty($p->division_id) || $p->division_id == $lesson->division_id) {
-                            $prep = $p;
-                            break;
-                        }
-                    }
+                    $prep = $this->findMatchingPreparation($possiblePreps, $lesson, $matchedPrepIds);
                     if ($prep) {
                         $matchedPrepIds[$prep->id] = true;
                     }
@@ -613,12 +607,17 @@ class FollowupBookController extends Controller
                 'lessons' => []
             ];
 
+            $matchedShowPrepIds = [];
             foreach ($lessonsForDay as $lesson) {
-                // Find matching preparation for this subject, division, and date
-                $prep = $preparations->first(function($p) use ($dateStr, $lesson) {
-                    $prepDate = is_string($p->preparation_date) ? $p->preparation_date : $p->preparation_date->format('Y-m-d');
-                    return $prepDate === $dateStr && $p->subject_id == $lesson->subject_id && ($p->division_id == $lesson->division_id || empty($p->division_id));
+                // Find matching preparation prioritizing period_id, falling back to legacy records without period_id
+                $dayCandidates = $preparations->filter(function($p) use ($dateStr, $lesson) {
+                    $prepDate = is_string($p->preparation_date) ? substr($p->preparation_date, 0, 10) : $p->preparation_date->format('Y-m-d');
+                    return $prepDate === $dateStr && $p->subject_id == $lesson->subject_id;
                 });
+                $prep = $this->findMatchingPreparation($dayCandidates, $lesson, $matchedShowPrepIds);
+                if ($prep) {
+                    $matchedShowPrepIds[$prep->id] = true;
+                }
 
                 $status = 'missing'; // لم يتم التحضير
                 if ($prep) {
@@ -678,5 +677,33 @@ class FollowupBookController extends Controller
         );
 
         return back()->with('success', 'تم حفظ إعدادات مواعيد دفاتر التحضير بنجاح.');
+    }
+
+    /**
+     * Match a timetable lesson to its preparation, prioritizing period_id and falling back to legacy records without period_id.
+     */
+    private function findMatchingPreparation($candidates, $lesson, array $matchedPrepIds = [])
+    {
+        $matchesDivision = fn($p) => empty($p->division_id) || $p->division_id == $lesson->division_id;
+
+        foreach ($candidates as $p) {
+            if (isset($matchedPrepIds[$p->id]) || !$matchesDivision($p)) {
+                continue;
+            }
+            if (!empty($p->period_id) && $p->period_id == $lesson->period_id) {
+                return $p;
+            }
+        }
+
+        foreach ($candidates as $p) {
+            if (isset($matchedPrepIds[$p->id]) || !$matchesDivision($p)) {
+                continue;
+            }
+            if (empty($p->period_id)) {
+                return $p;
+            }
+        }
+
+        return null;
     }
 }

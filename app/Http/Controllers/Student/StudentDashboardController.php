@@ -110,13 +110,10 @@ class StudentDashboardController extends Controller
                 ->values();
         }
 
-        // Get attendance summary (e.g. absent days this semester)
-        $absentDays = ClassAttendance::where('student_id', $student->id)
-            ->whereIn('status', ['absent', 'unexcused'])
-            ->count();
+        $portalMetrics = $this->buildStudentPortalMetrics($student, $currentEnrollment, false);
 
         // Gamification
-        $achievements = StudentAchievement::with('achievementType')
+        $achievements = StudentAchievement::with('type')
             ->where('student_id', $student->id)
             ->take(5)
             ->get();
@@ -177,9 +174,13 @@ class StudentDashboardController extends Controller
             'todayTimetable' => $todayTimetable,
             'currentEnrollment' => $currentEnrollment,
             'stats' => [
-                'absentDays' => $absentDays,
+                'absentDays' => $portalMetrics['absentDays'],
+                'attendanceRate' => $portalMetrics['attendanceRate'],
                 'totalPoints' => $totalPoints
             ],
+            'recentHomeworks' => $portalMetrics['recentHomeworks'],
+            'recentGrades' => $portalMetrics['recentGrades'],
+            'pendingPledgesCount' => $portalMetrics['pendingPledgesCount'],
             'achievements' => $achievements,
             'upcomingExams' => $upcomingExams,
             'libraryItems' => $libraryItems,

@@ -70,6 +70,22 @@ function Modal({ isOpen, onClose, title, children }) {
     );
 }
 
+const EVALUATOR_ROLE_LABELS = {
+    all: 'الجميع',
+    manager: 'المدير المباشر',
+    supervisor: 'المشرف التربوي',
+    hr: 'الموارد البشرية',
+    committee: 'عضو لجنة',
+};
+
+const EVALUATOR_ROLE_OPTIONS = [
+    { value: 'all', label: 'الجميع' },
+    { value: 'manager', label: 'المدير المباشر' },
+    { value: 'supervisor', label: 'المشرف التربوي' },
+    { value: 'hr', label: 'الموارد البشرية' },
+    { value: 'committee', label: 'عضو لجنة' },
+];
+
 // ─── Template Card ────────────────────────────────────────────────────────────
 function TemplateCard({ template, onEdit, onDelete, index }) {
     const [expanded, setExpanded] = useState(false);
@@ -149,10 +165,27 @@ function TemplateCard({ template, onEdit, onDelete, index }) {
                                 {template.kpis.map((kpi, idx) => {
                                     const weightPct = totalWeight > 0 ? ((parseInt(kpi.weight) || 0) / totalWeight) * 100 : 0;
                                     return (
-                                        <div key={idx} className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900/40 border border-slate-100/60 dark:border-slate-800/40">
-                                            <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-500/20 dark:to-primary-500/10 flex items-center justify-center text-[10px] font-black text-primary-600 dark:text-primary-400 shrink-0">{idx + 1}</span>
-                                            <span className="flex-1 text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{kpi.name}</span>
-                                            <div className="flex items-center gap-2 shrink-0">
+                                        <div key={kpi.id || idx} className="flex items-start gap-3 px-3.5 py-2.5 rounded-xl bg-white dark:bg-slate-900/40 border border-slate-100/60 dark:border-slate-800/40">
+                                            <span className="w-6 h-6 mt-0.5 rounded-lg bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-500/20 dark:to-primary-500/10 flex items-center justify-center text-[10px] font-black text-primary-600 dark:text-primary-400 shrink-0">{idx + 1}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{kpi.name}</span>
+                                                    {kpi.category && (
+                                                        <span className="px-2 py-0.5 rounded-md bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 text-[10px] font-bold">
+                                                            {kpi.category}
+                                                        </span>
+                                                    )}
+                                                    <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 text-[10px] font-bold">
+                                                        {!kpi.evaluator_roles || kpi.evaluator_roles.length === 0 || kpi.evaluator_roles.includes('all')
+                                                            ? 'يقيّمه: الجميع'
+                                                            : `يقيّمه: ${kpi.evaluator_roles.map(r => EVALUATOR_ROLE_LABELS[r] || r).join('، ')}`}
+                                                    </span>
+                                                </div>
+                                                {kpi.description && (
+                                                    <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 leading-relaxed">{kpi.description}</p>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0 mt-1">
                                                 <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                                                     <div className="h-full rounded-full bg-gradient-to-r from-primary-400 to-violet-500 transition-all duration-500" style={{ width: `${weightPct}%` }} />
                                                 </div>
@@ -186,6 +219,9 @@ function TemplateCard({ template, onEdit, onDelete, index }) {
     );
 }
 
+const DEFAULT_KPI = { id: null, name: '', category: '', evaluator_roles: ['all'], description: '', weight: 1 };
+const CATEGORY_PRESETS = ['الأداء الوظيفي', 'الانضباط والالتزام', 'التعاون والعمل الجماعي', 'المبادرة والتطوير'];
+
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function TemplatesIndex({ templates, jobGrades }) {
     const { flash } = usePage().props;
@@ -198,7 +234,7 @@ export default function TemplatesIndex({ templates, jobGrades }) {
         job_grade_id: '',
         description: '',
         is_active: true,
-        kpis: [{ name: '', weight: 1 }]
+        kpis: [{ ...DEFAULT_KPI }]
     });
 
     const openModal = (template = null) => {
@@ -209,18 +245,27 @@ export default function TemplatesIndex({ templates, jobGrades }) {
                 job_grade_id: template.job_grade_id || '',
                 description: template.description || '',
                 is_active: template.is_active,
-                kpis: template.kpis?.length ? template.kpis : [{ name: '', weight: 1 }]
+                kpis: template.kpis?.length
+                    ? template.kpis.map(k => ({
+                        id: k.id || null,
+                        name: k.name || '',
+                        category: k.category || '',
+                        evaluator_roles: Array.isArray(k.evaluator_roles) && k.evaluator_roles.length > 0 ? k.evaluator_roles : ['all'],
+                        description: k.description || '',
+                        weight: k.weight || 1,
+                    }))
+                    : [{ ...DEFAULT_KPI }]
             });
         } else {
             setEditingId(null);
             reset();
-            setData('kpis', [{ name: '', weight: 1 }]);
+            setData('kpis', [{ ...DEFAULT_KPI }]);
         }
         setShowModal(true);
     };
 
     const addKpi = () => {
-        setData('kpis', [...data.kpis, { name: '', weight: 1 }]);
+        setData('kpis', [...data.kpis, { ...DEFAULT_KPI }]);
     };
 
     const removeKpi = (index) => {
@@ -233,6 +278,19 @@ export default function TemplatesIndex({ templates, jobGrades }) {
         const newKpis = [...data.kpis];
         newKpis[index][field] = value;
         setData('kpis', newKpis);
+    };
+
+    const toggleKpiEvaluatorRole = (index, roleVal) => {
+        const current = Array.isArray(data.kpis[index]?.evaluator_roles) ? data.kpis[index].evaluator_roles : ['all'];
+        if (roleVal === 'all') {
+            updateKpi(index, 'evaluator_roles', ['all']);
+            return;
+        }
+        const withoutAll = current.filter(r => r !== 'all');
+        const next = withoutAll.includes(roleVal)
+            ? withoutAll.filter(r => r !== roleVal)
+            : [...withoutAll, roleVal];
+        updateKpi(index, 'evaluator_roles', next.length > 0 ? next : ['all']);
     };
 
     const totalWeight = data.kpis.reduce((sum, kpi) => sum + (parseInt(kpi.weight) || 0), 0);
@@ -503,39 +561,100 @@ export default function TemplatesIndex({ templates, jobGrades }) {
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-4">
                                 {data.kpis.map((kpi, index) => (
-                                    <div key={index} className="flex items-center gap-3 group/kpi bg-white dark:bg-slate-900/50 rounded-xl p-3 border border-slate-100/70 dark:border-slate-800/40 hover:border-primary-200/50 dark:hover:border-primary-500/20 transition-colors">
-                                        <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-500/20 dark:to-primary-500/10 flex items-center justify-center text-[10px] font-black text-primary-600 dark:text-primary-400 shrink-0">
-                                            {index + 1}
-                                        </span>
-                                        <input
-                                            type="text"
-                                            placeholder="اسم المعيار"
-                                            value={kpi.name}
-                                            onChange={e => updateKpi(index, 'name', e.target.value)}
-                                            className="flex-1 bg-transparent border-0 text-sm focus:ring-0 outline-none dark:text-white font-semibold placeholder:text-slate-300 dark:placeholder:text-slate-600"
-                                            required
-                                        />
-                                        <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 dark:bg-slate-800/50 rounded-lg px-2 py-1">
-                                            <Scale size={11} className="text-slate-400" />
+                                    <div key={kpi.id || `new-${index}`} className="group/kpi bg-white dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-100/80 dark:border-slate-800/60 hover:border-primary-200/60 dark:hover:border-primary-500/20 transition-colors space-y-3">
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-100 to-primary-50 dark:from-primary-500/20 dark:to-primary-500/10 flex items-center justify-center text-[10px] font-black text-primary-600 dark:text-primary-400 shrink-0">
+                                                {index + 1}
+                                            </span>
                                             <input
-                                                type="number"
-                                                value={kpi.weight}
-                                                onChange={e => updateKpi(index, 'weight', e.target.value)}
-                                                className="w-10 bg-transparent border-0 text-xs text-center focus:ring-0 outline-none dark:text-white font-black"
+                                                type="text"
+                                                placeholder="اسم المعيار *"
+                                                value={kpi.name}
+                                                onChange={e => updateKpi(index, 'name', e.target.value)}
+                                                className="flex-1 bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400 outline-none dark:text-white font-semibold placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                                 required
-                                                min="1"
                                             />
+                                            <div className="flex items-center gap-1.5 shrink-0 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-700 rounded-xl px-2.5 py-1.5" title="الوزن النسبي">
+                                                <Scale size={12} className="text-slate-400" />
+                                                <input
+                                                    type="number"
+                                                    value={kpi.weight}
+                                                    onChange={e => updateKpi(index, 'weight', e.target.value)}
+                                                    className="w-11 bg-transparent border-0 text-xs text-center focus:ring-0 outline-none dark:text-white font-black"
+                                                    required
+                                                    min="1"
+                                                />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeKpi(index)}
+                                                disabled={data.kpis.length <= 1}
+                                                className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed shrink-0"
+                                            >
+                                                <X size={14} />
+                                            </button>
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeKpi(index)}
-                                            disabled={data.kpis.length <= 1}
-                                            className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all disabled:opacity-20 disabled:cursor-not-allowed shrink-0"
-                                        >
-                                            <X size={13} />
-                                        </button>
+
+                                        {/* Category Quick Presets + Custom */}
+                                        <div className="space-y-1.5 pr-10">
+                                            <div className="flex flex-wrap items-center gap-1.5">
+                                                {CATEGORY_PRESETS.map((cat) => {
+                                                    const active = kpi.category === cat;
+                                                    return (
+                                                        <button
+                                                            key={cat}
+                                                            type="button"
+                                                            onClick={() => updateKpi(index, 'category', active ? '' : cat)}
+                                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                                                                active
+                                                                    ? 'bg-primary-500 text-white border-primary-500'
+                                                                    : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200/70 dark:border-slate-700 hover:border-primary-400'
+                                                            }`}
+                                                        >
+                                                            {cat}
+                                                        </button>
+                                                    );
+                                                })}
+                                                <input
+                                                    type="text"
+                                                    placeholder="أو تصنيف مخصص..."
+                                                    value={kpi.category || ''}
+                                                    onChange={e => updateKpi(index, 'category', e.target.value)}
+                                                    className="flex-1 min-w-[130px] bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800 rounded-lg px-2.5 py-1 text-[11px] font-semibold outline-none focus:border-primary-400 dark:text-white"
+                                                />
+                                            </div>
+                                            <input
+                                                type="text"
+                                                placeholder="وصف المعيار ومؤشرات تحققه (اختياري)..."
+                                                value={kpi.description || ''}
+                                                onChange={e => updateKpi(index, 'description', e.target.value)}
+                                                className="w-full bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium outline-none focus:border-primary-400 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                            />
+                                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 ml-1">من يقيّم المعيار؟</span>
+                                                {EVALUATOR_ROLE_OPTIONS.map((opt) => {
+                                                    const roles = Array.isArray(kpi.evaluator_roles) && kpi.evaluator_roles.length > 0 ? kpi.evaluator_roles : ['all'];
+                                                    const active = roles.includes(opt.value);
+                                                    return (
+                                                        <button
+                                                            key={opt.value}
+                                                            type="button"
+                                                            onClick={() => toggleKpiEvaluatorRole(index, opt.value)}
+                                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
+                                                                active
+                                                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                                                    : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200/70 dark:border-slate-700 hover:border-indigo-400'
+                                                            }`}
+                                                        >
+                                                            {active ? '✓ ' : ''}
+                                                            {opt.label}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

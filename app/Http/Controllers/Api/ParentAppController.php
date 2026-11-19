@@ -633,7 +633,8 @@ class ParentAppController extends Controller
         }
 
         $query = \App\Models\LessonPreparation::with(['subject', 'teacher'])
-            ->where('division_id', $enrollment->division_id);
+            ->where('division_id', $enrollment->division_id)
+            ->where('status', 'published');
 
         if ($request->filled('date')) {
             $query->whereDate('preparation_date', $request->date);

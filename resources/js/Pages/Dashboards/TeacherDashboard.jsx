@@ -9,10 +9,28 @@ import {
     Sun, Moon, Quote, ChevronRight, ChevronLeft,
     CheckSquare, Square, FileText, ClipboardList, TrendingUp, TrendingDown, Minus,
     Megaphone, Trophy, Star, BellRing, ArrowUpRight, Trash2, Plus, Loader2,
-    Cloud, Snowflake, Leaf, CloudRain, LayoutList
+    LayoutList, Award, RefreshCw,
 } from 'lucide-react';
 
-export default function TeacherDashboard({ auth, todayTimetable, attendanceStatus, upcomingMeetings, stats, leaderboard, topStudents, teacherProgress, classPerformance, teacherSubjects, semesters, filters, quickTasks = [], latestNews }) {
+export default function TeacherDashboard({
+    auth,
+    todayTimetable = [],
+    attendanceStatus,
+    upcomingMeetings = [],
+    todayCoverages = [],
+    todayPrepSummary = null,
+    pendingAppraisals = null,
+    stats,
+    leaderboard = [],
+    topStudents = [],
+    teacherProgress,
+    classPerformance = [],
+    teacherSubjects = [],
+    semesters = [],
+    filters,
+    quickTasks = [],
+    latestNews,
+}) {
     const [greeting, setGreeting] = useState({ text: 'مرحباً', icon: Sun, color: 'text-amber-500' });
     const quotes = [
         "التعليم هو السلاح الأقوى الذي يمكنك استخدامه لتغيير العالم.",
@@ -23,8 +41,13 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
     ];
     const randomQuote = quotes[auth.user.id % quotes.length];
 
-    const [season, setSeason] = useState({ name: 'الربيع', gradient: 'from-emerald-400 via-emerald-500 to-teal-600', icon: Leaf });
-    const [weather, setWeather] = useState({ temp: '24°', condition: 'مشمس', icon: Sun });
+    const [nowMinutes, setNowMinutes] = useState(() => {
+        const d = new Date();
+        return d.getHours() * 60 + d.getMinutes();
+    });
+    const [timeStr, setTimeStr] = useState(() =>
+        new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true })
+    );
 
     const [isDarkMode, setIsDarkMode] = useState(false);
     useEffect(() => {
@@ -41,28 +64,42 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
     };
 
     useEffect(() => {
-        const hour = new Date().getHours();
-        if (hour >= 5 && hour < 12) setGreeting({ text: 'صباح الخير', icon: Sun, color: 'text-amber-500' });
-        else if (hour >= 12 && hour < 17) setGreeting({ text: 'مساء الخير', icon: Sun, color: 'text-orange-500' });
-        else setGreeting({ text: 'مساء الخير', icon: Moon, color: 'text-indigo-400' });
+        const updateClock = () => {
+            const d = new Date();
+            const hour = d.getHours();
+            setNowMinutes(hour * 60 + d.getMinutes());
+            setTimeStr(d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true }));
+            if (hour >= 5 && hour < 12) setGreeting({ text: 'صباح الخير', icon: Sun, color: 'text-amber-500' });
+            else if (hour >= 12 && hour < 17) setGreeting({ text: 'مساء الخير', icon: Sun, color: 'text-orange-500' });
+            else setGreeting({ text: 'مساء الخير', icon: Moon, color: 'text-indigo-400' });
+        };
+        updateClock();
+        const timer = setInterval(updateClock, 30000);
+        return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        const month = new Date().getMonth();
-        if (month === 11 || month === 0 || month === 1) {
-            setSeason({ name: 'الشتاء', gradient: 'from-blue-400 via-indigo-500 to-purple-600', icon: Snowflake });
-            setWeather({ temp: '15°', condition: 'غائم جزئياً', icon: Cloud });
-        } else if (month >= 2 && month <= 4) {
-            setSeason({ name: 'الربيع', gradient: 'from-emerald-400 via-teal-500 to-primary-600', icon: Leaf });
-            setWeather({ temp: '22°', condition: 'ربيعي معتدل', icon: Sun });
-        } else if (month >= 5 && month <= 7) {
-            setSeason({ name: 'الصيف', gradient: 'from-amber-400 via-orange-500 to-rose-600', icon: Sun });
-            setWeather({ temp: '38°', condition: 'مشمس وحار', icon: Sun });
-        } else {
-            setSeason({ name: 'الخريف', gradient: 'from-orange-400 via-amber-500 to-yellow-600', icon: CloudRain });
-            setWeather({ temp: '26°', condition: 'معتدل', icon: Cloud });
+    const parseTimeToMinutes = (timeString) => {
+        if (!timeString) return null;
+        const parts = String(timeString).split(':');
+        if (parts.length < 2) return null;
+        return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    };
+
+    const classBannerInfo = (() => {
+        if (!Array.isArray(todayTimetable) || todayTimetable.length === 0) return null;
+        for (const slot of todayTimetable) {
+            const startM = parseTimeToMinutes(slot.period?.start_time);
+            const endM = parseTimeToMinutes(slot.period?.end_time);
+            if (startM === null || endM === null) continue;
+            if (nowMinutes >= startM && nowMinutes <= endM) {
+                return { mode: 'active', slot, minsLeft: endM - nowMinutes };
+            }
+            if (startM > nowMinutes) {
+                return { mode: 'upcoming', slot, minsUntil: startM - nowMinutes };
+            }
         }
-    }, []);
+        return null;
+    })();
 
     const handleFilterChange = (key, value) => {
         router.get(
@@ -118,25 +155,58 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
             <Head title="لوحة تحكم المعلم | شامل" />
             <div className="max-w-[1400px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 animate-fade-in pb-20">
 
-                {/* Next Class Alert */}
-                {todayTimetable && todayTimetable.length > 0 && (
+                {/* Real Next / Active Class Alert */}
+                {classBannerInfo && (
                     <div className="group relative overflow-hidden bg-gradient-to-l from-emerald-600 to-emerald-800 dark:from-emerald-700 dark:to-emerald-900 rounded-[2.5rem] p-5 sm:p-6 shadow-lg shadow-emerald-500/20 text-white">
                         <div className="absolute -left-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-colors"></div>
                         <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl"></div>
                         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 shadow-inner group-hover:scale-110 transition-transform">
+                                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
                                     <BellRing size={28} className="animate-bounce" />
                                 </div>
                                 <div>
-                                    <h3 className="font-black text-lg mb-0.5">تنبيه الحصة القادمة</h3>
-                                    <p className="text-emerald-100 text-sm font-semibold">تبدأ حصة (الرياضيات - الصف الأول) بعد <span className="font-black text-white bg-white/20 px-2 py-0.5 rounded-lg">15 دقيقة</span> في قاعة 3.</p>
+                                    <h3 className="font-black text-lg mb-0.5">
+                                        {classBannerInfo.mode === 'active' ? 'الحصة الجارية الآن' : 'تنبيه الحصة القادمة'}
+                                    </h3>
+                                    <p className="text-emerald-100 text-sm font-semibold">
+                                        {classBannerInfo.slot.subject?.name || 'حصة دراسية'} — {classBannerInfo.slot.division?.grade?.name || ''} ({classBannerInfo.slot.division?.name || ''})
+                                        {' — '}
+                                        <span className="font-black text-white bg-white/20 px-2 py-0.5 rounded-lg">
+                                            {classBannerInfo.mode === 'active'
+                                                ? `متبقي ${classBannerInfo.minsLeft} دقيقة`
+                                                : `تبدأ بعد ${classBannerInfo.minsUntil} دقيقة`}
+                                        </span>
+                                    </p>
                                 </div>
                             </div>
-                            <Link href="#" className="shrink-0 bg-white text-emerald-700 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-emerald-50 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
+                            <Link href={route('teacher.lesson-preparations.index')} className="shrink-0 bg-white text-emerald-700 px-6 py-3 rounded-2xl font-bold text-sm hover:bg-emerald-50 transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5">
                                 تحضير الدرس
                             </Link>
                         </div>
+                    </div>
+                )}
+
+                {/* Pending Appraisals Banner */}
+                {pendingAppraisals && pendingAppraisals.total > 0 && (
+                    <div className="bg-gradient-to-l from-indigo-600 to-purple-700 rounded-3xl p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                                <Award size={22} className="text-amber-300" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-base">لديك ({pendingAppraisals.total}) تقييم أداء بانتظار الإجراء</h3>
+                                <p className="text-xs text-indigo-100 mt-0.5 font-semibold">
+                                    {pendingAppraisals.items?.[0]?.cycle_title || 'يرجى استكمال التقييم الذاتي أو مهام اللجنة'}
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href={pendingAppraisals.items?.[0]?.id ? route('hr.appraisals.show', pendingAppraisals.items[0].id) : route('hr.appraisals.index')}
+                            className="shrink-0 px-5 py-2.5 rounded-2xl bg-white text-indigo-700 font-black text-xs hover:bg-indigo-50 transition-colors"
+                        >
+                            الانتقال للتقييم
+                        </Link>
                     </div>
                 )}
 
@@ -176,16 +246,17 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
                                 </div>
                             </div>
                             <div className="flex-1 xl:flex-none flex items-center gap-3 bg-white/80 dark:bg-[#121820]/80 backdrop-blur-xl border border-white dark:border-slate-700/80 p-3 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-                                <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800/80 flex items-center justify-center border border-slate-100 dark:border-slate-700 shadow-inner">
-                                    <season.icon size={20} className={season.name === 'الشتاء' ? 'text-blue-500' : season.name === 'الصيف' ? 'text-amber-500' : season.name === 'الخريف' ? 'text-orange-500' : 'text-emerald-500'} />
+                                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center border border-indigo-100 dark:border-indigo-800/40 text-indigo-600 dark:text-indigo-400">
+                                    <ClipboardList size={20} />
                                 </div>
                                 <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{season.name}</span>
-                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
-                                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{weather.condition}</span>
+                                    <span className="text-xs font-bold text-slate-400 dark:text-slate-500">جاهزية التحضير اليوم</span>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-xl font-black text-slate-700 dark:text-slate-200 font-mono">
+                                            {todayPrepSummary ? `${todayPrepSummary.prepared_today} / ${todayPrepSummary.total_classes_today}` : '0 / 0'}
+                                        </span>
+                                        {timeStr && <span className="text-[11px] font-mono font-bold text-slate-400">({timeStr})</span>}
                                     </div>
-                                    <span className="text-2xl font-black text-slate-700 dark:text-slate-200 mt-0.5">{weather.temp}</span>
                                 </div>
                             </div>
                             <button onClick={toggleDarkMode} className="h-full min-h-[72px] aspect-square flex items-center justify-center rounded-3xl bg-white/80 dark:bg-[#121820]/80 backdrop-blur-xl border border-white dark:border-slate-700/80 shadow-sm text-slate-500 hover:text-emerald-500 dark:text-slate-400 dark:hover:text-emerald-400 transition-all hover:shadow-md hover:-translate-y-1" title="تغيير المظهر">
@@ -312,7 +383,7 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
                                 <div className="relative w-14 h-14 shrink-0 transition-transform duration-500 group-hover:scale-110">
                                     <svg className="w-14 h-14 transform -rotate-90 drop-shadow-md" viewBox="0 0 36 36">
                                         <path className="text-white/50 dark:text-slate-800/50" strokeWidth="3" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        <path className="text-emerald-500 transition-all duration-1000 ease-out" strokeDasharray="88, 100" strokeWidth="3" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        <path className="text-emerald-500 transition-all duration-1000 ease-out" strokeDasharray={`${Math.min(100, Math.max(0, stats?.successRate || 0))}, 100`} strokeWidth="3" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                     </svg>
                                     <div className="absolute inset-0 flex items-center justify-center"><span className="text-sm font-black text-slate-700 dark:text-slate-300">{stats?.successRate || 0}%</span></div>
                                 </div>
@@ -331,7 +402,15 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
                             </div>
                             <div>
                                 <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider">متوسط النجاح</p>
-                                <h3 className="text-xl font-black text-slate-800 dark:text-white">أداء متميز</h3>
+                                <h3 className="text-xl font-black text-slate-800 dark:text-white">
+                                    {(stats?.successRate || 0) >= 85
+                                        ? 'أداء متميز'
+                                        : (stats?.successRate || 0) >= 70
+                                            ? 'جيد جداً'
+                                            : (stats?.successRate || 0) > 0
+                                                ? 'يحتاج متابعة'
+                                                : 'لا توجد نتائج بعد'}
+                                </h3>
                             </div>
                         </div>
                     </div>
@@ -559,6 +638,59 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
 
                     {/* Right Column */}
                     <div className="lg:col-span-4 space-y-8">
+                        {/* Today's Substitute Coverages */}
+                        {todayCoverages && todayCoverages.length > 0 && (
+                            <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-[2rem] p-6 shadow-sm space-y-3">
+                                <h3 className="text-base font-black text-amber-900 dark:text-amber-200 flex items-center gap-2">
+                                    <RefreshCw size={18} className="text-amber-600" />
+                                    حصص الانتظار والتغطية اليوم ({todayCoverages.length})
+                                </h3>
+                                <div className="space-y-2.5">
+                                    {todayCoverages.map((cov) => (
+                                        <div key={cov.id} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900/70 border border-amber-100 dark:border-amber-800/30">
+                                            <p className="text-xs font-black text-slate-800 dark:text-white">
+                                                {cov.period?.name || `الحصة ${cov.period_id}`} — {cov.subject?.name || 'مادة'}
+                                            </p>
+                                            <p className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                                                {cov.division?.grade?.name || ''} ({cov.division?.name || ''}) • بدلاً عن أ. {cov.absent_teacher?.name || 'المعلم'}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Latest Supervisor Feedback on Lesson Prep */}
+                        {todayPrepSummary?.latest_feedback && (
+                            <div className="bg-white/80 dark:bg-[#121820]/80 border border-indigo-100 dark:border-indigo-900/30 rounded-[2rem] p-6 shadow-sm space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <ClipboardList size={16} className="text-indigo-500" />
+                                        آخر ملاحظة إشرافية للتحضير
+                                    </h3>
+                                    {todayPrepSummary.latest_feedback.supervisor_rating && (
+                                        <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-xs font-black">
+                                            ★ {todayPrepSummary.latest_feedback.supervisor_rating}/5
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                    {todayPrepSummary.latest_feedback.lesson_title} ({todayPrepSummary.latest_feedback.subject_name})
+                                </p>
+                                {todayPrepSummary.latest_feedback.supervisor_notes && (
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">
+                                        "{todayPrepSummary.latest_feedback.supervisor_notes}"
+                                    </p>
+                                )}
+                                <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
+                                    <span>المشرف: {todayPrepSummary.latest_feedback.reviewer_name || 'الإشراف'}</span>
+                                    <Link href={route('teacher.lesson-preparations.index')} className="text-indigo-600 font-bold hover:underline">
+                                        عرض التحاضير
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
+
                         {/* To-Do List */}
                         <div className="relative group/widget">
                             <div className="absolute inset-0 bg-gradient-to-br from-primary-400/10 to-transparent rounded-[2.5rem] blur-xl opacity-50 group-hover/widget:opacity-70 transition-all duration-700"></div>
@@ -631,9 +763,11 @@ export default function TeacherDashboard({ auth, todayTimetable, attendanceStatu
                                 <div className="relative border-r-2 border-slate-100 dark:border-slate-800/80 pr-6 space-y-8 min-h-[150px]">
                                     {todayTimetable && todayTimetable.length > 0 ? (
                                         todayTimetable.map((slot, index) => {
-                                            const isActive = index === 1;
-                                            const isPast = index < 1;
-                                            const isFuture = index > 1;
+                                            const startM = parseTimeToMinutes(slot.period?.start_time);
+                                            const endM = parseTimeToMinutes(slot.period?.end_time);
+                                            const isActive = startM !== null && endM !== null && nowMinutes >= startM && nowMinutes <= endM;
+                                            const isPast = endM !== null ? endM < nowMinutes : false;
+                                            const isFuture = !isActive && !isPast;
                                             return (
                                                 <div key={slot.id} className="relative group/item">
                                                     {isActive && (<>

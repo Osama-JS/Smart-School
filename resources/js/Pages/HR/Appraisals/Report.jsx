@@ -1,10 +1,42 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, router } from '@inertiajs/react';
-import { Printer, Filter, RefreshCw, FileText, Download, ChevronRight, ChevronLeft, Search } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Printer, Filter, RefreshCw, FileText, Download, Search, Eye, Users } from 'lucide-react';
 import Pagination from '@/Components/Pagination'; // Adjust import based on the actual Pagination component
 import ReportPrintLayout from '@/Components/Reports/ReportPrintLayout';
 import Select from 'react-select';
+
+const RECOMMENDATION_OPTIONS = [
+    { value: 'promotion', label: 'ترقية' },
+    { value: 'reward', label: 'مكافأة تشجيعية / تميز' },
+    { value: 'training', label: 'برنامج تدريبي' },
+    { value: 'contract_renewal', label: 'تجديد عقد' },
+    { value: 'pip', label: 'خطة تحسين أداء (PIP)' },
+    { value: 'warning', label: 'لفت نظر / إنذار' },
+];
+
+const RECOMMENDATION_META = {
+    promotion: { label: 'ترقية', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    'ترقية': { label: 'ترقية', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    reward: { label: 'مكافأة تشجيعية', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
+    'مكافأة تشجيعية': { label: 'مكافأة تشجيعية', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
+    'مكافأة تميز': { label: 'مكافأة تميز', cls: 'bg-teal-50 text-teal-700 border-teal-200' },
+    training: { label: 'برنامج تدريبي', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    'برنامج تدريبي': { label: 'برنامج تدريبي', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    'إلحاق بدورة تدريبية': { label: 'إلحاق بدورة تدريبية', cls: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+    contract_renewal: { label: 'تجديد عقد', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+    'تجديد عقد': { label: 'تجديد عقد', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
+    pip: { label: 'خطة تحسين أداء (PIP)', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    'خطة تحسين أداء (PIP)': { label: 'خطة تحسين أداء (PIP)', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    warning: { label: 'لفت نظر / إنذار', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'لفت نظر / إنذار': { label: 'لفت نظر / إنذار', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+    'لفت نظر': { label: 'لفت نظر', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
+};
+
+const getRecommendationBadge = (value) => {
+    if (!value) return null;
+    return RECOMMENDATION_META[value] || { label: value, cls: 'bg-slate-100 text-slate-700 border-slate-200' };
+};
 
 export default function AppraisalsReport({ appraisals, cycles = [], departments = [], employees = [], filters = {} }) {
     const [filterData, setFilterData] = useState({
@@ -13,7 +45,8 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
         employee_id: filters.employee_id || '',
         date_from: filters.date_from || '',
         date_to: filters.date_to || '',
-        search: filters.search || ''
+        search: filters.search || '',
+        final_recommendation: filters.final_recommendation || ''
     });
 
     const [printSettings, setPrintSettings] = useState(() => {
@@ -109,6 +142,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                 employee_id: filterData.employee_id || '',
                 department_id: filterData.department_id || '',
                 cycle_id: filterData.cycle_id || '',
+                final_recommendation: filterData.final_recommendation || '',
                 printSettings: JSON.stringify(printSettings)
             });
 
@@ -132,7 +166,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
     };
 
     const clearFilters = () => {
-        const resetState = { cycle_id: '', department_id: '', employee_id: '', date_from: '', date_to: '', search: '' };
+        const resetState = { cycle_id: '', department_id: '', employee_id: '', date_from: '', date_to: '', search: '', final_recommendation: '' };
         setFilterData(resetState);
         router.get(route('hr.appraisals.report'), resetState, {
             preserveState: true,
@@ -228,7 +262,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                             </div>
                             
                             {/* Row 2 */}
-                            <div className="col-span-1 lg:col-span-2">
+                            <div className="col-span-1 lg:col-span-1">
                                 <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">تصفية بموظف معين</label>
                                 <Select
                                     classNamePrefix="custom-select"
@@ -236,6 +270,19 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                                     value={employees.map(e => ({ value: e.id, label: e.name })).find(e => e.value == filterData.employee_id) || null}
                                     onChange={(opt) => setFilterData({...filterData, employee_id: opt ? opt.value : ''})}
                                     placeholder="ابحث واختر الموظف..."
+                                    isClearable
+                                    styles={customStyles}
+                                    menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                                />
+                            </div>
+                            <div className="col-span-1 lg:col-span-1">
+                                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">التوصية الإدارية النهائية</label>
+                                <Select
+                                    classNamePrefix="custom-select"
+                                    options={RECOMMENDATION_OPTIONS}
+                                    value={RECOMMENDATION_OPTIONS.find(o => o.value === filterData.final_recommendation) || null}
+                                    onChange={(opt) => setFilterData({...filterData, final_recommendation: opt ? opt.value : ''})}
+                                    placeholder="جميع التوصيات"
                                     isClearable
                                     styles={customStyles}
                                     menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
@@ -261,7 +308,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                             </div>
                         </div>
                         <div className="flex justify-end items-center gap-2 mt-5 pt-4 border-t border-primary-50 dark:border-primary-500/10">
-                            {(filters.cycle_id || filters.department_id || filters.employee_id || filters.date_from || filters.date_to || filters.search) && (
+                            {(filters.cycle_id || filters.department_id || filters.employee_id || filters.date_from || filters.date_to || filters.search || filters.final_recommendation) && (
                                 <button type="button" onClick={clearFilters} className="bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2" title="مسح الفلاتر">
                                     <RefreshCw size={16} /> مسح
                                 </button>
@@ -285,29 +332,35 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                     endDate={filterData.date_to}
                 >
                     <div className="overflow-x-auto print:overflow-visible flex justify-center">
-                        <div className="inline-block min-w-full lg:w-4/5 xl:w-3/4 bg-white rounded-xl shadow-sm border-2 border-slate-800 overflow-hidden print:shadow-none print:border-none print:w-full">
+                        <div className="inline-block min-w-full bg-white rounded-xl shadow-sm border-2 border-slate-800 overflow-hidden print:shadow-none print:border-none print:w-full">
                             <table className="w-full text-right border-collapse text-sm">
                                 <thead className={`${printSettings.ecoMode ? 'bg-slate-100 text-slate-800 border-b-2 border-slate-800' : 'text-white'}`} style={!printSettings.ecoMode ? { backgroundColor: printSettings.brandColor } : {}}>
                                     <tr>
-                                        <th className="px-4 py-3 font-bold border-y border-slate-300 w-12 text-center">م</th>
-                                        <th className="px-4 py-3 font-bold border-y border-slate-300">اسم الموظف</th>
-                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">القسم</th>
-                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">الدورة</th>
-                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">تاريخ التقييم</th>
-                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">الدرجة</th>
-                                        <th className="px-4 py-3 font-bold border-y border-slate-300 text-center">التقدير</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 w-10 text-center">م</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300">اسم الموظف</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center">القسم</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center">الدورة</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center">التاريخ</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center">الذاتي</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center">لجنة التقييم</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center">النهائية</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center">التقدير</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center">التوصية الإدارية</th>
+                                        <th className="px-3 py-3 font-bold border-y border-slate-300 text-center print:hidden">إجراءات</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200">
                                     {appraisals.data.length > 0 ? (
                                         appraisals.data.map((appraisal, index) => {
                                             const gradeInfo = getGradeInfo(appraisal.final_score);
+                                            const recBadge = getRecommendationBadge(appraisal.final_recommendation);
+                                            const evaluatorsCount = Array.isArray(appraisal.evaluators) ? appraisal.evaluators.length : 0;
                                             return (
                                                 <tr key={appraisal.id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="px-4 py-3 border-y border-slate-200 text-center font-bold text-slate-700">
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center font-bold text-slate-700">
                                                         {((appraisals.current_page - 1) * appraisals.per_page) + index + 1}
                                                     </td>
-                                                    <td className="px-4 py-3 border-y border-slate-200">
+                                                    <td className="px-3 py-3 border-y border-slate-200">
                                                         <div className="font-bold text-slate-800">
                                                             {appraisal.employee?.user?.name || 'غير متوفر'}
                                                         </div>
@@ -315,24 +368,64 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                                                             {appraisal.employee?.user?.id_number || '-'}
                                                         </div>
                                                     </td>
-                                                    <td className="px-4 py-3 border-y border-slate-200 text-center font-bold text-slate-700">
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center font-bold text-slate-700">
                                                         {appraisal.employee?.department?.name || '-'}
                                                     </td>
-                                                    <td className="px-4 py-3 border-y border-slate-200 text-center font-semibold text-slate-700">
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center font-semibold text-slate-700">
                                                         {appraisal.cycle?.title || '-'}
                                                     </td>
-                                                    <td className="px-4 py-3 border-y border-slate-200 text-center text-sm font-medium text-slate-600">
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center text-xs font-medium text-slate-600">
                                                         {new Date(appraisal.created_at).toLocaleDateString('ar-SA')}
                                                     </td>
-                                                    <td className="px-4 py-3 border-y border-slate-200 text-center">
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center font-bold text-amber-700">
+                                                        {appraisal.self_score != null ? `${Math.round(appraisal.self_score)}%` : '-'}
+                                                    </td>
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center">
+                                                        <div className="font-bold text-slate-700">
+                                                            {appraisal.manager_score != null ? `${appraisal.manager_score}%` : '-'}
+                                                        </div>
+                                                        {evaluatorsCount > 0 && (
+                                                            <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                                                <Users size={10} /> {evaluatorsCount} مقيّم
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center">
                                                         <span className={`inline-flex items-center justify-center px-3 py-1 rounded-lg text-sm font-black ${gradeInfo.color}`}>
                                                             {appraisal.final_score ? `${appraisal.final_score}%` : '-'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-4 py-3 border-y border-slate-200 text-center">
-                                                        <div className="flex items-center justify-center gap-2">
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center">
+                                                        <div className="flex items-center justify-center gap-1.5">
                                                             <div className={`w-2 h-2 rounded-full ${gradeInfo.badge} print:hidden`}></div>
-                                                            <span className="text-sm font-bold text-slate-700">{gradeInfo.label}</span>
+                                                            <span className="text-xs font-bold text-slate-700">{gradeInfo.label}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center">
+                                                        {recBadge ? (
+                                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold border ${recBadge.cls}`}>
+                                                                {recBadge.label}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-xs text-slate-400">—</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-3 py-3 border-y border-slate-200 text-center print:hidden">
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <Link
+                                                                href={route('hr.appraisals.show', appraisal.id)}
+                                                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-primary-50 text-slate-600 hover:text-primary-600 transition-colors"
+                                                                title="عرض الاستمارة والتفاصيل"
+                                                            >
+                                                                <Eye size={15} />
+                                                            </Link>
+                                                            <a
+                                                                href={route('hr.appraisals.single.pdf', appraisal.id)}
+                                                                className="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 transition-colors"
+                                                                title="تحميل استمارة الموظف PDF"
+                                                            >
+                                                                <Download size={15} />
+                                                            </a>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -340,7 +433,7 @@ export default function AppraisalsReport({ appraisals, cycles = [], departments 
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="7" className="px-6 py-12 text-center text-slate-500 font-bold bg-slate-50">
+                                            <td colSpan="11" className="px-6 py-12 text-center text-slate-500 font-bold bg-slate-50">
                                                 لا توجد بيانات تطابق محددات البحث والفلاتر المدخلة.
                                             </td>
                                         </tr>

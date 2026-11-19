@@ -130,27 +130,34 @@
         }
     @endphp
 
-    <table class="w-full text-right border-collapse border border-slate-200 mt-2">
+    <table class="w-full text-right border-collapse border border-slate-200 mt-2 text-xs">
         <thead>
             <tr class="brand-bg">
-                <th class="border border-slate-200 p-2 font-bold w-12 text-center">م</th>
+                <th class="border border-slate-200 p-2 font-bold w-10 text-center">م</th>
                 <th class="border border-slate-200 p-2 font-bold">اسم الموظف</th>
                 <th class="border border-slate-200 p-2 font-bold text-center">القسم</th>
                 <th class="border border-slate-200 p-2 font-bold text-center">الدورة</th>
-                <th class="border border-slate-200 p-2 font-bold text-center">تاريخ التقييم</th>
-                <th class="border border-slate-200 p-2 font-bold text-center">الدرجة</th>
+                <th class="border border-slate-200 p-2 font-bold text-center">التاريخ</th>
+                <th class="border border-slate-200 p-2 font-bold text-center">الذاتي</th>
+                <th class="border border-slate-200 p-2 font-bold text-center">لجنة التقييم</th>
+                <th class="border border-slate-200 p-2 font-bold text-center">النهائية</th>
                 <th class="border border-slate-200 p-2 font-bold text-center">التقدير</th>
+                <th class="border border-slate-200 p-2 font-bold text-center">التوصية الإدارية</th>
             </tr>
         </thead>
         <tbody>
             @php $count = 1; @endphp
             @forelse($appraisals as $appraisal)
-                @php $grade = getGradeInfo($appraisal->final_score); @endphp
+                @php
+                    $grade = getGradeInfo($appraisal->final_score);
+                    $evaluatorsCount = $appraisal->evaluators ? $appraisal->evaluators->count() : 0;
+                    $recLabel = \App\Models\EmployeeAppraisal::recommendationLabel($appraisal->final_recommendation);
+                @endphp
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="border border-slate-200 p-2 text-center">{{ $count++ }}</td>
                     <td class="border border-slate-200 p-2">
                         <div class="font-bold text-slate-800">{{ $appraisal->employee->user->name ?? 'غير متوفر' }}</div>
-                        <div class="text-xs text-slate-500">{{ $appraisal->employee->user->id_number ?? '-' }}</div>
+                        <div class="text-[10px] text-slate-500">{{ $appraisal->employee->user->id_number ?? '-' }}</div>
                     </td>
                     <td class="border border-slate-200 p-2 text-center font-bold text-slate-700">
                         {{ $appraisal->employee->department->name ?? '-' }}
@@ -161,18 +168,30 @@
                     <td class="border border-slate-200 p-2 text-center text-slate-600 font-mono tracking-tighter" dir="ltr">
                         {{ \Carbon\Carbon::parse($appraisal->created_at)->format('d/m/Y') }}
                     </td>
+                    <td class="border border-slate-200 p-2 text-center font-bold text-amber-700">
+                        {{ $appraisal->self_score !== null ? round($appraisal->self_score) . '%' : '-' }}
+                    </td>
                     <td class="border border-slate-200 p-2 text-center">
-                        <span class="inline-block px-2 py-1 rounded text-sm font-black {{ $grade['color'] }}">
+                        <div class="font-bold text-slate-700">{{ $appraisal->manager_score !== null ? $appraisal->manager_score . '%' : '-' }}</div>
+                        @if($evaluatorsCount > 0)
+                            <div class="text-[10px] text-indigo-700 font-bold">({{ $evaluatorsCount }} مقيّم)</div>
+                        @endif
+                    </td>
+                    <td class="border border-slate-200 p-2 text-center">
+                        <span class="inline-block px-2 py-1 rounded text-xs font-black {{ $grade['color'] }}">
                             {{ $appraisal->final_score ? $appraisal->final_score . '%' : '-' }}
                         </span>
                     </td>
-                    <td class="border border-slate-200 p-2 text-center font-bold text-sm {{ explode(' ', $grade['color'])[0] }}">
+                    <td class="border border-slate-200 p-2 text-center font-bold text-xs {{ explode(' ', $grade['color'])[0] }}">
                         {{ $grade['label'] }}
+                    </td>
+                    <td class="border border-slate-200 p-2 text-center font-bold text-slate-700">
+                        {{ $recLabel ?: '—' }}
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="border border-slate-200 p-8 text-center text-slate-500 text-lg font-bold">
+                    <td colspan="10" class="border border-slate-200 p-8 text-center text-slate-500 text-lg font-bold">
                         لا توجد بيانات متاحة
                     </td>
                 </tr>

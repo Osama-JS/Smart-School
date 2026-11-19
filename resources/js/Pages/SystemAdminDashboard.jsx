@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, usePage } from '@inertiajs/react';
-import NewsTicker from '@/Components/NewsTicker';
+import NewsWidget from '@/Components/NewsWidget';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { 
-    Users, Store, Calendar, Activity, Clock, ShieldAlert, AlertCircle, Building2, UserCog, Database, Server, HardDrive, Cpu, MemoryStick 
+    Users, Store, Calendar, Activity, Clock, ShieldAlert, AlertCircle, Building2, UserCog, Database, Server, HardDrive, Cpu, MemoryStick, GraduationCap, ClipboardList, RefreshCw 
 } from 'lucide-react';
 
-export default function SystemAdminDashboard({ stats, recentActivities, serverMetrics }) {
+export default function SystemAdminDashboard({
+    stats,
+    systemSummary = {},
+    branchOverview = [],
+    recentActivities = [],
+    serverMetrics,
+    latestNews = [],
+}) {
     const { auth, logo_url } = usePage().props;
 
     // Live digital clock state
@@ -62,7 +69,8 @@ export default function SystemAdminDashboard({ stats, recentActivities, serverMe
         },
     ];
 
-    const filteredActivities = recentActivities.filter(act => {
+    const safeActivities = Array.isArray(recentActivities) ? recentActivities : [];
+    const filteredActivities = safeActivities.filter(act => {
         if (activityFilter === 'all') return true;
         return act.type === activityFilter;
     });
@@ -79,8 +87,6 @@ export default function SystemAdminDashboard({ stats, recentActivities, serverMe
     return (
         <AdminLayout activeMenu="الرئيسية">
             <Head title="لوحة التحكم الإدارية" />
-
-            <NewsTicker />
 
             <div className="max-w-[100rem] mx-auto p-4 sm:p-6 lg:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
                 
@@ -147,6 +153,47 @@ export default function SystemAdminDashboard({ stats, recentActivities, serverMe
                         </div>
                     ))}
                 </div>
+
+                {/* Operational Summary Strip */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-[11px] font-bold text-slate-500">إجمالي الطلاب</p>
+                            <p className="text-xl font-black text-slate-800 dark:text-white font-mono mt-0.5">{systemSummary.total_students ?? 0}</p>
+                        </div>
+                        <GraduationCap size={20} className="text-blue-500 shrink-0" />
+                    </div>
+                    <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 flex items-center justify-between">
+                        <div>
+                            <p className="text-[11px] font-bold text-slate-500">إجمالي المعلمين</p>
+                            <p className="text-xl font-black text-slate-800 dark:text-white font-mono mt-0.5">{systemSummary.total_teachers ?? 0}</p>
+                        </div>
+                        <Users size={20} className="text-emerald-500 shrink-0" />
+                    </div>
+                    <Link href={route('hr.requests.index')} className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 flex items-center justify-between hover:border-amber-300 transition-colors">
+                        <div>
+                            <p className="text-[11px] font-bold text-slate-500">طلبات إدارية معلقة</p>
+                            <p className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono mt-0.5">{systemSummary.pending_requests ?? 0}</p>
+                        </div>
+                        <ClipboardList size={20} className="text-amber-500 shrink-0" />
+                    </Link>
+                    <Link href={route('hr.appraisals.cycles.index')} className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 flex items-center justify-between hover:border-indigo-300 transition-colors">
+                        <div>
+                            <p className="text-[11px] font-bold text-slate-500">دورات تقييم نشطة</p>
+                            <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 font-mono mt-0.5">{systemSummary.active_appraisal_cycles ?? 0}</p>
+                        </div>
+                        <RefreshCw size={20} className="text-indigo-500 shrink-0" />
+                    </Link>
+                    <Link href={route('hr.appraisals.index')} className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 flex items-center justify-between hover:border-rose-300 transition-colors col-span-2 md:col-span-1">
+                        <div>
+                            <p className="text-[11px] font-bold text-slate-500">تقييمات قيد الإجراء</p>
+                            <p className="text-xl font-black text-rose-600 dark:text-rose-400 font-mono mt-0.5">{systemSummary.pending_appraisals ?? 0}</p>
+                        </div>
+                        <Activity size={20} className="text-rose-500 shrink-0" />
+                    </Link>
+                </div>
+
+                {latestNews && latestNews.length > 0 && <NewsWidget news={latestNews} />}
 
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -293,8 +340,58 @@ export default function SystemAdminDashboard({ stats, recentActivities, serverMe
                         )}
                     </div>
 
-                    {/* Recent Activities Panel */}
+                    {/* Recent Activities & Branch Overview */}
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Branch Performance Comparison */}
+                        {branchOverview && branchOverview.length > 0 && (
+                            <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] space-y-4">
+                                <div className="flex items-center justify-between border-b border-slate-100/80 dark:border-slate-800/60 pb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Building2 size={18} className="text-primary-500" />
+                                        <h3 className="font-black text-slate-800 dark:text-white text-sm sm:text-base">مقارنة أداء الفروع اليوم</h3>
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-400">{branchOverview.length} فرع</span>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-right text-xs">
+                                        <thead>
+                                            <tr className="text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                                                <th className="pb-2.5 font-bold">الفرع</th>
+                                                <th className="pb-2.5 font-bold text-center">الحالة</th>
+                                                <th className="pb-2.5 font-bold text-center">الطلاب</th>
+                                                <th className="pb-2.5 font-bold text-center">المعلمين</th>
+                                                <th className="pb-2.5 font-bold text-center">الموظفين</th>
+                                                <th className="pb-2.5 font-bold text-center">حضور الموظفين اليوم</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                            {branchOverview.map((branch) => (
+                                                <tr key={branch.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30">
+                                                    <td className="py-3 font-bold text-slate-800 dark:text-white">{branch.name}</td>
+                                                    <td className="py-3 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${branch.is_active ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400'}`}>
+                                                            {branch.is_active ? 'نشط' : 'موقوف'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-3 text-center font-mono font-bold text-slate-700 dark:text-slate-300">{branch.students_count}</td>
+                                                    <td className="py-3 text-center font-mono font-bold text-slate-700 dark:text-slate-300">{branch.teachers_count}</td>
+                                                    <td className="py-3 text-center font-mono font-bold text-slate-700 dark:text-slate-300">{branch.employees_count}</td>
+                                                    <td className="py-3">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <div className="w-20 bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                                                                <div className="bg-primary-500 h-full rounded-full" style={{ width: `${Math.min(100, branch.today_attendance_rate || 0)}%` }} />
+                                                            </div>
+                                                            <span className="font-mono font-black text-[11px] text-slate-700 dark:text-slate-200">{branch.today_attendance_rate}%</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="bg-white dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.015)] space-y-5">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100/80 dark:border-slate-800/60 pb-4">
                                 <div className="flex items-center gap-2">

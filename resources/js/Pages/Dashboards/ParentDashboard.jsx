@@ -5,7 +5,7 @@ import NewsWidget from '@/Components/NewsWidget';
 import { 
     Calendar, Clock, BookOpen, Star, AlertCircle, 
     Trophy, GraduationCap, MapPin, ChevronLeft, Sun, Moon,
-    Award, Book, FileText, PlayCircle, File, Download, User, Users
+    Award, Book, FileText, User, Users, ShieldAlert, ClipboardList
 } from 'lucide-react';
 
 const CircularProgress = ({ value, max = 100, colorClass = "text-primary-500", label = "", icon: Icon }) => {
@@ -33,7 +33,18 @@ const CircularProgress = ({ value, max = 100, colorClass = "text-primary-500", l
     );
 };
 
-export default function ParentDashboard({ auth, children = [], activeChild, todayTimetable = [], stats, upcomingExams = [], latestNews = [] }) {
+export default function ParentDashboard({
+    auth,
+    children = [],
+    activeChild,
+    todayTimetable = [],
+    stats,
+    recentHomeworks = [],
+    recentGrades = [],
+    pendingPledgesCount = 0,
+    upcomingExams = [],
+    latestNews = [],
+}) {
     const [greeting, setGreeting] = useState({ text: 'مرحباً', icon: Sun, color: 'text-amber-500' });
     
     // Ensure arrays
@@ -146,7 +157,29 @@ export default function ParentDashboard({ auth, children = [], activeChild, toda
                         </div>
 
                         {activeChild && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
+                            <div className="space-y-6">
+                                {pendingPledgesCount > 0 && (
+                                    <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/40 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-11 h-11 rounded-2xl bg-rose-500 text-white flex items-center justify-center shrink-0">
+                                                <ShieldAlert size={22} />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-rose-900 dark:text-rose-200 text-sm sm:text-base">
+                                                    يوجد ({pendingPledgesCount}) تعهد سلوكي للابن بانتظار توقيع ولي الأمر
+                                                </h3>
+                                                <p className="text-xs font-semibold text-rose-600 dark:text-rose-300 mt-0.5">
+                                                    يرجى مراجعة سجل الانضباط والاعتماد
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Link href={route('parent.discipline')} className="shrink-0 px-5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black transition-colors">
+                                            مراجعة الانضباط
+                                        </Link>
+                                    </div>
+                                )}
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-2">
                                 
                                 {/* Main Content - Left/Middle (Takes 2 Cols) */}
                                 <div className="lg:col-span-2 space-y-8">
@@ -162,10 +195,10 @@ export default function ParentDashboard({ auth, children = [], activeChild, toda
                                         />
                                         <div className="w-px bg-slate-200 dark:bg-slate-800 mx-2 shrink-0"></div>
                                         <CircularProgress 
-                                            value={100 - ((stats?.absentDays || 0) * 2)} 
+                                            value={stats?.attendanceRate ?? 100} 
                                             max={100} 
-                                            colorClass={stats?.absentDays > 5 ? "text-rose-500" : "text-emerald-500"} 
-                                            label="نسبة الحضور" 
+                                            colorClass={(stats?.attendanceRate ?? 100) < 85 ? "text-rose-500" : "text-emerald-500"} 
+                                            label="نسبة الحضور %" 
                                         />
                                         <div className="w-px bg-slate-200 dark:bg-slate-800 mx-2 shrink-0"></div>
                                         <CircularProgress 
@@ -175,6 +208,67 @@ export default function ParentDashboard({ auth, children = [], activeChild, toda
                                             label="أيام الغياب" 
                                             icon={AlertCircle} 
                                         />
+                                    </div>
+
+                                    {/* Recent Homeworks & Latest Grades */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="bg-white dark:bg-[#1e293b] rounded-[2.5rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                                            <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white mb-5">
+                                                <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                                                    <ClipboardList size={20} />
+                                                </div>
+                                                واجبات الابن اليومية
+                                            </h2>
+                                            {recentHomeworks && recentHomeworks.length > 0 ? (
+                                                <div className="space-y-3">
+                                                    {recentHomeworks.map((hw) => (
+                                                        <div key={hw.id} className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                                            <div className="flex items-center justify-between gap-2 mb-1">
+                                                                <span className="text-xs font-black text-indigo-600 dark:text-indigo-400">{hw.subject_name}</span>
+                                                                <span className="text-[10px] font-mono text-slate-400">{hw.preparation_date}</span>
+                                                            </div>
+                                                            <p className="text-xs font-bold text-slate-800 dark:text-white mb-1">{hw.lesson_title}</p>
+                                                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{hw.homework}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8 text-slate-500 text-sm">لا توجد واجبات جديدة حالياً</div>
+                                            )}
+                                        </div>
+
+                                        <div className="bg-white dark:bg-[#1e293b] rounded-[2.5rem] p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                                            <div className="flex items-center justify-between mb-5">
+                                                <h2 className="text-lg font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+                                                    <div className="p-2 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
+                                                        <FileText size={20} />
+                                                    </div>
+                                                    أحدث الدرجات
+                                                </h2>
+                                                <Link href={route('parent.grades')} className="text-xs font-bold text-primary-600 hover:underline">
+                                                    التفاصيل
+                                                </Link>
+                                            </div>
+                                            {recentGrades && recentGrades.length > 0 ? (
+                                                <div className="space-y-2.5">
+                                                    {recentGrades.map((g) => (
+                                                        <div key={g.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+                                                            <div>
+                                                                <p className="text-xs font-black text-slate-800 dark:text-white">{g.subject_name}</p>
+                                                                <p className="text-[11px] text-slate-500 mt-0.5">
+                                                                    أعمال شهرية: {g.monthly_aggregate ?? '—'} | نهائي: {g.final_exam_score ?? '—'}
+                                                                </p>
+                                                            </div>
+                                                            <span className="px-3 py-1 rounded-xl bg-blue-50 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 text-sm font-black font-mono">
+                                                                {g.semester_total ?? '—'}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <div className="text-center py-8 text-slate-500 text-sm">لا توجد نتائج مرصودة بعد</div>
+                                            )}
+                                        </div>
                                     </div>
 
                                     {/* Today's Timetable */}
@@ -294,7 +388,7 @@ export default function ParentDashboard({ auth, children = [], activeChild, toda
                                                                 <Star className="text-yellow-300" size={24} fill="currentColor" />
                                                             </div>
                                                             <div>
-                                                                <h4 className="font-bold">{ach.achievementType?.name || 'وسام التميز'}</h4>
+                                                                <h4 className="font-bold">{ach.type?.name || ach.achievementType?.name || 'وسام التميز'}</h4>
                                                                 <p className="text-xs text-indigo-100 mt-1">{ach.points} نقطة</p>
                                                             </div>
                                                         </div>
@@ -315,6 +409,7 @@ export default function ParentDashboard({ auth, children = [], activeChild, toda
                                     )}
 
                                 </div>
+                            </div>
                             </div>
                         )}
                     </>

@@ -3,23 +3,26 @@
 namespace App\Services;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 class ServerMonitorService
 {
     /**
-     * Get all server metrics
+     * Get all server metrics (cached briefly to avoid slow log/wmic checks per load)
      */
     public function getMetrics()
     {
-        return [
-            'cpu' => $this->getCpuUsage(),
-            'ram' => $this->getRamUsage(),
-            'storage' => $this->getStorageHealth(),
-            'uptime' => $this->getUptime(),
-            'system_health' => $this->getSystemHealth(),
-        ];
+        return Cache::remember('system_server_metrics_v1', 30, function () {
+            return [
+                'cpu' => $this->getCpuUsage(),
+                'ram' => $this->getRamUsage(),
+                'storage' => $this->getStorageHealth(),
+                'uptime' => $this->getUptime(),
+                'system_health' => $this->getSystemHealth(),
+            ];
+        });
     }
 
     /**
@@ -142,7 +145,7 @@ class ServerMonitorService
                         }
                     }
                 }
-                return rand(5, 12); // Fallback for local testing
+                return 'N/A'; // Unavailable locally without WMIC
             } else { // Linux
                 if (is_readable('/proc/stat')) {
                     $stat1 = file_get_contents('/proc/stat');
@@ -193,7 +196,7 @@ class ServerMonitorService
                         }
                     }
                 }
-                return rand(35, 55); // Fallback for local testing
+                return 'N/A'; // Unavailable locally without WMIC
             } else { // Linux
                 if (is_readable('/proc/meminfo')) {
                     $data = explode("\n", file_get_contents('/proc/meminfo'));

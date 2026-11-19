@@ -24,7 +24,7 @@ class LessonPreparationController extends Controller implements \Illuminate\Rout
     {
         $userBranchId = auth()->user()->branch_id;
 
-        $query = LessonPreparation::with(['teacher', 'grade', 'division', 'subject'])
+        $query = LessonPreparation::with(['teacher', 'grade', 'division', 'subject', 'period', 'reviewer:id,name'])
             ->whereHas('grade', function ($q) use ($userBranchId) {
                 if ($userBranchId) {
                     $q->where('branch_id', $userBranchId);
@@ -85,6 +85,38 @@ class LessonPreparationController extends Controller implements \Illuminate\Rout
         ]);
     }
 
+    public function review(Request $request, LessonPreparation $lessonPreparation)
+    {
+        if (!$request->user()->hasPermission('عرض دفاتر التحضير') && !$request->user()->hasPermission('إدارة دفاتر التحضير')) {
+            abort(403);
+        }
+
+        $userBranchId = auth()->user()->branch_id;
+        $prepBranchId = $lessonPreparation->branch_id ?? $lessonPreparation->grade?->branch_id;
+        if ($userBranchId && $prepBranchId !== $userBranchId) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'supervisor_rating' => 'nullable|integer|min:1|max:5',
+            'supervisor_notes' => 'nullable|string|max:2000',
+        ], [
+            'supervisor_rating.integer' => 'يجب أن يكون التقييم رقماً صحيحاً.',
+            'supervisor_rating.min' => 'أقل تقييم مسموح به هو 1.',
+            'supervisor_rating.max' => 'أعلى تقييم مسموح به هو 5.',
+            'supervisor_notes.max' => 'ملاحظات المشرف يجب ألا تتجاوز 2000 حرف.',
+        ]);
+
+        $lessonPreparation->update([
+            'supervisor_rating' => $validated['supervisor_rating'] ?? null,
+            'supervisor_notes' => $validated['supervisor_notes'] ?? null,
+            'reviewed_by' => auth()->id(),
+            'reviewed_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'تم حفظ تقييم وملاحظات المشرف التربوي بنجاح.');
+    }
+
     public function destroy(LessonPreparation $lessonPreparation)
     {
         // Only allow if within same branch
@@ -92,6 +124,7 @@ class LessonPreparationController extends Controller implements \Illuminate\Rout
             abort(403);
         }
 
+        $lessonPreparation->deleteStoredAttachments();
         $lessonPreparation->delete();
 
         return redirect()->back()->with('success', 'تم حذف سجل التحضير بنجاح.');

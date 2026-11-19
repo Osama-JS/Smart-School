@@ -8,15 +8,39 @@ use Inertia\Inertia;
 use App\Models\ClassAttendance;
 use App\Models\StudentViolation;
 use App\Models\ExamScheduleItem;
-use App\Models\Timetable;
+use App\Models\MasterTimetable;
 use App\Models\News;
+use App\Traits\ResolvesStudent;
 
 class ParentDashboardController extends Controller
 {
+    use ResolvesStudent;
+
     public function index(Request $request)
     {
         $user = auth()->user();
-        
+
+        $latestNews = News::with('attachments')
+            ->where('is_published', true)
+            ->where('published_at', '<=', now())
+            ->whereHas('author', function ($q) use ($user) {
+                $q->whereNull('branch_id')
+                  ->orWhere('branch_id', $user->branch_id);
+            })
+            ->latest('published_at')
+            ->take(5)
+            ->get()
+            ->map(function ($news) {
+                return [
+                    'id' => $news->id,
+                    'title' => $news->title,
+                    'category' => $news->category,
+                    'image_url' => $news->image_url,
+                    'published_at' => $news->published_at ? $news->published_at->diffForHumans() : '',
+                    'excerpt' => \Illuminate\Support\Str::limit(strip_tags($news->content), 80),
+                ];
+            });
+
         // 1. Fetch children of this parent
         $children = $user->children()->with(['currentEnrollment.division.grade.section', 'user'])->get();
 
@@ -27,7 +51,10 @@ class ParentDashboardController extends Controller
                 'stats' => [],
                 'todayTimetable' => [],
                 'upcomingExams' => [],
-                'latestNews' => News::latest()->take(3)->get() ?? [],
+                'recentHomeworks' => [],
+                'recentGrades' => [],
+                'pendingPledgesCount' => 0,
+                'latestNews' => $latestNews,
             ]);
         }
 
@@ -38,58 +65,48 @@ class ParentDashboardController extends Controller
         if ($selectedChildId) {
             $activeChild = $children->firstWhere('id', $selectedChildId);
         }
-        
+
         if (!$activeChild) {
             $activeChild = $children->first();
         }
 
         // Load additional data for the active child
         $activeChild->load([
-            'achievements.achievementType',
-            'medicalRecord'
+            'achievements.type',
+            'medicalRecord',
+            'currentEnrollment.division.grade.section',
         ]);
 
         // 2. Fetch Dashboard Widgets Data for Active Child
-        $todayTimetable = [];
-        $upcomingExams = [];
+        $todayTimetable = collect();
+        $upcomingExams = collect();
+        $currentEnrollment = $activeChild->currentEnrollment;
+        $portalMetrics = $this->buildStudentPortalMetrics($activeChild, $currentEnrollment, true);
+
         $stats = [
-            'totalPoints' => 0,
-            'absentDays' => 0,
-            'violationsCount' => 0
+            'totalPoints' => (int) $activeChild->achievements->sum('points'),
+            'absentDays' => $portalMetrics['absentDays'],
+            'attendanceRate' => $portalMetrics['attendanceRate'],
+            'violationsCount' => StudentViolation::where('student_id', $activeChild->id)->count(),
         ];
 
-        if ($activeChild && $activeChild->currentEnrollment) {
-            $divisionId = $activeChild->currentEnrollment->division_id;
-            
-            // Timetable for today
-            $today = strtolower(now()->englishDayOfWeek); // e.g., 'monday'
-            
-            $todayTimetable = Timetable::with(['subject', 'teacher', 'period'])
+        if ($currentEnrollment && $currentEnrollment->division_id) {
+            $divisionId = $currentEnrollment->division_id;
+
+            $todayTimetable = MasterTimetable::with(['subject', 'teacher', 'period'])
                 ->where('division_id', $divisionId)
-                ->where('day_of_week', $today)
-                ->orderBy('period_id')
-                ->get();
+                ->today()
+                ->get()
+                ->sortBy(fn($t) => $t->period->start_time ?? '')
+                ->values();
 
             // Upcoming Exams
             $upcomingExams = ExamScheduleItem::with(['subject', 'schedule'])
-                ->whereHas('schedule', function ($q) use ($activeChild) {
-                    $q->where('grade_id', $activeChild->currentEnrollment->grade_id);
-                })
+                ->where('division_id', $divisionId)
                 ->where('exam_date', '>=', now()->toDateString())
                 ->orderBy('exam_date', 'asc')
                 ->take(3)
                 ->get();
-
-            // Stats
-            $stats['totalPoints'] = $activeChild->achievements->sum('points');
-            
-            // Calculate unique days absent
-            $absentClasses = ClassAttendance::where('student_id', $activeChild->id)
-                                    ->whereIn('status', ['absent', 'unexcused'])
-                                    ->get();
-            $stats['absentDays'] = $absentClasses->pluck('date')->map(fn($d) => $d->format('Y-m-d'))->unique()->count();
-            
-            $stats['violationsCount'] = StudentViolation::where('student_id', $activeChild->id)->count();
         }
 
         return Inertia::render('Dashboards/ParentDashboard', [
@@ -98,7 +115,10 @@ class ParentDashboardController extends Controller
             'todayTimetable' => $todayTimetable,
             'upcomingExams' => $upcomingExams,
             'stats' => $stats,
-            'latestNews' => News::latest()->take(3)->get() ?? [],
+            'recentHomeworks' => $portalMetrics['recentHomeworks'],
+            'recentGrades' => $portalMetrics['recentGrades'],
+            'pendingPledgesCount' => $portalMetrics['pendingPledgesCount'],
+            'latestNews' => $latestNews,
         ]);
     }
 }

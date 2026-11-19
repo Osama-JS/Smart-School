@@ -267,6 +267,7 @@ Route::middleware('auth')->group(function () {
             'index'   => 'academic.lesson-preparations',
             'destroy' => 'academic.lesson-preparations.destroy',
         ])->only(['index', 'destroy']);
+        Route::post('/academic/lesson-preparations/{lessonPreparation}/review', [\App\Http\Controllers\Academic\LessonPreparationController::class, 'review'])->name('academic.lesson-preparations.review');
     });
 
     Route::middleware('permission:إدارة الخطط الدراسية')->group(function () {
@@ -776,8 +777,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/hr/appraisals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'index'])->name('hr.appraisals.index');
         Route::post('/hr/appraisals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'store'])->name('hr.appraisals.store');
         Route::get('/hr/appraisals/{appraisal}', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'show'])->name('hr.appraisals.show');
+        Route::get('/hr/appraisals/{appraisal}/pdf', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'downloadSinglePdf'])->name('hr.appraisals.single.pdf');
         Route::post('/hr/appraisals/{appraisal}/submit-self', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'submitSelf'])->name('hr.appraisals.submit-self');
         Route::post('/hr/appraisals/{appraisal}/submit-manager', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'submitManager'])->name('hr.appraisals.submit-manager');
+        Route::post('/hr/appraisals/{appraisal}/return', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'returnAppraisal'])->name('hr.appraisals.return');
+        Route::post('/hr/appraisals/{appraisal}/evaluators', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'addEvaluator'])->name('hr.appraisals.evaluators.store');
+        Route::delete('/hr/appraisals/{appraisal}/evaluators/{evaluator}', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'removeEvaluator'])->name('hr.appraisals.evaluators.destroy');
         Route::post('/hr/appraisals/{appraisal}/scores/{score}/goals', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'storeGoal'])->name('hr.appraisals.goals.store');
         Route::put('/hr/appraisals/{appraisal}/goals/{goal}/progress', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'updateGoalProgress'])->name('hr.appraisals.goals.progress');
         Route::delete('/hr/appraisals/{appraisal}/goals/{goal}', [\App\Http\Controllers\HR\EmployeeAppraisalController::class, 'destroyGoal'])->name('hr.appraisals.goals.destroy');

@@ -63,7 +63,7 @@ class MobileFeaturesController extends Controller
     {
         $user = $request->user();
         
-        $baseQuery = LessonPreparation::with(['grade', 'division', 'subject'])
+        $baseQuery = LessonPreparation::with(['grade', 'division', 'subject', 'period', 'reviewer:id,name'])
             ->where('teacher_id', $user->id);
 
         $allTeacherPreps = (clone $baseQuery)->get();
@@ -80,6 +80,13 @@ class MobileFeaturesController extends Controller
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('lesson_title', 'like', "%{$search}%")
+                  ->orWhere('unit_title', 'like', "%{$search}%")
+                  ->orWhere('curriculum_progress', 'like', "%{$search}%")
+                  ->orWhere('learning_objectives', 'like', "%{$search}%")
+                  ->orWhere('educational_activities', 'like', "%{$search}%")
+                  ->orWhere('behavioral_value', 'like', "%{$search}%")
+                  ->orWhere('acquired_skills', 'like', "%{$search}%")
+                  ->orWhere('reinforcements', 'like', "%{$search}%")
                   ->orWhere('topics_covered', 'like', "%{$search}%")
                   ->orWhere('homework', 'like', "%{$search}%")
                   ->orWhere('notes', 'like', "%{$search}%")
@@ -111,18 +118,37 @@ class MobileFeaturesController extends Controller
         $preparations = $query->get()->map(function($prep) {
             return [
                 'id' => $prep->id,
+                'unit_title' => $prep->unit_title,
                 'lesson_title' => $prep->lesson_title,
+                'page_numbers' => $prep->page_numbers,
+                'curriculum_progress' => $prep->curriculum_progress,
                 'subject_id' => $prep->subject_id,
                 'subject_name' => $prep->subject?->name ?? '-',
                 'grade_id' => $prep->grade_id,
                 'grade_name' => $prep->grade?->name ?? '-',
                 'division_id' => $prep->division_id,
                 'division_name' => $prep->division?->name ?? '',
+                'period_id' => $prep->period_id,
+                'period_name' => $prep->period?->period_name ?? '',
                 'preparation_date' => $prep->preparation_date ? (is_string($prep->preparation_date) ? $prep->preparation_date : $prep->preparation_date->format('Y-m-d')) : '',
+                'learning_objectives' => $prep->learning_objectives,
+                'warm_up' => $prep->warm_up,
+                'teaching_strategies' => $prep->teaching_strategies ?? [],
+                'educational_aids' => $prep->educational_aids ?? [],
+                'educational_activities' => $prep->educational_activities,
+                'behavioral_value' => $prep->behavioral_value,
+                'acquired_skills' => $prep->acquired_skills,
                 'topics_covered' => $prep->topics_covered,
+                'assessment_methods' => $prep->assessment_methods,
+                'reinforcements' => $prep->reinforcements,
                 'homework' => $prep->homework,
+                'attachments' => $prep->formattedAttachments(),
                 'notes' => $prep->notes,
                 'status' => $prep->status ?? 'draft',
+                'supervisor_rating' => $prep->supervisor_rating,
+                'supervisor_notes' => $prep->supervisor_notes,
+                'reviewer_name' => $prep->reviewer?->name,
+                'reviewed_at' => $prep->reviewed_at ? $prep->reviewed_at->toIso8601String() : null,
                 'created_at' => $prep->created_at ? $prep->created_at->toIso8601String() : null,
             ];
         });
@@ -158,7 +184,7 @@ class MobileFeaturesController extends Controller
                 'id' => $s->id,
                 'day_of_week' => strtolower(trim($s->day_of_week ?? '')),
                 'period_id' => $s->period_id,
-                'period_name' => $s->period?->name ?? "حصة {$s->period_id}",
+                'period_name' => $s->period?->period_name ?? $s->period?->name ?? "حصة {$s->period_id}",
                 'subject_id' => $s->subject_id,
                 'subject_name' => $s->subject?->name ?? '',
                 'grade_id' => $s->division?->grade_id ?? '',
@@ -183,36 +209,33 @@ class MobileFeaturesController extends Controller
      */
     public function storePreparation(Request $request)
     {
-        $validated = $request->validate([
-            'lesson_title' => 'required|string|max:255',
-            'subject_id' => 'required|exists:subjects,id',
-            'grade_id' => 'required|exists:grades,id',
-            'division_id' => 'nullable|exists:divisions,id',
-            'preparation_date' => 'required|date',
-            'topics_covered' => 'nullable|string',
-            'notes' => 'nullable|string',
-            'homework' => 'nullable|string',
-            'status' => 'required|in:draft,published',
-        ]);
+        $validated = $this->validateMobilePreparation($request);
+        $payload = \Illuminate\Support\Arr::except($validated, ['new_attachments', 'existing_attachments', 'attachments']);
 
         $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
         $activeSemester = \App\Models\Semester::where('is_active', true)->first();
 
-        $preparation = new LessonPreparation($validated);
+        $preparation = new LessonPreparation($payload);
         $preparation->teacher_id = $request->user()->id;
         $preparation->branch_id = $request->user()->branch_id;
         $preparation->academic_year_id = $activeYear ? $activeYear->id : null;
         $preparation->semester_id = $activeSemester ? $activeSemester->id : null;
-        $preparation->content = $request->input('topics_covered', $request->input('lesson_title', ''));
-        
+        $preparation->content = !empty($payload['topics_covered'])
+            ? $payload['topics_covered']
+            : ($payload['lesson_title'] ?? '');
+        $preparation->attachments = $preparation->syncAttachmentsFromRequest($request, false);
+
         $preparation->save();
 
         $this->checkAndSendHomeworkNotification($preparation, true, $request->user());
 
+        $data = $preparation->toArray();
+        $data['attachments'] = $preparation->formattedAttachments();
+
         return response()->json([
             'success' => true,
             'message' => 'تم حفظ تحضير الدرس بنجاح',
-            'data' => $preparation
+            'data' => $data
         ]);
     }
 
@@ -233,30 +256,80 @@ class MobileFeaturesController extends Controller
             ], 403);
         }
 
-        $validated = $request->validate([
-            'lesson_title' => 'required|string|max:255',
-            'subject_id' => 'required|exists:subjects,id',
-            'grade_id' => 'required|exists:grades,id',
-            'division_id' => 'nullable|exists:divisions,id',
-            'preparation_date' => 'required|date',
-            'topics_covered' => 'nullable|string',
-            'notes' => 'nullable|string',
-            'homework' => 'nullable|string',
-            'status' => 'required|in:draft,published',
-        ]);
+        $validated = $this->validateMobilePreparation($request);
+        $payload = \Illuminate\Support\Arr::except($validated, ['new_attachments', 'existing_attachments', 'attachments']);
 
         $wasDraft = $lessonPreparation->status === 'draft';
 
-        $lessonPreparation->content = $request->input('topics_covered', $request->input('lesson_title', ''));
-        $lessonPreparation->update($validated);
+        $lessonPreparation->content = !empty($payload['topics_covered'])
+            ? $payload['topics_covered']
+            : ($payload['lesson_title'] ?? '');
+        $payload['attachments'] = $lessonPreparation->syncAttachmentsFromRequest($request, true);
+        $lessonPreparation->update($payload);
 
         $this->checkAndSendHomeworkNotification($lessonPreparation, $wasDraft, $request->user());
+
+        $data = $lessonPreparation->fresh()->toArray();
+        $data['attachments'] = $lessonPreparation->formattedAttachments();
 
         return response()->json([
             'success' => true,
             'message' => 'تم تحديث سجل الحصة بنجاح',
-            'data' => $lessonPreparation
+            'data' => $data
         ]);
+    }
+
+    private function validateMobilePreparation(Request $request): array
+    {
+        $fileRule = 'file|max:20480|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,webp,zip';
+
+        $rules = [
+            'period_id' => 'nullable|exists:daily_periods,id',
+            'unit_title' => 'nullable|string|max:255',
+            'lesson_title' => 'required|string|max:255',
+            'page_numbers' => 'nullable|string|max:100',
+            'curriculum_progress' => 'nullable|string|max:255',
+            'subject_id' => 'required|exists:subjects,id',
+            'grade_id' => 'required|exists:grades,id',
+            'division_id' => 'nullable|exists:divisions,id',
+            'preparation_date' => 'required|date',
+            'learning_objectives' => 'nullable|string',
+            'warm_up' => 'nullable|string',
+            'teaching_strategies' => 'nullable|array',
+            'teaching_strategies.*' => 'string|max:100',
+            'educational_aids' => 'nullable|array',
+            'educational_aids.*' => 'string|max:100',
+            'educational_activities' => 'nullable|string',
+            'behavioral_value' => 'nullable|string',
+            'acquired_skills' => 'nullable|string',
+            'topics_covered' => 'nullable|string',
+            'assessment_methods' => 'nullable|string',
+            'reinforcements' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'homework' => 'nullable|string',
+            'existing_attachments' => 'nullable|array',
+            'status' => 'required|in:draft,published',
+        ];
+
+        if ($request->hasFile('new_attachments')) {
+            if (is_array($request->file('new_attachments'))) {
+                $rules['new_attachments'] = 'nullable|array';
+                $rules['new_attachments.*'] = $fileRule;
+            } else {
+                $rules['new_attachments'] = 'nullable|' . $fileRule;
+            }
+        }
+
+        if ($request->hasFile('attachments')) {
+            if (is_array($request->file('attachments'))) {
+                $rules['attachments'] = 'nullable|array';
+                $rules['attachments.*'] = $fileRule;
+            } else {
+                $rules['attachments'] = 'nullable|' . $fileRule;
+            }
+        }
+
+        return $request->validate($rules);
     }
 
     /**
@@ -276,6 +349,7 @@ class MobileFeaturesController extends Controller
             ], 403);
         }
 
+        $lessonPreparation->deleteStoredAttachments();
         $lessonPreparation->delete();
 
         return response()->json([
@@ -2707,8 +2781,14 @@ class MobileFeaturesController extends Controller
              return response()->json(['success' => false, 'message' => 'المستخدم ليس موظفاً'], 403);
          }
  
-         $query = \App\Models\EmployeeAppraisal::with(['cycle', 'template.kpis', 'manager.user'])
-             ->where('employee_id', $employee->id);
+         $query = \App\Models\EmployeeAppraisal::with(['cycle', 'template.kpis', 'manager.user', 'employee.user', 'evaluators'])
+             ->where(function ($q) use ($employee, $user, $request) {
+                 $q->where('employee_id', $employee->id);
+                 if ($request->input('scope') !== 'my') {
+                     $q->orWhere('manager_id', $employee->id)
+                       ->orWhereHas('evaluators', fn ($eq) => $eq->where('evaluator_user_id', $user->id));
+                 }
+             });
  
          if ($request->filled('cycle_id')) {
              $query->where('cycle_id', $request->cycle_id);
@@ -2778,6 +2858,10 @@ class MobileFeaturesController extends Controller
                  'cycle_start' => $appraisal->cycle?->start_date?->format('Y-m-d'),
                  'cycle_end' => $appraisal->cycle?->end_date?->format('Y-m-d'),
                  'template_title' => $appraisal->template?->title ?? 'عام',
+                 'employee_name' => $appraisal->employee?->user?->name ?? '',
+                 'is_my_appraisal' => $appraisal->employee_id === $employee->id,
+                 'is_evaluator' => $appraisal->evaluators->contains('evaluator_user_id', $user->id),
+                 'evaluators_count' => $appraisal->evaluators->count(),
                  'status' => $appraisal->status,
                  'status_label' => $statusLabels[$appraisal->status] ?? $appraisal->status,
                  'self_score' => $appraisal->self_score,
@@ -2811,48 +2895,37 @@ class MobileFeaturesController extends Controller
      {
          $user = $request->user();
          $employee = $user->employee;
-         if (!$employee) {
-             return response()->json(['success' => false, 'message' => 'المستخدم ليس موظفاً'], 403);
-         }
- 
+
          $appraisal = \App\Models\EmployeeAppraisal::with([
              'cycle', 
              'template.kpis', 
              'manager.user',
              'scores.kpi',
              'scores.goals',
+             'scores.evaluatorScores.evaluator.user:id,name',
+             'evaluators.user:id,name',
              'employee.user',
              'employee.department',
              'employee.jobGrade',
              'hr'
          ])->findOrFail($id);
- 
-         $isEmployee = ($appraisal->employee_id === $employee->id);
-         $isManager = ($appraisal->manager_id === $employee->id);
- 
-         if (!$isEmployee && !$isManager && !$user->hasPermission('عرض التقييمات الإدارية')) {
+
+         $appraisal->ensureDefaultManagerEvaluator();
+         $appraisal->load(['evaluators.user:id,name', 'scores.evaluatorScores.evaluator.user:id,name']);
+
+         $isEmployee = ($employee && $appraisal->employee_id === $employee->id);
+         $isManager = ($employee && $appraisal->manager_id === $employee->id);
+         $isEvaluator = $appraisal->evaluators->contains('evaluator_user_id', $user->id);
+
+         if (!$isEmployee && !$isManager && !$isEvaluator && !$user->hasPermission('عرض التقييمات الإدارية')) {
              return response()->json(['success' => false, 'message' => 'غير مصرح لك بعرض هذا التقييم'], 403);
          }
  
-         // Fetch Integration Data (Attendance, Violations, Achievements) during cycle period
-         $startDate = $appraisal->cycle?->start_date ?? now()->startOfYear();
-         $endDate = $appraisal->cycle?->end_date ?? now()->endOfYear();
- 
-         $attendances = \App\Models\Attendance::where('employee_id', $appraisal->employee_id)
-             ->whereBetween('date', [$startDate, $endDate])
-             ->get();
-         
-         $presentCount = $attendances->whereIn('status', ['present', 'late', 'extra'])->count();
-         $totalAttendanceDays = $attendances->whereNotIn('status', ['weekend', 'holiday', 'future'])->count();
-         $attendanceRate = $totalAttendanceDays > 0 ? round(($presentCount / $totalAttendanceDays) * 100) : 100;
- 
-         $violationsCount = \App\Models\EmployeeViolation::where('user_id', $appraisal->employee?->user_id)
-             ->whereBetween('violation_date', [$startDate, $endDate])
-             ->count();
- 
-         $achievementsCount = \App\Models\EmployeeAchievement::where('user_id', $appraisal->employee?->user_id)
-             ->whereBetween('achievement_date', [$startDate, $endDate])
-             ->count();
+         // Fetch 360 Performance Snapshot (Attendance, Academic, Violations, Achievements)
+         $snapshot = $appraisal->buildPerformanceSnapshot();
+         $attendanceSummary = $snapshot['attendance_summary'];
+         $violationsCount = $snapshot['violations']->count();
+         $achievementsCount = $snapshot['achievements']->count();
  
          // Calculate Grade
          $score = $appraisal->final_score;
@@ -2898,6 +2971,12 @@ class MobileFeaturesController extends Controller
                  'self_comments' => $appraisal->self_comments,
                  'manager_comments' => $appraisal->manager_comments,
                  'hr_comments' => $appraisal->hr_comments,
+                 'strengths' => $appraisal->strengths,
+                 'improvement_areas' => $appraisal->improvement_areas,
+                 'recommended_training' => $appraisal->recommended_training,
+                 'final_recommendation' => $appraisal->final_recommendation,
+                 'return_reason' => $appraisal->return_reason,
+                 'returned_at' => $appraisal->returned_at?->toIso8601String(),
                  'employee_signature' => $appraisal->employee_signature ? asset('storage/' . $appraisal->employee_signature) : null,
                  'manager_signature' => $appraisal->manager_signature ? asset('storage/' . $appraisal->manager_signature) : null,
                  'hr_signature' => $appraisal->hr_signature ? asset('storage/' . $appraisal->hr_signature) : null,
@@ -2923,15 +3002,46 @@ class MobileFeaturesController extends Controller
                      'title' => $appraisal->template?->title,
                      'description' => $appraisal->template?->description,
                  ],
+                 'evaluators' => $appraisal->evaluators->map(function ($ev) {
+                     return [
+                         'id' => $ev->id,
+                         'user_id' => $ev->evaluator_user_id,
+                         'name' => $ev->user?->name ?? 'مقيّم',
+                         'role_type' => $ev->role_type,
+                         'role_label' => \App\Models\EmployeeAppraisalEvaluator::ROLE_LABELS[$ev->role_type] ?? $ev->role_type,
+                         'weight' => $ev->weight,
+                         'status' => $ev->status,
+                         'calculated_score' => $ev->calculated_score,
+                         'comments' => $ev->comments,
+                         'submitted_at' => $ev->submitted_at?->toIso8601String(),
+                     ];
+                 })->values(),
                  'scores' => $appraisal->scores->map(function($score) {
                      return [
                          'id' => $score->id,
                          'kpi_id' => $score->kpi_id,
                          'kpi_name' => $score->kpi?->name ?? 'معيار الأداء',
+                         'kpi_category' => $score->kpi?->category,
+                         'evaluator_roles' => $score->kpi?->evaluator_roles ?? ['all'],
                          'kpi_description' => $score->kpi?->description,
                          'kpi_weight' => $score->kpi?->weight ?? 1,
                          'self_score' => $score->self_score,
+                         'self_note' => $score->self_note,
                          'manager_score' => $score->manager_score,
+                         'manager_note' => $score->manager_note,
+                         'evaluator_scores' => $score->evaluatorScores->map(function ($es) {
+                             $roleType = $es->evaluator?->role_type ?? 'committee';
+                             return [
+                                 'evaluator_id' => $es->evaluator_id,
+                                 'evaluator_user_id' => $es->evaluator?->evaluator_user_id,
+                                 'evaluator_name' => $es->evaluator?->user?->name ?? 'مقيّم',
+                                 'role_type' => $roleType,
+                                 'role_label' => \App\Models\EmployeeAppraisalEvaluator::ROLE_LABELS[$roleType] ?? $roleType,
+                                 'weight' => $es->evaluator?->weight ?? 100,
+                                 'score' => $es->score,
+                                 'note' => $es->note,
+                             ];
+                         })->values(),
                          'goals' => $score->goals->map(fn($g) => [
                              'id' => $g->id,
                              'title' => $g->title,
@@ -2942,19 +3052,28 @@ class MobileFeaturesController extends Controller
                      ];
                  }),
                  'integration' => [
-                     'attendance_rate' => $attendanceRate,
-                     'present_days' => $presentCount,
-                     'total_days' => $totalAttendanceDays,
+                     'attendance_rate' => round($attendanceSummary['attendance_rate']),
+                     'present_days' => $attendanceSummary['present_days'],
+                     'absent_days' => $attendanceSummary['absent_days'],
+                     'late_days' => $attendanceSummary['late_days'],
+                     'total_days' => $attendanceSummary['total_days'],
                      'violations_count' => $violationsCount,
                      'achievements_count' => $achievementsCount,
+                     'academic' => $snapshot['academic'],
+                     'suggested_metrics' => $snapshot['suggested_metrics'],
                  ],
                  'trend_data' => $historical,
                  'permissions' => [
                      'is_employee' => $isEmployee,
                      'is_manager' => $isManager,
+                     'is_evaluator' => $isEvaluator,
                      'can_submit_self' => $isEmployee && $appraisal->status === 'pending_self',
-                     'can_submit_manager' => $isManager && $appraisal->status === 'pending_manager',
-                     'can_manage_goals' => ($isEmployee || $isManager) && !in_array($appraisal->status, ['completed', 'pending_hr']),
+                     'can_submit_manager' => ($isManager || $isEvaluator || $user->hasPermission('إدارة التقييمات الإدارية')) && $appraisal->status === 'pending_manager',
+                     'can_manage_goals' => ($isEmployee || $isManager || $isEvaluator) && !in_array($appraisal->status, ['completed', 'pending_hr']),
+                     'can_manage_evaluators' => ($isManager || $user->hasPermission('إدارة التقييمات الإدارية')) && $appraisal->status !== 'completed',
+                     'can_approve_hr' => $user->hasPermission('إدارة التقييمات الإدارية') && $appraisal->status === 'pending_hr',
+                     'can_return' => (($isManager || $user->hasPermission('إدارة التقييمات الإدارية')) && $appraisal->status === 'pending_manager' && (bool) $appraisal->cycle?->requires_self_appraisal)
+                         || ($user->hasPermission('إدارة التقييمات الإدارية') && $appraisal->status === 'pending_hr'),
                  ]
              ]
          ]);
@@ -2980,6 +3099,7 @@ class MobileFeaturesController extends Controller
              'scores' => 'required|array',
              'scores.*.id' => 'required|exists:employee_appraisal_scores,id',
              'scores.*.self_score' => 'required|numeric|min:1|max:5',
+             'scores.*.self_note' => 'nullable|string|max:1000',
              'self_comments' => 'nullable|string',
              'employee_signature' => 'nullable|string',
          ]);
@@ -2990,7 +3110,10 @@ class MobileFeaturesController extends Controller
          foreach ($validated['scores'] as $scoreData) {
              $score = $appraisal->scores()->find($scoreData['id']);
              if ($score && $score->kpi) {
-                 $score->update(['self_score' => $scoreData['self_score']]);
+                 $score->update([
+                     'self_score' => $scoreData['self_score'],
+                     'self_note' => $scoreData['self_note'] ?? null,
+                 ]);
                  $weight = $score->kpi->weight ?? 1;
                  $totalScore += ($scoreData['self_score'] * $weight);
                  $totalWeight += $weight;
@@ -3012,6 +3135,8 @@ class MobileFeaturesController extends Controller
              'self_comments' => $validated['self_comments'] ?? null,
              'self_score' => $selfFinalScore,
              'employee_signature' => $signaturePath,
+             'return_reason' => null,
+             'returned_at' => null,
          ]);
  
          return response()->json([
@@ -3029,54 +3154,352 @@ class MobileFeaturesController extends Controller
          $user = $request->user();
          $employee = $user->employee;
          $appraisal = \App\Models\EmployeeAppraisal::findOrFail($id);
- 
-         if ($appraisal->manager_id !== ($employee?->id) && !$user->hasPermission('إدارة التقييمات الإدارية')) {
-             return response()->json(['success' => false, 'message' => 'غير مصرح لك باعتماد التقييم كمدير'], 403);
+
+         if ($appraisal->status !== 'pending_manager') {
+             return response()->json(['success' => false, 'message' => 'التقييم ليس في مرحلة تقييم المدير / اللجنة'], 422);
          }
- 
+
+         $isManager = ($appraisal->manager_id === ($employee?->id));
+         $evaluatorRecord = $appraisal->evaluators()->where('evaluator_user_id', $user->id)->first();
+         $hasManage = $user->hasPermission('إدارة التقييمات الإدارية');
+
+         if (!$isManager && !$evaluatorRecord && !$hasManage) {
+             return response()->json(['success' => false, 'message' => 'غير مصرح لك بتقييم هذا الموظف'], 403);
+         }
+
          $validated = $request->validate([
              'scores' => 'required|array',
              'scores.*.id' => 'required|exists:employee_appraisal_scores,id',
-             'scores.*.manager_score' => 'required|numeric|min:1|max:5',
+             'scores.*.manager_score' => 'nullable|numeric|min:1|max:5',
+             'scores.*.manager_note' => 'nullable|string|max:1000',
              'manager_comments' => 'nullable|string',
              'manager_signature' => 'nullable|string',
+             'strengths' => 'nullable|string|max:2000',
+             'improvement_areas' => 'nullable|string|max:2000',
+             'recommended_training' => 'nullable|string|max:2000',
+             'final_recommendation' => 'nullable|string|max:100',
+             'force_advance_to_hr' => 'nullable|boolean',
          ]);
- 
-         $totalScore = 0;
-         $totalWeight = 0;
- 
-         foreach ($validated['scores'] as $scoreData) {
-             $score = $appraisal->scores()->find($scoreData['id']);
-             if ($score && $score->kpi) {
-                 $score->update(['manager_score' => $scoreData['manager_score']]);
-                 $weight = $score->kpi->weight ?? 1;
-                 $totalScore += ($scoreData['manager_score'] * $weight);
-                 $totalWeight += $weight;
+
+         $actingRole = $evaluatorRecord?->role_type ?? ($isManager ? 'manager' : 'hr');
+         $scoreMap = collect($validated['scores'])->keyBy('id');
+         $appraisal->load('scores.kpi');
+
+         foreach ($appraisal->scores as $scoreItem) {
+             if ($scoreItem->kpi && $scoreItem->kpi->allowsRole($actingRole)) {
+                 $input = $scoreMap->get($scoreItem->id);
+                 if (!$input || empty($input['manager_score'])) {
+                     return response()->json([
+                         'success' => false,
+                         'message' => 'يرجى اختيار الدرجة (من 1 إلى 5) لجميع المعايير المخصصة لك.'
+                     ], 422);
+                 }
              }
          }
- 
-         $managerFinalScore = $totalWeight > 0 ? round(($totalScore / ($totalWeight * 5)) * 100, 1) : 0;
- 
-         $signaturePath = $appraisal->manager_signature;
+
+         $signaturePath = null;
          if (!empty($validated['manager_signature']) && str_starts_with($validated['manager_signature'], 'data:image')) {
              $sigData = explode(',', $validated['manager_signature'])[1];
              $filename = 'appraisals/signatures/mgr_' . uniqid() . '.png';
              \Illuminate\Support\Facades\Storage::disk('public')->put($filename, base64_decode($sigData));
              $signaturePath = $filename;
          }
- 
-         $appraisal->update([
-             'status' => 'pending_hr',
-             'manager_comments' => $validated['manager_comments'] ?? null,
-             'manager_score' => $managerFinalScore,
-             'final_score' => $managerFinalScore,
-             'manager_signature' => $signaturePath,
-         ]);
- 
+
+         $result = $appraisal->submitEvaluatorAssessment(
+             $user,
+             $validated['scores'],
+             $validated['manager_comments'] ?? null,
+             $signaturePath,
+             [
+                 'strengths' => $validated['strengths'] ?? null,
+                 'improvement_areas' => $validated['improvement_areas'] ?? null,
+                 'recommended_training' => $validated['recommended_training'] ?? null,
+                 'final_recommendation' => $validated['final_recommendation'] ?? null,
+             ],
+             ($isManager || $hasManage) && (bool) ($validated['force_advance_to_hr'] ?? false),
+             $actingRole
+         );
+
+         $msg = $result['all_submitted']
+             ? 'تم اعتماد التقييم بنجاح وتحويله لاعتماد الموارد البشرية.'
+             : "تم حفظ تقييمك بنجاح. بانتظار استكمال ({$result['pending_count']}) مقيّم مشارك آخر.";
+
          return response()->json([
              'success' => true,
-             'message' => 'تم اعتماد تقييم المدير بنجاح وتحويله لاعتماد الموارد البشرية.',
-             'data' => $appraisal
+             'message' => $msg,
+             'data' => $appraisal->fresh()
+         ]);
+     }
+
+     /**
+      * Add or Update Participant Evaluator from Mobile
+      */
+     public function addAppraisalEvaluator(Request $request, $id)
+     {
+         $user = $request->user();
+         $employee = $user->employee;
+         $appraisal = \App\Models\EmployeeAppraisal::with(['employee.user', 'cycle'])->findOrFail($id);
+
+         if ($appraisal->status === 'completed') {
+             return response()->json(['success' => false, 'message' => 'لا يمكن تعديل لجنة التقييم بعد الاعتماد النهائي.'], 422);
+         }
+
+         $isManager = ($appraisal->manager_id === ($employee?->id));
+         $hasManage = $user->hasPermission('إدارة التقييمات الإدارية');
+         if (!$isManager && !$hasManage) {
+             return response()->json(['success' => false, 'message' => 'غير مصرح لك بإضافة مقيّمين لهذا التقييم.'], 403);
+         }
+
+         $validated = $request->validate([
+             'evaluator_user_id' => 'required|exists:users,id',
+             'role_type' => 'required|in:manager,supervisor,hr,committee',
+             'weight' => 'required|integer|min:1|max:100',
+         ]);
+
+         if ((int) $validated['evaluator_user_id'] === (int) $appraisal->employee?->user_id) {
+             return response()->json(['success' => false, 'message' => 'لا يمكن إضافة الموظف المقيَّم نفسه كعضو في لجنة التقييم.'], 422);
+         }
+
+         $existing = $appraisal->evaluators()->where('evaluator_user_id', $validated['evaluator_user_id'])->first();
+         if ($existing) {
+             $existing->update([
+                 'role_type' => $validated['role_type'],
+                 'weight' => $validated['weight'],
+             ]);
+             $appraisal->recalculateScoresFromEvaluators();
+
+             return response()->json([
+                 'success' => true,
+                 'message' => 'تم تحديث بيانات المقيّم المشارك بنجاح.',
+                 'data' => $existing->fresh('user:id,name'),
+             ]);
+         }
+
+         $evaluator = $appraisal->evaluators()->create([
+             'evaluator_user_id' => $validated['evaluator_user_id'],
+             'role_type' => $validated['role_type'],
+             'weight' => $validated['weight'],
+             'status' => 'pending',
+         ]);
+
+         if ($appraisal->status === 'pending_hr') {
+             $appraisal->update(['status' => 'pending_manager']);
+         }
+
+         $notificationService = new \App\Services\NotificationService();
+         $notificationService->sendInternalNotification(
+             (int) $validated['evaluator_user_id'],
+             'تكليف بتقييم موظف',
+             "تم إضافتك كمقيّم مشارك لتقييم أداء ({$appraisal->employee?->user?->name}) في دورة ({$appraisal->cycle?->title}).",
+             'hr',
+             $user->id
+         );
+
+         return response()->json([
+             'success' => true,
+             'message' => 'تم إضافة المقيّم المشارك إلى لجنة التقييم بنجاح.',
+             'data' => $evaluator->load('user:id,name'),
+         ]);
+     }
+
+     /**
+      * Remove Participant Evaluator from Mobile
+      */
+     public function removeAppraisalEvaluator(Request $request, $id, $evaluatorId)
+     {
+         $user = $request->user();
+         $employee = $user->employee;
+         $appraisal = \App\Models\EmployeeAppraisal::findOrFail($id);
+
+         if ($appraisal->status === 'completed') {
+             return response()->json(['success' => false, 'message' => 'لا يمكن حذف مقيّم بعد الاعتماد النهائي.'], 422);
+         }
+
+         $isManager = ($appraisal->manager_id === ($employee?->id));
+         $hasManage = $user->hasPermission('إدارة التقييمات الإدارية');
+         if (!$isManager && !$hasManage) {
+             return response()->json(['success' => false, 'message' => 'غير مصرح لك بحذف مقيّم من هذا التقييم.'], 403);
+         }
+
+         $evaluator = $appraisal->evaluators()->findOrFail($evaluatorId);
+         $evaluator->delete();
+         $appraisal->recalculateScoresFromEvaluators();
+
+         if (
+             $appraisal->status === 'pending_manager'
+             && $appraisal->evaluators()->where('status', 'submitted')->exists()
+             && !$appraisal->evaluators()->where('status', 'pending')->exists()
+         ) {
+             $appraisal->update(['status' => 'pending_hr']);
+         }
+
+         return response()->json([
+             'success' => true,
+             'message' => 'تم إزالة المقيّم وإعادة احتساب الدرجات بنجاح.',
+             'data' => $appraisal->fresh(['evaluators.user:id,name']),
+         ]);
+     }
+
+     /**
+      * Return Appraisal for Revision from Mobile
+      */
+     public function returnAppraisalFromMobile(Request $request, $id)
+     {
+         $user = $request->user();
+         $employee = $user->employee;
+         $appraisal = \App\Models\EmployeeAppraisal::with(['cycle', 'employee.user', 'manager.user', 'evaluators'])->findOrFail($id);
+
+         $validated = $request->validate([
+             'return_reason' => 'required|string|max:1000',
+         ]);
+
+         $isManager = ($appraisal->manager_id === ($employee?->id));
+         $hasManage = $user->hasPermission('إدارة التقييمات الإدارية');
+         $notificationService = new \App\Services\NotificationService();
+
+         if ($appraisal->status === 'pending_manager') {
+             if (!$isManager && !$hasManage) {
+                 return response()->json(['success' => false, 'message' => 'غير مصرح لك بإرجاع هذا التقييم.'], 403);
+             }
+             if (!$appraisal->cycle?->requires_self_appraisal) {
+                 return response()->json(['success' => false, 'message' => 'لا يمكن إرجاع التقييم لأن هذه الدورة لا تحتوي على مرحلة تقييم ذاتي.'], 422);
+             }
+
+             $appraisal->update([
+                 'status' => 'pending_self',
+                 'return_reason' => $validated['return_reason'],
+                 'returned_at' => now(),
+             ]);
+
+             if ($appraisal->employee?->user) {
+                 $notificationService->sendInternalNotification(
+                     $appraisal->employee->user->id,
+                     'تم إرجاع تقييمك الذاتي للمراجعة',
+                     "أرجع مديرك تقييمك الذاتي في دورة ({$appraisal->cycle->title}) للمراجعة: {$validated['return_reason']}",
+                     'hr',
+                     $user->id
+                 );
+             }
+
+             return response()->json([
+                 'success' => true,
+                 'message' => 'تم إرجاع التقييم إلى الموظف للمراجعة.',
+                 'data' => $appraisal->fresh(),
+             ]);
+         }
+
+         if ($appraisal->status === 'pending_hr') {
+             if (!$hasManage) {
+                 return response()->json(['success' => false, 'message' => 'غير مصرح لك بإرجاع التقييم للمدير.'], 403);
+             }
+
+             $appraisal->update([
+                 'status' => 'pending_manager',
+                 'return_reason' => $validated['return_reason'],
+                 'returned_at' => now(),
+             ]);
+
+             $appraisal->evaluators()->update(['status' => 'pending']);
+
+             $notifiedIds = [];
+             foreach ($appraisal->evaluators as $evalItem) {
+                 if ($evalItem->evaluator_user_id && !in_array($evalItem->evaluator_user_id, $notifiedIds, true)) {
+                     $notifiedIds[] = $evalItem->evaluator_user_id;
+                     $notificationService->sendInternalNotification(
+                         $evalItem->evaluator_user_id,
+                         'تم إرجاع تقييم موظف للمراجعة',
+                         "أرجعت الموارد البشرية تقييم الموظف ({$appraisal->employee?->user?->name}) للمراجعة: {$validated['return_reason']}",
+                         'hr',
+                         $user->id
+                     );
+                 }
+             }
+
+             if ($appraisal->manager?->user && !in_array($appraisal->manager->user->id, $notifiedIds, true)) {
+                 $notificationService->sendInternalNotification(
+                     $appraisal->manager->user->id,
+                     'تم إرجاع تقييم موظف للمراجعة',
+                     "أرجعت الموارد البشرية تقييم الموظف ({$appraisal->employee?->user?->name}) للمراجعة: {$validated['return_reason']}",
+                     'hr',
+                     $user->id
+                 );
+             }
+
+             return response()->json([
+                 'success' => true,
+                 'message' => 'تم إرجاع التقييم إلى لجنة التقييم والمدير المباشر للمراجعة.',
+                 'data' => $appraisal->fresh(),
+             ]);
+         }
+
+         return response()->json(['success' => false, 'message' => 'لا يمكن إرجاع التقييم في هذه المرحلة.'], 422);
+     }
+
+     /**
+      * Final HR Approval of Appraisal from Mobile
+      */
+     public function approveAppraisalHrFromMobile(Request $request, $id)
+     {
+         $user = $request->user();
+         $appraisal = \App\Models\EmployeeAppraisal::with('employee.user')->findOrFail($id);
+
+         if ($appraisal->status !== 'pending_hr') {
+             return response()->json(['success' => false, 'message' => 'التقييم ليس في مرحلة اعتماد الموارد البشرية.'], 422);
+         }
+
+         if (!$user->hasPermission('إدارة التقييمات الإدارية')) {
+             return response()->json(['success' => false, 'message' => 'غير مصرح لك بالاعتماد النهائي للتقييم.'], 403);
+         }
+
+         $validated = $request->validate([
+             'hr_comments' => 'nullable|string',
+             'hr_signature' => 'nullable|string',
+             'strengths' => 'nullable|string|max:2000',
+             'improvement_areas' => 'nullable|string|max:2000',
+             'recommended_training' => 'nullable|string|max:2000',
+             'final_recommendation' => 'nullable|string|max:100',
+         ]);
+
+         $signaturePath = $appraisal->hr_signature;
+         if (!empty($validated['hr_signature'])) {
+             if (str_starts_with($validated['hr_signature'], 'data:image')) {
+                 $sigData = explode(',', $validated['hr_signature'])[1];
+                 $filename = 'appraisals/signatures/hr_' . uniqid() . '.png';
+                 \Illuminate\Support\Facades\Storage::disk('public')->put($filename, base64_decode($sigData));
+                 $signaturePath = $filename;
+             } else {
+                 $signaturePath = $validated['hr_signature'];
+             }
+         }
+
+         $appraisal->update([
+             'status' => 'completed',
+             'hr_comments' => $validated['hr_comments'] ?? $appraisal->hr_comments,
+             'hr_id' => $user->id,
+             'hr_signature' => $signaturePath,
+             'strengths' => $validated['strengths'] ?? $appraisal->strengths,
+             'improvement_areas' => $validated['improvement_areas'] ?? $appraisal->improvement_areas,
+             'recommended_training' => $validated['recommended_training'] ?? $appraisal->recommended_training,
+             'final_recommendation' => $validated['final_recommendation'] ?? $appraisal->final_recommendation,
+             'return_reason' => null,
+             'returned_at' => null,
+         ]);
+
+         if ($appraisal->employee && $appraisal->employee->user) {
+             $notificationService = new \App\Services\NotificationService();
+             $notificationService->sendInternalNotification(
+                 $appraisal->employee->user->id,
+                 'الاعتماد النهائي للتقييم',
+                 'تم الاعتماد النهائي لتقييم الأداء الخاص بك. يمكنك الآن الدخول للاطلاع على نتيجتك النهائية.',
+                 'hr',
+                 $user->id
+             );
+         }
+
+         return response()->json([
+             'success' => true,
+             'message' => 'تم الاعتماد النهائي للتقييم بنجاح.',
+             'data' => $appraisal->fresh(),
          ]);
      }
  

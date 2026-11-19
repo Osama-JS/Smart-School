@@ -5,19 +5,29 @@ import NewsWidget from '@/Components/NewsWidget';
 import {
     Calendar, Clock, Users, ShieldAlert,
     CheckCircle, XCircle, AlertCircle, FileText, ChevronLeft,
-    Sun, Moon, Quote, Plane, Edit3, PenTool, LayoutList, CheckSquare, Square,
-    Megaphone, ChevronRight, Target, Activity, Trash2, Plus, Loader2,
-    Cloud, Snowflake, Leaf, CloudRain, Thermometer, MapPin, Star,
-    TrendingUp, Award, Sparkles, Zap
+    Sun, Moon, Quote, Plane, Edit3, LayoutList, CheckSquare, Square,
+    ChevronRight, Target, Activity, Trash2, Plus, Loader2,
+    MapPin, Star, TrendingUp, Award, Sparkles, GraduationCap,
 } from 'lucide-react';
 
-export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeetings, pendingViolations, leaderboard, quickTasks = [], latestNews, performanceMetrics, todayTimeline = [], recentAppraisal }) {
-    // Dynamic Greeting Logic
+export default function EmployeeDashboard({
+    auth,
+    attendanceStatus,
+    upcomingMeetings = [],
+    pendingViolations = [],
+    pendingAppraisals = null,
+    leaderboard = [],
+    quickTasks = [],
+    latestNews,
+    performanceMetrics,
+    todayTimeline = [],
+    recentAppraisal,
+}) {
+    // Dynamic Greeting & Live Clock Logic
     const [greeting, setGreeting] = useState({ text: 'مرحباً', icon: Sun, color: 'text-amber-500' });
-
-    // Seasonal & Weather Logic
-    const [season, setSeason] = useState({ name: 'الربيع', gradient: 'from-primary-400 via-primary-500 to-primary-700', icon: Leaf });
-    const [weather, setWeather] = useState({ temp: '24°', condition: 'مشمس', icon: Sun });
+    const [timeStr, setTimeStr] = useState(() =>
+        new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+    );
 
     // Smart Dark Mode
     const [isDarkMode, setIsDarkMode] = useState(false);
@@ -152,31 +162,21 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
     const randomQuote = quotes[auth.user.id % quotes.length]; // Pseudo-random based on user ID
 
     useEffect(() => {
-        const hour = new Date().getHours();
-        if (hour >= 5 && hour < 12) {
-            setGreeting({ text: 'صباح الخير', icon: Sun, color: 'text-amber-500' });
-        } else if (hour >= 12 && hour < 17) {
-            setGreeting({ text: 'مساء الخير', icon: Sun, color: 'text-orange-500' });
-        } else {
-            setGreeting({ text: 'مساء الخير', icon: Moon, color: 'text-indigo-400' });
-        }
-    }, []);
-
-    useEffect(() => {
-        const month = new Date().getMonth();
-        if (month === 11 || month === 0 || month === 1) { // الشتاء
-            setSeason({ name: 'الشتاء', gradient: 'from-blue-400 via-indigo-500 to-purple-600', icon: Snowflake });
-            setWeather({ temp: '15°', condition: 'غائم جزئياً', icon: Cloud });
-        } else if (month >= 2 && month <= 4) { // الربيع
-            setSeason({ name: 'الربيع', gradient: 'from-primary-400 via-primary-500 to-primary-700', icon: Leaf });
-            setWeather({ temp: '22°', condition: 'ربيعي معتدل', icon: Sun });
-        } else if (month >= 5 && month <= 7) { // الصيف
-            setSeason({ name: 'الصيف', gradient: 'from-amber-400 via-orange-500 to-rose-600', icon: Sun });
-            setWeather({ temp: '38°', condition: 'مشمس وحار', icon: Sun });
-        } else { // الخريف
-            setSeason({ name: 'الخريف', gradient: 'from-orange-400 via-amber-500 to-yellow-600', icon: CloudRain });
-            setWeather({ temp: '26°', condition: 'معتدل', icon: Cloud });
-        }
+        const updateClockAndGreeting = () => {
+            const now = new Date();
+            const hour = now.getHours();
+            setTimeStr(now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }));
+            if (hour >= 5 && hour < 12) {
+                setGreeting({ text: 'صباح الخير', icon: Sun, color: 'text-amber-500' });
+            } else if (hour >= 12 && hour < 17) {
+                setGreeting({ text: 'مساء الخير', icon: Sun, color: 'text-orange-500' });
+            } else {
+                setGreeting({ text: 'مساء الخير', icon: Moon, color: 'text-indigo-400' });
+            }
+        };
+        updateClockAndGreeting();
+        const timer = setInterval(updateClockAndGreeting, 1000);
+        return () => clearInterval(timer);
     }, []);
 
     const formatTimeAr = (timeString) => {
@@ -320,20 +320,14 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
                                     </div>
                                 </div>
 
-                                {/* Weather/Season Widget */}
-                                <div className="flex-1 xl:flex-none flex items-center gap-3 bg-white/80 dark:bg-[#121820]/80 backdrop-blur-2xl border border-primary-100/40 dark:border-slate-700/80 p-2.5 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-primary-500/5 transition-all duration-300 hover:-translate-y-0.5 group/weather">
-                                    <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-500 flex items-center justify-center border border-primary-100 dark:border-primary-800/40 group-hover/weather:scale-105 transition-transform">
-                                        <season.icon size={20} className={season.name === 'الشتاء' ? 'text-blue-500' : season.name === 'الصيف' ? 'text-amber-500' : season.name === 'الخريف' ? 'text-orange-500' : 'text-primary-500'} />
+                                {/* Live Clock Widget */}
+                                <div className="flex-1 xl:flex-none flex items-center gap-3 bg-white/80 dark:bg-[#121820]/80 backdrop-blur-2xl border border-primary-100/40 dark:border-slate-700/80 p-2.5 rounded-2xl shadow-sm hover:shadow-lg hover:shadow-primary-500/5 transition-all duration-300 hover:-translate-y-0.5">
+                                    <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 flex items-center justify-center border border-primary-100 dark:border-primary-800/40">
+                                        <Clock size={20} />
                                     </div>
                                     <div className="flex flex-col">
-                                        <div className="flex items-center gap-1.5">
-                                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{season.name}</span>
-                                            <span className="w-1 h-1 rounded-full bg-primary-300 dark:bg-primary-600"></span>
-                                            <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">{weather.condition}</span>
-                                        </div>
-                                        <div className="flex items-baseline gap-1 mt-0.5">
-                                            <span className="text-lg font-black text-slate-700 dark:text-slate-200">{weather.temp}</span>
-                                        </div>
+                                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500">الوقت الحالي</span>
+                                        <span className="text-sm font-black font-mono text-slate-700 dark:text-slate-200 mt-0.5">{timeStr}</span>
                                     </div>
                                 </div>
 
@@ -370,26 +364,51 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
                                     <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px] sm:text-xs">كتابة تقرير</span>
                                 </Link>
 
-                                {/* Action 3: Violations */}
-                                <Link href={route('hr.employee-violations')} className="group relative overflow-hidden bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/60 dark:border-slate-700/50 p-2 sm:p-2.5 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent-500/10 hover:bg-white/70 dark:hover:bg-slate-800/60 flex items-center gap-2.5">
+                                {/* Action 3: My Violations */}
+                                <Link href={route('hr.my-violations')} className="group relative overflow-hidden bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/60 dark:border-slate-700/50 p-2 sm:p-2.5 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-accent-500/10 hover:bg-white/70 dark:hover:bg-slate-800/60 flex items-center gap-2.5">
                                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-accent-400 to-accent-600 text-white flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform shrink-0">
                                         <ShieldAlert size={16} className="group-hover:animate-pulse" />
                                     </div>
-                                    <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px] sm:text-xs">سجل المخالفات</span>
+                                    <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px] sm:text-xs">مخالفاتي وإقراراتي</span>
                                 </Link>
 
-                                {/* Action 4: Attendance */}
-                                <Link href={route('hr.attendance')} className="group relative overflow-hidden bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/60 dark:border-slate-700/50 p-2 sm:p-2.5 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-amber-500/10 hover:bg-white/70 dark:hover:bg-slate-800/60 flex items-center gap-2.5">
+                                {/* Action 4: My Appraisals */}
+                                <Link href={route('hr.appraisals.index')} className="group relative overflow-hidden bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/60 dark:border-slate-700/50 p-2 sm:p-2.5 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-amber-500/10 hover:bg-white/70 dark:hover:bg-slate-800/60 flex items-center gap-2.5">
                                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center shadow-sm group-hover:scale-110 group-hover:rotate-3 transition-transform shrink-0">
-                                        <Clock size={16} />
+                                        <Star size={16} />
                                     </div>
-                                    <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px] sm:text-xs">سجل الحضور</span>
+                                    <span className="font-bold text-slate-700 dark:text-slate-200 text-[10px] sm:text-xs">تقييماتي الإدارية</span>
                                 </Link>
                             </div>
                         </div>
                     </div>
                 </div>
 
+
+                {/* Actionable Appraisals Banner */}
+                {pendingAppraisals && pendingAppraisals.total > 0 && (
+                    <div className="bg-gradient-to-l from-indigo-600 to-purple-700 rounded-3xl p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                                <Star size={22} className="text-amber-300" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-base">لديك ({pendingAppraisals.total}) تقييم أداء بانتظار الإجراء</h3>
+                                <p className="text-xs text-indigo-100 mt-0.5 font-semibold">
+                                    {pendingAppraisals.self_count > 0 && `تقييمك الذاتي: ${pendingAppraisals.self_count} `}
+                                    {pendingAppraisals.evaluator_count > 0 && `| مهام لجنة التقييم: ${pendingAppraisals.evaluator_count} `}
+                                    {pendingAppraisals.hr_count > 0 && `| اعتماد HR: ${pendingAppraisals.hr_count}`}
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href={pendingAppraisals.items?.[0]?.id ? route('hr.appraisals.show', pendingAppraisals.items[0].id) : route('hr.appraisals.index')}
+                            className="shrink-0 px-5 py-2.5 rounded-2xl bg-white text-indigo-700 font-black text-xs hover:bg-indigo-50 transition-colors"
+                        >
+                            الانتقال للتقييم
+                        </Link>
+                    </div>
+                )}
 
                 {/* ─── News & Announcements (Full Width) ─── */}
                 <NewsWidget news={latestNews} />
@@ -485,13 +504,27 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
 
                                     <div className="flex flex-col md:flex-row gap-8 items-start md:items-center justify-between relative z-10">
                                         <div className="flex-1 w-full">
-                                            <div className="flex items-center gap-3 mb-5">
-                                                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-50 to-primary-50 dark:from-amber-900/20 dark:to-primary-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-100/50 dark:border-amber-800/30">
-                                                    <Star size={20} />
+                                            <div className="flex items-center justify-between gap-3 mb-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-50 to-primary-50 dark:from-amber-900/20 dark:to-primary-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400 border border-amber-100/50 dark:border-amber-800/30">
+                                                        <Star size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="text-lg font-black text-slate-800 dark:text-white">التقييم الأخير</h3>
+                                                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{recentAppraisal.cycle_name}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-lg font-black text-slate-800 dark:text-white">التقييم الأخير</h3>
-                                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{recentAppraisal.cycle_name}</p>
+                                                <div className="flex items-center gap-2">
+                                                    {recentAppraisal.final_recommendation && (
+                                                        <span className="px-3 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/40 text-xs font-black">
+                                                            {recentAppraisal.final_recommendation}
+                                                        </span>
+                                                    )}
+                                                    {recentAppraisal.id && (
+                                                        <Link href={route('hr.appraisals.show', recentAppraisal.id)} className="text-xs font-bold text-primary-600 hover:underline flex items-center gap-1">
+                                                            عرض التفاصيل <ChevronLeft size={14} />
+                                                        </Link>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -520,6 +553,12 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
                                                     </ul>
                                                 </div>
                                             </div>
+                                            {recentAppraisal.recommended_training && (
+                                                <div className="mt-4 p-3.5 bg-indigo-50/70 dark:bg-indigo-900/15 rounded-2xl border border-indigo-100 dark:border-indigo-800/30 flex items-center gap-2.5 text-xs font-bold text-indigo-800 dark:text-indigo-300">
+                                                    <GraduationCap size={16} className="text-indigo-500 shrink-0" />
+                                                    <span>التدريب المقترح: {recentAppraisal.recommended_training}</span>
+                                                </div>
+                                            )}
                                             {recentAppraisal.comments && (
                                                 <div className="mt-4 p-4 bg-slate-50/80 dark:bg-slate-900/40 rounded-2xl border border-slate-100/80 dark:border-slate-800/60">
                                                     <p className="text-sm text-slate-600 dark:text-slate-400 flex gap-2">
@@ -569,10 +608,10 @@ export default function EmployeeDashboard({ auth, attendanceStatus, upcomingMeet
                                                 attendanceStatus?.status === 'late' ? 'متأخر' :
                                                     attendanceStatus?.status === 'absent' ? 'غائب' : 'لم يُسجل الدخول'}
                                         </h3>
-                                        {attendanceStatus?.time_in ? (
+                                        {(attendanceStatus?.time_in || attendanceStatus?.check_in) ? (
                                             <div className="flex items-center gap-1.5 text-sm font-bold text-slate-500">
                                                 <Clock size={14} className={attendanceStatus?.status === 'late' ? 'text-amber-500' : 'text-primary-500'} />
-                                                <span>تم التسجيل الساعة {formatTimeAr(attendanceStatus.time_in)}</span>
+                                                <span>تم التسجيل الساعة {formatTimeAr(attendanceStatus.time_in || attendanceStatus.check_in)}</span>
                                             </div>
                                         ) : (
                                             <p className="text-xs text-slate-400">بانتظار تسجيل البصمة...</p>

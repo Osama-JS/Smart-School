@@ -61,13 +61,13 @@ class AppraisalCycleController extends Controller
 
     private function notifyEmployees(AppraisalCycle $cycle)
     {
-        $employees = \App\Models\Employee::with('user')->get();
+        $employees = \App\Models\Employee::with(['user', 'manager.user'])->get();
         $notificationService = new \App\Services\NotificationService();
         $senderId = \Illuminate\Support\Facades\Auth::id();
 
-        foreach ($employees as $employee) {
-            if ($employee->user) {
-                if ($cycle->requires_self_appraisal) {
+        if ($cycle->requires_self_appraisal) {
+            foreach ($employees as $employee) {
+                if ($employee->user && (!$cycle->branch_id || $employee->user->branch_id === $cycle->branch_id)) {
                     $notificationService->sendInternalNotification(
                         $employee->user->id,
                         'دورة تقييم جديدة',
@@ -75,10 +75,26 @@ class AppraisalCycleController extends Controller
                         'hr',
                         $senderId
                     );
-                } else {
-                    // Notify managers only or send a different message if self-appraisal is disabled.
-                    // For now, we will skip notifying the employee to do self-appraisal.
                 }
+            }
+            return;
+        }
+
+        $notifiedManagerIds = [];
+        foreach ($employees as $employee) {
+            if ($cycle->branch_id && $employee->user && $employee->user->branch_id !== $cycle->branch_id) {
+                continue;
+            }
+            $managerUser = $employee->manager?->user;
+            if ($managerUser && !in_array($managerUser->id, $notifiedManagerIds, true)) {
+                $notifiedManagerIds[] = $managerUser->id;
+                $notificationService->sendInternalNotification(
+                    $managerUser->id,
+                    'دورة تقييم جديدة بانتظار تقييم المدير',
+                    "تم تفعيل دورة التقييم ({$cycle->title}) بدون مرحلة تقييم ذاتي، يرجى البدء في تقييم مرؤوسيك.",
+                    'hr',
+                    $senderId
+                );
             }
         }
     }
