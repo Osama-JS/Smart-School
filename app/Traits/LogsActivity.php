@@ -40,7 +40,7 @@ trait LogsActivity
 
         $user = auth()->user();
         
-        $sensitiveFields = ['password', 'remember_token'];
+        $sensitiveFields = ['password', 'remember_token', 'visible_password'];
         
         if ($oldValues) {
             foreach ($sensitiveFields as $field) {

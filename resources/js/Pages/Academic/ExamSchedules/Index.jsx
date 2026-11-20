@@ -1,19 +1,39 @@
 import React, { useState } from 'react';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Calendar, Plus, Trash2, X, ChevronLeft, CalendarClock, Settings, Layers, CalendarDays, Search } from 'lucide-react';
+import { Calendar, Plus, Trash2, X, ChevronLeft, CalendarClock, Settings, Layers, CalendarDays, Search, Send, Archive, RotateCcw, CheckCircle2, FileEdit, Upload } from 'lucide-react';
 import ToastNotification from '@/Components/ToastNotification';
 import RichTextEditor from '@/Components/RichTextEditor';
 import SelectInput from '@/Components/SelectInput';
+import Swal from 'sweetalert2';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ar';
 
 dayjs.locale('ar');
 
+const STATUS_META = {
+    draft: {
+        label: 'مسودة',
+        badge: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 border-amber-200 dark:border-amber-500/30',
+        icon: FileEdit,
+    },
+    published: {
+        label: 'منشور ومعتمد',
+        badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/30',
+        icon: CheckCircle2,
+    },
+    archived: {
+        label: 'مؤرشف',
+        badge: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600',
+        icon: Archive,
+    },
+};
+
 export default function Index({ schedules, periods }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingSchedule, setEditingSchedule] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
     
     const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         title: '',
@@ -21,10 +41,14 @@ export default function Index({ schedules, periods }) {
         details: ''
     });
 
-    const filteredSchedules = schedules.filter(s => 
-        s.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        s.period?.month_name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredSchedules = schedules.filter((s) => {
+        const matchesSearch =
+            s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.period?.month_name?.toLowerCase().includes(searchQuery.toLowerCase());
+        const itemStatus = s.status || 'draft';
+        const matchesStatus = statusFilter === 'all' || itemStatus === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     const [toast, setToast] = useState(null);
 
@@ -75,6 +99,52 @@ export default function Index({ schedules, periods }) {
                 onSuccess: () => setToast({ message: 'تم الحذف بنجاح', type: 'success' })
             });
         }
+    };
+
+    const handlePublishSchedule = (schedule) => {
+        if ((schedule.items_count ?? 0) === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'الجدول فارغ',
+                text: 'لا يمكن اعتماد ونشر جدول فارغ. افتح الجدول وأضف الاختبارات أولاً.',
+                confirmButtonText: 'حسناً',
+            });
+            return;
+        }
+
+        Swal.fire({
+            icon: 'question',
+            title: 'اعتماد ونشر الجدول',
+            text: `سيتم نشر "${schedule.title}" وإرسال إشعارات فورية للطلاب وأولياء الأمور والمعلمين المراقبين.`,
+            showCancelButton: true,
+            confirmButtonText: 'نعم، اعتمد وانشر',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#10b981',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                router.post(route('academic.exam-schedules.publish', schedule.id), {}, {
+                    preserveScroll: true,
+                    onSuccess: (page) => {
+                        setToast({
+                            message: page?.props?.flash?.success || 'تم اعتماد ونشر الجدول وإرسال الإشعارات بنجاح!',
+                            type: 'success',
+                        });
+                    },
+                });
+            }
+        });
+    };
+
+    const handleStatusUpdate = (schedule, targetStatus) => {
+        router.patch(route('academic.exam-schedules.status', schedule.id), { status: targetStatus }, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                setToast({
+                    message: page?.props?.flash?.success || 'تم تحديث حالة الجدول بنجاح',
+                    type: 'success',
+                });
+            },
+        });
     };
 
     return (
@@ -139,18 +209,57 @@ export default function Index({ schedules, periods }) {
                     </div>
                 </div>
 
+                {/* Status Filter Tabs */}
+                <div className="flex flex-wrap items-center gap-2">
+                    {[
+                        { key: 'all', label: `الكل (${schedules.length})` },
+                        { key: 'draft', label: `مسودة (${schedules.filter(s => (s.status || 'draft') === 'draft').length})` },
+                        { key: 'published', label: `منشور (${schedules.filter(s => s.status === 'published').length})` },
+                        { key: 'archived', label: `مؤرشف (${schedules.filter(s => s.status === 'archived').length})` },
+                    ].map((tab) => (
+                        <button
+                            key={tab.key}
+                            type="button"
+                            onClick={() => setStatusFilter(tab.key)}
+                            className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${
+                                statusFilter === tab.key
+                                    ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-primary-300'
+                            }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Schedules Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredSchedules.length > 0 ? filteredSchedules.map((schedule) => (
+                    {filteredSchedules.length > 0 ? filteredSchedules.map((schedule) => {
+                        const statusKey = schedule.status || 'draft';
+                        const statusInfo = STATUS_META[statusKey] || STATUS_META.draft;
+                        const StatusIcon = statusInfo.icon;
+
+                        return (
                         <div key={schedule.id} className="group bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgba(var(--color-primary-500),0.15)] hover:border-primary-500/30 dark:hover:border-primary-500/30 transition-all duration-300 flex flex-col overflow-hidden relative translate-y-0 hover:-translate-y-1.5">
                             <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary-400 to-primary-600 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
                             
                             <div className="p-6 flex-1 relative z-10">
                                 <div className="absolute top-6 right-6 w-20 h-20 bg-primary-500/5 rounded-full blur-xl pointer-events-none group-hover:bg-primary-500/10 transition-colors"></div>
                                 
-                                <div className="flex justify-between items-start mb-6">
-                                    <div className="bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 p-4 rounded-2xl ring-1 ring-primary-100 dark:ring-primary-800/50 group-hover:bg-primary-500 group-hover:text-white group-hover:ring-primary-500 group-hover:shadow-lg group-hover:shadow-primary-500/30 transition-all duration-300">
-                                        <CalendarClock size={28} />
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 p-4 rounded-2xl ring-1 ring-primary-100 dark:ring-primary-800/50 group-hover:bg-primary-500 group-hover:text-white group-hover:ring-primary-500 group-hover:shadow-lg group-hover:shadow-primary-500/30 transition-all duration-300">
+                                            <CalendarClock size={28} />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black border w-fit ${statusInfo.badge}`}>
+                                                <StatusIcon size={12} />
+                                                {statusInfo.label}
+                                            </span>
+                                            <span className="text-[11px] font-bold text-slate-400">
+                                                {schedule.items_count ?? 0} مادة مجدولة
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="flex gap-2 z-20">
                                         <button 
@@ -189,18 +298,70 @@ export default function Index({ schedules, periods }) {
                                 </div>
                             </div>
 
-                            <div className="p-4 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/20">
+                            <div className="p-4 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/20 space-y-2">
                                 <Link 
                                     href={route('academic.exam-schedules.show', schedule.id)}
-                                    className="relative flex items-center justify-center gap-2 w-full py-3.5 px-4 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 font-black rounded-xl ring-2 ring-primary-100 dark:ring-primary-900/50 hover:ring-primary-500 hover:text-white hover:bg-primary-600 dark:hover:bg-primary-500 dark:hover:text-white transition-all shadow-sm group/btn overflow-hidden"
+                                    className="relative flex items-center justify-center gap-2 w-full py-3 px-4 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 font-black rounded-xl ring-2 ring-primary-100 dark:ring-primary-900/50 hover:ring-primary-500 hover:text-white hover:bg-primary-600 dark:hover:bg-primary-500 dark:hover:text-white transition-all shadow-sm group/btn overflow-hidden"
                                 >
                                     <div className="absolute inset-0 bg-gradient-to-r from-primary-500 to-primary-600 opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
                                     <span className="relative z-10">إدارة وتصميم الجدول</span>
                                     <ChevronLeft size={18} className="rtl:rotate-180 relative z-10 transition-transform group-hover/btn:-translate-x-1" />
                                 </Link>
+
+                                <div className="flex items-center gap-2">
+                                    <Link
+                                        href={`${route('academic.exam-schedules.show', schedule.id)}?import=1`}
+                                        className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-black bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white dark:bg-indigo-500/15 dark:text-indigo-300 dark:hover:bg-indigo-600 dark:hover:text-white border border-indigo-200 dark:border-indigo-500/30 transition-colors"
+                                        title="استيراد جدول من Excel/CSV أو جدول سابق"
+                                    >
+                                        <Upload size={13} />
+                                        استيراد Excel
+                                    </Link>
+                                    {statusKey !== 'published' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handlePublishSchedule(schedule)}
+                                            className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-600 dark:hover:text-white border border-emerald-200 dark:border-emerald-500/30 transition-colors"
+                                        >
+                                            <Send size={13} />
+                                            اعتماد ونشر
+                                        </button>
+                                    )}
+                                    {statusKey === 'published' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleStatusUpdate(schedule, 'draft')}
+                                            className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-black bg-amber-50 text-amber-700 hover:bg-amber-500 hover:text-white dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 transition-colors"
+                                        >
+                                            <RotateCcw size={13} />
+                                            إرجاع لمسودة
+                                        </button>
+                                    )}
+                                    {statusKey !== 'archived' ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleStatusUpdate(schedule, 'archived')}
+                                            className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors"
+                                            title="أرشفة الجدول"
+                                        >
+                                            <Archive size={13} />
+                                            أرشفة
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => handleStatusUpdate(schedule, 'draft')}
+                                            className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-200 transition-colors"
+                                        >
+                                            <RotateCcw size={13} />
+                                            استعادة كمسودة
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
-                    )) : (
+                        );
+                    }) : (
                         <div className="col-span-full py-20 px-6 text-center bg-white dark:bg-slate-800 rounded-3xl border border-slate-200/60 dark:border-slate-700/60 shadow-[0_8px_30px_rgb(0,0,0,0.06)] relative overflow-hidden">
                             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4wNSkiLz48L3N2Zz4=')] [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-50"></div>
                             <div className="relative z-10 flex flex-col items-center">

@@ -108,7 +108,7 @@ export default function StudentGradeReport({ student, enrollment, reportData }) 
                                                                     <div className="font-bold text-slate-800">{month.scores?.homework_total ?? '-'} / {subject.settings?.weekly_homework_max * subject.settings?.weeks_per_month}</div>
                                                                 </div>
                                                                 <div className="bg-white py-2 rounded border border-slate-100">
-                                                                    <div className="text-slate-500 text-xs">السلوك</div>
+                                                                    <div className="text-slate-500 text-xs">المواظبة</div>
                                                                     <div className="font-bold text-slate-800">{month.scores?.behavior ?? '-'} / {subject.settings?.monthly_behavior_max}</div>
                                                                 </div>
                                                                 <div className="bg-white py-2 rounded border border-slate-100">

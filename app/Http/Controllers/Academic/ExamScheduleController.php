@@ -20,7 +20,8 @@ class ExamScheduleController extends Controller
     {
         $branchId = auth()->user()->branch_id;
         
-        $schedulesQuery = ExamSchedule::with(['period.semester.academicYear']);
+        $schedulesQuery = ExamSchedule::with(['period.semester.academicYear', 'publisher:id,name'])
+            ->withCount('items');
         
         if ($branchId) {
             $schedulesQuery->whereHas('period', function ($q) use ($branchId) {
@@ -51,9 +52,10 @@ class ExamScheduleController extends Controller
             'details' => 'nullable|string',
         ]);
 
+        $validated['status'] = 'draft';
         $schedule = ExamSchedule::create($validated);
 
-        return redirect()->route('academic.exam-schedules.show', $schedule->id)->with('success', 'تم إنشاء جدول الاختبار بنجاح. يمكنك الآن بناء الجدول.');
+        return redirect()->route('academic.exam-schedules.show', $schedule->id)->with('success', 'تم إنشاء جدول الاختبار كمسودة بنجاح. يمكنك الآن بناء الجدول.');
     }
 
     public function update(Request $request, ExamSchedule $examSchedule)
@@ -106,12 +108,25 @@ class ExamScheduleController extends Controller
         }
         $teachers = $teachersQuery->get(['id', 'name']);
 
+        $previousSchedulesQuery = ExamSchedule::with(['period.semester.academicYear', 'items.division.grade', 'items.subject', 'items.proctors'])
+            ->where('id', '!=', $examSchedule->id)
+            ->has('items')
+            ->latest()
+            ->limit(20);
+        if ($branchId) {
+            $previousSchedulesQuery->whereHas('period', function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+        $previousSchedules = $previousSchedulesQuery->get();
+
         return Inertia::render('Academic/ExamSchedules/Builder', [
             'examSchedule' => $examSchedule,
             'grades' => $grades,
             'subjects' => $subjects,
             'holidays' => $holidays,
             'teachers' => $teachers,
+            'previousSchedules' => $previousSchedules,
         ]);
     }
 
@@ -122,7 +137,108 @@ class ExamScheduleController extends Controller
             abort(403);
         }
 
-        $validated = $request->validate([
+        $validated = $this->validateItemsPayload($request, $branchId);
+
+        $shouldPublish = $request->boolean('publish');
+        if ($shouldPublish && empty($validated['items'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'items' => ['لا يمكن اعتماد ونشر جدول فارغ. يرجى إضافة اختبار واحد على الأقل أولاً.'],
+            ]);
+        }
+
+        if (!empty($validated['items'])) {
+            $this->checkForConflicts($validated['items'], $branchId, $examSchedule->id);
+        }
+
+        DB::transaction(function () use ($examSchedule, $validated, $shouldPublish) {
+            $this->persistItems($examSchedule, $validated['items'] ?? []);
+
+            if ($shouldPublish) {
+                $examSchedule->update([
+                    'status' => 'published',
+                    'published_at' => now(),
+                    'published_by' => auth()->id(),
+                ]);
+            }
+        });
+
+        if ($shouldPublish) {
+            $counts = app(\App\Services\AutomaticNotificationService::class)
+                ->notifyExamSchedulePublished($examSchedule->fresh(), auth()->id());
+
+            return redirect()->back()->with(
+                'success',
+                "تم اعتماد ونشر الجدول بنجاح وإرسال إشعارات فورية لـ {$counts['students']} طالب و {$counts['parents']} ولي أمر و {$counts['teachers']} معلم."
+            );
+        }
+
+        return redirect()->back()->with('success', 'تم حفظ الجدول بنجاح.');
+    }
+
+    public function importItems(Request $request, ExamSchedule $examSchedule)
+    {
+        $branchId = auth()->user()->branch_id;
+        if ($branchId && $examSchedule->period && $examSchedule->period->branch_id !== $branchId) {
+            abort(403);
+        }
+
+        $validated = $this->validateItemsPayload($request, $branchId, [
+            'mode' => 'required|in:merge,replace',
+            'items' => 'required|array|min:1',
+        ]);
+
+        $incomingItems = array_map(function ($itemData) {
+            $itemData['exam_date'] = \Carbon\Carbon::parse($itemData['exam_date'])->format('Y-m-d');
+            $itemData['start_time'] = !empty($itemData['start_time']) ? substr($itemData['start_time'], 0, 5) : null;
+            $itemData['end_time'] = !empty($itemData['end_time']) ? substr($itemData['end_time'], 0, 5) : null;
+            return $itemData;
+        }, $validated['items']);
+
+        if ($validated['mode'] === 'replace') {
+            $finalItems = $incomingItems;
+        } else {
+            $mergedMap = [];
+            $existingItems = $examSchedule->items()->with('proctors')->get();
+            foreach ($existingItems as $existing) {
+                $dateKey = $existing->exam_date ? $existing->exam_date->format('Y-m-d') : '';
+                $key = "{$existing->division_id}_{$existing->subject_id}_{$dateKey}";
+                $mergedMap[$key] = [
+                    'division_id' => $existing->division_id,
+                    'subject_id'  => $existing->subject_id,
+                    'exam_date'   => $dateKey,
+                    'start_time'  => $existing->start_time ? substr($existing->start_time, 0, 5) : null,
+                    'end_time'    => $existing->end_time ? substr($existing->end_time, 0, 5) : null,
+                    'room'        => $existing->room,
+                    'syllabus'    => $existing->syllabus ?? '',
+                    'proctor_ids' => $existing->proctors->pluck('id')->all(),
+                ];
+            }
+
+            foreach ($incomingItems as $incoming) {
+                $key = "{$incoming['division_id']}_{$incoming['subject_id']}_{$incoming['exam_date']}";
+                $mergedMap[$key] = $incoming;
+            }
+
+            $finalItems = array_values($mergedMap);
+        }
+
+        if (!empty($finalItems)) {
+            $this->checkForConflicts($finalItems, $branchId, $examSchedule->id);
+        }
+
+        DB::transaction(function () use ($examSchedule, $finalItems) {
+            $this->persistItems($examSchedule, $finalItems);
+        });
+
+        return redirect()->back()->with(
+            'success',
+            'تم استيراد ' . count($validated['items']) . ' اختبار بنجاح وحفظ الجدول.'
+        );
+    }
+
+    private function validateItemsPayload(Request $request, ?int $branchId, array $extraRules = []): array
+    {
+        $rules = array_merge([
             'items' => 'array',
             'items.*.division_id' => 'required|exists:divisions,id',
             'items.*.subject_id' => 'required|exists:subjects,id',
@@ -138,38 +254,80 @@ class ExamScheduleController extends Controller
                     if ($branchId) {
                         $query->where('branch_id', $branchId);
                     }
-                })
+                }),
             ],
-        ]);
+        ], $extraRules);
 
-        if (!empty($validated['items'])) {
-            $this->checkForConflicts($validated['items'], $branchId, $examSchedule->id);
+        return $request->validate($rules);
+    }
+
+    private function persistItems(ExamSchedule $examSchedule, array $items): void
+    {
+        $examSchedule->items()->delete();
+
+        foreach ($items as $itemData) {
+            $item = ExamScheduleItem::create([
+                'schedule_id' => $examSchedule->id,
+                'division_id' => $itemData['division_id'],
+                'subject_id'  => $itemData['subject_id'],
+                'exam_date'   => $itemData['exam_date'],
+                'start_time'  => $itemData['start_time'] ?? null,
+                'end_time'    => $itemData['end_time'] ?? null,
+                'room'        => $itemData['room'] ?? null,
+                'syllabus'    => $itemData['syllabus'] ?? '',
+            ]);
+
+            if (!empty($itemData['proctor_ids'])) {
+                $item->proctors()->attach($itemData['proctor_ids']);
+            }
+        }
+    }
+
+    public function publish(ExamSchedule $examSchedule)
+    {
+        $branchId = auth()->user()->branch_id;
+        if ($branchId && $examSchedule->period && $examSchedule->period->branch_id !== $branchId) {
+            abort(403);
         }
 
-        DB::transaction(function () use ($examSchedule, $validated) {
-            $examSchedule->items()->delete();
+        if ($examSchedule->items()->count() === 0) {
+            return redirect()->back()->with('error', 'لا يمكن اعتماد ونشر جدول فارغ. يرجى إضافة اختبار واحد على الأقل.');
+        }
 
-            if (!empty($validated['items'])) {
-                foreach ($validated['items'] as $itemData) {
-                    $item = ExamScheduleItem::create([
-                        'schedule_id' => $examSchedule->id,
-                        'division_id' => $itemData['division_id'],
-                        'subject_id'  => $itemData['subject_id'],
-                        'exam_date'   => $itemData['exam_date'],
-                        'start_time'  => $itemData['start_time'] ?? null,
-                        'end_time'    => $itemData['end_time'] ?? null,
-                        'room'        => $itemData['room'] ?? null,
-                        'syllabus'    => $itemData['syllabus'] ?? '',
-                    ]);
+        $examSchedule->update([
+            'status' => 'published',
+            'published_at' => now(),
+            'published_by' => auth()->id(),
+        ]);
 
-                    if (!empty($itemData['proctor_ids'])) {
-                        $item->proctors()->attach($itemData['proctor_ids']);
-                    }
-                }
-            }
-        });
+        $counts = app(\App\Services\AutomaticNotificationService::class)
+            ->notifyExamSchedulePublished($examSchedule->fresh(), auth()->id());
 
-        return redirect()->back()->with('success', 'تم حفظ الجدول بنجاح.');
+        return redirect()->back()->with(
+            'success',
+            "تم اعتماد ونشر الجدول بنجاح وإرسال إشعارات فورية لـ {$counts['students']} طالب و {$counts['parents']} ولي أمر و {$counts['teachers']} معلم."
+        );
+    }
+
+    public function updateStatus(Request $request, ExamSchedule $examSchedule)
+    {
+        $branchId = auth()->user()->branch_id;
+        if ($branchId && $examSchedule->period && $examSchedule->period->branch_id !== $branchId) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:draft,published,archived',
+        ]);
+
+        if ($validated['status'] === 'published') {
+            return $this->publish($examSchedule);
+        }
+
+        $examSchedule->update(['status' => $validated['status']]);
+
+        $label = $validated['status'] === 'archived' ? 'أرشفة الجدول' : 'إعادة الجدول إلى مسودة';
+        return redirect()->back()->with('success', "تم {$label} بنجاح.");
     }
 
     private function checkForConflicts(array $items, $branchId, $examScheduleId)
@@ -232,6 +390,9 @@ class ExamScheduleController extends Controller
         if ($existingItems->isEmpty()) return;
 
         foreach ($items as $item1) {
+            $start1 = $item1['start_time'] ?? null;
+            $end1 = $item1['end_time'] ?? null;
+            $date1 = $item1['exam_date'] ?? null;
             $room1 = $item1['room'] ?? null;
             $proctors1 = $item1['proctor_ids'] ?? [];
 

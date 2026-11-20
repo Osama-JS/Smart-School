@@ -26,8 +26,9 @@ class ExamScheduleController extends Controller
             ]);
         }
 
-        // Fetch the schedules that have items where the user is assigned as a proctor.
-        $schedules = ExamSchedule::with([
+        // Fetch published schedules that have items where the user is assigned as a proctor.
+        $schedules = ExamSchedule::published()
+        ->with([
             'period.semester.academicYear',
             'items' => function($query) use ($user) {
                 // Load only items where the user is a proctor
@@ -54,6 +55,10 @@ class ExamScheduleController extends Controller
 
     public function print(ExamSchedule $examSchedule, Request $request)
     {
+        if ($examSchedule->status !== 'published') {
+            abort(403, 'هذا الجدول غير منشور بعد.');
+        }
+
         $user = auth()->user();
         
         $employee = Employee::where('user_id', $user->id)->first();

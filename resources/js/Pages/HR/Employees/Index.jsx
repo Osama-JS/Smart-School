@@ -12,368 +12,11 @@ import {
     XCircle, ChevronDown, ArrowUpRight, ArrowDownRight, Upload
 } from 'lucide-react';
 import ImportModal from './Components/ImportModal';
-import Swal from 'sweetalert2';
-
-// ─── Helper: Print Template ───────────────────────────────────────────────────
-const printCredentials = (name, username, password = null, logoUrl = '') => {
-    const printWindow = window.open('', '_blank');
-    const pwdDisplay = password ? password : '<span style="color:#94a3b8; letter-spacing:4px; font-size:18px;">••••••••</span>';
-    const pwdNote = password 
-        ? 'الرجاء الاحتفاظ بهذه الورقة في مكان آمن وعدم مشاركتها مع أي شخص.'
-        : 'كلمة المرور مخفية لدواعي أمنية. في حال فقدانها يرجى طلب إعادة تعيين من الإدارة.';
-    
-    // Fallback logo if none provided
-    const logoHtml = logoUrl 
-        ? '<img src="' + logoUrl + '" class="logo" />'
-        : '<svg class="logo-svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>';
-
-    const dateStr = new Date().toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
-
-    printWindow.document.write(`
-        <html dir="rtl">
-        <head>
-            <title>بيانات الدخول - ${name}</title>
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
-                
-                :root {
-                    --primary: #0f1419; /* Brand Black */
-                    --secondary: #6b9b37; /* Brand Green */
-                    --accent: #cc2b2b; /* Brand Red */
-                    --gray-light: #f8fafc;
-                    --gray-border: #e2e8f0;
-                    --gray-text: #64748b;
-                }
-                
-                body { 
-                    font-family: 'Tajawal', system-ui, sans-serif; 
-                    background: #f1f5f9; 
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    min-height: 100vh;
-                    margin: 0;
-                    padding: 40px;
-                }
-                
-                .print-card {
-                    background: #ffffff;
-                    width: 100%;
-                    max-width: 100%;
-                    border-radius: 20px;
-                    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
-                    overflow: hidden;
-                    position: relative;
-                    border: 1px solid var(--gray-border);
-                }
-
-                .print-header {
-                    background: var(--secondary);
-                    color: white;
-                    padding: 40px 30px;
-                    text-align: center;
-                    position: relative;
-                    overflow: hidden;
-                }
-                
-                .print-header::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -20px;
-                    left: 0;
-                    right: 0;
-                    height: 40px;
-                    background: #ffffff;
-                    transform: skewY(-3deg);
-                }
-
-                .logo-container {
-                    display: inline-flex;
-                    justify-content: center;
-                    align-items: center;
-                    background: white;
-                    width: 80px;
-                    height: 80px;
-                    border-radius: 50%;
-                    margin-bottom: 15px;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    position: relative;
-                    z-index: 2;
-                }
-
-                .logo {
-                    width: 50px;
-                    height: 50px;
-                    object-fit: contain;
-                }
-                
-                .logo-svg {
-                    width: 40px;
-                    height: 40px;
-                    color: var(--secondary);
-                }
-
-                .document-title {
-                    margin: 0;
-                    font-size: 28px;
-                    font-weight: 900;
-                    letter-spacing: -0.5px;
-                    position: relative;
-                    z-index: 2;
-                }
-
-                .document-subtitle {
-                    margin: 5px 0 0;
-                    font-size: 15px;
-                    color: #cbd5e1;
-                    font-weight: 500;
-                    position: relative;
-                    z-index: 2;
-                }
-
-                .print-body {
-                    padding: 30px 40px 40px;
-                    position: relative;
-                }
-
-                .watermark {
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%) rotate(-30deg);
-                    font-size: 140px;
-                    font-weight: 900;
-                    color: rgba(0, 0, 0, 0.02);
-                    white-space: nowrap;
-                    z-index: 0;
-                    pointer-events: none;
-                }
-
-                .employee-section {
-                    text-align: center;
-                    margin-bottom: 35px;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                .greeting {
-                    color: var(--gray-text);
-                    font-size: 16px;
-                    margin-bottom: 5px;
-                }
-
-                .employee-name {
-                    font-size: 26px;
-                    font-weight: 800;
-                    color: var(--primary);
-                    margin: 0;
-                    display: inline-block;
-                    border-bottom: 4px solid var(--secondary);
-                    padding-bottom: 5px;
-                }
-
-                .credentials-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 15px;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                .cred-box {
-                    background: var(--gray-light);
-                    border: 1px solid var(--gray-border);
-                    border-radius: 12px;
-                    padding: 20px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 15px;
-                    position: relative;
-                    overflow: hidden;
-                }
-
-                .cred-box::before {
-                    content: '';
-                    position: absolute;
-                    right: 0;
-                    top: 0;
-                    bottom: 0;
-                    width: 6px;
-                    background: var(--secondary);
-                }
-
-                .cred-box.password-box::before {
-                    background: var(--accent);
-                }
-
-                .cred-label {
-                    color: var(--gray-text);
-                    font-size: 16px;
-                    font-weight: 700;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                }
-
-                .cred-icon {
-                    width: 22px;
-                    height: 22px;
-                    opacity: 0.8;
-                }
-
-                .cred-value {
-                    font-family: 'SF Mono', 'Courier New', monospace;
-                    font-size: 20px;
-                    font-weight: 900;
-                    color: var(--primary);
-                    direction: ltr;
-                    letter-spacing: 1px;
-                    background: white;
-                    padding: 10px;
-                    border-radius: 8px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-                    border: 1px dashed #cbd5e1;
-                    width: 100%;
-                    text-align: center;
-                    box-sizing: border-box;
-                }
-
-                .print-footer {
-                    margin-top: 35px;
-                    padding-top: 20px;
-                    border-top: 2px dashed var(--gray-border);
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 10px;
-                    font-size: 13px;
-                    position: relative;
-                    z-index: 1;
-                }
-
-                .security-note {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    color: #ef4444;
-                    font-weight: 700;
-                    background: #fef2f2;
-                    padding: 8px 16px;
-                    border-radius: 8px;
-                    border: 1px solid #fca5a5;
-                }
-                
-                .date-stamp {
-                    color: var(--gray-text);
-                    font-weight: 500;
-                }
-
-                @media print { 
-                    body { 
-                        background: #fff; 
-                        padding: 0;
-                        align-items: flex-start;
-                    } 
-                    .print-card { 
-                        box-shadow: none; 
-                        border: none;
-                        margin: 0;
-                        border-radius: 0;
-                    }
-                    * {
-                        -webkit-print-color-adjust: exact !important;
-                        color-adjust: exact !important;
-                    }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="print-card">
-                <div class="print-header">
-                    <div class="logo-container">
-                        ${logoHtml}
-                    </div>
-                    <h1 class="document-title">بطاقة الصلاحيات</h1>
-                    <p class="document-subtitle">وثيقة تسليم بيانات الدخول النظام</p>
-                </div>
-                
-                <div class="print-body">
-                    <div class="watermark">سري وخاص</div>
-                    
-                    <div class="employee-section">
-                        <div class="greeting">السيد/ة،</div>
-                        <h2 class="employee-name">${name}</h2>
-                    </div>
-
-                    <div class="credentials-grid">
-                        <div class="cred-box">
-                            <div class="cred-label">
-                                <svg class="cred-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                </svg>
-                                اسم المستخدم:
-                            </div>
-                            <div class="cred-value">${username}</div>
-                        </div>
-                        
-                        <div class="cred-box password-box">
-                            <div class="cred-label">
-                                <svg class="cred-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                </svg>
-                                كلمة المرور:
-                            </div>
-                            <div class="cred-value">${pwdDisplay}</div>
-                        </div>
-                    </div>
-
-                    <div class="print-footer">
-                        <div class="security-note">
-                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            <span>${pwdNote}</span>
-                        </div>
-                        <div class="date-stamp">
-                            تاريخ الإصدار: ${dateStr}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <script>
-                window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 800); }
-            </script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
-};
-
-// ─── Modal ────────────────────────────────────────────────────────────────────
-function Modal({ isOpen, onClose, title, children }) {
-    useEffect(() => {
-        document.body.style.overflow = isOpen ? 'hidden' : '';
-        return () => { document.body.style.overflow = ''; };
-    }, [isOpen]);
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-fade-in" onClick={onClose} />
-            <div className="relative bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl w-full max-w-lg z-10 overflow-hidden border border-white/20 dark:border-slate-800/80 animate-scale-in">
-                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                    <h3 className="text-lg font-bold text-slate-850 dark:text-white">{title}</h3>
-                    <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">✕</button>
-                </div>
-                <div className="p-6 max-h-[75vh] overflow-y-auto">{children}</div>
-            </div>
-        </div>
-    );
-}
+import ResetPasswordModal from './Components/ResetPasswordModal';
+import CredentialsPrintModal from './Components/CredentialsPrintModal';
 
 // ─── Action Menu ──────────────────────────────────────────────────────────────
-function ActionMenu({ emp }) {
+function ActionMenu({ emp, onOpenPrint, onOpenResetPassword }) {
     const [open, setOpen] = useState(false);
     const ref = useRef(null);
     useEffect(() => {
@@ -381,16 +24,6 @@ function ActionMenu({ emp }) {
         document.addEventListener('mousedown', h);
         return () => document.removeEventListener('mousedown', h);
     }, []);
-    const handlePrint = (e) => {
-        e.stopPropagation();
-        setOpen(false);
-        const name = emp.name || 'مجهول';
-        const username = emp.username || 'مجهول';
-        
-        // Use the global window object to find logo_url if needed, or pass empty string
-        const logoUrl = document.querySelector('link[rel="icon"]')?.href || '';
-        printCredentials(name, username, null, logoUrl);
-    };
 
     return (
         <div ref={ref} className="relative">
@@ -400,12 +33,20 @@ function ActionMenu({ emp }) {
             </button>
             {open && (
                 <div className="absolute left-0 top-full mt-1.5 w-48 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 z-20 overflow-hidden animate-slide-down">
-                    <button onClick={handlePrint} className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onOpenPrint(emp); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right"
+                    >
                         <Printer size={14} className="text-indigo-500" /> طباعة بيانات الدخول
                     </button>
-                    <Link href={route('hr.employees.reset-password', emp.id)} method="post" as="button" preserveScroll className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onOpenResetPassword(emp); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right"
+                    >
                         <RotateCcw size={14} className="text-emerald-500" /> إعادة تعيين كلمة المرور
-                    </Link>
+                    </button>
                     <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                     <Link href={route('hr.employees.edit', emp.id)} className="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-850 transition-colors text-right">
                         <Edit2 size={14} className="text-primary-500" /> تعديل البيانات
@@ -452,7 +93,7 @@ function Pagination({ data }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function EmployeesIndex({ employees, stats, departments, jobGrades, filters }) {
-    const { flash, logo_url } = usePage().props;
+    const { flash, logo_url, reportDesign } = usePage().props;
     
     // Safety check for filters properties
     const getFilterVal = (key, fallback = '') => {
@@ -473,6 +114,10 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
     const [showFilters, setShowFilters] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
+    const [resetPasswordEmployee, setResetPasswordEmployee] = useState(null);
+    const [printCredentialsData, setPrintCredentialsData] = useState(null);
+    const [isQuickResetting, setIsQuickResetting] = useState(false);
+    const lastFlashKeyRef = useRef(null);
     const searchInputRef = useRef(null);
     const isFirstRender = useRef(true);
 
@@ -500,60 +145,69 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
 
     // Check for generated credentials flash message
     useEffect(() => {
-        if (flash?.generated_credentials) {
-            const { name, username, password } = flash.generated_credentials;
-            Swal.fire({
-                title: 'تم إنشاء الحساب بنجاح!',
-                html: `
-                    <div class="text-right" dir="rtl">
-                        <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">تم توليد بيانات الدخول للموظف <b>${name}</b> آلياً:</p>
-                        <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                            <div class="flex justify-between items-center mb-3">
-                                <span class="text-slate-500 dark:text-slate-400 text-sm">اسم المستخدم:</span>
-                                <span class="font-mono font-bold text-slate-800 dark:text-slate-200 text-lg" dir="ltr">${username}</span>
-                            </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-slate-500 dark:text-slate-400 text-sm">كلمة المرور:</span>
-                                <span class="font-mono font-bold text-slate-800 dark:text-slate-200 text-lg" dir="ltr">${password}</span>
-                            </div>
-                        </div>
-                    </div>
-                `,
-                icon: 'success',
-                confirmButtonText: 'حسناً',
-                showCancelButton: true,
-                cancelButtonText: 'نسخ',
-                cancelButtonColor: '#3b82f6',
-                showDenyButton: true,
-                denyButtonText: 'طباعة',
-                denyButtonColor: '#64748b',
-                customClass: {
-                    container: 'font-sans',
-                    popup: 'dark:bg-slate-900 dark:border dark:border-slate-800',
-                    title: 'text-xl font-bold dark:text-white',
-                    actions: 'gap-2 flex-wrap'
-                }
-            }).then((result) => {
-                if (result.isDenied) {
-                    printCredentials(name, username, password, logo_url);
-                } else if (result.dismiss === Swal.DismissReason.cancel) {
-                    navigator.clipboard.writeText(`اسم المستخدم: ${username}\nكلمة المرور: ${password}`);
-                    Swal.fire({
-                        title: 'تم النسخ!',
-                        text: 'تم نسخ بيانات الدخول إلى الحافظة بنجاح.',
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false,
-                        customClass: {
-                            popup: 'dark:bg-slate-900 dark:border dark:border-slate-800',
-                            title: 'dark:text-white',
-                            htmlContainer: 'dark:text-slate-300'
-                        }
-                    });
-                }
-            });
-        }
+        const creds = flash?.generated_credentials;
+        if (!creds) return;
+        const flashKey = creds.issued_at || JSON.stringify(creds);
+        if (lastFlashKeyRef.current === flashKey) return;
+        lastFlashKeyRef.current = flashKey;
+        setPrintCredentialsData(creds);
     }, [flash?.generated_credentials]);
+
+    const openPrintForEmployee = (emp) => {
+        setPrintCredentialsData({
+            action: 'view',
+            employee_id: emp.id,
+            name: emp.name,
+            username: emp.username,
+            password: emp.login_password || null,
+            phone: emp.phone || '',
+            branch: emp.branch || '—',
+            department: emp.department || 'غير محدد',
+            jobGrade: emp.jobGrade || 'غير محدد',
+            job_title: emp.job_title || '',
+            role: emp.role || '—',
+            must_change_password: Boolean(emp.must_change_password),
+            revoked_tokens: false,
+        });
+    };
+
+    const handleQuickResetFromPrint = (employeeId) => {
+        if (!employeeId) return;
+        router.post(
+            route('hr.employees.reset-password', employeeId),
+            {
+                mode: 'auto',
+                style: 'digits',
+                must_change_password: false,
+                revoke_tokens: false,
+                open_print_modal: true,
+            },
+            {
+                preserveScroll: true,
+                onStart: () => setIsQuickResetting(true),
+                onFinish: () => setIsQuickResetting(false),
+            }
+        );
+    };
+
+    const handleOpenResetFromPrint = (employeeId) => {
+        const matched = (employees?.data ?? []).find((item) => item.id === employeeId);
+        const targetEmployee = matched || (printCredentialsData ? {
+            id: printCredentialsData.employee_id,
+            name: printCredentialsData.name,
+            username: printCredentialsData.username,
+            department: printCredentialsData.department,
+            jobGrade: printCredentialsData.jobGrade,
+            is_active: true,
+            must_change_password: printCredentialsData.must_change_password,
+            avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(printCredentialsData.name || 'U')}&background=5b8a2d&color=fff&bold=true`,
+        } : null);
+
+        setPrintCredentialsData(null);
+        if (targetEmployee) {
+            setResetPasswordEmployee(targetEmployee);
+        }
+    };
 
 
     // Keyboard Shortcut (/) to focus search
@@ -998,6 +652,23 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                     }} 
                 />
 
+                <ResetPasswordModal
+                    isOpen={!!resetPasswordEmployee}
+                    employee={resetPasswordEmployee}
+                    onClose={() => setResetPasswordEmployee(null)}
+                />
+
+                <CredentialsPrintModal
+                    isOpen={!!printCredentialsData}
+                    credentials={printCredentialsData}
+                    logoUrl={logo_url}
+                    reportDesign={reportDesign}
+                    isQuickResetting={isQuickResetting}
+                    onClose={() => setPrintCredentialsData(null)}
+                    onOpenResetPassword={handleOpenResetFromPrint}
+                    onQuickResetPassword={handleQuickResetFromPrint}
+                />
+
                 {/* Stats Dashboard */}
                 {stats && (
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1403,7 +1074,11 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                             )}
                                             {visibleColumns.actions && (
                                             <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <ActionMenu emp={emp} />
+                                                <ActionMenu
+                                                    emp={emp}
+                                                    onOpenPrint={openPrintForEmployee}
+                                                    onOpenResetPassword={setResetPasswordEmployee}
+                                                />
                                             </td>
                                             )}
                                         </tr>
@@ -1443,7 +1118,11 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                                 emp.is_active ? 'bg-emerald-500' : 'bg-rose-500'
                                             }`} />
                                         </div>
-                                        <ActionMenu emp={emp} />
+                                        <ActionMenu
+                                            emp={emp}
+                                            onOpenPrint={openPrintForEmployee}
+                                            onOpenResetPassword={setResetPasswordEmployee}
+                                        />
                                     </div>
                                     
                                     <div className="relative z-10 mb-5">

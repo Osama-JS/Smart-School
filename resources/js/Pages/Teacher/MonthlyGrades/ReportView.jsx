@@ -415,13 +415,13 @@ export default function MonthlyGradesReportView({ division, subject, period, gra
                                             {/* Toggle: Missing Behavior */}
                                             <button
                                                 onClick={() => setMissingBehavior(!missingBehavior)}
-                                                title="عرض الطلاب الذين لم يُكتمل رصد سلوكهم"
+                                                title="عرض الطلاب الذين لم يُكتمل رصد مواظبتهم"
                                                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-bold transition-all duration-200 border ${missingBehavior ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-100 dark:shadow-orange-900/20' : 'bg-white dark:bg-slate-800 text-orange-600 dark:text-orange-400 border-slate-200 dark:border-slate-700 hover:border-orange-200 dark:hover:border-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'}`}
                                             >
                                                 <span className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors duration-200 ${missingBehavior ? 'bg-white/30' : 'bg-slate-200 dark:bg-slate-600'}`}>
                                                     <span className={`absolute h-3 w-3 rounded-full shadow transition-all duration-200 ${missingBehavior ? 'translate-x-3.5 bg-white' : 'translate-x-0.5 bg-orange-400'}`} />
                                                 </span>
-                                                نقص السلوك
+                                                نقص المواظبة
                                             </button>
                                         </div>
                                     </div>
@@ -562,7 +562,7 @@ export default function MonthlyGradesReportView({ division, subject, period, gra
                                     ))}
                                     {/* Sub-headers for summary */}
                                     <th className="py-2 px-2 text-xs font-bold border border-slate-300 dark:border-slate-600 print:border-black">مجموع<br/>الأسابيع</th>
-                                    <th className="py-2 px-2 text-xs font-bold border border-slate-300 dark:border-slate-600 print:border-black">سلوك<br/>ومواظبة</th>
+                                    <th className="py-2 px-2 text-xs font-bold border border-slate-300 dark:border-slate-600 print:border-black">المواظبة</th>
                                     <th className="py-2 px-2 text-xs font-bold border border-slate-300 dark:border-slate-600 print:border-black">اختبار<br/>شهري</th>
                                 </tr>
                             </thead>

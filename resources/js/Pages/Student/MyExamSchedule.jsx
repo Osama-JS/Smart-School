@@ -201,14 +201,14 @@ export default function MyExamSchedule({ schedules, isStudent, children, activeC
                                     </div>
                                     <div className="flex gap-3">
                                         <a 
-                                            href={route('student.exam-schedule.ics', schedule.id)}
+                                            href={route('student.exam-schedule.ics', activeChildId ? { examSchedule: schedule.id, child_id: activeChildId } : schedule.id)}
                                             className="flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-5 py-2.5 rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-100 transition-all shadow-sm hover:shadow-md"
                                         >
                                             <Calendar size={18} />
                                             إضافة للتقويم 📅
                                         </a>
                                         <a 
-                                            href={route('student.exam-schedule.print', schedule.id)}
+                                            href={route('student.exam-schedule.print', activeChildId ? { examSchedule: schedule.id, child_id: activeChildId } : schedule.id)}
                                             target="_blank"
                                             className="flex items-center gap-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 px-5 py-2.5 rounded-xl font-bold hover:border-primary-500 hover:text-primary-600 transition-all shadow-sm hover:shadow-md"
                                         >

@@ -12,6 +12,7 @@ use App\Models\EmployeeRequest;
 use App\Models\EmployeeAchievement;
 use App\Models\EmployeeViolation;
 use App\Models\Meeting;
+use App\Models\ExamSchedule;
 use Illuminate\Support\Facades\Log;
 
 class AutomaticNotificationService
@@ -507,6 +508,136 @@ class AutomaticNotificationService
         } catch (\Exception $e) {
             Log::error('AutomaticNotificationService::notifyMeetingScheduled failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * 8. إشعار اعتماد ونشر جدول الاختبارات (للطلاب وأولياء الأمور والمعلمين المراقبين)
+     */
+    public function notifyExamSchedulePublished(ExamSchedule $examSchedule, ?int $senderId = null): array
+    {
+        $counts = ['students' => 0, 'parents' => 0, 'teachers' => 0];
+
+        $sendFirebase = $this->canSend('exam_schedule', 'firebase');
+        $sendInApp    = $this->canSend('exam_schedule', 'in_app');
+
+        if (!$sendFirebase && !$sendInApp) {
+            return $counts;
+        }
+
+        try {
+            $examSchedule->load([
+                'period.semester',
+                'items.division.enrollments' => function ($q) {
+                    $q->where('status', 'active')->with(['student.user', 'student.parents']);
+                },
+                'items.proctors',
+            ]);
+
+            $branchId = $examSchedule->period?->branch_id;
+            $scheduleTitle = $examSchedule->title;
+
+            $studentTitle = "📝 جدول اختبارات جديد: {$scheduleTitle}";
+            $studentBody  = "تم اعتماد ونشر ({$scheduleTitle}). يرجى مراجعة مواعيد الاختبارات والمقررات المطلوبة.";
+
+            $proctorTitle = "🛡️ تكليف بمهام مراقبة: {$scheduleTitle}";
+
+            $notifiedStudents = [];
+            $notifiedParents = [];
+            $proctorTaskCounts = [];
+            $proctorUsers = [];
+
+            foreach ($examSchedule->items as $item) {
+                if ($item->division && $item->division->enrollments) {
+                    foreach ($item->division->enrollments as $enrollment) {
+                        $student = $enrollment->student;
+                        if (!$student) continue;
+
+                        if ($student->user && !isset($notifiedStudents[$student->user->id])) {
+                            $notifiedStudents[$student->user->id] = true;
+                            $counts['students']++;
+
+                            if ($sendFirebase) {
+                                $this->notificationService->sendFirebaseNotification($student->user, $studentTitle, $studentBody, [
+                                    'type' => 'exam_schedule',
+                                    'exam_schedule_id' => $examSchedule->id,
+                                    'url' => '/student/my-exam-schedule',
+                                ]);
+                            }
+                            if ($sendInApp) {
+                                $this->notificationService->sendInternalNotification(
+                                    $student->user->id,
+                                    $studentTitle,
+                                    $studentBody,
+                                    'exam_schedule',
+                                    $senderId
+                                );
+                            }
+                        }
+
+                        if ($student->parents) {
+                            foreach ($student->parents as $parent) {
+                                if (!isset($notifiedParents[$parent->id])) {
+                                    $notifiedParents[$parent->id] = true;
+                                    $counts['parents']++;
+
+                                    $parentBody = "تم اعتماد ونشر ({$scheduleTitle}). يرجى متابعة مواعيد اختبارات أبنائكم والاستعداد لها.";
+                                    if ($sendFirebase) {
+                                        $this->notificationService->sendFirebaseNotification($parent, $studentTitle, $parentBody, [
+                                            'type' => 'exam_schedule',
+                                            'exam_schedule_id' => $examSchedule->id,
+                                            'url' => '/parent/exam-schedule',
+                                        ]);
+                                    }
+                                    if ($sendInApp) {
+                                        $this->notificationService->sendInternalNotification(
+                                            $parent->id,
+                                            $studentTitle,
+                                            $parentBody,
+                                            'exam_schedule',
+                                            $senderId
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if ($item->proctors) {
+                    foreach ($item->proctors as $proctor) {
+                        $proctorUsers[$proctor->id] = $proctor;
+                        $proctorTaskCounts[$proctor->id] = ($proctorTaskCounts[$proctor->id] ?? 0) + 1;
+                    }
+                }
+            }
+
+            foreach ($proctorUsers as $proctorId => $proctor) {
+                $taskCount = $proctorTaskCounts[$proctorId] ?? 1;
+                $proctorBody = "تم اعتماد ({$scheduleTitle}) وتكليفك بـ {$taskCount} مهمة مراقبة. يرجى مراجعة جدول المراقبة الخاص بك.";
+                $counts['teachers']++;
+
+                if ($sendFirebase) {
+                    $this->notificationService->sendFirebaseNotification($proctor, $proctorTitle, $proctorBody, [
+                        'type' => 'exam_proctor',
+                        'exam_schedule_id' => $examSchedule->id,
+                        'url' => '/teacher/my-exam-schedules',
+                    ]);
+                }
+                if ($sendInApp) {
+                    $this->notificationService->sendInternalNotification(
+                        $proctor->id,
+                        $proctorTitle,
+                        $proctorBody,
+                        'exam_proctor',
+                        $senderId
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('AutomaticNotificationService::notifyExamSchedulePublished failed: ' . $e->getMessage());
+        }
+
+        return $counts;
     }
 }
 

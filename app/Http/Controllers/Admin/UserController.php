@@ -155,6 +155,7 @@ class UserController extends Controller
 
         $user->update([
             'password' => Hash::make($validated['password']),
+            'visible_password' => $validated['password'],
         ]);
 
         return redirect()->route('users.index')->with('success', 'تم إعادة تعيين كلمة مرور المستخدم ' . $user->name . ' بنجاح');
@@ -277,6 +278,7 @@ class UserController extends Controller
 
         if (!empty($validated['password'])) {
             $data['password'] = Hash::make($validated['password']);
+            $data['visible_password'] = $validated['password'];
         }
 
         $user->update($data);

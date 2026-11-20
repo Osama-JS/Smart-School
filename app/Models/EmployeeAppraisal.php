@@ -452,8 +452,14 @@ class EmployeeAppraisal extends Model
         $reviewedPreps = $preps->whereNotNull('supervisor_rating');
         $avgPrepRating = $reviewedPreps->count() > 0 ? round($reviewedPreps->avg('supervisor_rating'), 2) : null;
         $onTrackPrepsCount = $publishedPreps->filter(function ($p) {
-            return $p->curriculum_progress
-                && (str_contains($p->curriculum_progress, 'مطابق') || str_contains($p->curriculum_progress, 'متقدم'));
+            if (!$p->curriculum_progress) {
+                return false;
+            }
+            $val = mb_strtolower($p->curriculum_progress);
+            return str_contains($val, 'مطابق')
+                || str_contains($val, 'متقدم')
+                || str_contains($val, 'on track')
+                || str_contains($val, 'ahead');
         })->count();
 
         $visits = $userId

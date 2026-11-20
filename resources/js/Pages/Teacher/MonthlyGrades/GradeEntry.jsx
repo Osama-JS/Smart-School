@@ -262,7 +262,7 @@ export default function GradeEntry({ division, subject, period, gradeSetting, en
                                                 مجموع الواجبات <span className="text-xs text-primary-600">({hwMax * weeksCount})</span>
                                             </th>
                                             <th className="py-4 px-6 font-black text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap text-center">
-                                                السلوك <span className="text-xs text-primary-600">({behaviorMax})</span>
+                                                المواظبة <span className="text-xs text-primary-600">({behaviorMax})</span>
                                             </th>
                                             <th className="py-4 px-6 font-black text-slate-700 dark:text-slate-300 text-sm whitespace-nowrap text-center">
                                                 الاختبار الشهري <span className="text-xs text-primary-600">({examMax})</span>

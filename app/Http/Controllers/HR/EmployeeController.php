@@ -22,7 +22,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         return [
             new \Illuminate\Routing\Controllers\Middleware('permission:عرض الموظفين', only: ['index', 'show']),
             new \Illuminate\Routing\Controllers\Middleware('permission:إضافة موظف', only: ['create', 'store']),
-            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل موظف', only: ['edit', 'update', 'quickUpdate']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل موظف', only: ['edit', 'update', 'quickUpdate', 'resetPassword']),
             new \Illuminate\Routing\Controllers\Middleware('permission:حذف موظف', only: ['destroy']),
         ];
     }
@@ -31,7 +31,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         $query = Employee::query()
             ->join('users', 'employees.user_id', '=', 'users.id')
             ->select('employees.*')
-            ->with(['user', 'department', 'jobGrade']);
+            ->with(['user.role', 'user.branch', 'department', 'jobGrade']);
 
         // Check if not system admin, restrict to user's branch
         $user = auth()->user();
@@ -83,20 +83,27 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             $query->orderBy('employees.hire_date', 'desc');
         }
 
-        $employees = $query->paginate(12)->withQueryString()->through(function ($emp) {
+        $canViewCredentials = $user && $user->hasPermission('تعديل موظف');
+
+        $employees = $query->paginate(12)->withQueryString()->through(function ($emp) use ($canViewCredentials) {
             return [
                 'id' => $emp->id,
                 'user_id' => $emp->user_id,
                 'name' => $emp->user->name ?? 'غير محدد',
                 'username' => $emp->user->username ?? '',
+                'phone' => $emp->user->phone ?? '',
+                'email' => $emp->user->email ?? '',
                 'role' => $emp->user->role->name ?? '—',
                 'branch' => $emp->user->branch->name ?? '—',
                 'department' => $emp->department->name ?? 'غير محدد',
                 'department_id' => $emp->department_id,
                 'job_grade_id' => $emp->job_grade_id,
                 'jobGrade' => $emp->jobGrade->name ?? 'غير محدد',
+                'job_title' => $emp->job_title ?? '',
                 'hire_date' => $emp->hire_date ? \Carbon\Carbon::parse($emp->hire_date)->format('Y-m-d') : '—',
                 'is_active' => (bool) ($emp->user->is_active ?? true),
+                'must_change_password' => (bool) ($emp->user->must_change_password ?? false),
+                'login_password' => $canViewCredentials ? $emp->user?->getDecryptedVisiblePassword() : null,
                 'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($emp->user->name ?? 'U') . '&background=5b8a2d&color=fff&bold=true',
             ];
         });
@@ -122,6 +129,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             'stats' => $stats,
             'departments' => $departments,
             'jobGrades' => $jobGrades,
+            'canManageCredentials' => (bool) $canViewCredentials,
             'filters' => (object) $request->only(['search', 'department_id', 'job_grade_id', 'status', 'hire_date_start', 'hire_date_end', 'sort_by', 'sort_dir']),
         ]);
     }
@@ -266,7 +274,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
         if (!$autoGenerate) {
             $rules['username'] = ['required', 'string', 'max:255', 'unique:users'];
-            $rules['password'] = ['required', 'string', 'min:8'];
+            $rules['password'] = ['required', 'string', 'min:4', 'max:50'];
         }
 
         $validated = $request->validate($rules);
@@ -286,13 +294,14 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
         // إعداد بيانات الدخول
         $username = $autoGenerate ? $validated['phone'] : $validated['username'];
-        $plainPassword = $autoGenerate ? \Illuminate\Support\Str::password(10, true, true, true, false) : $validated['password'];
+        $plainPassword = $autoGenerate ? $this->generateSimplePassword('digits') : $validated['password'];
 
         // إنشاء المستخدم
         $user = User::create([
             'name' => $validated['name'],
             'username' => $username,
             'password' => Hash::make($plainPassword),
+            'visible_password' => $plainPassword,
             'role_id' => $validated['role_id'],
             'branch_id' => $isAdmin ? $validated['branch_id'] : auth()->user()->branch_id,
             'is_active' => $validated['is_active'] ?? true,
@@ -340,34 +349,115 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         }
 
         if ($autoGenerate) {
-            \Illuminate\Support\Facades\Session::flash('generated_credentials', [
-                'name' => $user->name,
-                'username' => $username,
-                'password' => $plainPassword
-            ]);
+            \Illuminate\Support\Facades\Session::flash(
+                'generated_credentials',
+                $this->buildCredentialsPayload($employee, $user, $plainPassword, 'create', false)
+            );
         }
 
         return redirect()->route('hr.employees')->with('success', 'تم إنشاء ملف الموظف بنجاح');
     }
 
-    public function resetPassword(Employee $employee)
+    public function resetPassword(Request $request, Employee $employee)
     {
+        $employee->loadMissing(['user.role', 'user.branch', 'department', 'jobGrade']);
         $user = $employee->user;
 
-        // Generate new password
-        $plainPassword = \Illuminate\Support\Str::password(10, true, true, true, false);
+        if (!$user) {
+            return redirect()->back()->with('error', 'لا يوجد حساب مستخدم مرتبط بهذا الموظف.');
+        }
+
+        $authUser = auth()->user();
+        $isAdmin = $authUser && $authUser->role && $authUser->role->name === 'مدير النظام';
+        if (!$isAdmin && $user->branch_id !== $authUser->branch_id) {
+            abort(403, 'لا يمكنك إعادة تعيين كلمة مرور موظف خارج فرعك');
+        }
+
+        $validated = $request->validate([
+            'mode' => ['nullable', 'in:auto,manual'],
+            'style' => ['nullable', 'in:digits,alnum'],
+            'password' => ['required_if:mode,manual', 'nullable', 'string', 'min:4', 'max:50', 'confirmed'],
+            'must_change_password' => ['nullable', 'boolean'],
+            'revoke_tokens' => ['nullable', 'boolean'],
+            'open_print_modal' => ['nullable', 'boolean'],
+        ], [
+            'password.required_if' => 'يرجى إدخال كلمة المرور الجديدة.',
+            'password.min' => 'كلمة المرور يجب أن تكون 4 خانات على الأقل.',
+            'password.max' => 'كلمة المرور يجب ألا تتجاوز 50 خانة.',
+            'password.confirmed' => 'تأكيد كلمة المرور غير متطابق.',
+        ]);
+
+        $mode = $validated['mode'] ?? 'auto';
+        $style = $validated['style'] ?? 'digits';
+        $plainPassword = $mode === 'manual' ? $validated['password'] : $this->generateSimplePassword($style);
+        $mustChange = array_key_exists('must_change_password', $validated) ? (bool) $validated['must_change_password'] : false;
+        $revokeTokens = (bool) ($validated['revoke_tokens'] ?? false);
+        $openPrintModal = array_key_exists('open_print_modal', $validated) ? (bool) $validated['open_print_modal'] : true;
 
         $user->update([
-            'password' => Hash::make($plainPassword)
+            'password' => Hash::make($plainPassword),
+            'visible_password' => $plainPassword,
+            'must_change_password' => $mustChange,
         ]);
 
-        \Illuminate\Support\Facades\Session::flash('generated_credentials', [
-            'name' => $user->name,
-            'username' => $user->username,
-            'password' => $plainPassword
-        ]);
+        if ($revokeTokens) {
+            $user->tokens()->delete();
+        }
+
+        if ($openPrintModal) {
+            \Illuminate\Support\Facades\Session::flash(
+                'generated_credentials',
+                $this->buildCredentialsPayload($employee, $user, $plainPassword, 'reset', $revokeTokens)
+            );
+        }
 
         return redirect()->back()->with('success', 'تم إعادة تعيين كلمة المرور بنجاح');
+    }
+
+    /**
+     * توليد كلمة مرور سهلة القراءة والكتابة دون رموز معقدة
+     */
+    private function generateSimplePassword(string $style = 'digits'): string
+    {
+        if ($style === 'alnum') {
+            $letters = 'abcdefghjkmnpqrstuvwxyz';
+            $len = strlen($letters);
+            $prefix = $letters[random_int(0, $len - 1)] . $letters[random_int(0, $len - 1)];
+            return $prefix . random_int(1000, 9999);
+        }
+
+        return (string) random_int(100000, 999999);
+    }
+
+    /**
+     * تجهيز بيانات الدخول الموحدة لعرضها وطباعتها في الواجهة
+     */
+    private function buildCredentialsPayload(
+        Employee $employee,
+        User $user,
+        ?string $plainPassword,
+        string $action = 'reset',
+        bool $revokedTokens = false
+    ): array {
+        $employee->loadMissing(['department', 'jobGrade']);
+        $user->loadMissing(['role', 'branch']);
+
+        return [
+            'action' => $action,
+            'employee_id' => $employee->id,
+            'name' => $user->name,
+            'username' => $user->username,
+            'password' => $plainPassword,
+            'phone' => $user->phone ?? '',
+            'branch' => $user->branch?->name ?? '—',
+            'department' => $employee->department?->name ?? 'غير محدد',
+            'jobGrade' => $employee->jobGrade?->name ?? 'غير محدد',
+            'job_title' => $employee->job_title ?? '',
+            'role' => $user->role?->name ?? '—',
+            'must_change_password' => (bool) ($user->must_change_password ?? false),
+            'revoked_tokens' => $revokedTokens,
+            'issued_at' => now()->toIso8601String(),
+        ];
     }
 
     public function downloadTemplate()
@@ -600,6 +690,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
                     'name' => $name,
                     'username' => $username,
                     'password' => \Hash::make('1234567'), // Default password
+                    'visible_password' => '1234567',
                     'role_id' => $roleId,
                     'branch_id' => $branchId,
                     'is_active' => true,
@@ -685,7 +776,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
             // بيانات الحساب
             'name' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($employee->user_id)],
-            'password' => ['nullable', 'string', 'min:8'],
+            'password' => ['nullable', 'string', 'min:4', 'max:50'],
             'role_id' => ['required', 'exists:roles,id'],
             'branch_id' => [$isAdmin ? 'required' : 'nullable', $isAdmin ? 'exists:branches,id' : ''],
             'email' => ['nullable', 'email', Rule::unique('users')->ignore($employee->user_id)],
@@ -726,6 +817,7 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
         if (!empty($validated['password'])) {
             $userData['password'] = Hash::make($validated['password']);
+            $userData['visible_password'] = $validated['password'];
         }
 
         if ($request->hasFile('avatar')) {

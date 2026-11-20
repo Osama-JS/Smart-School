@@ -511,11 +511,13 @@ class StudentAppController extends Controller
         }
 
         $query = \App\Models\ExamScheduleItem::with(['schedule.period', 'subject', 'division.grade'])
+            ->whereHas('schedule', fn($q) => $q->where('status', 'published'))
             ->where('division_id', $enrollment->division_id);
 
         if ((clone $query)->count() === 0 && $enrollment->division?->grade_id) {
             $gradeId = $enrollment->division->grade_id;
             $query = \App\Models\ExamScheduleItem::with(['schedule.period', 'subject', 'division.grade'])
+                ->whereHas('schedule', fn($q) => $q->where('status', 'published'))
                 ->whereHas('division', fn($q) => $q->where('grade_id', $gradeId));
         }
 

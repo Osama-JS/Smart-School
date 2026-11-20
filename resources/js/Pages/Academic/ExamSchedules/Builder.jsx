@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Save, Plus, X, Calendar as CalendarIcon, ChevronRight, Trash2, Edit3, BookOpen, Clock, AlertCircle, MapPin, Users, Download, Wand, FileText, Printer, ToggleLeft, ToggleRight, Search, Layers, GraduationCap, School } from 'lucide-react';
+import { Save, Plus, X, Calendar as CalendarIcon, ChevronRight, Trash2, Edit3, BookOpen, Clock, AlertCircle, MapPin, Users, Download, Wand, FileText, Printer, ToggleLeft, ToggleRight, Search, Layers, GraduationCap, School, Send, Archive, CheckCircle2, FileEdit, RotateCcw, Upload, FileSpreadsheet } from 'lucide-react';
 import ToastNotification from '@/Components/ToastNotification';
 import { Transition, Dialog } from '@headlessui/react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ar';
 import Swal from 'sweetalert2';
 import TimelineView from './TimelineView';
+import ImportModal from './ImportModal';
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
+import { downloadExamScheduleTemplate } from '@/Utils/examScheduleExcel';
 
 // Dynamic color generator based on subject ID for a premium, brand-aligned look
 const getSubjectColor = (id) => {
@@ -42,12 +44,16 @@ const getSubjectLightColor = (id) => {
     return colors[id % colors.length];
 };
 
-export default function Builder({ examSchedule, grades, subjects, holidays = [], teachers = [] }) {
+export default function Builder({ examSchedule, grades, subjects, holidays = [], teachers = [], previousSchedules = [] }) {
+    const { auth } = usePage().props;
+    const schoolName = auth?.user?.branch?.name || 'المدارس الذكية';
+
     const [toast, setToast] = useState(null);
     const [dates, setDates] = useState([]);
     const [localItems, setLocalItems] = useState([]);
     const [viewMode, setViewMode] = useState('grid');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     
     // Stage Tabs Logic
     const [activeStage, setActiveStage] = useState('كل المراحل');
@@ -92,7 +98,16 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
     const [autoSave, setAutoSave] = useState(false);
 
     useEffect(() => {
-        if (examSchedule.items?.length > 0) {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('import') === '1') {
+                setIsImportModalOpen(true);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (Array.isArray(examSchedule.items)) {
             const initialItems = examSchedule.items.map(item => ({
                 id: item.id || Math.random().toString(36).substr(2, 9),
                 division_id: item.division_id,
@@ -114,6 +129,46 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
             setDates(uniqueDates);
         }
     }, [examSchedule]);
+
+    const handleApplyImportedItems = (importedItems, mode) => {
+        let nextItems;
+        if (mode === 'replace') {
+            nextItems = importedItems;
+        } else {
+            const map = new Map();
+            localItems.forEach((item) => {
+                const key = `${item.division_id}_${item.subject_id}_${item.exam_date}`;
+                map.set(key, item);
+            });
+            importedItems.forEach((item) => {
+                const key = `${item.division_id}_${item.subject_id}_${item.exam_date}`;
+                map.set(key, item);
+            });
+            nextItems = Array.from(map.values());
+        }
+
+        setLocalItems(nextItems);
+        const uniqueDates = [...new Set(nextItems.map((i) => i.exam_date))].sort();
+        setDates(uniqueDates);
+        setToast({
+            message: `تم إدراج ${importedItems.length} اختبار في شاشة التصميم. راجعها ثم اضغط حفظ أو اعتماد ونشر.`,
+            type: 'success',
+        });
+    };
+
+    const handleExportExcel = async () => {
+        await downloadExamScheduleTemplate({
+            examSchedule,
+            grades,
+            subjects,
+            teachers,
+            holidays,
+            existingItems: localItems,
+            schoolName,
+        });
+        setIsExportModalOpen(false);
+        setToast({ message: 'تم تصدير جدول الاختبارات إلى ملف Excel بنجاح.', type: 'success' });
+    };
 
     const handleDateInput = (val) => {
         const selectedDate = typeof val === 'string' ? val : val?.target?.value;
@@ -373,10 +428,11 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
         }
     };
 
-    const saveScheduleToDatabase = (itemsToSave = null) => {
+    const saveScheduleToDatabase = (itemsToSave = null, publish = false) => {
         const items = Array.isArray(itemsToSave) ? itemsToSave : localItems;
         setIsSaving(true);
         router.post(route('academic.exam-schedules.items.update', examSchedule.id), {
+            publish: Boolean(publish),
             items: items.map(i => ({
                 division_id: i.division_id,
                 subject_id: i.subject_id,
@@ -390,10 +446,67 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
         }, {
             preserveScroll: true,
             preserveState: true,
-            onSuccess: () => {
-                setToast({ message: 'تم حفظ وتحديث الجدول بنجاح!', type: 'success' });
+            onSuccess: (page) => {
+                setToast({
+                    message: page?.props?.flash?.success || (publish ? 'تم اعتماد ونشر الجدول وإرسال الإشعارات بنجاح!' : 'تم حفظ الجدول بنجاح!'),
+                    type: 'success'
+                });
+            },
+            onError: (errors) => {
+                const errorMessages = Object.values(errors || {})
+                    .flat()
+                    .filter(Boolean);
+                const message = errorMessages.length > 0
+                    ? errorMessages.join('\n')
+                    : 'حدث خطأ أثناء حفظ الجدول. يرجى التحقق من البيانات والتعارضات.';
+                setToast({ message: errorMessages[0] || 'تعذر حفظ الجدول', type: 'error' });
+                Swal.fire({
+                    icon: 'error',
+                    title: 'تعذر حفظ الجدول',
+                    text: message,
+                    confirmButtonText: 'حسناً',
+                    confirmButtonColor: '#ef4444',
+                });
             },
             onFinish: () => setIsSaving(false)
+        });
+    };
+
+    const handlePublishSchedule = () => {
+        if (localItems.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'الجدول فارغ',
+                text: 'لا يمكن اعتماد ونشر جدول فارغ. يرجى إضافة اختبار واحد على الأقل أولاً.',
+                confirmButtonText: 'حسناً',
+            });
+            return;
+        }
+
+        Swal.fire({
+            icon: 'question',
+            title: 'اعتماد ونشر الجدول',
+            text: 'سيتم حفظ التعديلات ونشر الجدول وإرسال إشعارات فورية للطلاب وأولياء الأمور والمعلمين المكلّفين بالمراقبة.',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، اعتمد وانشر',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#10b981',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                saveScheduleToDatabase(null, true);
+            }
+        });
+    };
+
+    const handleStatusChange = (targetStatus) => {
+        router.patch(route('academic.exam-schedules.status', examSchedule.id), { status: targetStatus }, {
+            preserveScroll: true,
+            onSuccess: (page) => {
+                setToast({
+                    message: page?.props?.flash?.success || 'تم تحديث حالة الجدول بنجاح',
+                    type: 'success',
+                });
+            },
         });
     };
 
@@ -519,12 +632,36 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                 <ChevronRight size={22} className="text-slate-500 group-hover:text-primary-600 dark:text-slate-400 dark:group-hover:text-primary-400" />
                             </Link>
                             <div>
-                                <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary-700 to-primary-500 dark:from-primary-400 dark:to-primary-300 tracking-tight">
-                                    {examSchedule.title}
-                                </h1>
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <h1 className="text-2xl md:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary-700 to-primary-500 dark:from-primary-400 dark:to-primary-300 tracking-tight">
+                                        {examSchedule.title}
+                                    </h1>
+                                    {examSchedule.status === 'published' ? (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30">
+                                            <CheckCircle2 size={13} />
+                                            منشور ومعتمد
+                                        </span>
+                                    ) : examSchedule.status === 'archived' ? (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600">
+                                            <Archive size={13} />
+                                            مؤرشف
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30">
+                                            <FileEdit size={13} />
+                                            مسودة (مخفي عن الطلاب والمعلمين)
+                                        </span>
+                                    )}
+                                </div>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 font-bold mt-1 flex items-center gap-2">
                                     <CalendarIcon size={14} className="text-primary-500" />
-                                    <span>{examSchedule.period?.name} ({examSchedule.academic_year})</span>
+                                    <span>
+                                        {examSchedule.period?.month_name || examSchedule.period?.name || ''}
+                                        {examSchedule.period?.semester?.name ? ` - ${examSchedule.period.semester.name}` : ''}
+                                        {(examSchedule.period?.semester?.academic_year?.name || examSchedule.period?.semester?.academicYear?.name)
+                                            ? ` (${examSchedule.period?.semester?.academic_year?.name || examSchedule.period?.semester?.academicYear?.name})`
+                                            : ''}
+                                    </span>
                                 </p>
                             </div>
                         </div>
@@ -572,14 +709,56 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                 <Wand size={18} className="animate-pulse group-hover:rotate-12 transition-transform" />
                                 توزيع تلقائي
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsImportModalOpen(true)}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+                                title="استيراد جدول من Excel/CSV أو نسخ جدول سابق"
+                            >
+                                <Upload size={18} />
+                                استيراد ذكي
+                            </button>
                             <button 
-                                onClick={saveScheduleToDatabase}
+                                type="button"
+                                onClick={() => saveScheduleToDatabase(null, false)}
                                 disabled={isSaving}
-                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-primary-500/20 transition-all active:scale-95 disabled:opacity-70"
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-primary-500/20 transition-all active:scale-95 disabled:opacity-70"
                             >
                                 <Save size={18} className={isSaving ? "animate-pulse" : ""} />
-                                {isSaving ? 'جاري الاعتماد...' : 'اعتماد ونشر'}
+                                {isSaving ? 'جاري الحفظ...' : (examSchedule.status === 'published' ? 'حفظ التعديلات' : 'حفظ كمسودة')}
                             </button>
+                            {examSchedule.status !== 'published' ? (
+                                <button 
+                                    type="button"
+                                    onClick={handlePublishSchedule}
+                                    disabled={isSaving}
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-95 disabled:opacity-70"
+                                >
+                                    <Send size={18} />
+                                    اعتماد ونشر
+                                </button>
+                            ) : (
+                                <button 
+                                    type="button"
+                                    onClick={() => handleStatusChange('draft')}
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30 px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95"
+                                    title="إرجاع الجدول لحالة مسودة"
+                                >
+                                    <RotateCcw size={17} />
+                                    إرجاع لمسودة
+                                </button>
+                            )}
+                            {examSchedule.status !== 'archived' && (
+                                <button 
+                                    type="button"
+                                    onClick={() => handleStatusChange('archived')}
+                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 px-4 py-2.5 rounded-xl font-bold transition-all active:scale-95"
+                                    title="أرشفة الجدول"
+                                >
+                                    <Archive size={17} />
+                                    أرشفة
+                                </button>
+                            )}
                             <button 
                                 type="button"
                                 onClick={() => setIsExportModalOpen(true)}
@@ -1180,7 +1359,7 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                             </div>
                                         </div>
 
-                                        <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex gap-3">
+                                        <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex flex-wrap gap-3">
                                             <button 
                                                 type="button" 
                                                 onClick={() => setIsExportModalOpen(false)} 
@@ -1188,12 +1367,20 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                                             >
                                                 إلغاء
                                             </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleExportExcel}
+                                                className="flex-1 py-3.5 px-4 rounded-2xl font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/15 border-2 border-emerald-200 dark:border-emerald-500/30 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <FileSpreadsheet size={18} />
+                                                تصدير Excel (.xlsx)
+                                            </button>
                                             <button 
                                                 type="button" 
                                                 onClick={handleExport} 
-                                                className="flex-[2] py-3.5 rounded-2xl font-black text-white bg-gradient-to-l from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 shadow-[0_4px_20px_-4px_rgba(99,102,241,0.5)] transition-all active:scale-95 flex items-center justify-center gap-2"
+                                                className="flex-[2] py-3.5 px-4 rounded-2xl font-black text-white bg-gradient-to-l from-primary-600 to-indigo-600 hover:from-primary-500 hover:to-indigo-500 shadow-[0_4px_20px_-4px_rgba(99,102,241,0.5)] transition-all active:scale-95 flex items-center justify-center gap-2"
                                             >
-                                                <Download size={20} /> تصدير الآن
+                                                <Download size={20} /> طباعة / PDF
                                             </button>
                                         </div>
                                     </Dialog.Panel>
@@ -1202,6 +1389,20 @@ export default function Builder({ examSchedule, grades, subjects, holidays = [],
                         </div>
                     </Dialog>
                 </Transition>
+
+                <ImportModal
+                    show={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    examSchedule={examSchedule}
+                    grades={grades}
+                    subjects={subjects}
+                    teachers={teachers}
+                    holidays={holidays}
+                    existingItems={localItems}
+                    previousSchedules={previousSchedules}
+                    onApplyToStudio={handleApplyImportedItems}
+                    onSuccessToast={(message) => setToast({ message, type: 'success' })}
+                />
 
         </AdminLayout>
     );

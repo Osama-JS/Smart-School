@@ -63,7 +63,7 @@ class ExamReminderNotification extends Notification implements ShouldQueue
             'message' => $message,
             'type' => 'exam_reminder',
             'icon' => 'BellRing',
-            'link' => '/student/exam-schedules'
+            'link' => $this->isParent ? '/parent/exam-schedule' : '/student/my-exam-schedule',
         ];
     }
 

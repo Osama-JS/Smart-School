@@ -44,6 +44,10 @@ class LessonPreparationController extends Controller implements \Illuminate\Rout
             $query->where('subject_id', $request->subject_id);
         }
 
+        if ($request->filled('language') && in_array($request->language, ['ar', 'en'], true)) {
+            $query->where('language', $request->language);
+        }
+
         if ($request->has('date_range') && $request->date_range) {
             $dates = explode(' to ', $request->date_range);
             if (count($dates) == 2) {
@@ -81,7 +85,7 @@ class LessonPreparationController extends Controller implements \Illuminate\Rout
             'teachers' => $teachers,
             'grades' => $grades,
             'subjects' => $subjects,
-            'filters' => $request->only(['teacher_id', 'grade_id', 'subject_id', 'date_range'])
+            'filters' => $request->only(['teacher_id', 'grade_id', 'subject_id', 'language', 'date_range'])
         ]);
     }
 

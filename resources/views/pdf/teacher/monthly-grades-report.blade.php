@@ -152,7 +152,7 @@
                         <th class="border border-slate-400 p-1 text-[10px] font-bold bg-slate-200">المجموع</th>
                     @endforeach
                     <th class="border border-slate-400 p-1 text-[10px] font-bold">الأسابيع</th>
-                    <th class="border border-slate-400 p-1 text-[10px] font-bold">سلوك</th>
+                    <th class="border border-slate-400 p-1 text-[10px] font-bold">المواظبة</th>
                     <th class="border border-slate-400 p-1 text-[10px] font-bold">اختبار</th>
                 </tr>
             </thead>

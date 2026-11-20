@@ -16,15 +16,16 @@ class User extends Authenticatable
     use HasApiTokens, Notifiable, BelongsToBranch;
 
     protected $fillable = [
-        'branch_id', 'role_id', 'name', 'username', 'password', 'must_change_password', 'is_active', 'email', 'phone', 'avatar'
+        'branch_id', 'role_id', 'name', 'username', 'password', 'visible_password', 'must_change_password', 'is_active', 'email', 'phone', 'avatar'
     ];
 
     protected $casts = [
+        'visible_password' => 'encrypted',
         'must_change_password' => 'boolean',
         'is_active' => 'boolean',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'visible_password'];
 
     // العلاقات الأساسية
     public function branch(): BelongsTo { return $this->belongsTo(Branch::class); }
@@ -154,6 +155,19 @@ class User extends Authenticatable
                 }
             })
             ->get();
+    }
+
+    /**
+     * استرجاع كلمة المرور القابلة للعرض بشكل آمن بعد فك التشفير
+     */
+    public function getDecryptedVisiblePassword(): ?string
+    {
+        try {
+            $value = $this->visible_password;
+            return is_string($value) && $value !== '' ? $value : null;
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }
 

@@ -17,7 +17,7 @@ class LessonPreparation extends Model
         'unit_title', 'lesson_title', 'page_numbers', 'curriculum_progress', 'preparation_date', 'content',
         'learning_objectives', 'warm_up', 'teaching_strategies', 'educational_aids',
         'educational_activities', 'behavioral_value', 'acquired_skills',
-        'topics_covered', 'assessment_methods', 'reinforcements', 'notes', 'homework', 'attachments', 'status',
+        'topics_covered', 'assessment_methods', 'reinforcements', 'notes', 'homework', 'attachments', 'status', 'language',
         'supervisor_rating', 'supervisor_notes', 'reviewed_by', 'reviewed_at',
     ];
 

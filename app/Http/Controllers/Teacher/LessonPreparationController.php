@@ -42,6 +42,10 @@ class LessonPreparationController extends Controller
             $query->where('subject_id', $request->subject_id);
         }
 
+        if ($request->filled('language') && in_array($request->language, ['ar', 'en'], true)) {
+            $query->where('language', $request->language);
+        }
+
         if ($request->has('date_range') && $request->date_range) {
             $dates = explode(' to ', $request->date_range);
             if (count($dates) == 2) {
@@ -80,7 +84,7 @@ class LessonPreparationController extends Controller
             'grades' => $grades,
             'subjects' => $subjects,
             'schedules' => $schedules,
-            'filters' => $request->only(['grade_id', 'subject_id', 'date_range'])
+            'filters' => $request->only(['grade_id', 'subject_id', 'language', 'date_range'])
         ]);
     }
 
@@ -88,6 +92,7 @@ class LessonPreparationController extends Controller
     {
         $validated = $this->validatePreparation($request);
         $payload = Arr::except($validated, ['new_attachments', 'existing_attachments']);
+        $payload['language'] = $payload['language'] ?? 'ar';
 
         $activeYear = AcademicYear::where('is_active', true)->first();
         $activeSemester = \App\Models\Semester::where('is_active', true)->first();
@@ -123,6 +128,7 @@ class LessonPreparationController extends Controller
 
         $validated = $this->validatePreparation($request);
         $payload = Arr::except($validated, ['new_attachments', 'existing_attachments']);
+        $payload['language'] = $payload['language'] ?? ($lessonPreparation->language ?? 'ar');
 
         // FormData omits empty arrays; ensure deselected chip groups clear properly.
         if (!array_key_exists('teaching_strategies', $payload)) {
@@ -151,6 +157,7 @@ class LessonPreparationController extends Controller
     private function validatePreparation(Request $request): array
     {
         $isPublished = $request->input('status') === 'published';
+        $isEn = $request->input('language') === 'en';
 
         $rules = [
             'period_id' => 'nullable|exists:daily_periods,id',
@@ -180,22 +187,40 @@ class LessonPreparationController extends Controller
             'new_attachments' => 'nullable|array',
             'new_attachments.*' => 'file|max:20480|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,webp,zip',
             'status' => 'required|in:draft,published',
+            'language' => 'nullable|in:ar,en',
         ];
 
-        return $request->validate($rules, [
-            'lesson_title.required' => 'عنوان الدرس مطلوب.',
-            'subject_id.required' => 'المادة الدراسية مطلوبة.',
-            'grade_id.required' => 'الصف الدراسي مطلوب.',
-            'preparation_date.required' => 'تاريخ التنفيذ مطلوب.',
-            'learning_objectives.required' => 'الأهداف التعليمية مطلوبة عند نشر الحصة.',
-            'teaching_strategies.required' => 'يرجى اختيار استراتيجية تدريس واحدة على الأقل عند نشر الحصة.',
-            'teaching_strategies.min' => 'يرجى اختيار استراتيجية تدريس واحدة على الأقل عند نشر الحصة.',
-            'educational_aids.required' => 'يرجى اختيار وسيلة تعليمية واحدة على الأقل عند نشر الحصة.',
-            'educational_aids.min' => 'يرجى اختيار وسيلة تعليمية واحدة على الأقل عند نشر الحصة.',
-            'topics_covered.required' => 'ملخص الشرح (ما تم دراسته) مطلوب عند نشر الحصة.',
-            'new_attachments.*.max' => 'حجم كل ملف مرفق يجب ألا يتجاوز 20 ميجابايت.',
-            'new_attachments.*.mimes' => 'صيغة الملف غير مدعومة. الصيغ المسموحة: PDF, Word, PowerPoint, Excel, صور, ZIP.',
-        ]);
+        $messages = $isEn
+            ? [
+                'lesson_title.required' => 'Lesson title is required.',
+                'subject_id.required' => 'Subject is required.',
+                'grade_id.required' => 'Grade is required.',
+                'preparation_date.required' => 'Lesson date is required.',
+                'learning_objectives.required' => 'Learning objectives are required when publishing.',
+                'teaching_strategies.required' => 'Please select at least one teaching strategy when publishing.',
+                'teaching_strategies.min' => 'Please select at least one teaching strategy when publishing.',
+                'educational_aids.required' => 'Please select at least one educational aid when publishing.',
+                'educational_aids.min' => 'Please select at least one educational aid when publishing.',
+                'topics_covered.required' => 'Lesson presentation / topics covered is required when publishing.',
+                'new_attachments.*.max' => 'Each attachment must not exceed 20 MB.',
+                'new_attachments.*.mimes' => 'Unsupported file format. Allowed: PDF, Word, PowerPoint, Excel, Images, ZIP.',
+            ]
+            : [
+                'lesson_title.required' => 'عنوان الدرس مطلوب.',
+                'subject_id.required' => 'المادة الدراسية مطلوبة.',
+                'grade_id.required' => 'الصف الدراسي مطلوب.',
+                'preparation_date.required' => 'تاريخ التنفيذ مطلوب.',
+                'learning_objectives.required' => 'الأهداف التعليمية مطلوبة عند نشر الحصة.',
+                'teaching_strategies.required' => 'يرجى اختيار استراتيجية تدريس واحدة على الأقل عند نشر الحصة.',
+                'teaching_strategies.min' => 'يرجى اختيار استراتيجية تدريس واحدة على الأقل عند نشر الحصة.',
+                'educational_aids.required' => 'يرجى اختيار وسيلة تعليمية واحدة على الأقل عند نشر الحصة.',
+                'educational_aids.min' => 'يرجى اختيار وسيلة تعليمية واحدة على الأقل عند نشر الحصة.',
+                'topics_covered.required' => 'ملخص الشرح (ما تم دراسته) مطلوب عند نشر الحصة.',
+                'new_attachments.*.max' => 'حجم كل ملف مرفق يجب ألا يتجاوز 20 ميجابايت.',
+                'new_attachments.*.mimes' => 'صيغة الملف غير مدعومة. الصيغ المسموحة: PDF, Word, PowerPoint, Excel, صور, ZIP.',
+            ];
+
+        return $request->validate($rules, $messages);
     }
 
     public function destroy(LessonPreparation $lessonPreparation)

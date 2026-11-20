@@ -107,6 +107,10 @@ class MobileFeaturesController extends Controller
             $query->where('subject_id', $request->subject_id);
         }
 
+        if ($request->filled('language') && in_array($request->language, ['ar', 'en'], true)) {
+            $query->where('language', $request->language);
+        }
+
         if ($request->filled('start_date')) {
             $query->whereDate('preparation_date', '>=', $request->start_date);
         }
@@ -145,6 +149,7 @@ class MobileFeaturesController extends Controller
                 'attachments' => $prep->formattedAttachments(),
                 'notes' => $prep->notes,
                 'status' => $prep->status ?? 'draft',
+                'language' => $prep->language ?? 'ar',
                 'supervisor_rating' => $prep->supervisor_rating,
                 'supervisor_notes' => $prep->supervisor_notes,
                 'reviewer_name' => $prep->reviewer?->name,
@@ -211,6 +216,7 @@ class MobileFeaturesController extends Controller
     {
         $validated = $this->validateMobilePreparation($request);
         $payload = \Illuminate\Support\Arr::except($validated, ['new_attachments', 'existing_attachments', 'attachments']);
+        $payload['language'] = $payload['language'] ?? 'ar';
 
         $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
         $activeSemester = \App\Models\Semester::where('is_active', true)->first();
@@ -258,6 +264,7 @@ class MobileFeaturesController extends Controller
 
         $validated = $this->validateMobilePreparation($request);
         $payload = \Illuminate\Support\Arr::except($validated, ['new_attachments', 'existing_attachments', 'attachments']);
+        $payload['language'] = $payload['language'] ?? ($lessonPreparation->language ?? 'ar');
 
         $wasDraft = $lessonPreparation->status === 'draft';
 
@@ -309,6 +316,7 @@ class MobileFeaturesController extends Controller
             'homework' => 'nullable|string',
             'existing_attachments' => 'nullable|array',
             'status' => 'required|in:draft,published',
+            'language' => 'nullable|in:ar,en',
         ];
 
         if ($request->hasFile('new_attachments')) {
@@ -1619,6 +1627,7 @@ class MobileFeaturesController extends Controller
             'subject',
             'proctors'
         ])
+        ->whereHas('schedule', fn($q) => $q->where('status', 'published'))
         ->whereHas('proctors', function($q) use ($user, $empId) {
             $q->where('users.id', $user->id);
             if ($empId) $q->orWhere('users.id', $empId);
@@ -1731,7 +1740,8 @@ class MobileFeaturesController extends Controller
         });
 
         // Get available periods for filter
-        $periods = \App\Models\ExamSchedule::with('period')
+        $periods = \App\Models\ExamSchedule::published()
+            ->with('period')
             ->whereHas('items.proctors', function($q) use ($user, $empId) {
                 $q->where('users.id', $user->id);
                 if ($empId) $q->orWhere('users.id', $empId);

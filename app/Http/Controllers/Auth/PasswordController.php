@@ -22,6 +22,7 @@ class PasswordController extends Controller
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
+            'visible_password' => null,
         ]);
 
         return back();
@@ -43,6 +44,7 @@ class PasswordController extends Controller
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),
+            'visible_password' => null,
             'must_change_password' => false,
         ]);
 

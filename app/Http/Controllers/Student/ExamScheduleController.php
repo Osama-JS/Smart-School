@@ -32,8 +32,9 @@ class ExamScheduleController extends Controller
         if (empty($divisionIds)) {
             $schedules = collect([]);
         } else {
-            // Get schedules that contain items for these divisions
-            $schedules = ExamSchedule::with(['period.semester.academicYear', 'items' => function($query) use ($divisionIds) {
+            // Get published schedules that contain items for these divisions
+            $schedules = ExamSchedule::published()
+            ->with(['period.semester.academicYear', 'items' => function($query) use ($divisionIds) {
                 $query->whereIn('division_id', $divisionIds)
                       ->with(['subject', 'division.grade'])->orderBy('exam_date');
             }])
@@ -54,9 +55,12 @@ class ExamScheduleController extends Controller
 
     public function exportIcs(Request $request, ExamSchedule $examSchedule)
     {
-        $user = auth()->user();
-        $student = Student::where('user_id', $user->id)->first();
-        
+        if ($examSchedule->status !== 'published') {
+            abort(403, 'هذا الجدول غير منشور بعد.');
+        }
+
+        [$student] = $this->resolveStudent($request);
+
         $divisionIds = [];
         if ($student) {
             $divisionIds = Enrollment::where('student_id', $student->id)->pluck('division_id')->toArray();
@@ -131,9 +135,12 @@ class ExamScheduleController extends Controller
 
     public function printSchedule(Request $request, ExamSchedule $examSchedule)
     {
-        $user = auth()->user();
-        $student = Student::where('user_id', $user->id)->first();
-        
+        if ($examSchedule->status !== 'published') {
+            abort(403, 'هذا الجدول غير منشور بعد.');
+        }
+
+        [$student] = $this->resolveStudent($request);
+
         $divisionIds = [];
         if ($student) {
             $divisionIds = Enrollment::where('student_id', $student->id)->pluck('division_id')->toArray();

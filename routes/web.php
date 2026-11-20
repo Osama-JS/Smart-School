@@ -245,6 +245,9 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'academic.exam-schedules.destroy',
         ])->except(['create', 'edit']);
         Route::post('/academic/exam-schedules/{examSchedule}/items', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'updateItems'])->name('academic.exam-schedules.items.update');
+        Route::post('/academic/exam-schedules/{examSchedule}/import', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'importItems'])->name('academic.exam-schedules.import');
+        Route::post('/academic/exam-schedules/{examSchedule}/publish', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'publish'])->name('academic.exam-schedules.publish');
+        Route::patch('/academic/exam-schedules/{examSchedule}/status', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'updateStatus'])->name('academic.exam-schedules.status');
         Route::get('/academic/exam-schedules/{examSchedule}/print', [\App\Http\Controllers\Academic\ExamScheduleController::class, 'printSchedule'])->name('academic.exam-schedules.print');
     });
 
