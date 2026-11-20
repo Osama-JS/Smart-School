@@ -12,8 +12,12 @@ export default function SemesterResultsIndex({ academicYears, semesters, semeste
     });
 
     useEffect(() => {
-        setData('grades', studentsData || []);
-    }, [studentsData]);
+        setData({
+            semester_id: semester?.id || filters?.semester_id || '',
+            subject_id: filters?.subject_id || '',
+            grades: studentsData || [],
+        });
+    }, [semester?.id, filters?.semester_id, filters?.subject_id, studentsData]);
 
     const handleFilterChange = (field, value) => {
         const newFilters = { ...filters, [field]: value };

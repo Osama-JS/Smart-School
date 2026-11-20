@@ -65,9 +65,11 @@ class StudentGradeReportController extends Controller implements \Illuminate\Rou
                 }
 
                 $subjectData['semesters'][$semester->id] = [
+                    'semester_id' => $semester->id,
                     'name' => $semester->name,
                     'months' => $months->map(function ($m) {
                         return [
+                            'period_id' => $m->period_id,
                             'month_name' => $m->period->month_name,
                             'weekly_scores' => $m->weekly_scores,
                             'scores' => $m->scores,

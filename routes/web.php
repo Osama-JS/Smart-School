@@ -112,6 +112,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware([\App\Http\Middleware\AdminEngagementAccess::class])->group(function () {
         Route::get('/admin/user-engagement', [\App\Http\Controllers\Admin\UserEngagementController::class, 'index'])->name('admin.engagement.index');
         Route::get('/admin/user-engagement/export', [\App\Http\Controllers\Admin\UserEngagementController::class, 'export'])->name('admin.engagement.export');
+        Route::post('/admin/user-engagement/bulk-nudge', [\App\Http\Controllers\Admin\UserEngagementController::class, 'bulkNudge'])->name('admin.engagement.bulk-nudge');
         Route::get('/admin/user-engagement/{user}', [\App\Http\Controllers\Admin\UserEngagementController::class, 'show'])->name('admin.engagement.show');
         Route::post('/admin/user-engagement/{user}/nudge', [\App\Http\Controllers\Admin\UserEngagementController::class, 'nudge'])->name('admin.engagement.nudge');
     });
@@ -226,6 +227,10 @@ Route::middleware('auth')->group(function () {
         Route::get('/academic/timetable-report/pdf', [\App\Http\Controllers\Academic\TimetableController::class, 'reportPdf'])->name('academic.timetable.report.pdf');
         Route::post('/academic/timetable/assign', [\App\Http\Controllers\Academic\TimetableController::class, 'assign'])->name('academic.timetable.assign');
         Route::post('/academic/timetable/unassign', [\App\Http\Controllers\Academic\TimetableController::class, 'unassign'])->name('academic.timetable.unassign');
+        Route::get('/academic/timetable/import/context', [\App\Http\Controllers\Academic\TimetableImportController::class, 'context'])->name('academic.timetable.import.context');
+        Route::get('/academic/timetable/import/clone-source', [\App\Http\Controllers\Academic\TimetableImportController::class, 'cloneSource'])->name('academic.timetable.import.clone-source');
+        Route::post('/academic/timetable/import/validate', [\App\Http\Controllers\Academic\TimetableImportController::class, 'validateImport'])->name('academic.timetable.import.validate');
+        Route::post('/academic/timetable/import', [\App\Http\Controllers\Academic\TimetableImportController::class, 'import'])->name('academic.timetable.import');
         
         // Class Coverage (Absence & Substitution)
         Route::get('/academic/coverage', [\App\Http\Controllers\Academic\ClassCoverageController::class, 'index'])->name('academic.coverage.index');
@@ -337,6 +342,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/tasks', [\App\Http\Controllers\Student\MyTasksController::class, 'index'])->name('tasks');
         Route::get('/discipline', [\App\Http\Controllers\Student\MyDisciplineController::class, 'index'])->name('discipline');
         Route::get('/grades', [\App\Http\Controllers\Student\MyGradesController::class, 'index'])->name('grades');
+        Route::get('/grades/certificate/{semester}', [\App\Http\Controllers\Student\MyGradesController::class, 'certificate'])->name('certificate');
+        Route::get('/grades/certificate-monthly/{period}', [\App\Http\Controllers\Student\MyGradesController::class, 'monthlyCertificate'])->name('certificate.monthly');
         Route::get('/achievements', [\App\Http\Controllers\Student\MyAchievementsController::class, 'index'])->name('achievements');
         Route::get('/library', [\App\Http\Controllers\Student\MyLibraryController::class, 'index'])->name('library');
     });
@@ -600,6 +607,14 @@ Route::middleware('auth')->group(function () {
 
         // Student Grade Report
         Route::get('/academic/students/{student}/grade-report', [\App\Http\Controllers\Academic\StudentGradeReportController::class, 'show'])->name('academic.students.grade-report');
+
+        // Student Certificates (Monthly & Semester)
+        Route::get('/academic/certificates', [\App\Http\Controllers\Academic\StudentCertificateController::class, 'index'])->name('academic.certificates.index');
+        Route::get('/academic/students/{student}/certificate/monthly/{period}', [\App\Http\Controllers\Academic\StudentCertificateController::class, 'monthly'])->name('academic.certificates.monthly');
+        Route::get('/academic/students/{student}/certificate/monthly/{period}/pdf', [\App\Http\Controllers\Academic\StudentCertificateController::class, 'monthlyPdf'])->name('academic.certificates.monthly.pdf');
+        Route::get('/academic/students/{student}/certificate/semester/{semester}', [\App\Http\Controllers\Academic\StudentCertificateController::class, 'semester'])->name('academic.certificates.semester');
+        Route::get('/academic/students/{student}/certificate/semester/{semester}/pdf', [\App\Http\Controllers\Academic\StudentCertificateController::class, 'semesterPdf'])->name('academic.certificates.semester.pdf');
+        Route::get('/academic/divisions/{division}/certificates/batch', [\App\Http\Controllers\Academic\StudentCertificateController::class, 'divisionBatch'])->name('academic.certificates.batch');
     });
 
     // ── HR Routes ──
@@ -625,6 +640,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/hr/employees/check-existing', [\App\Http\Controllers\HR\EmployeeController::class, 'checkExisting'])->name('hr.employees.check-existing');
         Route::get('/hr/employees/import/template', [\App\Http\Controllers\HR\EmployeeController::class, 'downloadTemplate'])->name('hr.employees.template');
         Route::post('/hr/employees/import', [\App\Http\Controllers\HR\EmployeeController::class, 'import'])->name('hr.employees.import');
+        Route::post('/hr/employees/bulk-status', [\App\Http\Controllers\HR\EmployeeController::class, 'bulkStatus'])->name('hr.employees.bulk-status');
+        Route::post('/hr/employees/bulk-assign', [\App\Http\Controllers\HR\EmployeeController::class, 'bulkAssign'])->name('hr.employees.bulk-assign');
+        Route::post('/hr/employees/bulk-reset-password', [\App\Http\Controllers\HR\EmployeeController::class, 'bulkResetPassword'])->name('hr.employees.bulk-reset-password');
+        Route::post('/hr/employees/bulk-whatsapp', [\App\Http\Controllers\HR\EmployeeController::class, 'bulkWhatsApp'])->name('hr.employees.bulk-whatsapp');
+        Route::post('/hr/employees/bulk-destroy', [\App\Http\Controllers\HR\EmployeeController::class, 'bulkDestroy'])->name('hr.employees.bulk-destroy');
         Route::patch('/hr/employees/{employee}/quick-update', [\App\Http\Controllers\HR\EmployeeController::class, 'quickUpdate'])->name('hr.employees.quick-update');
         Route::post('/hr/employees/{employee}/reset-password', [\App\Http\Controllers\HR\EmployeeController::class, 'resetPassword'])->name('hr.employees.reset-password');
         Route::resource('/hr/employees', \App\Http\Controllers\HR\EmployeeController::class)->names([

@@ -67,6 +67,7 @@ class HandleInertiaRequests extends Middleware
                 'import_batch_id' => fn () => $request->session()->get('import_batch_id'),
                 'import_errors' => fn () => $request->session()->get('import_errors'),
                 'generated_credentials' => fn () => $request->session()->get('generated_credentials'),
+                'bulk_generated_credentials' => fn () => $request->session()->get('bulk_generated_credentials'),
             ],
             'urgent_news' => fn () => \App\Models\News::where('is_published', true)
                 ->where(function ($q) {

@@ -272,12 +272,27 @@ export default function ClassReport({
 
                                 {/* Quick summary pill (visible when panel closed) */}
                                 {!showFilters && semesterInfo && divisionInfo && (
-                                    <div className="flex items-center gap-3 text-sm font-bold text-slate-600 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl">
+                                    <div className="flex items-center gap-3 text-sm font-bold text-slate-600 bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl flex-wrap">
                                         <Calendar size={15} className="text-primary-500" />
                                         <span>{semesterInfo.name}</span>
                                         <span className="text-slate-300">|</span>
                                         <Layers size={15} className="text-primary-500" />
                                         <span>{divisionInfo.grade?.name} - {divisionInfo.name}</span>
+                                        {studentsData.length > 0 && filters.division_id && filters.semester_id && (
+                                            <a
+                                                href={route('academic.certificates.batch', {
+                                                    division: filters.division_id,
+                                                    type: 'semester',
+                                                    semester_id: filters.semester_id,
+                                                })}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-colors"
+                                            >
+                                                <Award size={14} />
+                                                طباعة شهادات الشعبة
+                                            </a>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -541,6 +556,7 @@ export default function ClassReport({
                                                 <th scope="col" className="w-20 px-2 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:border-black bg-black/10 print:bg-transparent" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>المجموع</th>
                                                 <th scope="col" className="w-20 px-2 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:border-black bg-black/10 print:bg-transparent" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>النسبة</th>
                                                 <th scope="col" className="w-20 px-2 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:border-black bg-black/10 print:bg-transparent" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>التقدير</th>
+                                                <th scope="col" className="w-20 px-2 py-3 text-center font-black text-white border border-slate-300 dark:border-slate-600 print:hidden bg-black/10" style={{ backgroundColor: printSettings?.brandColor || '#1e293b', borderColor: printSettings?.brandColor || '#1e293b' }}>الشهادة</th>
                                             </tr>
                                             <tr className="bg-slate-100 dark:bg-slate-800 print:bg-slate-200 text-slate-800 dark:text-slate-200 sticky top-[138px] z-20 shadow-sm print:static">
                                                 <th colSpan="2" className="px-3 py-2 text-left text-[11px] font-black uppercase tracking-wider border border-slate-300 dark:border-slate-600 print:border-black sticky right-0 z-30 shadow-[-1px_0_0_#cbd5e1_inset] dark:shadow-[-1px_0_0_#475569_inset] print:static print:shadow-none bg-slate-200 dark:bg-slate-700 print:bg-slate-200">النهاية العظمى</th>
@@ -554,6 +570,7 @@ export default function ClassReport({
                                                 </th>
                                                 <th className="px-2 py-2 text-center text-xs font-black text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-600 print:border-black bg-slate-200 dark:bg-slate-700">100%</th>
                                                 <th className="px-2 py-2 border border-slate-300 dark:border-slate-600 print:border-black bg-slate-200 dark:bg-slate-700"></th>
+                                                <th className="px-2 py-2 border border-slate-300 dark:border-slate-600 print:hidden bg-slate-200 dark:bg-slate-700"></th>
                                             </tr>
                                         </thead>
                                         <tbody className="bg-white dark:bg-slate-900">
@@ -606,6 +623,21 @@ export default function ClassReport({
                                                             </td>
                                                             <td className={`px-2 py-2.5 whitespace-nowrap text-xs font-black text-center border border-slate-300 dark:border-slate-700 bg-black/5 dark:bg-white/5 print:bg-transparent print:border-black ${estimation.color}`}>
                                                                 {estimation.text}
+                                                            </td>
+                                                            <td className="px-2 py-2.5 whitespace-nowrap text-xs text-center border border-slate-300 dark:border-slate-700 print:hidden">
+                                                                {student.student_id && filters.semester_id && (
+                                                                    <a
+                                                                        href={route('academic.certificates.semester', {
+                                                                            student: student.student_id,
+                                                                            semester: filters.semester_id,
+                                                                        })}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 font-black transition-colors"
+                                                                    >
+                                                                        <Award size={12} /> شهادة
+                                                                    </a>
+                                                                )}
                                                             </td>
                                                         </tr>
                                                     );

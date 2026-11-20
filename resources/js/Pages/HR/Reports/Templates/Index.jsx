@@ -7,7 +7,8 @@ import {
     Plus, Edit, Trash2, X, PlusCircle, AlignLeft, List, Hash, 
     CheckSquare, Image as ImageIcon, Search, FileText, Settings, 
     ShieldCheck, Calendar, Sparkles, ChevronDown, FileSpreadsheet, 
-    AlertCircle, Type, Clock, Paperclip, Star, Table2, ListTodo, CalendarRange, Database, Eye 
+    AlertCircle, Type, Clock, Paperclip, Star, Table2, ListTodo, CalendarRange, Database, Eye,
+    LayoutGrid, TableProperties
 } from 'lucide-react';
 import Dropdown from '@/Components/Dropdown';
 import PreviewFormModal from './PreviewFormModal';
@@ -20,6 +21,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
     const [editingTemplate, setEditingTemplate] = useState(null);
     const [previewFormTemplate, setPreviewFormTemplate] = useState(null);
     const [previewReportTemplate, setPreviewReportTemplate] = useState(null);
+    const [periodTab, setPeriodTab] = useState('all');
+    const [viewMode, setViewMode] = useState('cards');
 
     const form = useForm({
         name: '',
@@ -621,32 +624,41 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
         <AdminLayout activeMenu="إدارة القوالب">
             <Head title="إدارة قوالب التقارير" />
 
-            <div className="max-w-7xl mx-auto space-y-6">
-                
-                {/* Header Section */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                    
-                    {/* Visual geometric lines */}
-                    <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
-                        <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
-                            <circle cx="250" cy="90" r="4" className="fill-primary-500" />
-                            <circle cx="500" cy="160" r="6" className="fill-primary-400" />
-                        </svg>
-                    </div>
+            <div className="max-w-7xl mx-auto space-y-6 pb-10 animate-fade-in">
+                {/* Executive Hero Header */}
+                <div className="relative overflow-hidden bg-gradient-to-br from-[#f7fbe9] via-white to-red-50/35 dark:from-slate-900 dark:via-[#121820] dark:to-lime-950/25 border border-lime-200/70 dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm">
+                    <div
+                        className="absolute top-0 right-0 left-0 h-1.5"
+                        style={{ background: 'linear-gradient(to left, #18181b 0%, #18181b 20%, #dc2626 20%, #dc2626 42%, #84b819 42%, #4d7c0f 100%)' }}
+                    />
+                    <div className="absolute -left-16 -top-16 w-56 h-56 rounded-full bg-[#84b819]/15 blur-3xl pointer-events-none" />
+                    <div className="absolute -right-12 -bottom-20 w-56 h-56 rounded-full bg-[#dc2626]/10 blur-3xl pointer-events-none" />
 
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">إدارة قوالب التقارير</h1>
-                            <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">قم بإنشاء وتصميم النماذج التي سيقوم الموظفون بتعبئتها بناءً على درجاتهم الوظيفية</p>
+                        <div className="flex items-start sm:items-center gap-4">
+                            <div className="w-16 h-16 shrink-0 rounded-2xl bg-gradient-to-br from-[#4d7c0f] to-[#84b819] text-white flex items-center justify-center shadow-lg shadow-lime-700/25 ring-4 ring-lime-500/15">
+                                <FileSpreadsheet size={30} />
+                            </div>
+                            <div className="space-y-1.5">
+                                <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] font-black bg-[#f7fbe9] text-[#4d7c0f] border border-[#84b819]/40 dark:bg-lime-500/15 dark:text-lime-300 dark:border-lime-500/30">
+                                    <Sparkles size={12} className="text-[#dc2626] dark:text-red-400" />
+                                    سير العمل والطلبات • مصمم النماذج الذكية
+                                </div>
+                                <h1 className="text-2xl md:text-3xl font-black text-zinc-900 dark:text-white tracking-tight">
+                                    إدارة قوالب التقارير
+                                </h1>
+                                <p className="text-zinc-500 dark:text-slate-400 text-sm font-medium">
+                                    أنشئ وصمّم نماذج التقارير الدورية والمخصصة واربطها بالدرجات الوظيفية ومصادر البيانات الآلية.
+                                </p>
+                            </div>
                         </div>
-                        
-                        <button 
+
+                        <button
+                            type="button"
                             onClick={() => setIsCreateModalOpen(true)}
-                            className="flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl shadow-md shadow-primary-500/20 text-sm font-bold transition-all shrink-0 active:scale-95"
+                            className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-l from-[#4d7c0f] to-[#65a30d] hover:from-[#3f6212] hover:to-[#4d7c0f] text-white rounded-2xl shadow-lg shadow-lime-700/25 text-sm font-black transition-all shrink-0 hover:-translate-y-0.5 active:scale-95"
                         >
-                            <Plus size={18} /> 
+                            <Plus size={18} />
                             <span>إنشاء قالب جديد</span>
                         </button>
                     </div>
@@ -654,19 +666,19 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Dashboard Stats */}
                 {stats && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
-                            { label: 'إجمالي القوالب', value: stats.total_templates, icon: FileText, color: 'text-primary-600 dark:text-primary-400', bg: 'bg-primary-50 dark:bg-primary-500/10' },
-                            { label: 'الحقول المخصصة', value: stats.total_fields, icon: Settings, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-500/10' },
-                            { label: 'التقارير المرفوعة', value: stats.total_reports, icon: CheckSquare, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/10' }
+                            { label: 'إجمالي القوالب', value: stats.total_templates, icon: FileText, color: 'text-[#4d7c0f] dark:text-lime-400', bg: 'bg-[#f7fbe9] dark:bg-lime-500/15', border: 'border-lime-200/70 dark:border-lime-500/20' },
+                            { label: 'الحقول المخصصة', value: stats.total_fields, icon: Settings, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-500/15', border: 'border-indigo-200/60 dark:border-indigo-500/20' },
+                            { label: 'التقارير المرفوعة', value: stats.total_reports, icon: CheckSquare, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/15', border: 'border-emerald-200/60 dark:border-emerald-500/20' }
                         ].map((stat, idx) => (
-                            <div key={idx} className="bg-white dark:bg-[#121820]/60 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center gap-4">
-                                <div className={`w-12 h-12 ${stat.bg} rounded-2xl flex items-center justify-center shrink-0`}>
-                                    <stat.icon size={22} className={stat.color} />
-                                </div>
+                            <div key={idx} className={`bg-white dark:bg-[#121820]/80 p-5 rounded-3xl border ${stat.border} shadow-xs flex items-center justify-between gap-4`}>
                                 <div>
                                     <p className="text-xs font-bold text-slate-500 dark:text-slate-400">{stat.label}</p>
-                                    <h3 className={`text-2xl font-black ${stat.color}`}>{stat.value}</h3>
+                                    <h3 className={`text-2xl font-black font-mono mt-1 ${stat.color}`}>{stat.value}</h3>
+                                </div>
+                                <div className={`w-12 h-12 ${stat.bg} rounded-2xl flex items-center justify-center shrink-0`}>
+                                    <stat.icon size={22} className={stat.color} />
                                 </div>
                             </div>
                         ))}
@@ -674,33 +686,38 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                 )}
 
                 {/* Filters Panel */}
-                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 p-4">
+                <div className="bg-white dark:bg-[#121820]/80 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-xs">
                     <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-3 sm:gap-4 items-center">
                         <div className="flex-1 w-full relative group">
-                            <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
+                            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-xl bg-lime-50 dark:bg-lime-500/15 text-[#4d7c0f] dark:text-lime-400 flex items-center justify-center transition-colors group-focus-within:bg-[#4d7c0f] group-focus-within:text-white">
+                                <Search size={14} />
+                            </div>
                             <input
                                 type="text"
                                 value={filterForm.data.search}
                                 onChange={(e) => filterForm.setData('search', e.target.value)}
-                                placeholder="ابحث عن قالب..."
-                                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/60 rounded-2xl pr-11 pl-4 py-2.5 sm:py-3 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold"
+                                placeholder="ابحث باسم القالب أو الوصف..."
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-12 pl-10 py-2.5 sm:py-3 text-sm focus:ring-4 focus:ring-lime-500/10 focus:border-[#84b819] outline-none transition-all dark:text-white font-bold shadow-xs"
                             />
                             {filterForm.data.search && (
-                                <button 
+                                <button
                                     type="button"
                                     onClick={() => filterForm.setData('search', '')}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 transition-all">
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 transition-all"
+                                >
                                     <X size={14} />
                                 </button>
                             )}
                         </div>
                         <div className="w-full md:w-72">
-                            <Select classNamePrefix="custom-select"
+                            <Select
+                                classNamePrefix="custom-select"
                                 options={jobGrades.map(grade => ({ value: grade.id, label: grade.name }))}
                                 value={filterForm.data.job_grade_id ? { value: filterForm.data.job_grade_id, label: jobGrades.find(g => g.id == filterForm.data.job_grade_id)?.name } : null}
                                 onChange={(selected) => filterForm.setData('job_grade_id', selected ? selected.value : '')}
                                 placeholder="تصفية بالدرجة الوظيفية..."
                                 isClearable
+                                isRtl
                                 unstyled
                                 classNames={selectClassNames}
                                 menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
@@ -709,11 +726,14 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             />
                         </div>
                         <div className="flex items-center gap-2 w-full md:w-auto">
-                            <button type="submit" className="flex-1 md:flex-initial bg-primary-500 text-white hover:bg-primary-600 px-6 py-2.5 sm:py-3 rounded-2xl text-sm font-bold transition-all shrink-0 active:scale-95 shadow-sm shadow-primary-500/20">
+                            <button
+                                type="submit"
+                                className="flex-1 md:flex-initial bg-[#4d7c0f] hover:bg-[#3f6212] text-white px-6 py-2.5 sm:py-3 rounded-2xl text-sm font-black transition-all shrink-0 active:scale-95 shadow-sm"
+                            >
                                 بحث
                             </button>
                             {(filterForm.data.search || filterForm.data.job_grade_id) && (
-                                <Link 
+                                <Link
                                     href={route('reports.templates')}
                                     className="flex-1 md:flex-initial text-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 px-5 py-2.5 sm:py-3 rounded-2xl text-sm font-bold transition-all active:scale-95"
                                 >
@@ -724,139 +744,330 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                     </form>
                 </div>
 
-                {/* Templates List */}
-                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-right">
-                            <thead>
-                                <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
-                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">
-                                        <div className="flex items-center gap-1.5">
-                                            <FileText size={15} className="text-primary-500" />
-                                            <span>اسم القالب</span>
-                                        </div>
-                                    </th>
-                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">
-                                        <div className="flex items-center gap-1.5">
-                                            <ShieldCheck size={15} className="text-indigo-500" />
-                                            <span>الدرجة الوظيفية</span>
-                                        </div>
-                                    </th>
-                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">الوصف</th>
-                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400">تاريخ الإنشاء</th>
-                                    <th className="py-4 px-6 text-sm font-bold text-slate-500 dark:text-slate-400 text-center">الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {templates.data.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="5" className="py-16 text-center">
-                                            <FileText size={48} className="text-slate-300 mx-auto mb-4" />
-                                            <h3 className="text-lg font-bold text-slate-600 dark:text-slate-400">لا توجد قوالب حتى الآن</h3>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    templates.data.map((template) => (
-                                        <tr key={template.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                                            <td className="py-4 px-6">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200 dark:border-primary-500/30">
-                                                        <FileText size={16} />
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-bold text-slate-800 dark:text-white text-sm">{template.name}</div>
-                                                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
-                                                                <Calendar size={11} />
-                                                                {({ daily: 'يومي', weekly: 'أسبوعي', monthly: 'شهري', quarterly: 'فصلي', yearly: 'سنوي', custom: 'مخصص' })[template.period_type] || 'غير محدد'}
-                                                            </span>
-                                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 border border-primary-200 dark:border-primary-500/30">
-                                                                <List size={11} />
-                                                                {template.fields_count || 0} حقل
-                                                            </span>
+                {/* Tabbed Templates Container */}
+                {(() => {
+                    const periodLabels = {
+                        daily: 'يومي',
+                        weekly: 'أسبوعي',
+                        monthly: 'شهري',
+                        quarterly: 'فصلي',
+                        yearly: 'سنوي',
+                        custom: 'مخصص',
+                    };
+                    const allRows = templates?.data || [];
+                    const periodTabs = [
+                        { id: 'all', label: 'جميع القوالب', count: allRows.length },
+                        ...Object.entries(periodLabels).map(([key, label]) => ({
+                            id: key,
+                            label,
+                            count: allRows.filter((t) => (t.period_type || 'weekly') === key).length,
+                        })).filter((t) => t.count > 0),
+                    ];
+                    const visibleTemplates = periodTab === 'all'
+                        ? allRows
+                        : allRows.filter((t) => (t.period_type || 'weekly') === periodTab);
+
+                    return (
+                        <div className="bg-white dark:bg-[#121820]/80 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+                            {/* Tabs + View Switcher */}
+                            <div className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 px-4 pt-3 flex flex-wrap items-center justify-between gap-3">
+                                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+                                    {periodTabs.map((tab) => {
+                                        const isActive = periodTab === tab.id;
+                                        return (
+                                            <button
+                                                key={tab.id}
+                                                type="button"
+                                                onClick={() => setPeriodTab(tab.id)}
+                                                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-t-2xl text-xs font-black whitespace-nowrap transition-all border-b-2 ${
+                                                    isActive
+                                                        ? 'bg-white dark:bg-slate-900 text-[#4d7c0f] dark:text-lime-400 border-[#4d7c0f] dark:border-lime-400 shadow-xs'
+                                                        : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-800/60'
+                                                }`}
+                                            >
+                                                <span>{tab.label}</span>
+                                                <span
+                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-black ${
+                                                        isActive
+                                                            ? 'bg-[#f7fbe9] text-[#4d7c0f] dark:bg-lime-500/15 dark:text-lime-300'
+                                                            : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                                    }`}
+                                                >
+                                                    {tab.count}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="inline-flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-700 mb-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setViewMode('cards')}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                                            viewMode === 'cards'
+                                                ? 'bg-[#4d7c0f] text-white shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
+                                        title="عرض البطاقات"
+                                    >
+                                        <LayoutGrid size={14} />
+                                        <span className="hidden sm:inline">بطاقات</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setViewMode('table')}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
+                                            viewMode === 'table'
+                                                ? 'bg-[#4d7c0f] text-white shadow-xs'
+                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                        }`}
+                                        title="عرض الجدول"
+                                    >
+                                        <TableProperties size={14} />
+                                        <span className="hidden sm:inline">جدول</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {visibleTemplates.length === 0 ? (
+                                <div className="py-16 px-6 text-center">
+                                    <div className="w-16 h-16 mx-auto rounded-2xl bg-[#f7fbe9] dark:bg-lime-500/10 text-[#4d7c0f] dark:text-lime-400 flex items-center justify-center mb-4">
+                                        <FileText size={32} />
+                                    </div>
+                                    <h3 className="text-lg font-black text-slate-700 dark:text-slate-200">لا توجد قوالب مطابقة</h3>
+                                    <p className="text-xs font-semibold text-slate-400 mt-1">
+                                        جرّب إنشاء قالب جديد أو تغيير التبويب أو معايير البحث.
+                                    </p>
+                                </div>
+                            ) : viewMode === 'cards' ? (
+                                <div className="p-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    {visibleTemplates.map((template) => (
+                                        <div
+                                            key={template.id}
+                                            className="group relative bg-slate-50/70 dark:bg-slate-900/70 hover:bg-white dark:hover:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 hover:border-[#84b819]/60 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between gap-4"
+                                        >
+                                            <div className="space-y-3">
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className="w-11 h-11 rounded-2xl bg-[#f7fbe9] dark:bg-lime-500/15 text-[#4d7c0f] dark:text-lime-400 border border-[#84b819]/30 flex items-center justify-center shrink-0">
+                                                            <FileText size={20} />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h3 className="font-black text-slate-900 dark:text-white text-sm truncate">
+                                                                {template.name}
+                                                            </h3>
+                                                            <div className="text-[11px] font-bold text-slate-400 mt-0.5">
+                                                                {new Date(template.created_at).toLocaleDateString('ar-EG')}
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200/70 dark:border-amber-500/25 shrink-0">
+                                                        <Calendar size={11} />
+                                                        {periodLabels[template.period_type] || 'غير محدد'}
+                                                    </span>
                                                 </div>
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">
-                                                    <ShieldCheck size={12} className="shrink-0" />
-                                                    <span>{template.job_grade?.name || 'عام'}</span>
-                                                </span>
-                                            </td>
-                                            <td className="py-4 px-6 text-sm text-slate-500 dark:text-slate-400 max-w-xs truncate">
-                                                {template.description || '-'}
-                                            </td>
-                                            <td className="py-4 px-6 text-sm text-slate-500 dark:text-slate-400">
-                                                {new Date(template.created_at).toLocaleDateString('ar-EG')}
-                                            </td>
-                                            <td className="py-4 px-6 text-center">
-                                                <div className="flex items-center justify-center gap-2">
+
+                                                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[2rem]">
+                                                    {template.description || 'لا يوجد وصف مضاف لهذا القالب.'}
+                                                </p>
+
+                                                <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[11px] font-black bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-500/25">
+                                                        <ShieldCheck size={12} />
+                                                        {template.job_grade?.name || 'عام'}
+                                                    </span>
+                                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black bg-[#f7fbe9] dark:bg-lime-500/10 text-[#4d7c0f] dark:text-lime-300 border border-[#84b819]/30">
+                                                        <List size={12} />
+                                                        {template.fields_count || 0} حقل
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openFieldsModal(template)}
+                                                        className="inline-flex items-center gap-1.5 bg-[#4d7c0f] hover:bg-[#3f6212] text-white px-3 py-1.5 rounded-xl text-xs font-black transition-colors shadow-xs"
+                                                    >
+                                                        <List size={13} />
+                                                        <span>الحقول</span>
+                                                    </button>
                                                     <Dropdown>
                                                         <Dropdown.Trigger>
-                                                            <button 
+                                                            <button
                                                                 type="button"
-                                                                className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700"
-                                                                title="خيارات المعاينة"
+                                                                className="inline-flex items-center gap-1 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700"
                                                             >
                                                                 <Eye size={13} />
                                                                 <span>معاينة</span>
-                                                                <ChevronDown size={13} />
+                                                                <ChevronDown size={12} />
                                                             </button>
                                                         </Dropdown.Trigger>
-
-                                                        <Dropdown.Content align="left" width="48">
+                                                        <Dropdown.Content align="right" width="48">
                                                             <div className="py-1">
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setPreviewFormTemplate(template)}
-                                                                    className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                                                                    className="w-full text-right px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                                                                 >
-                                                                    <FileText size={16} className="text-primary-500" />
+                                                                    <FileText size={14} className="text-primary-500" />
                                                                     معاينة التعبئة
                                                                 </button>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => setPreviewReportTemplate(template)}
-                                                                    className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                                                                    className="w-full text-right px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
                                                                 >
-                                                                    <FileSpreadsheet size={16} className="text-emerald-500" />
+                                                                    <FileSpreadsheet size={14} className="text-emerald-500" />
                                                                     معاينة التقرير
                                                                 </button>
                                                             </div>
                                                         </Dropdown.Content>
                                                     </Dropdown>
-                                                    <button 
-                                                        onClick={() => openFieldsModal(template)}
-                                                        className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-emerald-200 dark:border-emerald-500/30"
-                                                        title="إدارة الحقول"
-                                                    >
-                                                        <List size={13} />
-                                                        <span>الحقول ({template.fields_count || 0})</span>
-                                                    </button>
-                                                    <button 
+                                                </div>
+
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        type="button"
                                                         onClick={() => openEditModal(template)}
-                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:border-blue-300 transition-colors"
                                                         title="تعديل القالب"
                                                     >
                                                         <Edit size={14} />
                                                     </button>
-                                                    <button 
+                                                    <button
+                                                        type="button"
                                                         onClick={() => handleDelete(template.id)}
-                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-red-600 hover:border-red-300 transition-colors"
                                                         title="حذف القالب"
                                                     >
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-right">
+                                        <thead>
+                                            <tr className="bg-slate-50/80 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800">
+                                                <th className="py-3.5 px-6 text-xs font-black text-slate-500 dark:text-slate-400">اسم القالب</th>
+                                                <th className="py-3.5 px-6 text-xs font-black text-slate-500 dark:text-slate-400">الدرجة الوظيفية</th>
+                                                <th className="py-3.5 px-6 text-xs font-black text-slate-500 dark:text-slate-400">الوصف</th>
+                                                <th className="py-3.5 px-6 text-xs font-black text-slate-500 dark:text-slate-400">تاريخ الإنشاء</th>
+                                                <th className="py-3.5 px-6 text-xs font-black text-slate-500 dark:text-slate-400 text-center">الإجراءات</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                            {visibleTemplates.map((template) => (
+                                                <tr key={template.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
+                                                    <td className="py-4 px-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-9 h-9 rounded-xl bg-[#f7fbe9] dark:bg-lime-500/10 text-[#4d7c0f] dark:text-lime-400 flex items-center justify-center shrink-0 border border-[#84b819]/30">
+                                                                <FileText size={16} />
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-black text-slate-800 dark:text-white text-sm">{template.name}</div>
+                                                                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30">
+                                                                        <Calendar size={11} />
+                                                                        {periodLabels[template.period_type] || 'غير محدد'}
+                                                                    </span>
+                                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#f7fbe9] dark:bg-lime-500/10 text-[#4d7c0f] dark:text-lime-400 border border-[#84b819]/30">
+                                                                        <List size={11} />
+                                                                        {template.fields_count || 0} حقل
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="py-4 px-6">
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30">
+                                                            <ShieldCheck size={12} className="shrink-0" />
+                                                            <span>{template.job_grade?.name || 'عام'}</span>
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-4 px-6 text-xs text-slate-500 dark:text-slate-400 max-w-xs truncate">
+                                                        {template.description || '—'}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-xs font-mono text-slate-500 dark:text-slate-400">
+                                                        {new Date(template.created_at).toLocaleDateString('ar-EG')}
+                                                    </td>
+                                                    <td className="py-4 px-6 text-center">
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <Dropdown>
+                                                                <Dropdown.Trigger>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-slate-200 dark:border-slate-700"
+                                                                        title="خيارات المعاينة"
+                                                                    >
+                                                                        <Eye size={13} />
+                                                                        <span>معاينة</span>
+                                                                        <ChevronDown size={13} />
+                                                                    </button>
+                                                                </Dropdown.Trigger>
+                                                                <Dropdown.Content align="left" width="48">
+                                                                    <div className="py-1">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setPreviewFormTemplate(template)}
+                                                                            className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                                                                        >
+                                                                            <FileText size={16} className="text-primary-500" />
+                                                                            معاينة التعبئة
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => setPreviewReportTemplate(template)}
+                                                                            className="w-full text-right px-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors"
+                                                                        >
+                                                                            <FileSpreadsheet size={16} className="text-emerald-500" />
+                                                                            معاينة التقرير
+                                                                        </button>
+                                                                    </div>
+                                                                </Dropdown.Content>
+                                                            </Dropdown>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openFieldsModal(template)}
+                                                                className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border border-emerald-200 dark:border-emerald-500/30"
+                                                                title="إدارة الحقول"
+                                                            >
+                                                                <List size={13} />
+                                                                <span>الحقول ({template.fields_count || 0})</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => openEditModal(template)}
+                                                                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-colors"
+                                                                title="تعديل القالب"
+                                                            >
+                                                                <Edit size={14} />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDelete(template.id)}
+                                                                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                                                                title="حذف القالب"
+                                                            >
+                                                                <Trash2 size={14} />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
 
                 {/* Modal Create */}
                 {isCreateModalOpen && (

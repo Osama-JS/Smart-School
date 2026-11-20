@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>شهادة نهاية الفصل الدراسي - {{ $student['name'] ?? '' }}</title>
+    <style>
+        @page { size: A4 portrait; margin: 9mm; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: Tahoma, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #18181b;
+            background: #ffffff;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        @php
+            $customBrand = $design['default_brand_color'] ?? null;
+            $useLogoPalette = empty($customBrand) || strtolower($customBrand) === '#059669';
+            $primaryDark = $useLogoPalette ? '#4d7c0f' : $customBrand;
+            $primaryBright = $useLogoPalette ? '#84b819' : $customBrand;
+            $accentRed = '#dc2626';
+            $charcoal = '#18181b';
+            $tintBg = '#f7fbe9';
+        @endphp
+
+        .outer-frame {
+            position: relative;
+            border: 2px solid {{ $primaryDark }};
+            border-radius: 14px;
+            padding: 5px;
+            background: #ffffff;
+        }
+        .sheet {
+            position: relative;
+            border: 1px solid {{ $primaryBright }}88;
+            border-radius: 10px;
+            padding: 16px 22px 18px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .top-ribbon {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 6px;
+            background: linear-gradient(to left, {{ $charcoal }} 0%, {{ $charcoal }} 22%, {{ $accentRed }} 22%, {{ $accentRed }} 44%, {{ $primaryBright }} 44%, {{ $primaryDark }} 100%);
+        }
+        .watermark {
+            position: absolute;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 310px;
+            height: 310px;
+            object-fit: contain;
+            opacity: 0.045;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid {{ $primaryBright }};
+            padding-top: 4px;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+        }
+        .header-right {
+            width: 36%;
+            font-size: 11px;
+            line-height: 1.65;
+            color: #3f3f46;
+        }
+        .header-right .gov { font-weight: bold; color: {{ $charcoal }}; }
+        .header-right h2 {
+            margin: 3px 0 1px;
+            font-size: 16px;
+            color: {{ $primaryDark }};
+            font-weight: bold;
+        }
+        .header-center {
+            width: 26%;
+            text-align: center;
+        }
+        .logo-ring {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 82px;
+            height: 82px;
+            border-radius: 50%;
+            border: 2px solid {{ $primaryBright }}55;
+            background: {{ $tintBg }};
+            padding: 6px;
+        }
+        .logo-ring img {
+            width: 68px;
+            height: 68px;
+            object-fit: contain;
+        }
+        .official-pill {
+            display: inline-block;
+            margin-top: 5px;
+            padding: 2px 10px;
+            border-radius: 999px;
+            background: {{ $charcoal }};
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 0.2px;
+        }
+        .header-left {
+            width: 36%;
+            font-size: 10.5px;
+        }
+        .meta-box {
+            background: #fafafa;
+            border: 1px solid #e4e4e7;
+            border-right: 3px solid {{ $accentRed }};
+            border-radius: 8px;
+            padding: 7px 11px;
+            line-height: 1.75;
+        }
+        .meta-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .meta-row span { color: #52525b; }
+        .meta-row strong { color: {{ $charcoal }}; }
+
+        /* Title */
+        .title-wrap {
+            text-align: center;
+            margin-bottom: 13px;
+        }
+        .title-wrap h1 {
+            margin: 0 0 6px;
+            font-size: 21px;
+            color: {{ $charcoal }};
+            font-weight: bold;
+        }
+        .title-divider {
+            width: 90px;
+            height: 3px;
+            margin: 0 auto 8px;
+            border-radius: 999px;
+            background: linear-gradient(to left, {{ $accentRed }}, {{ $primaryBright }});
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 999px;
+            font-size: 10.5px;
+            font-weight: bold;
+            background: {{ $primaryDark }};
+            color: #ffffff;
+        }
+
+        /* Student Info */
+        .student-card {
+            display: table;
+            width: 100%;
+            background: {{ $tintBg }};
+            border: 1px solid {{ $primaryBright }}77;
+            border-right: 4px solid {{ $primaryDark }};
+            border-radius: 10px;
+            padding: 9px 14px;
+            margin-bottom: 13px;
+        }
+        .student-col {
+            display: table-cell;
+            width: 25%;
+            font-size: 11px;
+            vertical-align: top;
+        }
+        .student-col .lbl {
+            color: #52525b;
+            font-size: 9.5px;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .student-col .val {
+            font-weight: bold;
+            font-size: 12.5px;
+            color: {{ $charcoal }};
+        }
+
+        /* Grades Table */
+        table.grades {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10.5px;
+            margin-bottom: 13px;
+        }
+        table.grades th {
+            background: {{ $primaryDark }};
+            color: #ffffff;
+            padding: 8px 6px;
+            border: 1px solid {{ $primaryDark }};
+            text-align: center;
+            font-weight: bold;
+        }
+        table.grades th.subj {
+            text-align: right;
+            padding-right: 10px;
+        }
+        table.grades td {
+            padding: 7.5px 6px;
+            border: 1px solid #d4d4d8;
+            text-align: center;
+            color: {{ $charcoal }};
+        }
+        table.grades td.subj {
+            text-align: right;
+            font-weight: bold;
+            padding-right: 10px;
+        }
+        table.grades tbody tr:nth-child(even) td {
+            background: #f9fbf5;
+        }
+        .total-col {
+            font-weight: bold;
+            background: {{ $tintBg }} !important;
+            color: {{ $primaryDark }} !important;
+        }
+        .pass {
+            color: {{ $primaryDark }};
+            font-weight: bold;
+        }
+        .fail {
+            color: {{ $accentRed }};
+            font-weight: bold;
+            background: #fef2f2;
+        }
+
+        /* Summary Strip */
+        .summary {
+            display: table;
+            width: 100%;
+            background: #fafafa;
+            border: 1.5px solid {{ $primaryBright }}88;
+            border-radius: 10px;
+            padding: 10px 6px;
+            margin-bottom: 14px;
+        }
+        .sum-cell {
+            display: table-cell;
+            width: 25%;
+            text-align: center;
+            border-left: 1px solid #e4e4e7;
+            vertical-align: middle;
+        }
+        .sum-cell:last-child { border-left: none; }
+        .sum-lbl {
+            font-size: 9.5px;
+            color: #52525b;
+            display: block;
+            margin-bottom: 3px;
+        }
+        .sum-val {
+            font-size: 15px;
+            font-weight: bold;
+            color: {{ $charcoal }};
+            display: block;
+        }
+        .sum-val.brand { color: {{ $primaryDark }}; }
+        .sum-val.red { color: {{ $accentRed }}; }
+
+        /* Footer & Signatures */
+        .footer {
+            border-top: 1.5px dashed {{ $primaryBright }}aa;
+            padding-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 14px;
+        }
+        .verify-box {
+            border: 1px solid #d4d4d8;
+            border-right: 3px solid {{ $charcoal }};
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 9px;
+            line-height: 1.6;
+            color: #52525b;
+            min-width: 185px;
+        }
+        .verify-box strong { color: {{ $charcoal }}; font-size: 9.5px; }
+        .sigs {
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+        }
+        .sig {
+            text-align: center;
+            min-width: 100px;
+            font-size: 10.5px;
+        }
+        .sig-title {
+            font-weight: bold;
+            color: {{ $charcoal }};
+            margin-bottom: 24px;
+        }
+        .sig-line {
+            border-bottom: 1.5px solid #71717a;
+            margin-bottom: 4px;
+        }
+        .sig-name { color: #52525b; font-size: 10px; }
+        .stamp {
+            width: 66px;
+            height: 66px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <div class="outer-frame">
+        <div class="sheet">
+            <div class="top-ribbon"></div>
+            @if(!empty($logoDataUri))
+                <img src="{{ $logoDataUri }}" alt="" class="watermark">
+            @endif
+
+            <div class="content">
+                <div class="header">
+                    <div class="header-right">
+                        <div class="gov">{{ $design['republic'] ?? 'الجمهورية اليمنية' }}</div>
+                        <div>{{ $design['ministry'] ?? 'وزارة التربية والتعليم والبحث العلمي' }}</div>
+                        <h2>{{ $design['school_name'] ?? 'مدارس القيم الأهلية' }}</h2>
+                        <div style="color:#52525b">{{ $design['branch_name'] ?? '' }}</div>
+                    </div>
+
+                    <div class="header-center">
+                        @if(!empty($logoDataUri))
+                            <div class="logo-ring">
+                                <img src="{{ $logoDataUri }}" alt="شعار المدرسة">
+                            </div>
+                        @endif
+                        <div><span class="official-pill">وثيقة درجات رسمية</span></div>
+                    </div>
+
+                    <div class="header-left">
+                        <div class="meta-box">
+                            <div class="meta-row"><span>العام الدراسي:</span><strong>{{ $academicYear }}</strong></div>
+                            <div class="meta-row"><span>الفصل الدراسي:</span><strong>{{ $semester['name'] ?? '' }}</strong></div>
+                            <div class="meta-row"><span>تاريخ الإصدار:</span><strong dir="ltr">{{ $issueDate }}</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="title-wrap">
+                    <h1>شهادة نتائج نهاية الفصل الدراسي</h1>
+                    <div class="title-divider"></div>
+                    <span class="badge">{{ $semester['name'] ?? '' }}</span>
+                </div>
+
+                <div class="student-card">
+                    <div class="student-col"><span class="lbl">اسم الطالب</span><span class="val">{{ $student['name'] ?? '' }}</span></div>
+                    <div class="student-col"><span class="lbl">الرقم الأكاديمي</span><span class="val">{{ $student['username'] ?: ($student['id'] ?? '') }}</span></div>
+                    <div class="student-col"><span class="lbl">الصف الدراسي</span><span class="val">{{ $enrollment['grade_name'] ?? '' }}</span></div>
+                    <div class="student-col"><span class="lbl">الشعبة</span><span class="val">{{ $enrollment['division_name'] ?? '' }}</span></div>
+                </div>
+
+                <table class="grades">
+                    <thead>
+                        <tr>
+                            <th style="width:28px">#</th>
+                            <th class="subj">المادة الدراسية</th>
+                            <th>أعمال السنة</th>
+                            <th>الاختبار النهائي</th>
+                            <th>المجموع</th>
+                            <th>العظمى</th>
+                            <th>التقدير</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($rows as $idx => $row)
+                            <tr>
+                                <td>{{ $idx + 1 }}</td>
+                                <td class="subj">{{ $row['subject_name'] }}</td>
+                                <td>{{ $row['monthly_aggregate'] }} / {{ $row['aggregate_max'] }}</td>
+                                <td>{{ $row['final_exam_score'] }} / {{ $row['final_exam_max'] }}</td>
+                                <td class="total-col">{{ $row['semester_total'] }}</td>
+                                <td>{{ $row['max_total'] }}</td>
+                                <td class="{{ $row['passed'] ? 'pass' : 'fail' }}">{{ $row['grade_text'] }}</td>
+                                <td class="{{ $row['passed'] ? 'pass' : 'fail' }}">{{ $row['passed'] ? 'ناجح' : 'راسب' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+
+                <div class="summary">
+                    <div class="sum-cell">
+                        <span class="sum-lbl">المجموع الكلي</span>
+                        <span class="sum-val">{{ $summary['total_marks'] }} / {{ $summary['max_possible'] }}</span>
+                    </div>
+                    <div class="sum-cell">
+                        <span class="sum-lbl">النسبة المئوية</span>
+                        <span class="sum-val brand">{{ $summary['percentage'] }}%</span>
+                    </div>
+                    <div class="sum-cell">
+                        <span class="sum-lbl">التقدير العام</span>
+                        <span class="sum-val {{ $summary['passed'] ? 'brand' : 'red' }}">{{ $summary['grade_text'] }}</span>
+                    </div>
+                    <div class="sum-cell">
+                        @if(($showRank ?? true) && !empty($summary['rank']))
+                            <span class="sum-lbl">الترتيب على الشعبة</span>
+                            <span class="sum-val">#{{ $summary['rank'] }} من {{ $summary['division_students_count'] }}</span>
+                        @else
+                            <span class="sum-lbl">النتيجة النهائية</span>
+                            <span class="sum-val {{ $summary['passed'] ? 'brand' : 'red' }}">{{ $summary['passed'] ? 'ناجح' : 'راسب' }}</span>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <div class="verify-box">
+                        <strong>توثيق إلكتروني للوثيقة</strong><br>
+                        رقم المرجع: #S-{{ $enrollment['id'] ?? '' }}-{{ $semester['id'] ?? '' }}<br>
+                        {{ $design['school_name'] ?? '' }}
+                    </div>
+
+                    @if(($design['show_signatures'] ?? true))
+                        <div class="sigs">
+                            @if($design['sig1_active'] ?? true)
+                                <div class="sig">
+                                    <div class="sig-title">{{ $design['sig1_title'] ?? 'إعداد / المختص' }}</div>
+                                    <div class="sig-line"></div>
+                                    <div class="sig-name">{{ $design['sig1_name'] ?: 'التوقيع' }}</div>
+                                </div>
+                            @endif
+                            @if($design['sig2_active'] ?? true)
+                                <div class="sig">
+                                    <div class="sig-title">{{ $design['sig2_title'] ?? 'مراجعة / وكيل المدرسة' }}</div>
+                                    <div class="sig-line"></div>
+                                    <div class="sig-name">{{ $design['sig2_name'] ?: 'التوقيع' }}</div>
+                                </div>
+                            @endif
+                            @if($design['sig3_active'] ?? true)
+                                <div class="sig">
+                                    <div class="sig-title">{{ $design['sig3_title'] ?? 'اعتماد / مدير الفرع' }}</div>
+                                    <div class="sig-line"></div>
+                                    <div class="sig-name">{{ $design['sig3_name'] ?: 'التوقيع' }}</div>
+                                </div>
+                            @endif
+                            @if(!empty($stampDataUri))
+                                <img src="{{ $stampDataUri }}" alt="الختم" class="stamp">
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

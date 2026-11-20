@@ -10,7 +10,10 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\Branch;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -22,8 +25,8 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         return [
             new \Illuminate\Routing\Controllers\Middleware('permission:عرض الموظفين', only: ['index', 'show']),
             new \Illuminate\Routing\Controllers\Middleware('permission:إضافة موظف', only: ['create', 'store']),
-            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل موظف', only: ['edit', 'update', 'quickUpdate', 'resetPassword']),
-            new \Illuminate\Routing\Controllers\Middleware('permission:حذف موظف', only: ['destroy']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل موظف', only: ['edit', 'update', 'quickUpdate', 'resetPassword', 'bulkStatus', 'bulkAssign', 'bulkResetPassword', 'bulkWhatsApp']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:حذف موظف', only: ['destroy', 'bulkDestroy']),
         ];
     }
     public function index(Request $request)
@@ -920,5 +923,292 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         $employee->user->delete();
 
         return redirect()->route('hr.employees')->with('success', 'تم حذف الموظف بنجاح');
+    }
+
+    public function bulkStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_ids'   => ['required', 'array', 'min:1', 'max:500'],
+            'employee_ids.*' => ['integer', 'exists:employees,id'],
+            'is_active'      => ['required', 'boolean'],
+        ]);
+
+        $authUser = auth()->user();
+        $employees = $this->resolveAuthorizedBulkEmployees($validated['employee_ids']);
+        $isActive = (bool) $validated['is_active'];
+
+        $updated = 0;
+        $skippedSelf = false;
+
+        DB::transaction(function () use ($employees, $isActive, $authUser, &$updated, &$skippedSelf) {
+            foreach ($employees as $employee) {
+                if (!$employee->user) {
+                    continue;
+                }
+                if (!$isActive && $authUser && $employee->user_id === $authUser->id) {
+                    $skippedSelf = true;
+                    continue;
+                }
+                $employee->user->update(['is_active' => $isActive]);
+                $updated++;
+            }
+        });
+
+        $label = $isActive ? 'تفعيل' : 'تعطيل';
+        $message = "تم {$label} {$updated} موظف بنجاح.";
+        if ($skippedSelf) {
+            $message .= ' (تم استثناء حسابك الشخصي).';
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    public function bulkAssign(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_ids'   => ['required', 'array', 'min:1', 'max:500'],
+            'employee_ids.*' => ['integer', 'exists:employees,id'],
+            'department_id'  => ['nullable', 'exists:departments,id'],
+            'job_grade_id'   => ['nullable', 'exists:job_grades,id'],
+        ]);
+
+        if (empty($validated['department_id']) && empty($validated['job_grade_id'])) {
+            return redirect()->back()->with('error', 'يرجى اختيار القسم أو الدرجة الوظيفية على الأقل.');
+        }
+
+        $employees = $this->resolveAuthorizedBulkEmployees($validated['employee_ids']);
+        $payload = array_filter([
+            'department_id' => $validated['department_id'] ?? null,
+            'job_grade_id'  => $validated['job_grade_id'] ?? null,
+        ], fn ($val) => $val !== null && $val !== '');
+
+        DB::transaction(function () use ($employees, $payload) {
+            foreach ($employees as $employee) {
+                $employee->update($payload);
+            }
+        });
+
+        return redirect()->back()->with('success', 'تم تحديث القسم/الدرجة الوظيفية لـ ' . $employees->count() . ' موظف بنجاح.');
+    }
+
+    public function bulkResetPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_ids'         => ['required', 'array', 'min:1', 'max:500'],
+            'employee_ids.*'       => ['integer', 'exists:employees,id'],
+            'mode'                 => ['nullable', 'in:auto,manual'],
+            'style'                => ['nullable', 'in:digits,alnum'],
+            'password'             => ['required_if:mode,manual', 'nullable', 'string', 'min:4', 'max:50', 'confirmed'],
+            'must_change_password' => ['nullable', 'boolean'],
+            'revoke_tokens'        => ['nullable', 'boolean'],
+            'open_print_modal'     => ['nullable', 'boolean'],
+        ], [
+            'password.required_if' => 'يرجى إدخال كلمة المرور الجديدة.',
+            'password.min'         => 'كلمة المرور يجب أن تكون 4 خانات على الأقل.',
+            'password.max'         => 'كلمة المرور يجب ألا تتجاوز 50 خانة.',
+            'password.confirmed'   => 'تأكيد كلمة المرور غير متطابق.',
+        ]);
+
+        $employees = $this->resolveAuthorizedBulkEmployees($validated['employee_ids']);
+        $mode = $validated['mode'] ?? 'auto';
+        $style = $validated['style'] ?? 'digits';
+        $mustChange = (bool) ($validated['must_change_password'] ?? false);
+        $revokeTokens = (bool) ($validated['revoke_tokens'] ?? false);
+        $openPrintModal = array_key_exists('open_print_modal', $validated) ? (bool) $validated['open_print_modal'] : true;
+
+        $credentialsList = [];
+
+        DB::transaction(function () use (
+            $employees,
+            $mode,
+            $style,
+            $validated,
+            $mustChange,
+            $revokeTokens,
+            &$credentialsList
+        ) {
+            foreach ($employees as $employee) {
+                $user = $employee->user;
+                if (!$user) {
+                    continue;
+                }
+
+                $plainPassword = $mode === 'manual'
+                    ? $validated['password']
+                    : $this->generateSimplePassword($style);
+
+                $user->update([
+                    'password'             => Hash::make($plainPassword),
+                    'visible_password'     => $plainPassword,
+                    'must_change_password' => $mustChange,
+                ]);
+
+                if ($revokeTokens) {
+                    $user->tokens()->delete();
+                }
+
+                $credentialsList[] = $this->buildCredentialsPayload($employee, $user, $plainPassword, 'reset', $revokeTokens);
+            }
+        });
+
+        if ($openPrintModal && !empty($credentialsList)) {
+            \Illuminate\Support\Facades\Session::flash('bulk_generated_credentials', [
+                'issued_at' => now()->toIso8601String(),
+                'items'     => $credentialsList,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'تم إعادة تعيين كلمة المرور لـ ' . count($credentialsList) . ' موظف بنجاح.');
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_ids'   => ['required', 'array', 'min:1', 'max:500'],
+            'employee_ids.*' => ['integer', 'exists:employees,id'],
+        ]);
+
+        $authUser = auth()->user();
+        $employees = $this->resolveAuthorizedBulkEmployees($validated['employee_ids']);
+
+        $filesToDelete = [];
+        $deleted = 0;
+        $skippedSelf = false;
+
+        DB::transaction(function () use ($employees, $authUser, &$filesToDelete, &$deleted, &$skippedSelf) {
+            foreach ($employees as $employee) {
+                if ($authUser && $employee->user_id === $authUser->id) {
+                    $skippedSelf = true;
+                    continue;
+                }
+
+                if ($employee->user?->avatar) {
+                    $filesToDelete[] = $employee->user->avatar;
+                }
+                if ($employee->attachments) {
+                    foreach ($employee->attachments as $att) {
+                        $filesToDelete[] = $att;
+                    }
+                }
+
+                if ($employee->user) {
+                    $employee->user->delete();
+                } else {
+                    $employee->delete();
+                }
+                $deleted++;
+            }
+        });
+
+        foreach ($filesToDelete as $filePath) {
+            Storage::disk('public')->delete($filePath);
+        }
+
+        $message = "تم حذف {$deleted} موظف بنجاح.";
+        if ($skippedSelf) {
+            $message .= ' (تم استثناء حسابك الشخصي).';
+        }
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    public function bulkWhatsApp(Request $request)
+    {
+        $validated = $request->validate([
+            'employee_ids'   => ['required', 'array', 'min:1', 'max:500'],
+            'employee_ids.*' => ['integer', 'exists:employees,id'],
+            'message'        => ['required', 'string', 'max:2000'],
+        ], [
+            'message.required' => 'يرجى كتابة نص رسالة الواتساب.',
+            'message.max'      => 'نص الرسالة يجب ألا يتجاوز 2000 حرف.',
+        ]);
+
+        $instanceId = config('services.ultramsg.instance_id');
+        $token = config('services.ultramsg.token');
+
+        if (!$instanceId || !$token) {
+            return redirect()->back()->with('error', 'إعدادات خدمة الواتساب (UltraMsg) غير مكتملة في النظام. يمكنك استخدام الإرسال اليدوي عبر روابط wa.me.');
+        }
+
+        $employees = $this->resolveAuthorizedBulkEmployees($validated['employee_ids']);
+        $apiUrl = "https://api.ultramsg.com/{$instanceId}/messages/chat";
+        $loginUrl = url('/login');
+
+        $sent = 0;
+        $failed = 0;
+        $noPhone = 0;
+
+        foreach ($employees as $employee) {
+            $user = $employee->user;
+            if (!$user) {
+                $noPhone++;
+                continue;
+            }
+
+            $to = $user->routeNotificationForWhatsApp();
+            if (!$to) {
+                $noPhone++;
+                continue;
+            }
+
+            $plainPassword = $user->getDecryptedVisiblePassword() ?? 'غير محفوظة';
+            $body = strtr($validated['message'], [
+                '{name}'       => $user->name ?? '',
+                '{username}'   => $user->username ?? '',
+                '{password}'   => $plainPassword,
+                '{department}' => $employee->department?->name ?? 'غير محدد',
+                '{job_grade}'  => $employee->jobGrade?->name ?? 'غير محدد',
+                '{login_url}'  => $loginUrl,
+            ]);
+
+            try {
+                $response = Http::timeout(10)->post($apiUrl, [
+                    'token' => $token,
+                    'to'    => $to,
+                    'body'  => $body,
+                ]);
+
+                if ($response->successful()) {
+                    $sent++;
+                } else {
+                    $failed++;
+                    Log::error("Bulk WhatsApp failed for {$to}: " . $response->body());
+                }
+            } catch (\Throwable $e) {
+                $failed++;
+                Log::error('Bulk WhatsApp exception: ' . $e->getMessage());
+            }
+        }
+
+        if ($sent === 0) {
+            return redirect()->back()->with('error', "لم يتم إرسال أي رسالة (بدون رقم جوال: {$noPhone}، فشل: {$failed}).");
+        }
+
+        $summary = "تم إرسال {$sent} رسالة واتساب بنجاح";
+        if ($noPhone > 0 || $failed > 0) {
+            $summary .= " (بدون جوال: {$noPhone}، فشل: {$failed})";
+        }
+
+        return redirect()->back()->with('success', $summary . '.');
+    }
+
+    private function resolveAuthorizedBulkEmployees(array $employeeIds)
+    {
+        $authUser = auth()->user();
+        $isAdmin = $authUser && $authUser->role && $authUser->role->name === 'مدير النظام';
+
+        $employees = Employee::with(['user.role', 'user.branch', 'department', 'jobGrade'])
+            ->whereIn('id', array_values(array_unique($employeeIds)))
+            ->get();
+
+        if (!$isAdmin && $authUser) {
+            foreach ($employees as $employee) {
+                if ($employee->user && $employee->user->branch_id !== $authUser->branch_id) {
+                    abort(403, 'لا يمكنك تنفيذ إجراء على موظف خارج فرعك');
+                }
+            }
+        }
+
+        return $employees;
     }
 }

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { CalendarDays, Filter, Plus, User, BookOpen, Trash2, Search, AlertCircle, X, Check, Calculator, FlaskConical, Globe, Laptop, Music, Palette, Microscope, Languages, Feather, Clock } from 'lucide-react';
+import { CalendarDays, Filter, Plus, User, BookOpen, Trash2, Search, AlertCircle, X, Check, Calculator, FlaskConical, Globe, Laptop, Music, Palette, Microscope, Languages, Feather, Clock, FileSpreadsheet } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 import Modal from '@/Components/Modal';
+import ImportModal from './ImportModal';
 
 const SUBJECT_ICONS = {
     'BookOpen': BookOpen,
@@ -33,6 +34,10 @@ const SUBJECT_COLORS = {
 const DEFAULT_COLOR = 'from-slate-500/10 via-slate-50/50 to-transparent dark:from-slate-500/20 dark:via-slate-900/10 border-slate-200 dark:border-slate-800/50 text-slate-700 dark:text-slate-300';
 
 export default function TimetableIndex({ academicYears, sections, periods, timetable, workingDays, daysTranslation, subjects, teachers, filters }) {
+    const { auth } = usePage().props;
+    const canImport = ['مدير النظام', 'مدير عام'].includes(auth?.user?.role?.name)
+        || (auth?.permissions || []).includes('إسناد المعلمين');
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     
     // Helpers for defaults
     const getInitialYear = () => filters.academic_year_id || academicYears.find(y => y.is_active)?.id || academicYears[0]?.id || '';
@@ -167,6 +172,17 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-semibold">توزيع الحصص على المعلمين والفصول</p>
                             </div>
                         </div>
+
+                        {canImport && (
+                            <button
+                                type="button"
+                                onClick={() => setIsImportModalOpen(true)}
+                                className="inline-flex items-center gap-2 bg-gradient-to-l from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-5 py-3 rounded-2xl text-sm font-black shadow-lg shadow-emerald-600/25 transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                            >
+                                <FileSpreadsheet size={18} />
+                                استيراد / تصدير الجدول (Excel)
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -449,6 +465,23 @@ export default function TimetableIndex({ academicYears, sections, periods, timet
                     </div>
                 </div>
             </Modal>
+
+            {canImport && (
+                <ImportModal
+                    show={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    initialYearId={selectedYear}
+                    initialSemesterId={selectedSemester}
+                    initialSectionId={selectedSection}
+                    initialGradeId={selectedGrade}
+                    initialDivisionId={selectedDivision}
+                    onImported={() => {
+                        if (selectedDivision && filters.division_id == selectedDivision && filters.semester_id == selectedSemester) {
+                            router.reload({ only: ['timetable'] });
+                        }
+                    }}
+                />
+            )}
         </AdminLayout>
     );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Award, FileText, TrendingUp, BookOpen, BarChart3, ChevronDown, ChevronUp, Sparkles, GraduationCap, Star, Target } from 'lucide-react';
+import { Award, FileText, TrendingUp, BookOpen, BarChart3, ChevronDown, ChevronUp, Sparkles, GraduationCap, Star, Target, Lock } from 'lucide-react';
 import ChildSelector from '@/Components/ChildSelector';
 
 // Helper: get grade label & color based on percentage
@@ -55,9 +55,19 @@ const GrandTotalCell = ({ score, max = 100 }) => {
     );
 };
 
-export default function GradesIndex({ auth, monthlyGrades, semesterResults, children, activeChildId }) {
+export default function GradesIndex({ auth, monthlyGrades, semesterResults, children, activeChildId, isResultBlocked = false, isParent = false }) {
     const [activeTab, setActiveTab] = useState('monthly');
     const [expandedPeriods, setExpandedPeriods] = useState({});
+
+    const monthlyCertHref = (periodId) =>
+        isParent
+            ? route('parent.certificate.monthly', { period: periodId, child_id: activeChildId })
+            : route('student.certificate.monthly', periodId);
+
+    const semesterCertHref = (semesterId) =>
+        isParent
+            ? route('parent.certificate', { semester: semesterId, child_id: activeChildId })
+            : route('student.certificate', semesterId);
 
     const resultPeriods = Object.keys(monthlyGrades || {});
 
@@ -177,6 +187,17 @@ export default function GradesIndex({ auth, monthlyGrades, semesterResults, chil
                 </div>
 
                 {/* Tab Content */}
+                {isResultBlocked ? (
+                    <div className="text-center py-20 bg-white dark:bg-[#1e293b] rounded-[2rem] border border-amber-200 dark:border-amber-800/40 shadow-sm px-6">
+                        <div className="w-20 h-20 mx-auto bg-amber-50 dark:bg-amber-900/20 rounded-full flex items-center justify-center mb-5 text-amber-600 dark:text-amber-400">
+                            <Lock size={36} />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">النتائج والشهادات محجوبة حالياً</h3>
+                        <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                            تم حجب عرض النتائج والشهادات لهذا الطالب من قِبل الإدارة. يرجى مراجعة إدارة المدرسة للمزيد من التفاصيل.
+                        </p>
+                    </div>
+                ) : (
                 <div className="space-y-8">
                     {activeTab === 'monthly' && (
                         <div className="space-y-6">
@@ -214,7 +235,7 @@ export default function GradesIndex({ auth, monthlyGrades, semesterResults, chil
                                                     <div className="flex items-center gap-3">
                                                         {monthlyGrades[period][0] && (
                                                             <a
-                                                                href={route('student.certificate.monthly', monthlyGrades[period][0].period_id)}
+                                                                href={monthlyCertHref(monthlyGrades[period][0].period_id)}
                                                                 target="_blank"
                                                                 onClick={(e) => e.stopPropagation()}
                                                                 className="hidden sm:flex items-center gap-1.5 text-sm font-bold bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-4 py-2 rounded-xl hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors border border-primary-100 dark:border-primary-800/30"
@@ -248,7 +269,7 @@ export default function GradesIndex({ auth, monthlyGrades, semesterResults, chil
                                                 {/* Mobile certificate button */}
                                                 {monthlyGrades[period][0] && (
                                                     <a
-                                                        href={route('student.certificate.monthly', monthlyGrades[period][0].period_id)}
+                                                        href={monthlyCertHref(monthlyGrades[period][0].period_id)}
                                                         target="_blank"
                                                         onClick={(e) => e.stopPropagation()}
                                                         className="sm:hidden flex items-center justify-center gap-1.5 text-sm font-bold bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-4 py-2.5 rounded-xl hover:bg-primary-100 transition-colors border border-primary-100 dark:border-primary-800/30 mt-3"
@@ -269,6 +290,7 @@ export default function GradesIndex({ auth, monthlyGrades, semesterResults, chil
                                                                     <th className="py-3.5 px-4 font-bold text-sm">المادة</th>
                                                                     <th className="py-3.5 px-4 font-bold text-sm text-center">المشاركة</th>
                                                                     <th className="py-3.5 px-4 font-bold text-sm text-center">الواجبات</th>
+                                                                    <th className="py-3.5 px-4 font-bold text-sm text-center">المواظبة</th>
                                                                     <th className="py-3.5 px-4 font-bold text-sm text-center">الاختبار</th>
                                                                     <th className="py-3.5 px-4 font-bold text-sm text-center">المجموع</th>
                                                                     <th className="py-3.5 px-4 font-bold text-sm text-center">المستوى</th>
@@ -289,6 +311,7 @@ export default function GradesIndex({ auth, monthlyGrades, semesterResults, chil
                                                                             </td>
                                                                             <ScoreCell score={grade.scores?.oral_total} />
                                                                             <ScoreCell score={grade.scores?.homework_total} />
+                                                                            <ScoreCell score={grade.scores?.behavior} />
                                                                             <ScoreCell score={grade.scores?.monthly_exam} />
                                                                             <GrandTotalCell score={grandTotal} />
                                                                             <td className="py-4 px-3 text-center">
@@ -352,7 +375,7 @@ export default function GradesIndex({ auth, monthlyGrades, semesterResults, chil
                                                             {gradeInfo.emoji} {gradeInfo.label}
                                                         </span>
                                                         <a
-                                                            href={route('student.certificate', semesterResults[semesterName][0]?.semester_id)}
+                                                            href={semesterCertHref(semesterResults[semesterName][0]?.semester_id)}
                                                             target="_blank"
                                                             className="flex items-center gap-1.5 text-sm font-bold bg-white text-primary-600 px-4 py-2 rounded-xl hover:bg-primary-50 transition-colors shadow-md"
                                                         >
@@ -437,6 +460,7 @@ export default function GradesIndex({ auth, monthlyGrades, semesterResults, chil
                         </div>
                     )}
                 </div>
+                )}
             </div>
         </AdminLayout>
     );

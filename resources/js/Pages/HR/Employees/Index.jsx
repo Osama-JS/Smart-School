@@ -4,16 +4,21 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 import SelectInput from '@/Components/SelectInput';
 import ExcelJS from 'exceljs';
+import Swal from 'sweetalert2';
 import { 
     Search, Plus, Filter, Mail, Building, ShieldCheck,
     MoreVertical, Edit2, Trash2, X, Check, Users, Calendar, 
     AlertTriangle, LayoutGrid, List, Download, Printer, RotateCcw,
     ArrowUpDown, ArrowUp, ArrowDown, UserCheck, UserX, CheckCircle2,
-    XCircle, ChevronDown, ArrowUpRight, ArrowDownRight, Upload
+    XCircle, ChevronDown, ArrowUpRight, ArrowDownRight, Upload, KeyRound, MessageCircle
 } from 'lucide-react';
 import ImportModal from './Components/ImportModal';
 import ResetPasswordModal from './Components/ResetPasswordModal';
 import CredentialsPrintModal from './Components/CredentialsPrintModal';
+import BulkAssignModal from './Components/BulkAssignModal';
+import BulkResetPasswordModal from './Components/BulkResetPasswordModal';
+import BulkCredentialsPrintModal from './Components/BulkCredentialsPrintModal';
+import BulkWhatsAppModal from './Components/BulkWhatsAppModal';
 
 // ─── Action Menu ──────────────────────────────────────────────────────────────
 function ActionMenu({ emp, onOpenPrint, onOpenResetPassword }) {
@@ -117,7 +122,16 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
     const [resetPasswordEmployee, setResetPasswordEmployee] = useState(null);
     const [printCredentialsData, setPrintCredentialsData] = useState(null);
     const [isQuickResetting, setIsQuickResetting] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [lastSelectedId, setLastSelectedId] = useState(null);
+    const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
+    const [showBulkResetModal, setShowBulkResetModal] = useState(false);
+    const [showBulkWhatsAppModal, setShowBulkWhatsAppModal] = useState(false);
+    const [bulkPrintCredentials, setBulkPrintCredentials] = useState(null);
+    const [bulkProcessing, setBulkProcessing] = useState(false);
+    const headerCheckboxRef = useRef(null);
     const lastFlashKeyRef = useRef(null);
+    const lastBulkFlashKeyRef = useRef(null);
     const searchInputRef = useRef(null);
     const isFirstRender = useRef(true);
 
@@ -142,6 +156,16 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Check for bulk generated credentials flash message
+    useEffect(() => {
+        const bulkCreds = flash?.bulk_generated_credentials;
+        if (!bulkCreds || !Array.isArray(bulkCreds.items) || bulkCreds.items.length === 0) return;
+        const flashKey = bulkCreds.issued_at || JSON.stringify(bulkCreds);
+        if (lastBulkFlashKeyRef.current === flashKey) return;
+        lastBulkFlashKeyRef.current = flashKey;
+        setBulkPrintCredentials(bulkCreds.items);
+    }, [flash?.bulk_generated_credentials]);
 
     // Check for generated credentials flash message
     useEffect(() => {
@@ -303,8 +327,9 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
 
     const [isExporting, setIsExporting] = useState(false);
 
-    const exportToExcel = async () => {
-        if (empData.length === 0) return;
+    const exportToExcel = async (targetList = null) => {
+        const rowsToExport = Array.isArray(targetList) && targetList.length > 0 ? targetList : empData;
+        if (rowsToExport.length === 0) return;
 
         setIsExporting(true);
         try {
@@ -445,7 +470,7 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                 cell.border = { top: { style: 'thin', color: { argb: 'FFFFFFFF' } }, left: { style: 'thin', color: { argb: 'FFFFFFFF' } }, bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } }, right: { style: 'thin', color: { argb: 'FFFFFFFF' } } };
             });
 
-            empData.forEach((emp, index) => {
+            rowsToExport.forEach((emp, index) => {
                 const row = sheet.addRow([
                     emp.id || index + 1,
                     emp.name,
@@ -482,7 +507,7 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                 }
             });
 
-            sheet.autoFilter = `A9:G${9 + empData.length}`;
+            sheet.autoFilter = `A9:G${9 + rowsToExport.length}`;
             await sheet.protect('', { selectLockedCells: true, selectUnlockedCells: true, autoFilter: true, sort: true, formatCells: true, formatColumns: true, formatRows: true });
 
             const buffer = await workbook.xlsx.writeBuffer();
@@ -508,6 +533,133 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
     };
 
     const empData = employees?.data ?? [];
+    const pageEmployeeIds = empData.map((e) => e.id);
+    const selectedEmployees = empData.filter((e) => selectedIds.includes(e.id));
+    const allPageSelected = empData.length > 0 && pageEmployeeIds.every((id) => selectedIds.includes(id));
+    const somePageSelected = pageEmployeeIds.some((id) => selectedIds.includes(id));
+
+    useEffect(() => {
+        if (headerCheckboxRef.current) {
+            headerCheckboxRef.current.indeterminate = somePageSelected && !allPageSelected;
+        }
+    }, [somePageSelected, allPageSelected]);
+
+    // Drop IDs that are no longer on the current page when pagination/filters change
+    useEffect(() => {
+        setSelectedIds((prev) => prev.filter((id) => pageEmployeeIds.includes(id)));
+    }, [employees?.current_page, employees?.total, empData.length]);
+
+    // Escape key clears selection when no modal is open
+    useEffect(() => {
+        const onKeyDown = (e) => {
+            if (
+                e.key === 'Escape' &&
+                selectedIds.length > 0 &&
+                !showImportModal &&
+                !resetPasswordEmployee &&
+                !printCredentialsData &&
+                !showBulkAssignModal &&
+                !showBulkResetModal &&
+                !showBulkWhatsAppModal &&
+                !bulkPrintCredentials
+            ) {
+                setSelectedIds([]);
+                setLastSelectedId(null);
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [selectedIds.length, showImportModal, resetPasswordEmployee, printCredentialsData, showBulkAssignModal, showBulkResetModal, showBulkWhatsAppModal, bulkPrintCredentials]);
+
+    const toggleSelectOne = (empId, event) => {
+        if (event?.shiftKey && lastSelectedId !== null && lastSelectedId !== empId) {
+            const startIdx = pageEmployeeIds.indexOf(lastSelectedId);
+            const endIdx = pageEmployeeIds.indexOf(empId);
+            if (startIdx !== -1 && endIdx !== -1) {
+                const [from, to] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+                const rangeIds = pageEmployeeIds.slice(from, to + 1);
+                setSelectedIds((prev) => [...new Set([...prev, ...rangeIds])]);
+                setLastSelectedId(empId);
+                return;
+            }
+        }
+
+        setSelectedIds((prev) =>
+            prev.includes(empId) ? prev.filter((id) => id !== empId) : [...prev, empId]
+        );
+        setLastSelectedId(empId);
+    };
+
+    const toggleSelectAllPage = () => {
+        if (allPageSelected) {
+            setSelectedIds([]);
+            setLastSelectedId(null);
+        } else {
+            setSelectedIds(pageEmployeeIds);
+        }
+    };
+
+    const clearSelection = () => {
+        setSelectedIds([]);
+        setLastSelectedId(null);
+    };
+
+    const handleBulkStatus = (isActive) => {
+        if (selectedIds.length === 0 || bulkProcessing) return;
+        router.post(
+            route('hr.employees.bulk-status'),
+            { employee_ids: selectedIds, is_active: isActive },
+            {
+                preserveScroll: true,
+                onStart: () => setBulkProcessing(true),
+                onSuccess: () => clearSelection(),
+                onFinish: () => setBulkProcessing(false),
+            }
+        );
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0 || bulkProcessing) return;
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: 'تأكيد الحذف الجماعي',
+            html: `هل أنت متأكد من حذف <b>${selectedIds.length}</b> موظف محدد؟ لا يمكن التراجع عن هذا الإجراء.`,
+            showCancelButton: true,
+            confirmButtonText: 'نعم، حذف المحددين',
+            cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#e11d48',
+        });
+        if (!result.isConfirmed) return;
+
+        router.post(
+            route('hr.employees.bulk-destroy'),
+            { employee_ids: selectedIds },
+            {
+                preserveScroll: true,
+                onStart: () => setBulkProcessing(true),
+                onSuccess: () => clearSelection(),
+                onFinish: () => setBulkProcessing(false),
+            }
+        );
+    };
+
+    const openBulkPrintCredentials = () => {
+        if (selectedEmployees.length === 0) return;
+        const items = selectedEmployees.map((emp) => ({
+            employee_id: emp.id,
+            name: emp.name,
+            username: emp.username,
+            password: emp.login_password || null,
+            phone: emp.phone || '',
+            branch: emp.branch || '—',
+            department: emp.department || 'غير محدد',
+            jobGrade: emp.jobGrade || 'غير محدد',
+            job_title: emp.job_title || '',
+            role: emp.role || '—',
+            must_change_password: Boolean(emp.must_change_password),
+        }));
+        setBulkPrintCredentials(items);
+    };
 
     const statCards = stats ? [
         {
@@ -620,7 +772,7 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                             <p className="text-primary-705/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة ومتابعة الهيكل التنظيمي لجميع موظفي المدرسة</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
-                            <button onClick={exportToExcel} disabled={isExporting}
+                            <button onClick={() => exportToExcel()} disabled={isExporting}
                                 className="flex items-center justify-center p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-650 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-primary-600 transition-colors shadow-sm disabled:opacity-50"
                                 title="تصدير إكسيل">
                                 {isExporting ? <RotateCcw size={18} className="animate-spin" /> : <Download size={18} />}
@@ -667,6 +819,37 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                     onClose={() => setPrintCredentialsData(null)}
                     onOpenResetPassword={handleOpenResetFromPrint}
                     onQuickResetPassword={handleQuickResetFromPrint}
+                />
+
+                <BulkAssignModal
+                    isOpen={showBulkAssignModal}
+                    selectedIds={selectedIds}
+                    departments={departments}
+                    jobGrades={jobGrades}
+                    onClose={() => setShowBulkAssignModal(false)}
+                    onSuccess={clearSelection}
+                />
+
+                <BulkResetPasswordModal
+                    isOpen={showBulkResetModal}
+                    selectedIds={selectedIds}
+                    onClose={() => setShowBulkResetModal(false)}
+                    onSuccess={clearSelection}
+                />
+
+                <BulkCredentialsPrintModal
+                    isOpen={!!bulkPrintCredentials}
+                    credentialsList={bulkPrintCredentials || []}
+                    logoUrl={logo_url}
+                    reportDesign={reportDesign}
+                    onClose={() => setBulkPrintCredentials(null)}
+                />
+
+                <BulkWhatsAppModal
+                    isOpen={showBulkWhatsAppModal}
+                    selectedEmployees={selectedEmployees}
+                    onClose={() => setShowBulkWhatsAppModal(false)}
+                    onSuccess={clearSelection}
                 />
 
                 {/* Stats Dashboard */}
@@ -952,6 +1135,16 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                             <table className="w-full text-right border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800">
+                                        <th className="px-4 py-4 w-12 text-center print:hidden">
+                                            <input
+                                                ref={headerCheckboxRef}
+                                                type="checkbox"
+                                                checked={allPageSelected}
+                                                onChange={toggleSelectAllPage}
+                                                title="تحديد كل موظفي الصفحة"
+                                                className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                            />
+                                        </th>
                                         {/* Sortable headers */}
                                         {visibleColumns.employee && (
                                         <th onClick={() => handleSort('name')} className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-slate-100/40 dark:hover:bg-slate-850/50 transition-colors">
@@ -999,8 +1192,29 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100/70 dark:divide-slate-800/60">
-                                    {empData.map((emp) => (
-                                        <tr key={emp.id} className="group border-r-4 border-r-transparent hover:border-r-primary-500 dark:hover:bg-primary-500/5 hover:bg-slate-50/40 transition-all duration-200">
+                                     {empData.map((emp) => {
+                                         const isSelected = selectedIds.includes(emp.id);
+                                         return (
+                                         <tr
+                                             key={emp.id}
+                                             className={`group border-r-4 transition-all duration-200 ${
+                                                 isSelected
+                                                     ? 'border-r-primary-600 bg-primary-50/50 dark:bg-primary-500/10'
+                                                     : 'border-r-transparent hover:border-r-primary-500 dark:hover:bg-primary-500/5 hover:bg-slate-50/40'
+                                             }`}
+                                         >
+                                             <td className="px-4 py-4 text-center print:hidden">
+                                                 <input
+                                                     type="checkbox"
+                                                     checked={isSelected}
+                                                     onChange={() => {}}
+                                                     onClick={(e) => {
+                                                         e.stopPropagation();
+                                                         toggleSelectOne(emp.id, e);
+                                                     }}
+                                                     className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-primary-600 focus:ring-primary-500 cursor-pointer"
+                                                 />
+                                             </td>
                                             {visibleColumns.employee && (
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
@@ -1082,7 +1296,8 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                             </td>
                                             )}
                                         </tr>
-                                    ))}
+                                         );
+                                     })}
                                 </tbody>
                             </table>
                         </div>
@@ -1092,8 +1307,29 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                     /* ── Grid View ── */
                     <div className="space-y-6 animate-fade-in">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {empData.map((emp) => (
-                                <div key={emp.id} className="relative bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 group bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px]">
+                            {empData.map((emp) => {
+                                const isSelected = selectedIds.includes(emp.id);
+                                return (
+                                <div
+                                    key={emp.id}
+                                    className={`relative backdrop-blur-xl rounded-3xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1.5 transition-all duration-300 group bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:16px_16px] ${
+                                        isSelected
+                                            ? 'bg-primary-50/60 dark:bg-primary-950/30 border-2 border-primary-500 ring-2 ring-primary-500/20'
+                                            : 'bg-white/70 dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800'
+                                    }`}
+                                >
+                                    <div className="absolute top-4 right-4 z-20 print:hidden">
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => {}}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                toggleSelectOne(emp.id, e);
+                                            }}
+                                            className="h-4 w-4 rounded border-slate-300 dark:border-slate-700 text-primary-600 focus:ring-primary-500 cursor-pointer shadow-sm"
+                                        />
+                                    </div>
                                     <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
                                         {/* Accent top border */}
                                         <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500/20 via-primary-500 to-primary-700/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-350" />
@@ -1164,7 +1400,8 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">{emp.role}</span>
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div className="bg-white/70 dark:bg-slate-900/70 border border-slate-100 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
                             <Pagination data={employees} />
@@ -1172,6 +1409,108 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                     </div>
                 )}
             </div>
+
+            {/* Floating Bulk Action Bar */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-5xl print:hidden animate-slide-up">
+                    <div className="bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-xl text-white rounded-3xl shadow-2xl border border-slate-700/80 px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                            <span className="px-3 py-1 rounded-xl bg-primary-500 text-white text-xs font-black">
+                                تم تحديد {selectedIds.length} موظف
+                            </span>
+                            <button
+                                type="button"
+                                onClick={toggleSelectAllPage}
+                                className="text-xs font-bold text-slate-300 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                {allPageSelected ? 'إلغاء تحديد الصفحة' : 'تحديد كل الصفحة'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={clearSelection}
+                                className="text-xs font-bold text-slate-400 hover:text-rose-400 px-2 py-1 rounded-lg hover:bg-slate-800 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                إلغاء
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <button
+                                type="button"
+                                disabled={bulkProcessing}
+                                onClick={() => handleBulkStatus(true)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600/90 hover:bg-emerald-500 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <UserCheck size={14} /> تفعيل
+                            </button>
+                            <button
+                                type="button"
+                                disabled={bulkProcessing}
+                                onClick={() => handleBulkStatus(false)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600/90 hover:bg-amber-500 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <UserX size={14} /> تعطيل
+                            </button>
+                            <button
+                                type="button"
+                                disabled={bulkProcessing}
+                                onClick={() => setShowBulkAssignModal(true)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <Building size={14} /> القسم / الدرجة
+                            </button>
+                            <button
+                                type="button"
+                                disabled={bulkProcessing}
+                                onClick={openBulkPrintCredentials}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600/90 hover:bg-indigo-500 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <Printer size={14} /> بطاقات الدخول
+                            </button>
+                            <button
+                                type="button"
+                                disabled={bulkProcessing}
+                                onClick={() => setShowBulkResetModal(true)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-teal-600/90 hover:bg-teal-500 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <KeyRound size={14} /> كلمات المرور
+                            </button>
+                            <button
+                                type="button"
+                                disabled={bulkProcessing}
+                                onClick={() => setShowBulkWhatsAppModal(true)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <MessageCircle size={14} /> واتساب
+                            </button>
+                            <button
+                                type="button"
+                                disabled={isExporting || bulkProcessing}
+                                onClick={() => exportToExcel(selectedEmployees)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <Download size={14} /> Excel
+                            </button>
+                            <button
+                                type="button"
+                                disabled={bulkProcessing}
+                                onClick={handlePrint}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <Printer size={14} /> طباعة الكشف
+                            </button>
+                            <button
+                                type="button"
+                                disabled={bulkProcessing}
+                                onClick={handleBulkDelete}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white disabled:opacity-50 transition-colors"
+                            >
+                                <Trash2 size={14} /> حذف
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Print Official Template (hidden on screen, visible on Ctrl+P) */}
             <div className="hidden print:block text-right p-8 font-sans" dir="rtl">
@@ -1198,7 +1537,7 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                         </tr>
                     </thead>
                     <tbody>
-                        {empData.map(emp => (
+                        {(selectedEmployees.length > 0 ? selectedEmployees : empData).map(emp => (
                             <tr key={emp.id}>
                                 <td className="border border-slate-300 p-2 font-bold">{emp.name}</td>
                                 <td className="border border-slate-300 p-2 font-mono">{emp.username}</td>

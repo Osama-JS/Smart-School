@@ -1431,6 +1431,9 @@ export default function StudentsIndex({
                                             )}
                                         </div>
                                         <div className="flex gap-3 items-center">
+                                            <Link href={route('academic.certificates.index', { student_id: student.id })} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors">
+                                                الشهادات
+                                            </Link>
                                             <Link href={route('academic.students.grade-report', student.id)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
                                                 كشف الدرجات
                                             </Link>

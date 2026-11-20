@@ -239,6 +239,7 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
                 { name: 'فترات الرصد', icon: Calendar, url: route('academic.result-periods.index'), permission: 'إدارة الدرجات' },
                 { name: 'سجل الدرجات', icon: BarChart, url: route('academic.monthly-grades.index'), permission: 'عرض درجات الطلاب' },
                 { name: 'نتائج الفصل', icon: BarChart, url: route('academic.semester-results.index'), permission: 'إدارة الدرجات' },
+                { name: 'إصدار الشهادات', icon: Award, url: route('academic.certificates.index'), permission: 'عرض درجات الطلاب' },
                 { name: 'الطلاب المسجلين', icon: UserPlus, url: route('academic.students'), permission: 'إدارة الطلاب' },
                 { name: 'الترفيع الجماعي', icon: ArrowUp, url: route('academic.promotions'), permission: 'إدارة الطلاب' },
                 { name: 'أولياء الأمور', icon: Users, url: route('academic.parents'), permission: 'إدارة أولياء الأمور' },

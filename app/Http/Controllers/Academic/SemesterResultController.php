@@ -93,6 +93,7 @@ class SemesterResultController extends Controller implements \Illuminate\Routing
                 
                 $studentsData[] = [
                     'enrollment_id' => $enroll->id,
+                    'student_id' => $enroll->student_id,
                     'student_name' => $enroll->student->user->name,
                     'student_username' => $enroll->student->user->username,
                     'monthly_aggregate' => $computedAggregate,
@@ -257,6 +258,7 @@ class SemesterResultController extends Controller implements \Illuminate\Routing
 
                 $studentsData[] = [
                     'enrollment_id' => $enroll->id,
+                    'student_id' => $enroll->student_id,
                     'student_name' => $enroll->student->user->name,
                     'student_id_number' => $enroll->student->user->id_number,
                     'scores' => $subjectScores,
