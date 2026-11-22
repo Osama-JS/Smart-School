@@ -221,6 +221,7 @@ class ImportStudentsJob implements ShouldQueue
                     'name'                 => $name,
                     'username'             => $username,
                     'password'             => $hashedDefaultPassword,
+                    'visible_password'     => $defaultPassword,
                     'must_change_password' => true, // إجبار الطالب على تغييرها عند أول تسجيل دخول
                     'email'                => !empty($email) ? $email : null,
                     'phone'                => !empty($phone) ? $phone : null,

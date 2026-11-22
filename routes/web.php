@@ -458,6 +458,8 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'academic.parents.destroy',
         ]);
         Route::post('/academic/parents/{parent}/reset-password', [\App\Http\Controllers\Academic\ParentController::class, 'resetPassword'])->name('academic.parents.reset-password');
+        Route::post('/academic/parents-bulk-reset-password', [\App\Http\Controllers\Academic\ParentController::class, 'bulkResetPassword'])->name('academic.parents.bulk-reset-password');
+        Route::get('/academic/parents-credentials-pdf', [\App\Http\Controllers\Academic\ParentController::class, 'downloadCredentialsPdf'])->name('academic.parents.credentials-pdf');
 
         // Students & Enrollments
         Route::resource('/academic/students', \App\Http\Controllers\Academic\StudentController::class)->names([
@@ -468,9 +470,11 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'academic.students.destroy',
         ]);
         Route::post('/academic/students/{student}/reset-password', [\App\Http\Controllers\Academic\StudentController::class, 'resetPassword'])->name('academic.students.reset-password');
+        Route::post('/academic/students-bulk-reset-password', [\App\Http\Controllers\Academic\StudentController::class, 'bulkResetPassword'])->name('academic.students.bulk-reset-password');
         Route::get('/academic/students-template', [\App\Http\Controllers\Academic\StudentController::class, 'template'])->name('academic.students.template');
         Route::get('/academic/students-export', [\App\Http\Controllers\Academic\StudentController::class, 'export'])->name('academic.students.export');
         Route::get('/academic/students-credentials-batch', [\App\Http\Controllers\Academic\StudentController::class, 'batchCredentials'])->name('academic.students.credentials-batch');
+        Route::get('/academic/students-credentials-pdf', [\App\Http\Controllers\Academic\StudentController::class, 'downloadCredentialsPdf'])->name('academic.students.credentials-pdf');
         Route::post('/academic/students-import', [\App\Http\Controllers\Academic\StudentController::class, 'import'])->name('academic.students.import');
         Route::get('/academic/students-import/status/{batchId}', [\App\Http\Controllers\Academic\StudentController::class, 'importStatus'])->name('academic.students.import-status');
         Route::get('/academic/students-import/credentials/{batchId}', [\App\Http\Controllers\Academic\StudentController::class, 'getBatchCredentials'])->name('academic.students.import-credentials');
@@ -638,6 +642,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('permission:إدارة الموظفين')->group(function () {
         Route::get('/hr/employees/check-existing', [\App\Http\Controllers\HR\EmployeeController::class, 'checkExisting'])->name('hr.employees.check-existing');
+        Route::get('/hr/employees/credentials-pdf', [\App\Http\Controllers\HR\EmployeeController::class, 'downloadCredentialsPdf'])->name('hr.employees.credentials-pdf');
         Route::get('/hr/employees/import/template', [\App\Http\Controllers\HR\EmployeeController::class, 'downloadTemplate'])->name('hr.employees.template');
         Route::post('/hr/employees/import', [\App\Http\Controllers\HR\EmployeeController::class, 'import'])->name('hr.employees.import');
         Route::post('/hr/employees/bulk-status', [\App\Http\Controllers\HR\EmployeeController::class, 'bulkStatus'])->name('hr.employees.bulk-status');

@@ -12,6 +12,8 @@ import Swal from 'sweetalert2';
 import ExcelJS from 'exceljs';
 import SelectInput from '@/Components/SelectInput';
 import ImportModal from './Components/ImportModal';
+import ResetPasswordModal from './Components/ResetPasswordModal';
+import CredentialsPrintModal from './Components/CredentialsPrintModal';
 
 // ─── Helper: Print Template ───────────────────────────────────────────────────
 const printCredentials = (credentialsData, logoUrl = '') => {
@@ -371,6 +373,10 @@ export default function StudentsIndex({
     const [perPage, setPerPage] = useState(filters?.per_page || 15);
     const [selectedStudentIds, setSelectedStudentIds] = useState([]);
     const [isPrintingBatch, setIsPrintingBatch] = useState(false);
+    const [resetPasswordStudent, setResetPasswordStudent] = useState(null);
+    const [printCredentialsData, setPrintCredentialsData] = useState(null);
+    const [isQuickResetting, setIsQuickResetting] = useState(false);
+    const lastFlashKeyRef = useRef(null);
 
     const { flash, appSettings, logo_url } = usePage().props;
     const logoUrl = logo_url || appSettings?.logo_url || '';
@@ -815,6 +821,185 @@ export default function StudentsIndex({
         }
     };
 
+    const handleDownloadCredentialsPdf = () => {
+        const params = {};
+        if (debouncedSearch) params.search = debouncedSearch;
+        if (selectedYear) params.academic_year_id = selectedYear;
+        if (selectedSection) params.section_id = selectedSection;
+        if (selectedGrade) params.grade_id = selectedGrade;
+        if (selectedDivision) params.division_id = selectedDivision;
+        if (statusTab && statusTab !== 'all') params.status_tab = statusTab;
+        if (transportFilter) params.transport = transportFilter;
+        if (accountStatusFilter) params.account_status = accountStatusFilter;
+        if (medicalFilter) params.medical = medicalFilter;
+
+        const queryString = new URLSearchParams(params).toString();
+        const url = route('academic.students.credentials-pdf') + (queryString ? '?' + queryString : '');
+        window.open(url, '_blank');
+    };
+
+    const buildStudentModalTarget = (student) => {
+        const enroll = student.current_enrollment || student.currentEnrollment;
+        const parentPhone = student.parents?.[0]?.phone || '';
+        return {
+            id: student.id,
+            name: student.user?.name || 'طالب',
+            username: student.user?.username || String(student.id),
+            phone: student.user?.phone || parentPhone || '',
+            login_password: student.login_password || null,
+            is_active: Boolean(student.user?.is_active ?? true),
+            must_change_password: Boolean(student.user?.must_change_password ?? false),
+            section_name: enroll?.division?.grade?.section?.name || 'غير محدد',
+            grade_name: enroll?.division?.grade?.name || 'غير محدد',
+            division_name: enroll?.division?.name || 'غير محدد',
+        };
+    };
+
+    const openPrintForStudent = (student) => {
+        const target = buildStudentModalTarget(student);
+        setPrintCredentialsData({
+            action: 'view',
+            student_id: target.id,
+            name: target.name,
+            username: target.username,
+            password: target.login_password,
+            phone: target.phone,
+            section_name: target.section_name,
+            grade_name: target.grade_name,
+            division_name: target.division_name,
+            must_change_password: target.must_change_password,
+            revoked_tokens: false,
+        });
+    };
+
+    const openResetForStudent = (student) => {
+        setResetPasswordStudent(buildStudentModalTarget(student));
+    };
+
+    const handleQuickResetFromPrint = (studentId) => {
+        if (!studentId) return;
+        router.post(
+            route('academic.students.reset-password', studentId),
+            {
+                mode: 'auto',
+                style: 'digits',
+                must_change_password: false,
+                revoke_tokens: false,
+                open_print_modal: true,
+            },
+            {
+                preserveScroll: true,
+                onStart: () => setIsQuickResetting(true),
+                onFinish: () => setIsQuickResetting(false),
+            }
+        );
+    };
+
+    const handleOpenResetFromPrint = (studentId) => {
+        const matched = (students?.data || []).find((s) => s.id === studentId);
+        if (matched) {
+            setPrintCredentialsData(null);
+            openResetForStudent(matched);
+        } else if (printCredentialsData) {
+            const fallback = {
+                id: printCredentialsData.student_id,
+                name: printCredentialsData.name,
+                username: printCredentialsData.username,
+                phone: printCredentialsData.phone || '',
+                is_active: true,
+                must_change_password: Boolean(printCredentialsData.must_change_password),
+                section_name: printCredentialsData.section_name || 'غير محدد',
+                grade_name: printCredentialsData.grade_name || 'غير محدد',
+                division_name: printCredentialsData.division_name || 'غير محدد',
+            };
+            setPrintCredentialsData(null);
+            setResetPasswordStudent(fallback);
+        }
+    };
+
+    const handleDownloadSingleStudentPdf = (studentId) => {
+        if (!studentId) return;
+        const url = route('academic.students.credentials-pdf') + '?student_ids=' + encodeURIComponent(studentId);
+        window.open(url, '_blank');
+    };
+
+    const handleDownloadSelectedPdf = () => {
+        if (selectedStudentIds.length === 0) return;
+        const url = route('academic.students.credentials-pdf') + '?student_ids=' + encodeURIComponent(selectedStudentIds.join(','));
+        window.open(url, '_blank');
+    };
+
+    const handleBulkResetPassword = () => {
+        const totalFiltered = students?.total || 0;
+        const hasSelection = selectedStudentIds.length > 0;
+        Swal.fire({
+            title: 'إعادة تعيين كلمات مرور الطلاب جماعياً',
+            html: `
+                <div dir="rtl" class="text-right space-y-4 mt-2">
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold leading-relaxed">
+                        سيتم توليد وحفظ كلمات مرور جديدة للطلاب ضمن النطاق المحدد لتكون جاهزة فوراً للطباعة في ملف PDF.
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">نطاق الطلاب المستهدفين</label>
+                        <select id="swal-student-target-scope" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-sky-500">
+                            ${hasSelection ? `<option value="selected_only">الطلاب المحددون في الجدول فقط (${selectedStudentIds.length})</option>` : ''}
+                            <option value="all_filtered">جميع الطلاب في الفلتر الحالي (${totalFiltered})</option>
+                            <option value="missing_only">فقط الطلاب الذين ليس لديهم كلمة مرور محفوظة للطباعة</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">نمط توليد كلمة المرور</label>
+                        <select id="swal-student-password-mode" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-sky-500" onchange="document.getElementById('swal-student-manual-wrap').style.display = this.value === 'manual' ? 'block' : 'none';">
+                            <option value="digits_6">تلقائي — 6 أرقام عشوائية لكل طالب (مثال: 347559)</option>
+                            <option value="alnum_8">تلقائي — 8 خانات حروف وأرقام لكل طالب</option>
+                            <option value="manual">كلمة مرور موحّدة يدوية للجميع</option>
+                        </select>
+                    </div>
+                    <div id="swal-student-manual-wrap" style="display:none;">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">كلمة المرور الموحّدة</label>
+                        <input id="swal-student-manual-password" type="text" placeholder="أدخل كلمة المرور الموحدة (4 خانات فأكثر)" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-sky-500" />
+                    </div>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d97706',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'تنفيذ إعادة التعيين',
+            cancelButtonText: 'إلغاء',
+            preConfirm: () => {
+                const target_scope = document.getElementById('swal-student-target-scope')?.value || 'all_filtered';
+                const password_mode = document.getElementById('swal-student-password-mode')?.value || 'digits_6';
+                const manual_password = document.getElementById('swal-student-manual-password')?.value || '';
+                if (password_mode === 'manual' && manual_password.trim().length < 4) {
+                    Swal.showValidationMessage('يرجى إدخال كلمة مرور موحدة لا تقل عن 4 خانات');
+                    return false;
+                }
+                return { target_scope, password_mode, manual_password: manual_password.trim() };
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const payload = { ...result.value };
+                if (payload.target_scope === 'selected_only') {
+                    payload.student_ids = selectedStudentIds;
+                }
+                if (debouncedSearch) payload.search = debouncedSearch;
+                if (selectedYear) payload.academic_year_id = selectedYear;
+                if (selectedSection) payload.section_id = selectedSection;
+                if (selectedGrade) payload.grade_id = selectedGrade;
+                if (selectedDivision) payload.division_id = selectedDivision;
+                if (statusTab && statusTab !== 'all') payload.status_tab = statusTab;
+                if (transportFilter) payload.transport = transportFilter;
+                if (accountStatusFilter) payload.account_status = accountStatusFilter;
+                if (medicalFilter) payload.medical = medicalFilter;
+
+                router.post(route('academic.students.bulk-reset-password'), payload, {
+                    preserveScroll: true,
+                });
+            }
+        });
+    };
+
     // طباعة بطاقات الطلاب المحددين
     const handlePrintSelected = async () => {
         if (selectedStudentIds.length === 0) return;
@@ -853,30 +1038,27 @@ export default function StudentsIndex({
         );
     };
 
-    // Auto-trigger print if credentials were generated
+    // Auto-trigger print modal if credentials were generated
     useEffect(() => {
         if (flash?.generated_credentials) {
-            const { name, username, password } = flash.generated_credentials;
-            const isReset = typeof flash?.success === 'string' && flash.success.includes('إعادة تعيين');
+            const creds = flash.generated_credentials;
+            const flashKey = creds.issued_at || JSON.stringify(creds);
+            if (lastFlashKeyRef.current !== flashKey) {
+                lastFlashKeyRef.current = flashKey;
+                setPrintCredentialsData(creds);
+            }
+        } else if (flash?.success && flash.success.includes('من الطلاب بنجاح')) {
             Swal.fire({
-                title: isReset ? 'تم إعادة تعيين كلمة المرور بنجاح' : 'تم إنشاء الحساب بنجاح',
-                html: `
-                    <div class="text-right space-y-4 mb-4">
-                        <p class="text-sm text-slate-500">تم إنشاء حساب للطالب وتوليد بيانات الدخول. هل ترغب في طباعتها الآن؟</p>
-                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                            <div class="font-mono text-lg text-slate-800" dir="ltr"><span class="text-slate-400 select-none mr-2">👤</span>${username}</div>
-                            <div class="font-mono text-lg text-slate-800 mt-2" dir="ltr"><span class="text-slate-400 select-none mr-2">🔑</span>${password}</div>
-                        </div>
-                    </div>
-                `,
+                title: 'تمت العملية بنجاح!',
+                text: flash.success,
                 icon: 'success',
                 showCancelButton: true,
-                confirmButtonText: '🖨️ طباعة البيانات',
+                confirmButtonText: 'طباعة بطاقات الدخول PDF الآن',
                 cancelButtonText: 'إغلاق',
-                confirmButtonColor: '#0ea5e9'
+                confirmButtonColor: '#be123c'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    printCredentials({ name, username, password }, logoUrl);
+                    handleDownloadCredentialsPdf();
                 }
             });
         }
@@ -1057,50 +1239,81 @@ export default function StudentsIndex({
 
             <div className="space-y-6 animate-fade-in">
                 {/* Header & Actions */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 shadow-sm">
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
+                <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/80 via-white to-emerald-50/40 dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/15 rounded-3xl p-6 md:p-7 shadow-sm">
+                    <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-primary-500 via-emerald-500 to-primary-700" />
                     
-                    <div className="relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div className="relative z-10 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5">
                         <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 rounded-2xl flex items-center justify-center shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)] border border-slate-100 dark:border-slate-700">
-                                <GraduationCap size={28} strokeWidth={1.5} />
+                            <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/25 shrink-0">
+                                <GraduationCap size={28} strokeWidth={1.7} />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">سجل الطلاب</h1>
-                                <p className="text-sm font-semibold text-primary-700/80 dark:text-primary-300/80 mt-1">
-                                    إدارة ملفات الطلاب وسجلاتهم الأكاديمية • إجمالي الطلاب: <span className="font-mono font-black text-primary-600 dark:text-primary-400">{students?.total ?? 0}</span>
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">الطلاب المسجلون</h1>
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-primary-100/80 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300 border border-primary-200/70 dark:border-primary-500/25">
+                                        <Users size={13} />
+                                        <span className="font-mono">{students?.total ?? 0}</span> طالب
+                                    </span>
+                                </div>
+                                <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">
+                                    إدارة الملفات الأكاديمية، حسابات الدخول، الشهادات، وكشوف الدرجات للطلاب
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 sm:gap-3">
-                            <button
-                                onClick={exportToExcel}
-                                disabled={isExporting}
-                                className="flex items-center justify-center p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary-600 transition-colors shadow-sm disabled:opacity-50"
-                                title="تصدير إكسيل"
-                            >
-                                {isExporting ? <RotateCcw size={18} className="animate-spin" /> : <Download size={18} />}
-                            </button>
-                            <button
-                                onClick={handlePrintAllFiltered}
-                                disabled={isPrintingBatch}
-                                className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-50 dark:hover:bg-sky-950/30 px-4 py-3 rounded-2xl text-sm font-bold shadow-sm transition-all hover:-translate-y-0.5 shrink-0 active:scale-95 disabled:opacity-50"
-                                title="طباعة بطاقات حسابات الطلاب الظاهرين في الفلتر الحالي"
-                            >
-                                <Printer size={18} />
-                                <span>طباعة البطاقات</span>
-                            </button>
-                            <button
-                                onClick={() => setShowImportModal(true)}
-                                className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-4 py-3 rounded-2xl text-sm font-bold shadow-sm transition-all hover:-translate-y-0.5 shrink-0 active:scale-95"
-                            >
-                                <Upload size={18} />
-                                <span>استيراد</span>
-                            </button>
+                        <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto xl:justify-end">
+                            {/* Credentials Action Group */}
+                            <div className="flex flex-wrap items-center gap-2 bg-slate-100/80 dark:bg-slate-800/70 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-700/70">
+                                <button
+                                    onClick={handleBulkResetPassword}
+                                    className="flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/50 hover:bg-amber-50 dark:hover:bg-amber-950/30 px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95"
+                                    title="إعادة تعيين كلمات المرور لجميع الطلاب الظاهرين في الفلتر الحالي أو المحددين"
+                                >
+                                    <KeyRound size={15} />
+                                    <span>إعادة تعيين كلمات المرور</span>
+                                </button>
+                                <button
+                                    onClick={handleDownloadCredentialsPdf}
+                                    className="flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-400 border border-rose-200/80 dark:border-rose-800/50 hover:bg-rose-50 dark:hover:bg-rose-950/30 px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95"
+                                    title="طباعة بيانات الدخول (اسم المستخدم وكلمة المرور) لجميع الطلاب الظاهرين في الفلتر الحالي بصيغة PDF"
+                                >
+                                    <Printer size={15} />
+                                    <span>بيانات الدخول PDF</span>
+                                </button>
+                            </div>
+
+                            {/* Data Tools Group */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handlePrintAllFiltered}
+                                    disabled={isPrintingBatch}
+                                    className="flex items-center justify-center gap-1.5 bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-50 dark:hover:bg-sky-950/30 px-3.5 py-2.5 rounded-2xl text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                                    title="طباعة بطاقات حسابات الطلاب الظاهرين في الفلتر الحالي"
+                                >
+                                    <Printer size={16} />
+                                    <span className="hidden sm:inline">طباعة سريعة</span>
+                                </button>
+                                <button
+                                    onClick={exportToExcel}
+                                    disabled={isExporting}
+                                    className="flex items-center justify-center p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary-600 transition-colors shadow-sm disabled:opacity-50"
+                                    title="تصدير إكسيل"
+                                >
+                                    {isExporting ? <RotateCcw size={17} className="animate-spin" /> : <Download size={17} />}
+                                </button>
+                                <button
+                                    onClick={() => setShowImportModal(true)}
+                                    className="flex items-center justify-center gap-1.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-3.5 py-2.5 rounded-2xl text-xs font-bold shadow-sm transition-all active:scale-95"
+                                    title="استيراد الطلاب من إكسيل"
+                                >
+                                    <Upload size={16} />
+                                    <span className="hidden sm:inline">استيراد</span>
+                                </button>
+                            </div>
+
                             <Link
                                 href={route('academic.students.create')}
-                                className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-5 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-primary-500/30 transition-all hover:-translate-y-0.5 shrink-0 active:scale-95"
+                                className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white px-5 py-2.5 rounded-2xl text-sm font-bold shadow-lg shadow-primary-500/25 transition-all hover:-translate-y-0.5 shrink-0 active:scale-95"
                             >
                                 <Plus size={18} />
                                 <span>تسجيل طالب جديد</span>
@@ -1109,38 +1322,89 @@ export default function StudentsIndex({
                     </div>
                 </div>
 
-                {/* 2. التبويبات السريعة لحالة القيد (Quick Status Tabs / Pills) */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar relative z-10">
+                {/* 2. بطاقات مؤشرات حالة القيد التفاعلية (Interactive KPI Status Cards) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 relative z-10">
                     {[
-                        { id: 'all', label: 'جميع الطلاب', icon: Users, count: statusCounts?.all ?? students?.total ?? 0 },
-                        { id: 'active', label: 'النشطون', icon: CheckCircle2, count: statusCounts?.active ?? 0 },
-                        { id: 'unregistered', label: 'غير مسجلين', icon: AlertCircle, count: statusCounts?.unregistered ?? 0 },
-                        { id: 'transferred', label: 'منقولون / مسحوبون', icon: ShieldAlert, count: statusCounts?.transferred ?? 0 },
-                        { id: 'blocked', label: 'محجوبو النتيجة', icon: Ban, count: statusCounts?.blocked ?? 0 },
+                        {
+                            id: 'all',
+                            label: 'جميع الطلاب',
+                            icon: Users,
+                            count: statusCounts?.all ?? students?.total ?? 0,
+                            activeCls: 'bg-primary-50/90 dark:bg-primary-500/15 border-primary-400 dark:border-primary-500/50 ring-2 ring-primary-500/15',
+                            iconCls: 'bg-primary-100 text-primary-700 dark:bg-primary-500/20 dark:text-primary-300',
+                            countCls: 'text-primary-700 dark:text-primary-300',
+                            barCls: 'bg-primary-500',
+                        },
+                        {
+                            id: 'active',
+                            label: 'الطلاب النشطون',
+                            icon: CheckCircle2,
+                            count: statusCounts?.active ?? 0,
+                            activeCls: 'bg-emerald-50/90 dark:bg-emerald-500/15 border-emerald-400 dark:border-emerald-500/50 ring-2 ring-emerald-500/15',
+                            iconCls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
+                            countCls: 'text-emerald-700 dark:text-emerald-400',
+                            barCls: 'bg-emerald-500',
+                        },
+                        {
+                            id: 'unregistered',
+                            label: 'غير مسجلين بشعبة',
+                            icon: AlertCircle,
+                            count: statusCounts?.unregistered ?? 0,
+                            activeCls: 'bg-amber-50/90 dark:bg-amber-500/15 border-amber-400 dark:border-amber-500/50 ring-2 ring-amber-500/15',
+                            iconCls: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300',
+                            countCls: 'text-amber-700 dark:text-amber-400',
+                            barCls: 'bg-amber-500',
+                        },
+                        {
+                            id: 'transferred',
+                            label: 'منقولون / مسحوبون',
+                            icon: ShieldAlert,
+                            count: statusCounts?.transferred ?? 0,
+                            activeCls: 'bg-sky-50/90 dark:bg-sky-500/15 border-sky-400 dark:border-sky-500/50 ring-2 ring-sky-500/15',
+                            iconCls: 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-300',
+                            countCls: 'text-sky-700 dark:text-sky-400',
+                            barCls: 'bg-sky-500',
+                        },
+                        {
+                            id: 'blocked',
+                            label: 'محجوبو النتيجة',
+                            icon: Ban,
+                            count: statusCounts?.blocked ?? 0,
+                            activeCls: 'bg-rose-50/90 dark:bg-rose-500/15 border-rose-400 dark:border-rose-500/50 ring-2 ring-rose-500/15',
+                            iconCls: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300',
+                            countCls: 'text-rose-700 dark:text-rose-400',
+                            barCls: 'bg-rose-500',
+                        },
                     ].map(tab => {
                         const Icon = tab.icon;
                         const isActive = statusTab === tab.id;
+                        const totalBase = Math.max(statusCounts?.all ?? students?.total ?? 0, 1);
+                        const pct = tab.id === 'all' ? 100 : Math.min(100, Math.round((tab.count / totalBase) * 100));
+
                         return (
                             <button
                                 key={tab.id}
+                                type="button"
                                 onClick={() => setStatusTab(tab.id)}
-                                className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-black transition-all shrink-0 select-none ${
-                                    isActive 
-                                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-md scale-[1.02]' 
-                                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                className={`text-right p-4 rounded-2xl border transition-all select-none group ${
+                                    isActive
+                                        ? `${tab.activeCls} shadow-sm`
+                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-sm'
                                 }`}
                             >
-                                <Icon size={15} className={isActive ? 'text-primary-400 dark:text-primary-600' : 'text-slate-400'} />
-                                <span>{tab.label}</span>
-                                {typeof tab.count === 'number' && (
-                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                                        isActive 
-                                            ? 'bg-white/20 text-white dark:bg-slate-900/20 dark:text-slate-900' 
-                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
-                                    }`}>
-                                        {tab.count}
-                                    </span>
-                                )}
+                                <div className="flex items-center justify-between gap-2 mb-2.5">
+                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300 truncate">{tab.label}</span>
+                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${tab.iconCls}`}>
+                                        <Icon size={16} />
+                                    </div>
+                                </div>
+                                <div className="flex items-baseline justify-between gap-2">
+                                    <span className={`text-2xl font-black font-mono ${tab.countCls}`}>{tab.count}</span>
+                                    <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 font-mono">{pct}%</span>
+                                </div>
+                                <div className="mt-2.5 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                    <div className={`h-full rounded-full transition-all duration-300 ${tab.barCls}`} style={{ width: `${pct}%` }} />
+                                </div>
                             </button>
                         );
                     })}
@@ -1292,173 +1556,184 @@ export default function StudentsIndex({
 
                 {/* Students View */}
                 {viewMode === 'grid' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(students?.data || []).length > 0 ? (
-                        students.data.map((student) => {
-                            const enroll = student.current_enrollment;
-                            const studentName = student.user?.name || 'طالب';
-                            const studentUsername = student.user?.username || student.id;
-                            const initialChar = student.user?.name ? student.user.name.charAt(0) : 'ط';
-                            
-                            return (
-                                <div key={student.id} className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-sm hover:shadow-md transition-all group relative overflow-hidden flex flex-col h-full ${
-                                    selectedStudentIds.includes(student.id)
-                                        ? 'border-primary-500 ring-2 ring-primary-500/20'
-                                        : 'border-slate-200 dark:border-slate-800'
-                                }`}>
-                                    {/* زر تحديد الطالب */}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); toggleSelectStudent(student.id); }}
-                                        className={`absolute top-4 left-4 z-10 p-1.5 rounded-xl transition-all ${
-                                            selectedStudentIds.includes(student.id)
-                                                ? 'bg-primary-500 text-white shadow-md'
-                                                : 'bg-slate-100/90 dark:bg-slate-800/90 text-slate-400 hover:text-primary-600 border border-slate-200 dark:border-slate-700 opacity-60 group-hover:opacity-100'
-                                        }`}
-                                        title={selectedStudentIds.includes(student.id) ? "إلغاء تحديد الطالب" : "تحديد الطالب"}
-                                    >
-                                        {selectedStudentIds.includes(student.id) ? (
-                                            <CheckSquare size={16} />
-                                        ) : (
-                                            <Square size={16} />
-                                        )}
-                                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {(students?.data || []).length > 0 ? (
+                            students.data.map((student) => {
+                                const enroll = student.current_enrollment;
+                                const studentName = student.user?.name || 'طالب';
+                                const studentUsername = student.user?.username || student.id;
+                                const initialChar = student.user?.name ? student.user.name.charAt(0) : 'ط';
+                                const hasSavedPassword = Boolean(student.login_password);
+                                const parentObj = student.parents?.[0];
+                                const contactPhone = student.user?.phone || parentObj?.phone || '';
 
-                                    <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 z-10">
-                                        <Link href={route('academic.students.edit', student.id)} className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 transition-colors">
-                                            <Edit size={16} />
-                                        </Link>
-                                        <button onClick={() => handleDelete(student.id)} className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-100 transition-colors tooltip" title="حذف الطالب">
-                                            <Trash2 size={16} />
-                                        </button>
-                                        <button 
-                                            onClick={() => printCredentials({ name: studentName, username: studentUsername }, logoUrl)}
-                                            className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-100 transition-colors tooltip" title="طباعة بيانات الدخول">
-                                            <Printer size={16} />
-                                        </button>
-                                        <button 
-                                            onClick={() => {
-                                                Swal.fire({
-                                                    title: 'إعادة تعيين كلمة المرور',
-                                                    text: 'سيتم توليد كلمة مرور جديدة عشوائية لهذا الطالب، هل أنت متأكد؟',
-                                                    icon: 'warning',
-                                                    showCancelButton: true,
-                                                    confirmButtonText: 'نعم، أعد التعيين',
-                                                    cancelButtonText: 'إلغاء'
-                                                }).then(result => {
-                                                    if (result.isConfirmed) {
-                                                        router.post(route('academic.students.reset-password', student.id));
-                                                    }
-                                                });
-                                            }}
-                                            className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-100 transition-colors tooltip" title="إعادة تعيين كلمة المرور">
-                                            <RotateCcw size={16} />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-xl border border-primary-200/50 dark:border-primary-500/20 shrink-0 shadow-inner">
-                                            {initialChar}
-                                        </div>
-                                        <div className="flex-1 min-w-0 pr-12 group-hover:pr-0 transition-all">
-                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                <h3 className="text-base font-bold text-slate-800 dark:text-white truncate">
-                                                    {highlightText(studentName, debouncedSearch)}
-                                                </h3>
-                                                {student.transport_subscription && (
-                                                    <span title="مشترك بالنقل" className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 px-1.5 py-0.5 rounded font-bold">
-                                                        🚌
-                                                    </span>
-                                                )}
-                                                {student.medical_record && (
-                                                    <span title="سجل طبي بالعيادة" className="text-[10px] bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 px-1.5 py-0.5 rounded font-bold">
-                                                        🩺
-                                                    </span>
-                                                )}
-                                                {enroll?.is_result_blocked && (
-                                                    <span title="محجوب النتيجة" className="text-[10px] bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 px-1.5 py-0.5 rounded font-bold">
-                                                        ⛔
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <span className="text-xs text-slate-500 font-mono block mt-0.5">@{highlightText(studentUsername, debouncedSearch)}</span>
-                                            {student.parents && student.parents.length > 0 && (
-                                                <span className="text-[11px] text-indigo-500 dark:text-indigo-400 block truncate mt-0.5">
-                                                    ولي الأمر: {highlightText(student.parents[0].name, debouncedSearch)}
+                                return (
+                                    <div key={student.id} className={`bg-white dark:bg-slate-900 rounded-3xl p-5 border shadow-sm hover:shadow-md transition-all group flex flex-col h-full ${
+                                        selectedStudentIds.includes(student.id)
+                                            ? 'border-primary-500 ring-2 ring-primary-500/20'
+                                            : 'border-slate-200 dark:border-slate-800'
+                                    }`}>
+                                        {/* Top Card Toolbar (No Overlap) */}
+                                        <div className="flex items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-100 dark:border-slate-800">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => { e.stopPropagation(); toggleSelectStudent(student.id); }}
+                                                    className={`p-1.5 rounded-xl transition-all ${
+                                                        selectedStudentIds.includes(student.id)
+                                                            ? 'bg-primary-500 text-white shadow-sm'
+                                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-primary-600'
+                                                    }`}
+                                                    title={selectedStudentIds.includes(student.id) ? "إلغاء تحديد الطالب" : "تحديد الطالب"}
+                                                >
+                                                    {selectedStudentIds.includes(student.id) ? <CheckSquare size={15} /> : <Square size={15} />}
+                                                </button>
+                                                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                                                    hasSavedPassword
+                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/20'
+                                                        : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20'
+                                                }`}>
+                                                    {hasSavedPassword ? 'جاهز للطباعة ✓' : 'بدون كلمة محفوظة'}
                                                 </span>
-                                            )}
-                                        </div>
-                                    </div>
+                                            </div>
 
-                                    {/* Academic Status Widget */}
-                                    <div className="mb-5 p-4 rounded-2xl bg-primary-50 dark:bg-primary-500/5 border border-primary-100/50 dark:border-primary-500/10 flex-grow">
-                                        {enroll ? (
-                                            <div className="space-y-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${
-                                                        enroll.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
-                                                        enroll.status === 'transferred' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
-                                                        'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
-                                                    }`}>
-                                                        {enroll.status === 'active' ? 'نشط' : enroll.status === 'transferred' ? 'منقول' : 'مسحوب/خريج'}
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <button
+                                                    onClick={() => openPrintForStudent(student)}
+                                                    className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-100 transition-colors"
+                                                    title="طباعة بيانات الدخول"
+                                                >
+                                                    <Printer size={15} />
+                                                </button>
+                                                <button
+                                                    onClick={() => openResetForStudent(student)}
+                                                    className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-100 transition-colors"
+                                                    title="إعادة تعيين كلمة المرور"
+                                                >
+                                                    <KeyRound size={15} />
+                                                </button>
+                                                <Link
+                                                    href={route('academic.students.edit', student.id)}
+                                                    className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 transition-colors"
+                                                    title="تعديل الطالب"
+                                                >
+                                                    <Edit size={15} />
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleDelete(student.id)}
+                                                    className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-100 transition-colors"
+                                                    title="حذف الطالب"
+                                                >
+                                                    <Trash2 size={15} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Student Identity */}
+                                        <div className="flex items-center gap-3.5 mb-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40 flex items-center justify-center text-primary-700 dark:text-primary-300 font-black text-lg border border-primary-200/60 dark:border-primary-500/20 shrink-0 shadow-inner">
+                                                {initialChar}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <h3 className="text-base font-black text-slate-800 dark:text-white truncate">
+                                                        {highlightText(studentName, debouncedSearch)}
+                                                    </h3>
+                                                    {student.transport_subscription && (
+                                                        <span title="مشترك بالنقل" className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 px-1.5 py-0.5 rounded font-bold">🚌</span>
+                                                    )}
+                                                    {student.medical_record && (
+                                                        <span title="سجل طبي بالعيادة" className="text-[10px] bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 px-1.5 py-0.5 rounded font-bold">🩺</span>
+                                                    )}
+                                                    {enroll?.is_result_blocked && (
+                                                        <span title="محجوب النتيجة" className="text-[10px] bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 px-1.5 py-0.5 rounded font-bold">⛔</span>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                                                    <span className="font-mono">@{highlightText(studentUsername, debouncedSearch)}</span>
+                                                    {student.user?.national_id && (
+                                                        <span className="text-[11px] text-slate-400">| هـ: {highlightText(student.user.national_id, debouncedSearch)}</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Academic & Parent Widget */}
+                                        <div className="mb-4 p-3.5 rounded-2xl bg-slate-50/90 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 flex-grow space-y-2.5">
+                                            {enroll ? (
+                                                <>
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                                            enroll.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                                                            enroll.status === 'transferred' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
+                                                            'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
+                                                        }`}>
+                                                            {enroll.status === 'active' ? 'نشط' : enroll.status === 'transferred' ? 'منقول' : 'مسحوب/خريج'}
+                                                        </span>
+                                                        <span className="text-[11px] font-bold text-primary-600 dark:text-primary-400">{enroll.academic_year?.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
+                                                        <Building2 size={14} className="text-primary-500 shrink-0" />
+                                                        <span className="font-bold">{enroll.division?.grade?.section?.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                                                        <BookOpen size={14} className="text-primary-500 shrink-0" />
+                                                        <span>{enroll.division?.grade?.name} — {enroll.division?.name}</span>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="py-2 flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                                                    <ShieldAlert size={18} className="shrink-0" />
+                                                    <div>
+                                                        <p className="text-xs font-bold">غير مسجل في أي شعبة</p>
+                                                        <p className="text-[11px] text-slate-500">لا يوجد قيد أكاديمي نشط حالياً</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {(parentObj || contactPhone) && (
+                                                <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700/60 flex items-center justify-between gap-2 text-[11px]">
+                                                    <span className="text-indigo-600 dark:text-indigo-400 font-bold truncate">
+                                                        {parentObj ? `ولي الأمر: ${parentObj.name}` : 'جوال الطالب'}
                                                     </span>
-                                                    <span className="text-xs font-bold text-primary-600 dark:text-primary-400">{enroll.academic_year?.name}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                                    <Building2 size={16} className="text-primary-400" />
-                                                    <span className="font-medium">{enroll.division?.grade?.section?.name}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                                                    <BookOpen size={16} className="text-primary-400" />
-                                                    <span>{enroll.division?.grade?.name} - {enroll.division?.name}</span>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="h-full flex flex-col items-center justify-center text-center">
-                                                <ShieldAlert size={24} className="text-amber-400 mb-2" />
-                                                <p className="text-sm font-bold text-slate-700 dark:text-white">غير مسجل حالياً</p>
-                                                <p className="text-xs text-slate-500">الطالب غير مسجل في أي شعبة للسنة الحالية</p>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="border-t border-slate-100 dark:border-slate-700/50 pt-4 flex items-center justify-between mt-auto">
-                                        <div className="flex gap-2">
-                                            {student.user?.phone && (
-                                                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 tooltip" title={student.user.phone}>
-                                                    <Phone size={14} />
+                                                    {contactPhone && (
+                                                        <span className="font-mono text-slate-500 dark:text-slate-400 shrink-0" dir="ltr">{contactPhone}</span>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="flex gap-3 items-center">
-                                            <Link href={route('academic.certificates.index', { student_id: student.id })} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors">
-                                                الشهادات
-                                            </Link>
-                                            <Link href={route('academic.students.grade-report', student.id)} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors">
-                                                كشف الدرجات
-                                            </Link>
+
+                                        {/* Footer Quick Links */}
+                                        <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex items-center justify-between gap-2 mt-auto">
+                                            <div className="flex gap-2 items-center">
+                                                <Link href={route('academic.certificates.index', { student_id: student.id })} className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold hover:bg-emerald-100 transition-colors">
+                                                    الشهادات
+                                                </Link>
+                                                <Link href={route('academic.students.grade-report', student.id)} className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-[11px] font-bold hover:bg-indigo-100 transition-colors">
+                                                    كشف الدرجات
+                                                </Link>
+                                            </div>
                                             <Link href={route('academic.students.edit', student.id)} className="text-xs font-bold text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300 transition-colors">
                                                 الملف الكامل &larr;
                                             </Link>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })
-                    ) : (
-                        <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
-                            <GraduationCap size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
-                            <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-1">لا يوجد طلاب</h3>
-                            <p className="text-sm text-slate-500">لم يتم العثور على أي طلاب مطابقين لبحثك.</p>
-                        </div>
-                    )}
-                </div>
+                                );
+                            })
+                        ) : (
+                            <div className="col-span-full flex flex-col items-center justify-center p-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
+                                <GraduationCap size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                                <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-1">لا يوجد طلاب</h3>
+                                <p className="text-sm text-slate-500">لم يتم العثور على أي طلاب مطابقين لبحثك.</p>
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-right">
                                 <thead>
-                                    <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                                    <tr className="bg-slate-50/90 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs uppercase">
                                         <th className="p-4 w-12 text-center">
                                             <button
                                                 type="button"
@@ -1473,21 +1748,26 @@ export default function StudentsIndex({
                                                 )}
                                             </button>
                                         </th>
-                                        <th className="p-4 font-bold text-sm">الطالب</th>
-                                        <th className="p-4 font-bold text-sm">الحالة الأكاديمية</th>
-                                        <th className="p-4 font-bold text-sm">المرحلة والصف</th>
-                                        <th className="p-4 font-bold text-sm text-center">الإجراءات</th>
+                                        <th className="p-4 font-extrabold">الطالب</th>
+                                        <th className="p-4 font-extrabold">المرحلة والصف والشعبة</th>
+                                        <th className="p-4 font-extrabold">ولي الأمر والتواصل</th>
+                                        <th className="p-4 font-extrabold">الحالة وبيانات الدخول</th>
+                                        <th className="p-4 font-extrabold text-center">الإجراءات</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                                     {(students?.data || []).length > 0 ? (
                                         students.data.map((student) => {
                                             const enroll = student.current_enrollment;
                                             const studentName = student.user?.name || 'طالب';
                                             const studentUsername = student.user?.username || student.id;
                                             const initialChar = student.user?.name ? student.user.name.charAt(0) : 'ط';
+                                            const hasSavedPassword = Boolean(student.login_password);
+                                            const parentObj = student.parents?.[0];
+                                            const contactPhone = student.user?.phone || parentObj?.phone || '';
+
                                             return (
-                                                <tr key={student.id} className={`border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group ${
+                                                <tr key={student.id} className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors ${
                                                     selectedStudentIds.includes(student.id) ? 'bg-primary-50/40 dark:bg-primary-950/20' : ''
                                                 }`}>
                                                     <td className="p-4 text-center">
@@ -1505,41 +1785,29 @@ export default function StudentsIndex({
                                                         </button>
                                                     </td>
                                                     <td className="p-4">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40 flex items-center justify-center text-primary-600 dark:text-primary-400 font-bold text-lg shrink-0">
+                                                        <div className="flex items-center gap-3.5">
+                                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/40 dark:to-primary-800/40 flex items-center justify-center text-primary-700 dark:text-primary-300 font-black text-base shrink-0">
                                                                 {initialChar}
                                                             </div>
-                                                            <div>
-                                                                <div className="flex items-center gap-2">
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-1.5 flex-wrap">
                                                                     <h3 className="text-sm font-bold text-slate-800 dark:text-white">
                                                                         {highlightText(studentName, debouncedSearch)}
                                                                     </h3>
                                                                     {student.transport_subscription && (
-                                                                        <span title="مشترك بالنقل المدرسي" className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 px-1.5 py-0.5 rounded-md font-bold">
-                                                                            🚌 باص
-                                                                        </span>
+                                                                        <span title="مشترك بالنقل المدرسي" className="text-[10px] bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 px-1.5 py-0.5 rounded-md font-bold">🚌 باص</span>
                                                                     )}
                                                                     {student.medical_record && (
-                                                                        <span title="سجل طبي بالعيادة" className="text-[10px] bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 px-1.5 py-0.5 rounded-md font-bold">
-                                                                            🩺 عيادة
-                                                                        </span>
+                                                                        <span title="سجل طبي بالعيادة" className="text-[10px] bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300 px-1.5 py-0.5 rounded-md font-bold">🩺 عيادة</span>
                                                                     )}
                                                                     {enroll?.is_result_blocked && (
-                                                                        <span title="محجوب النتيجة" className="text-[10px] bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 px-1.5 py-0.5 rounded-md font-bold">
-                                                                            ⛔ محجوب
-                                                                        </span>
+                                                                        <span title="محجوب النتيجة" className="text-[10px] bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300 px-1.5 py-0.5 rounded-md font-bold">⛔ محجوب</span>
                                                                     )}
                                                                 </div>
                                                                 <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
                                                                     <span className="font-mono">@{highlightText(studentUsername, debouncedSearch)}</span>
-                                                                    {student.user?.phone && (
-                                                                        <span className="text-[11px] text-slate-400 font-mono">| {highlightText(student.user.phone, debouncedSearch)}</span>
-                                                                    )}
                                                                     {student.user?.national_id && (
                                                                         <span className="text-[11px] text-slate-400">| هـ: {highlightText(student.user.national_id, debouncedSearch)}</span>
-                                                                    )}
-                                                                    {student.parents && student.parents.length > 0 && (
-                                                                        <span className="text-[11px] text-indigo-500 dark:text-indigo-400">| ولي الأمر: {highlightText(student.parents[0].name, debouncedSearch)}</span>
                                                                     )}
                                                                 </div>
                                                             </div>
@@ -1547,66 +1815,109 @@ export default function StudentsIndex({
                                                     </td>
                                                     <td className="p-4">
                                                         {enroll ? (
-                                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
-                                                                enroll.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
-                                                                enroll.status === 'transferred' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
-                                                                'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
-                                                            }`}>
-                                                                <span className={`w-1.5 h-1.5 rounded-full ${
-                                                                    enroll.status === 'active' ? 'bg-emerald-500' :
-                                                                    enroll.status === 'transferred' ? 'bg-amber-500' :
-                                                                    'bg-rose-500'
-                                                                }`} />
-                                                                {enroll.status === 'active' ? 'نشط' : enroll.status === 'transferred' ? 'منقول' : 'مسحوب/خريج'}
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                                                <ShieldAlert size={12} /> غير مسجل
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-4">
-                                                        {enroll ? (
                                                             <div>
-                                                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                                                                <p className="text-xs font-extrabold text-slate-700 dark:text-slate-200">
                                                                     {enroll.division?.grade?.section?.name}
                                                                 </p>
-                                                                <p className="text-xs text-slate-500 mt-0.5">
-                                                                    {enroll.division?.grade?.name} - {enroll.division?.name}
-                                                                </p>
+                                                                <div className="flex items-center gap-1.5 mt-1">
+                                                                    <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
+                                                                        {enroll.division?.grade?.name} - {enroll.division?.name}
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         ) : (
-                                                            <span className="text-slate-400 text-sm">-</span>
+                                                            <span className="text-slate-400 text-xs font-bold">غير محدد</span>
                                                         )}
                                                     </td>
                                                     <td className="p-4">
-                                                        <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <Link href={route('academic.students.edit', student.id)} className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 transition-colors tooltip" title="تعديل الطالب">
-                                                                <Edit size={16} />
+                                                        <div className="space-y-1">
+                                                            {parentObj ? (
+                                                                <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                                                    {highlightText(parentObj.name, debouncedSearch)}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-xs text-slate-400">بدون ولي أمر مرتبط</span>
+                                                            )}
+                                                            {contactPhone && (
+                                                                <div className="text-xs font-mono text-slate-500 dark:text-slate-400 flex items-center gap-1" dir="ltr">
+                                                                    <Phone size={11} className="text-slate-400 shrink-0" />
+                                                                    <span>{highlightText(contactPhone, debouncedSearch)}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="flex flex-col items-start gap-1.5">
+                                                            {enroll ? (
+                                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-[11px] font-bold ${
+                                                                    enroll.status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                                                                    enroll.status === 'transferred' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
+                                                                    'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-400'
+                                                                }`}>
+                                                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                                                        enroll.status === 'active' ? 'bg-emerald-500' :
+                                                                        enroll.status === 'transferred' ? 'bg-amber-500' :
+                                                                        'bg-rose-500'
+                                                                    }`} />
+                                                                    {enroll.status === 'active' ? 'نشط' : enroll.status === 'transferred' ? 'منقول' : 'مسحوب/خريج'}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                                                                    <ShieldAlert size={11} /> غير مسجل
+                                                                </span>
+                                                            )}
+                                                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                                                hasSavedPassword
+                                                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-500/20'
+                                                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 border border-amber-200/70 dark:border-amber-500/20'
+                                                            }`}>
+                                                                {hasSavedPassword ? 'كلمة المرور جاهزة ✓' : 'بدون كلمة محفوظة'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="flex items-center justify-center gap-1.5">
+                                                            <button
+                                                                onClick={() => openPrintForStudent(student)}
+                                                                className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-100 transition-colors"
+                                                                title="بطاقة الدخول والطباعة"
+                                                            >
+                                                                <Printer size={15} />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => openResetForStudent(student)}
+                                                                className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-100 transition-colors"
+                                                                title="إعادة تعيين كلمة المرور"
+                                                            >
+                                                                <KeyRound size={15} />
+                                                            </button>
+                                                            <Link
+                                                                href={route('academic.students.grade-report', student.id)}
+                                                                className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-100 transition-colors"
+                                                                title="كشف الدرجات"
+                                                            >
+                                                                <BookOpen size={15} />
                                                             </Link>
-                                                            <button onClick={() => printCredentials({ name: studentName, username: studentUsername }, logoUrl)} className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center hover:bg-emerald-100 transition-colors tooltip" title="طباعة بيانات الدخول">
-                                                                <Printer size={16} />
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    Swal.fire({
-                                                                        title: 'إعادة تعيين كلمة المرور',
-                                                                        text: 'سيتم توليد كلمة مرور جديدة عشوائية، هل أنت متأكد؟',
-                                                                        icon: 'warning',
-                                                                        showCancelButton: true,
-                                                                        confirmButtonText: 'نعم',
-                                                                        cancelButtonText: 'إلغاء'
-                                                                    }).then(result => {
-                                                                        if (result.isConfirmed) {
-                                                                            router.post(route('academic.students.reset-password', student.id));
-                                                                        }
-                                                                    });
-                                                                }}
-                                                                className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-100 transition-colors tooltip" title="إعادة تعيين كلمة المرور">
-                                                                <RotateCcw size={16} />
-                                                            </button>
-                                                            <button onClick={() => handleDelete(student.id)} className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-100 transition-colors tooltip" title="حذف">
-                                                                <Trash2 size={16} />
+                                                            <Link
+                                                                href={route('academic.certificates.index', { student_id: student.id })}
+                                                                className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center hover:bg-teal-100 transition-colors"
+                                                                title="الشهادات"
+                                                            >
+                                                                <GraduationCap size={15} />
+                                                            </Link>
+                                                            <Link
+                                                                href={route('academic.students.edit', student.id)}
+                                                                className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 transition-colors"
+                                                                title="تعديل الطالب"
+                                                            >
+                                                                <Edit size={15} />
+                                                            </Link>
+                                                            <button
+                                                                onClick={() => handleDelete(student.id)}
+                                                                className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-100 transition-colors"
+                                                                title="حذف"
+                                                            >
+                                                                <Trash2 size={15} />
                                                             </button>
                                                         </div>
                                                     </td>
@@ -1615,7 +1926,7 @@ export default function StudentsIndex({
                                         })
                                     ) : (
                                         <tr>
-                                            <td colSpan="5" className="p-12 text-center">
+                                            <td colSpan="6" className="p-12 text-center">
                                                 <GraduationCap size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
                                                 <h3 className="text-lg font-bold text-slate-700 dark:text-white mb-1">لا يوجد طلاب</h3>
                                                 <p className="text-sm text-slate-500">لم يتم العثور على أي طلاب مطابقين لبحثك.</p>
@@ -1628,42 +1939,64 @@ export default function StudentsIndex({
                     </div>
                 )}
 
-                {/* Pagination */}
-                {students?.links && students.links.length > 3 && (
-                    <div className="flex justify-center mt-8">
-                        <div className="flex flex-wrap gap-1 bg-white dark:bg-slate-800/50 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                            {students.links.map((link, index) => {
-                                if (!link.url) {
+                {/* Rich Pagination Footer */}
+                {students && (students.total > 0 || (students.links && students.links.length > 3)) && (
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl px-5 py-3.5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex flex-wrap items-center gap-3 text-xs font-bold text-slate-500 dark:text-slate-400">
+                            <span>
+                                عرض <strong className="text-slate-800 dark:text-white font-mono">{students.from || 0}</strong> إلى{' '}
+                                <strong className="text-slate-800 dark:text-white font-mono">{students.to || 0}</strong> من أصل{' '}
+                                <strong className="text-primary-600 dark:text-primary-400 font-mono">{students.total || 0}</strong> طالب
+                            </span>
+                            <div className="flex items-center gap-1.5 border-r border-slate-200 dark:border-slate-700 pr-3">
+                                <span>لكل صفحة:</span>
+                                <select
+                                    value={perPage}
+                                    onChange={(e) => setPerPage(Number(e.target.value))}
+                                    className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-primary-500"
+                                >
+                                    {[15, 30, 50, 100].map((num) => (
+                                        <option key={num} value={num}>{num}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {students?.links && students.links.length > 3 && (
+                            <div className="flex flex-wrap gap-1 justify-center">
+                                {students.links.map((link, index) => {
+                                    if (!link.url) {
+                                        return (
+                                            <span
+                                                key={index}
+                                                className="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-300 dark:text-slate-600 cursor-not-allowed select-none"
+                                                dangerouslySetInnerHTML={{ __html: link.label }}
+                                            />
+                                        );
+                                    }
                                     return (
-                                        <span
+                                        <Link
                                             key={index}
-                                            className="px-4 py-2 rounded-xl text-sm font-bold text-slate-300 dark:text-slate-600 cursor-not-allowed select-none"
+                                            href={link.url}
+                                            preserveScroll
+                                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                                link.active
+                                                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/30'
+                                                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                            }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
                                     );
-                                }
-                                return (
-                                    <Link
-                                        key={index}
-                                        href={link.url}
-                                        preserveScroll
-                                        className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                                            link.active 
-                                                ? 'bg-primary-500 text-white shadow-md shadow-primary-500/30' 
-                                                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                );
-                            })}
-                        </div>
+                                })}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
             {/* 6. شريط العمليات الجماعية العائم عند التحديد (Floating Bulk Actions Bar) */}
             {selectedStudentIds.length > 0 && (
-                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white px-5 py-3 rounded-3xl shadow-2xl border border-slate-700/60 flex items-center gap-4 animate-fade-in max-w-xl w-[92%] sm:w-auto justify-between">
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 dark:bg-slate-800/95 backdrop-blur-md text-white px-5 py-3 rounded-3xl shadow-2xl border border-slate-700/60 flex flex-wrap items-center gap-3 animate-fade-in max-w-3xl w-[94%] sm:w-auto justify-between">
                     <div className="flex items-center gap-2.5">
                         <span className="w-7 h-7 rounded-full bg-primary-500 text-white font-mono font-black text-xs flex items-center justify-center shadow-inner">
                             {selectedStudentIds.length}
@@ -1673,15 +2006,33 @@ export default function StudentsIndex({
                         </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={handleDownloadSelectedPdf}
+                            className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 active:scale-95 text-white px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-md"
+                        >
+                            <Printer size={14} />
+                            <span>بطاقات المحددين PDF ({selectedStudentIds.length})</span>
+                        </button>
+
                         <button
                             type="button"
                             onClick={handlePrintSelected}
                             disabled={isPrintingBatch}
-                            className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white px-4 py-2 rounded-2xl text-xs font-bold transition-all shadow-md disabled:opacity-50"
+                            className="flex items-center gap-1.5 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-md disabled:opacity-50"
                         >
-                            <Printer size={15} />
-                            <span>طباعة بطاقات الدخول ({selectedStudentIds.length})</span>
+                            <Printer size={14} />
+                            <span>طباعة سريعة</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleBulkResetPassword}
+                            className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-500 active:scale-95 text-white px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-md"
+                        >
+                            <KeyRound size={14} />
+                            <span>إعادة تعيين كلمات المرور</span>
                         </button>
 
                         <button
@@ -1875,6 +2226,23 @@ export default function StudentsIndex({
                         });
                     }
                 }}
+            />
+
+            <ResetPasswordModal
+                isOpen={!!resetPasswordStudent}
+                student={resetPasswordStudent}
+                onClose={() => setResetPasswordStudent(null)}
+            />
+
+            <CredentialsPrintModal
+                isOpen={!!printCredentialsData}
+                credentials={printCredentialsData}
+                logoUrl={logoUrl}
+                isQuickResetting={isQuickResetting}
+                onClose={() => setPrintCredentialsData(null)}
+                onOpenResetPassword={handleOpenResetFromPrint}
+                onQuickResetPassword={handleQuickResetFromPrint}
+                onDownloadSinglePdf={handleDownloadSingleStudentPdf}
             />
         </AdminLayout>
     );

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class EmployeeController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
@@ -25,11 +26,11 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         return [
             new \Illuminate\Routing\Controllers\Middleware('permission:عرض الموظفين', only: ['index', 'show']),
             new \Illuminate\Routing\Controllers\Middleware('permission:إضافة موظف', only: ['create', 'store']),
-            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل موظف', only: ['edit', 'update', 'quickUpdate', 'resetPassword', 'bulkStatus', 'bulkAssign', 'bulkResetPassword', 'bulkWhatsApp']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:تعديل موظف', only: ['edit', 'update', 'quickUpdate', 'resetPassword', 'bulkStatus', 'bulkAssign', 'bulkResetPassword', 'bulkWhatsApp', 'downloadCredentialsPdf']),
             new \Illuminate\Routing\Controllers\Middleware('permission:حذف موظف', only: ['destroy', 'bulkDestroy']),
         ];
     }
-    public function index(Request $request)
+    private function buildFilteredEmployeesQuery(Request $request)
     {
         $query = Employee::query()
             ->join('users', 'employees.user_id', '=', 'users.id')
@@ -85,6 +86,18 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         } else {
             $query->orderBy('employees.hire_date', 'desc');
         }
+
+        return $query;
+    }
+
+    public function index(Request $request)
+    {
+        $user = auth()->user();
+        if ($user) {
+            $user->loadMissing('role');
+        }
+        $isAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
+        $query = $this->buildFilteredEmployeesQuery($request);
 
         $canViewCredentials = $user && $user->hasPermission('تعديل موظف');
 
@@ -993,6 +1006,82 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
 
     public function bulkResetPassword(Request $request)
     {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        if ($request->filled('target_scope')) {
+            $validated = $request->validate([
+                'target_scope'    => ['required', 'in:all_filtered,missing_only,selected_only'],
+                'password_mode'   => ['nullable', 'in:digits_6,alnum_8,manual'],
+                'manual_password' => ['required_if:password_mode,manual', 'nullable', 'string', 'min:4', 'max:50'],
+                'employee_ids'    => ['required_if:target_scope,selected_only', 'nullable', 'array'],
+                'employee_ids.*'  => ['integer', 'exists:employees,id'],
+            ], [
+                'manual_password.required_if' => 'يرجى إدخال كلمة المرور الموحدة.',
+                'manual_password.min'         => 'كلمة المرور يجب أن تكون 4 خانات على الأقل.',
+                'employee_ids.required_if'    => 'يرجى تحديد موظف واحد على الأقل.',
+            ]);
+
+            $targetScope = $validated['target_scope'];
+            $passwordMode = $validated['password_mode'] ?? 'digits_6';
+            $manualPassword = $validated['manual_password'] ?? null;
+
+            if ($targetScope === 'selected_only' && !empty($validated['employee_ids'])) {
+                $employees = $this->resolveAuthorizedBulkEmployees($validated['employee_ids']);
+            } else {
+                $employees = $this->buildFilteredEmployeesQuery($request)->get();
+            }
+
+            if ($targetScope === 'missing_only') {
+                $employees = $employees->filter(function ($employee) {
+                    return $employee->user && empty($employee->user->getDecryptedVisiblePassword());
+                })->values();
+            } else {
+                $employees = $employees->filter(fn ($employee) => $employee->user !== null)->values();
+            }
+
+            if ($employees->isEmpty()) {
+                return redirect()->back()->with('success', 'لا توجد حسابات موظفين تحتاج إلى إعادة تعيين كلمة المرور ضمن النطاق المحدد.');
+            }
+
+            $updatedCount = 0;
+            $precomputedManualHash = $passwordMode === 'manual'
+                ? Hash::make($manualPassword)
+                : null;
+
+            \App\Models\User::withoutEvents(function () use ($employees, $passwordMode, $manualPassword, $precomputedManualHash, &$updatedCount) {
+                DB::transaction(function () use ($employees, $passwordMode, $manualPassword, $precomputedManualHash, &$updatedCount) {
+                    foreach ($employees as $employee) {
+                        $user = $employee->user;
+                        if (!$user) {
+                            continue;
+                        }
+
+                        if ($passwordMode === 'manual') {
+                            $plainPassword = $manualPassword;
+                            $hashedPassword = $precomputedManualHash;
+                        } elseif ($passwordMode === 'alnum_8') {
+                            $plainPassword = $this->generateSimplePassword('alnum');
+                            $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 4]);
+                        } else {
+                            // digits_6 (default, e.g. 347559)
+                            $plainPassword = $this->generateSimplePassword('digits');
+                            $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 4]);
+                        }
+
+                        $user->update([
+                            'password'         => $hashedPassword,
+                            'visible_password' => $plainPassword,
+                        ]);
+
+                        $updatedCount++;
+                    }
+                });
+            });
+
+            return redirect()->back()->with('success', "تم إعادة تعيين وحفظ كلمة المرور لـ {$updatedCount} من الموظفين بنجاح. يمكنك الآن طباعة بطاقات الدخول PDF.");
+        }
+
         $validated = $request->validate([
             'employee_ids'         => ['required', 'array', 'min:1', 'max:500'],
             'employee_ids.*'       => ['integer', 'exists:employees,id'],
@@ -1210,5 +1299,84 @@ class EmployeeController extends Controller implements \Illuminate\Routing\Contr
         }
 
         return $employees;
+    }
+
+    public function downloadCredentialsPdf(Request $request)
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        $employeesList = $this->buildFilteredEmployeesQuery($request)
+            ->get()
+            ->map(function ($emp) {
+                return [
+                    'name' => $emp->user->name ?? 'غير محدد',
+                    'phone' => $emp->user->phone ?? '',
+                    'username' => $emp->user->username ?? '',
+                    'password' => $emp->user?->getDecryptedVisiblePassword(),
+                    'department' => $emp->department->name ?? 'غير محدد',
+                    'jobGrade' => $emp->jobGrade->name ?? 'غير محدد',
+                    'job_title' => $emp->job_title ?? '',
+                    'role' => $emp->user->role->name ?? '—',
+                    'branch_phone' => $emp->user->branch->phone ?? '774804804',
+                    'is_active' => (bool) ($emp->user->is_active ?? true),
+                ];
+            });
+
+        $brandColor = '#5b8a2d';
+        $footerHtml = '
+            <div style="width: 100%; padding: 0 30px 8px 30px; margin: 0; font-family: tahoma, arial, sans-serif; direction: rtl; box-sizing: border-box;">
+                <div style="border-top: 1px solid #e2e8f0; padding-top: 6px; display: flex; justify-content: space-between; align-items: center; width: 100%; font-size: 9px; color: #64748b;">
+                    <div style="width: 33%; text-align: right;">
+                        <strong style="color: ' . $brandColor . ';">مدارس القيم الأهلية</strong> (Smart School)
+                    </div>
+                    <div style="width: 33%; text-align: center; color: #94a3b8;">
+                        طُبع بتاريخ: ' . now()->format('Y-m-d H:i') . '
+                    </div>
+                    <div style="width: 33%; text-align: left;">
+                        <span style="background-color: #f1f5f9; padding: 3px 10px; border-radius: 12px; font-weight: bold; color: #475569; display: inline-block;">
+                            صفحة <span class="pageNumber"></span> / <span class="totalPages"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        ';
+
+        $googlePlayUrl = \App\Models\Setting::get('google_play_url', '');
+        $appStoreUrl = \App\Models\Setting::get('app_store_url', '');
+        $qrTargetUrl = $googlePlayUrl ?: ($appStoreUrl ?: url('/login'));
+
+        $browserCandidates = [
+            'C:\Program Files\Google\Chrome\Application\chrome.exe',
+            'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+            'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
+            'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+        ];
+        $chromePath = collect($browserCandidates)->first(fn ($path) => file_exists($path))
+            ?? 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe';
+
+        $fileName = 'employees_credentials.pdf';
+        $tempPath = storage_path('app/temp-' . uniqid('employees-cred-', true) . '.pdf');
+
+        Pdf::view('pdf.hr.employee-credentials', [
+                'employeesList' => $employeesList,
+                'brandColor' => $brandColor,
+                'loginUrl' => $qrTargetUrl,
+            ])
+            ->format('A4')
+            ->margins(10, 10, 18, 10)
+            ->footerHtml($footerHtml)
+            ->withBrowsershot(function ($browsershot) use ($chromePath) {
+                $browsershot->setChromePath($chromePath)
+                           ->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'])
+                           ->timeout(300)
+                           ->protocolTimeout(300)
+                           ->showBackground()
+                           ->waitUntilNetworkIdle()
+                           ->delay(1500);
+            })
+            ->save($tempPath);
+
+        return response()->download($tempPath, $fileName)->deleteFileAfterSend(true);
     }
 }

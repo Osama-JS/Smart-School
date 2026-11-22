@@ -25,6 +25,8 @@ class SettingsController extends Controller
             'max_login_attempts' => Setting::get('max_login_attempts', 5),
             'logo'               => Setting::get('logo', null),
             'maintenance_mode'   => filter_var(Setting::get('maintenance_mode', false), FILTER_VALIDATE_BOOLEAN),
+            'google_play_url'    => Setting::get('google_play_url', ''),
+            'app_store_url'      => Setting::get('app_store_url', ''),
 
             // Mail (SMTP) Settings
             'mail_host'          => Setting::get('mail_host', config('mail.mailers.smtp.host')),
@@ -62,6 +64,8 @@ class SettingsController extends Controller
             'max_login_attempts' => 'required|integer|min:3|max:20',
             'logo'               => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'maintenance_mode'   => 'nullable|boolean',
+            'google_play_url'    => 'nullable|string|url|max:500',
+            'app_store_url'      => 'nullable|string|url|max:500',
 
             'mail_host'          => 'nullable|string|max:255',
             'mail_port'          => 'nullable|string|max:255',
@@ -96,6 +100,7 @@ class SettingsController extends Controller
         Setting::set('maintenance_mode', $request->boolean('maintenance_mode') ? '1' : '0', 'boolean');
 
         $integrationFields = [
+            'google_play_url', 'app_store_url',
             'mail_host', 'mail_port', 'mail_username', 'mail_password', 'mail_encryption', 'mail_from_address',
             'sms_gateway_url', 'sms_api_key', 'sms_sender_id',
             'local_server_url', 'local_server_api_key'

@@ -16,13 +16,14 @@ use Inertia\Inertia;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Spatie\LaravelPdf\Facades\Pdf;
 
 class StudentController extends Controller implements \Illuminate\Routing\Controllers\HasMiddleware
 {
         public static function middleware(): array
     {
         return [
-            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الطلاب', only: ['index', 'show', 'export', 'batchCredentials']),
+            new \Illuminate\Routing\Controllers\Middleware('permission:عرض الطلاب', only: ['index', 'show', 'export', 'batchCredentials', 'downloadCredentialsPdf']),
             new \Illuminate\Routing\Controllers\Middleware('permission:إضافة طالب', only: ['create', 'store']),
             new \Illuminate\Routing\Controllers\Middleware('permission:تعديل طالب', only: ['edit', 'update']),
             new \Illuminate\Routing\Controllers\Middleware('permission:حذف طالب', only: ['destroy']),
@@ -133,6 +134,10 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
 
         $perPage = in_array((int)$request->per_page, [15, 30, 50, 100]) ? (int)$request->per_page : 15;
         $students = $query->paginate($perPage)->withQueryString();
+        $students->getCollection()->transform(function ($student) {
+            $student->login_password = $student->user?->getDecryptedVisiblePassword();
+            return $student;
+        });
         
         $academicYears = AcademicYear::latest()->get();
         
@@ -337,7 +342,7 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
                 'id' => $student->id,
                 'name' => $student->user?->name ?? 'طالب',
                 'username' => $student->user?->username ?? (string)$student->id,
-                'password' => null,
+                'password' => $student->user?->getDecryptedVisiblePassword(),
             ];
         });
 
@@ -421,10 +426,11 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
 
             // 1. إنشاء حساب المستخدم
             $user = User::create([
-                'name'        => $validated['name'],
-                'username'    => $username,
-                'password'    => Hash::make($password),
-                'email'       => $validated['email'] ?? null,
+                'name'             => $validated['name'],
+                'username'         => $username,
+                'password'         => Hash::make($password),
+                'visible_password' => $password,
+                'email'            => $validated['email'] ?? null,
                 'phone'       => $validated['phone'] ?? null,
                 'national_id' => $validated['national_id'] ?? null,
                 'address'     => $validated['address'] ?? null,
@@ -459,10 +465,23 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
             $redirect = redirect()->route('academic.students')->with('success', 'تم تسجيل الطالب بنجاح.');
             
             if ($isAutoGenerate) {
+                $student->load(['currentEnrollment.division.grade.section', 'parents']);
+                $enroll = $student->currentEnrollment;
+                $parentPhone = $student->parents->first()?->phone;
+
                 $redirect->with('generated_credentials', [
-                    'name'     => $user->name,
-                    'username' => $username,
-                    'password' => $password,
+                    'action'               => 'create',
+                    'issued_at'            => now()->toIso8601String(),
+                    'student_id'           => $student->id,
+                    'name'                 => $user->name,
+                    'username'             => $username,
+                    'password'             => $password,
+                    'phone'                => $user->phone ?: ($parentPhone ?: ''),
+                    'section_name'         => $enroll?->division?->grade?->section?->name ?? 'غير محدد',
+                    'grade_name'           => $enroll?->division?->grade?->name ?? 'غير محدد',
+                    'division_name'        => $enroll?->division?->name ?? 'غير محدد',
+                    'must_change_password' => false,
+                    'revoked_tokens'       => false,
                 ]);
             }
             
@@ -534,7 +553,10 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
             ]);
 
             if (!empty($validated['password'])) {
-                $user->update(['password' => Hash::make($validated['password'])]);
+                $user->update([
+                    'password'         => Hash::make($validated['password']),
+                    'visible_password' => $validated['password'],
+                ]);
             }
 
             // 2. تحديث ملف الطالب
@@ -590,30 +612,161 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
         return redirect()->route('academic.students')->with('success', 'تم حذف الطالب بنجاح.');
     }
 
-    public function resetPassword(Student $student)
+    public function resetPassword(Request $request, Student $student)
     {
-        try {
-            $user = $student->user;
-            
-            if (!$user) {
-                return back()->with('error', 'لا يوجد حساب مستخدم مرتبط بهذا الطالب.');
-            }
+        $user = $student->user;
 
-            $newPassword = \Illuminate\Support\Str::random(8);
-            
-            $user->update([
-                'password' => \Illuminate\Support\Facades\Hash::make($newPassword)
-            ]);
-
-            return back()->with('success', 'تم إعادة تعيين كلمة المرور بنجاح.')->with('generated_credentials', [
-                'name'     => $user->name,
-                'username' => $user->username,
-                'password' => $newPassword,
-            ]);
-
-        } catch (\Exception $e) {
-            return back()->with('error', 'حدث خطأ أثناء إعادة تعيين كلمة المرور: ' . $e->getMessage());
+        if (!$user) {
+            return back()->with('error', 'لا يوجد حساب مستخدم مرتبط بهذا الطالب.');
         }
+
+        $validated = $request->validate([
+            'mode'                 => ['nullable', 'in:auto,manual'],
+            'style'                => ['nullable', 'in:digits,alnum'],
+            'password'             => ['required_if:mode,manual', 'nullable', 'string', 'min:4', 'max:50', 'confirmed'],
+            'must_change_password' => ['nullable', 'boolean'],
+            'revoke_tokens'        => ['nullable', 'boolean'],
+            'open_print_modal'     => ['nullable', 'boolean'],
+        ], [
+            'password.required_if' => 'يرجى إدخال كلمة المرور الجديدة.',
+            'password.min'         => 'كلمة المرور يجب أن تكون 4 خانات على الأقل.',
+            'password.max'         => 'كلمة المرور يجب ألا تتجاوز 50 خانة.',
+            'password.confirmed'   => 'تأكيد كلمة المرور غير متطابق.',
+        ]);
+
+        $mode = $validated['mode'] ?? 'auto';
+        $style = $validated['style'] ?? 'digits';
+        $mustChange = (bool) ($validated['must_change_password'] ?? false);
+        $revokeTokens = (bool) ($validated['revoke_tokens'] ?? false);
+        $openPrintModal = array_key_exists('open_print_modal', $validated) ? (bool) $validated['open_print_modal'] : true;
+
+        if ($mode === 'manual') {
+            $newPassword = $validated['password'];
+        } elseif ($style === 'alnum') {
+            $letters = 'abcdefghjkmnpqrstuvwxyz';
+            $newPassword = $letters[random_int(0, strlen($letters) - 1)]
+                . $letters[random_int(0, strlen($letters) - 1)]
+                . random_int(1000, 9999);
+        } else {
+            $newPassword = (string) random_int(100000, 999999);
+        }
+
+        $user->update([
+            'password'             => \Illuminate\Support\Facades\Hash::make($newPassword),
+            'visible_password'     => $newPassword,
+            'must_change_password' => $mustChange,
+        ]);
+
+        if ($revokeTokens) {
+            $user->tokens()->delete();
+        }
+
+        $student->loadMissing(['currentEnrollment.division.grade.section', 'parents']);
+        $enroll = $student->currentEnrollment;
+        $parentPhone = $student->parents->first()?->phone;
+
+        $redirect = back()->with('success', 'تم إعادة تعيين كلمة المرور للطالب بنجاح.');
+
+        if ($openPrintModal) {
+            $redirect->with('generated_credentials', [
+                'action'               => 'reset',
+                'issued_at'            => now()->toIso8601String(),
+                'student_id'           => $student->id,
+                'name'                 => $user->name,
+                'username'             => $user->username,
+                'password'             => $newPassword,
+                'phone'                => $user->phone ?: ($parentPhone ?: ''),
+                'section_name'         => $enroll?->division?->grade?->section?->name ?? 'غير محدد',
+                'grade_name'           => $enroll?->division?->grade?->name ?? 'غير محدد',
+                'division_name'        => $enroll?->division?->name ?? 'غير محدد',
+                'must_change_password' => $mustChange,
+                'revoked_tokens'       => $revokeTokens,
+            ]);
+        }
+
+        return $redirect;
+    }
+
+    public function bulkResetPassword(Request $request)
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        $validated = $request->validate([
+            'target_scope'    => ['nullable', 'in:all_filtered,missing_only,selected_only'],
+            'password_mode'   => ['nullable', 'in:digits_6,alnum_8,manual'],
+            'manual_password' => ['required_if:password_mode,manual', 'nullable', 'string', 'min:4', 'max:50'],
+            'student_ids'     => ['required_if:target_scope,selected_only', 'nullable', 'array'],
+            'student_ids.*'   => ['integer'],
+        ], [
+            'manual_password.required_if' => 'يرجى إدخال كلمة المرور الموحدة.',
+            'manual_password.min'         => 'كلمة المرور يجب ألا تقل عن 4 خانات.',
+            'student_ids.required_if'     => 'يرجى تحديد طالب واحد على الأقل.',
+        ]);
+
+        $targetScope = $validated['target_scope'] ?? 'all_filtered';
+        $passwordMode = $validated['password_mode'] ?? 'digits_6';
+        $manualPassword = $validated['manual_password'] ?? null;
+
+        $query = $this->getFilteredStudentsQuery($request)->with('user');
+
+        if ($targetScope === 'selected_only' && !empty($validated['student_ids'])) {
+            $query->whereIn('id', $validated['student_ids']);
+        }
+
+        $students = $query->get();
+
+        if ($targetScope === 'missing_only') {
+            $students = $students->filter(function ($student) {
+                return $student->user && empty($student->user->getDecryptedVisiblePassword());
+            })->values();
+        } else {
+            $students = $students->filter(fn ($student) => $student->user !== null)->values();
+        }
+
+        if ($students->isEmpty()) {
+            return redirect()->back()->with('success', 'لا توجد حسابات طلاب تحتاج إلى إعادة تعيين كلمة المرور ضمن النطاق المحدد.');
+        }
+
+        $updatedCount = 0;
+        $precomputedManualHash = $passwordMode === 'manual'
+            ? Hash::make($manualPassword)
+            : null;
+
+        User::withoutEvents(function () use ($students, $passwordMode, $manualPassword, $precomputedManualHash, &$updatedCount) {
+            foreach ($students->chunk(500) as $chunk) {
+                DB::transaction(function () use ($chunk, $passwordMode, $manualPassword, $precomputedManualHash, &$updatedCount) {
+                    foreach ($chunk as $student) {
+                        $user = $student->user;
+                        if (!$user) {
+                            continue;
+                        }
+
+                        if ($passwordMode === 'manual') {
+                            $plainPassword = $manualPassword;
+                            $hashedPassword = $precomputedManualHash;
+                        } elseif ($passwordMode === 'alnum_8') {
+                            $plainPassword = \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(3))
+                                . str_pad((string) random_int(10000, 99999), 5, '0', STR_PAD_LEFT);
+                            $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 4]);
+                        } else {
+                            // digits_6 (default, e.g. 347559)
+                            $plainPassword = (string) random_int(100000, 999999);
+                            $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT, ['cost' => 4]);
+                        }
+
+                        $user->update([
+                            'password'         => $hashedPassword,
+                            'visible_password' => $plainPassword,
+                        ]);
+
+                        $updatedCount++;
+                    }
+                });
+            }
+        });
+
+        return redirect()->back()->with('success', "تم إعادة تعيين وحفظ كلمة المرور لـ {$updatedCount} من الطلاب بنجاح. يمكنك الآن طباعة بطاقات الدخول PDF.");
     }
 
     public function template()
@@ -747,5 +900,84 @@ class StudentController extends Controller implements \Illuminate\Routing\Contro
         $credentials = json_decode($content, true) ?: [];
 
         return response()->json(['credentials' => $credentials]);
+    }
+
+    public function downloadCredentialsPdf(Request $request)
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        $query = $this->getFilteredStudentsQuery($request);
+        if ($request->filled('student_ids')) {
+            $ids = is_array($request->student_ids) ? $request->student_ids : explode(',', (string) $request->student_ids);
+            $query->whereIn('id', array_filter(array_map('intval', $ids)));
+        }
+
+        $students = $query
+            ->with(['user.branch', 'currentEnrollment.division.grade', 'parents'])
+            ->get()
+            ->sortBy(fn ($student) => $student->user?->name ?? '')
+            ->values();
+
+        $googlePlayUrl = \App\Models\Setting::get('google_play_url', '');
+        $appStoreUrl = \App\Models\Setting::get('app_store_url', '');
+        $qrTargetUrl = $googlePlayUrl ?: ($appStoreUrl ?: url('/login'));
+
+        $cards = $students->map(function ($student) {
+            $user = $student->user;
+            $enrollment = $student->currentEnrollment;
+            $division = $enrollment?->division;
+            $grade = $division?->grade;
+            $parentPhone = $student->parents->first()?->phone;
+
+            return [
+                'name' => $user?->name ?? '---',
+                'username' => $user?->username ?? '---',
+                'password' => $user?->getDecryptedVisiblePassword(),
+                'phone' => $user?->phone ?: ($parentPhone ?: '---'),
+                'grade_name' => $grade?->name ?? '---',
+                'division_name' => $division?->name ?? '---',
+                'school_phone' => $user?->branch?->phone ?: '774804804',
+                'whatsapp_phone' => $user?->branch?->phone ?: '774804804',
+            ];
+        })->values();
+
+        $footerHtml = '
+            <div style="width:100%; font-family: Arial, Tahoma, sans-serif; font-size: 9px; color: #5b6e4d; text-align: center; padding: 4px 16px;">
+                صفحة <span class="pageNumber"></span> من <span class="totalPages"></span>
+            </div>
+        ';
+
+        $browserCandidates = [
+            'C:\Program Files\Google\Chrome\Application\chrome.exe',
+            'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+            'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
+            'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
+        ];
+        $chromePath = collect($browserCandidates)->first(fn ($path) => file_exists($path))
+            ?? 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe';
+
+        $fileName = 'students-credentials-' . now()->format('Y-m-d') . '.pdf';
+        $tempPath = storage_path('app/temp-' . uniqid('students-cred-', true) . '.pdf');
+
+        Pdf::view('pdf.academic.student-credentials', [
+            'cards' => $cards,
+            'qrTargetUrl' => $qrTargetUrl,
+            'googlePlayUrl' => $googlePlayUrl,
+            'appStoreUrl' => $appStoreUrl,
+            'generatedAt' => now()->format('Y-m-d H:i'),
+        ])
+            ->format('A4')
+            ->margins(10, 10, 18, 10)
+            ->footerHtml($footerHtml)
+            ->withBrowsershot(function ($browsershot) use ($chromePath) {
+                $browsershot->setOption('args', ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'])
+                    ->setChromePath($chromePath)
+                    ->timeout(300)
+                    ->protocolTimeout(300);
+            })
+            ->save($tempPath);
+
+        return response()->download($tempPath, $fileName)->deleteFileAfterSend(true);
     }
 }

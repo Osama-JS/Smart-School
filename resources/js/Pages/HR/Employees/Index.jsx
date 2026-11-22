@@ -98,7 +98,7 @@ function Pagination({ data }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function EmployeesIndex({ employees, stats, departments, jobGrades, filters }) {
-    const { flash, logo_url, reportDesign } = usePage().props;
+    const { flash, logo_url, reportDesign, canManageCredentials } = usePage().props;
     
     // Safety check for filters properties
     const getFilterVal = (key, fallback = '') => {
@@ -176,6 +176,24 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
         lastFlashKeyRef.current = flashKey;
         setPrintCredentialsData(creds);
     }, [flash?.generated_credentials]);
+
+    useEffect(() => {
+        if (flash?.success && typeof flash.success === 'string' && flash.success.includes('من الموظفين بنجاح')) {
+            Swal.fire({
+                title: 'تمت العملية بنجاح!',
+                text: flash.success,
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonText: 'طباعة بطاقات الدخول PDF الآن',
+                cancelButtonText: 'إغلاق',
+                confirmButtonColor: '#4f46e5',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    handleDownloadCredentialsPdf();
+                }
+            });
+        }
+    }, [flash?.success]);
 
     const openPrintForEmployee = (emp) => {
         setPrintCredentialsData({
@@ -532,6 +550,91 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
         window.print();
     };
 
+    const handleDownloadCredentialsPdf = () => {
+        const params = new URLSearchParams({
+            search: searchValue || '',
+            department_id: deptFilter || '',
+            job_grade_id: gradeFilter || '',
+            status: statusValue || 'all',
+            hire_date_start: hireDateStart || '',
+            hire_date_end: hireDateEnd || '',
+            sort_by: sortBy || 'hire_date',
+            sort_dir: sortDir || 'desc',
+        });
+
+        window.location.href = route('hr.employees.credentials-pdf') + '?' + params.toString();
+    };
+
+    const handleBulkResetAllPasswords = () => {
+        const totalFiltered = employees?.total || 0;
+        const hasSelection = selectedIds.length > 0;
+        Swal.fire({
+            title: 'إعادة تعيين كلمات مرور الموظفين جماعياً',
+            html: `
+                <div dir="rtl" class="text-right space-y-4 mt-2">
+                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold leading-relaxed">
+                        سيتم توليد وحفظ كلمات مرور جديدة للموظفين ضمن النطاق المحدد لتكون جاهزة فوراً للطباعة في ملف PDF.
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">نطاق الموظفين المستهدفين</label>
+                        <select id="swal-emp-target-scope" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500">
+                            ${hasSelection ? `<option value="selected_only">الموظفون المحددون في الجدول فقط (${selectedIds.length})</option>` : ''}
+                            <option value="all_filtered">جميع الموظفين في الفلتر الحالي (${totalFiltered})</option>
+                            <option value="missing_only">فقط الموظفون الذين ليس لديهم كلمة مرور محفوظة للطباعة</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">نمط توليد كلمة المرور</label>
+                        <select id="swal-emp-password-mode" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500" onchange="document.getElementById('swal-emp-manual-wrap').style.display = this.value === 'manual' ? 'block' : 'none';">
+                            <option value="digits_6">تلقائي — 6 أرقام عشوائية لكل موظف (مثال: 347559)</option>
+                            <option value="alnum_8">تلقائي — 8 خانات حروف وأرقام لكل موظف</option>
+                            <option value="manual">كلمة مرور موحّدة يدوية للجميع</option>
+                        </select>
+                    </div>
+                    <div id="swal-emp-manual-wrap" style="display:none;">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">كلمة المرور الموحّدة</label>
+                        <input id="swal-emp-manual-password" type="text" placeholder="أدخل كلمة المرور الموحدة (4 خانات فأكثر)" class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm outline-none focus:border-indigo-500" />
+                    </div>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d97706',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'تنفيذ إعادة التعيين',
+            cancelButtonText: 'إلغاء',
+            preConfirm: () => {
+                const target_scope = document.getElementById('swal-emp-target-scope')?.value || 'all_filtered';
+                const password_mode = document.getElementById('swal-emp-password-mode')?.value || 'digits_6';
+                const manual_password = document.getElementById('swal-emp-manual-password')?.value || '';
+                if (password_mode === 'manual' && manual_password.trim().length < 4) {
+                    Swal.showValidationMessage('يرجى إدخال كلمة مرور موحدة لا تقل عن 4 خانات');
+                    return false;
+                }
+                return { target_scope, password_mode, manual_password: manual_password.trim() };
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                const payload = {
+                    ...result.value,
+                    search: searchValue || '',
+                    department_id: deptFilter || '',
+                    job_grade_id: gradeFilter || '',
+                    status: statusValue || 'all',
+                    hire_date_start: hireDateStart || '',
+                    hire_date_end: hireDateEnd || '',
+                };
+                if (payload.target_scope === 'selected_only') {
+                    payload.employee_ids = selectedIds;
+                }
+
+                router.post(route('hr.employees.bulk-reset-password'), payload, {
+                    preserveScroll: true,
+                });
+            }
+        });
+    };
+
     const empData = employees?.data ?? [];
     const pageEmployeeIds = empData.map((e) => e.id);
     const selectedEmployees = empData.filter((e) => selectedIds.includes(e.id));
@@ -782,6 +885,26 @@ export default function EmployeesIndex({ employees, stats, departments, jobGrade
                                 title="طباعة الكشف">
                                 <Printer size={18} />
                             </button>
+                            {canManageCredentials && (
+                                <>
+                                    <button
+                                        onClick={handleBulkResetAllPasswords}
+                                        className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-500/10 border border-amber-200/80 dark:border-amber-500/20 text-amber-700 dark:text-amber-300 rounded-2xl hover:bg-amber-100 dark:hover:bg-amber-500/20 transition-colors shadow-sm font-bold text-sm"
+                                        title="إعادة تعيين كلمات المرور لجميع الموظفين في الفلتر الحالي"
+                                    >
+                                        <KeyRound size={17} />
+                                        <span className="hidden md:inline">إعادة تعيين كلمات المرور</span>
+                                    </button>
+                                    <button
+                                        onClick={handleDownloadCredentialsPdf}
+                                        className="flex items-center gap-2 px-4 py-3 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/80 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-300 rounded-2xl hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors shadow-sm font-bold text-sm"
+                                        title="طباعة اسم المستخدم وكلمة المرور لجميع الموظفين (PDF)"
+                                    >
+                                        <Printer size={17} />
+                                        <span className="hidden md:inline">بيانات الدخول PDF</span>
+                                    </button>
+                                </>
+                            )}
                             <button onClick={() => setShowImportModal(true)}
                                 className="flex items-center gap-2 px-5 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 text-slate-650 dark:text-slate-300 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-850 hover:text-[#5b8a2d] transition-colors shadow-sm font-bold text-sm">
                                 <Upload size={18} />

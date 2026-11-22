@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Check, Save, Settings as SettingsIcon, Building, Clock, ShieldCheck, Upload, Calendar, Lock, Link, Mail, MessageSquare, Key, Server, Hash, User, Network, RefreshCw } from 'lucide-react';
+import { Check, Save, Settings as SettingsIcon, Building, Clock, ShieldCheck, Upload, Calendar, Lock, Link, Mail, MessageSquare, Key, Server, Hash, User, Network, RefreshCw, Smartphone } from 'lucide-react';
 
 export default function SettingsIndex({ settings }) {
-    const { flash, logo_url } = usePage().props;
+    const { flash, logo_url, errors } = usePage().props;
     const [form, setForm] = useState({
         school_name: settings.school_name || '',
         academic_year: settings.academic_year || '',
+        google_play_url: settings.google_play_url || '',
+        app_store_url: settings.app_store_url || '',
         session_timeout: settings.session_timeout || 120,
         max_login_attempts: settings.max_login_attempts || 5,
         maintenance_mode: settings.maintenance_mode || false,
@@ -239,6 +241,35 @@ export default function SettingsIndex({ settings }) {
                                                 <input type="text" name="academic_year" required
                                                     className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all font-semibold text-slate-750 dark:text-slate-100"
                                                     value={form.academic_year} onChange={handleChange} />
+                                            </div>
+                                        </div>
+
+                                        <div className="sm:col-span-2 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                                            <h4 className="text-sm font-black text-dark-900 dark:text-white flex items-center gap-2 mb-4">
+                                                <Smartphone size={17} className="text-primary-500" />
+                                                <span>روابط تطبيق الجوال</span>
+                                            </h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <div className="group/input flex flex-col">
+                                                    <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">رابط التطبيق في جوجل بلاي (Google Play)</label>
+                                                    <div className="relative flex items-center">
+                                                        <Link size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 dark:group-focus-within/input:text-primary-400 pointer-events-none transition-all duration-300" />
+                                                        <input type="url" name="google_play_url" placeholder="https://play.google.com/store/apps/details?id=..."
+                                                            className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                            value={form.google_play_url} onChange={handleChange} />
+                                                    </div>
+                                                    {errors?.google_play_url && <span className="text-xs font-bold text-rose-500 mt-1">{errors.google_play_url}</span>}
+                                                </div>
+                                                <div className="group/input flex flex-col">
+                                                    <label className="block text-sm font-bold text-dark-900 dark:text-slate-200 mb-2">رابط التطبيق في أبل ستور (App Store)</label>
+                                                    <div className="relative flex items-center">
+                                                        <Link size={18} className="absolute right-4 text-slate-400 dark:text-slate-500 group-focus-within/input:text-primary-500 dark:group-focus-within/input:text-primary-400 pointer-events-none transition-all duration-300" />
+                                                        <input type="url" name="app_store_url" placeholder="https://apps.apple.com/app/..."
+                                                            className="w-full border border-slate-200 dark:border-slate-800 bg-transparent rounded-2xl pr-11 pl-4 py-3.5 text-sm outline-none focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 transition-all font-semibold text-slate-750 dark:text-slate-100 dir-ltr text-left"
+                                                            value={form.app_store_url} onChange={handleChange} />
+                                                    </div>
+                                                    {errors?.app_store_url && <span className="text-xs font-bold text-rose-500 mt-1">{errors.app_store_url}</span>}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
