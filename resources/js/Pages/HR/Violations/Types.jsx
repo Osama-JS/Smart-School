@@ -89,20 +89,20 @@ export default function Types({ auth, types, stats, jobGrades }) {
     // Escalation Path Component for Cards
     const EscalationPath = ({ t }) => (
         <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <h5 className="text-xs font-bold text-slate-500 mb-1 flex items-center gap-1.5"><AlertCircle size={14}/> مسار التصعيد</h5>
-            
+            <h5 className="text-xs font-bold text-slate-500 mb-1 flex items-center gap-1.5"><AlertCircle size={14} /> مسار التصعيد</h5>
+
             <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-[10px] flex items-center justify-center shrink-0">1</div>
                 <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{t.first_time_action}</p>
             </div>
-            
+
             {t.second_time_action && (
                 <div className="flex items-center gap-2 opacity-90">
                     <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-black text-[10px] flex items-center justify-center shrink-0">2</div>
                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{t.second_time_action}</p>
                 </div>
             )}
-            
+
             {t.third_time_action && (
                 <div className="flex items-center gap-2 opacity-80">
                     <div className="w-6 h-6 rounded-lg bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-black text-[10px] flex items-center justify-center shrink-0">3</div>
@@ -114,10 +114,11 @@ export default function Types({ auth, types, stats, jobGrades }) {
 
     return (
         <AdminLayout user={auth.user} activeMenu="أنواع المخالفات">
-            <Head title="أنواع المخالفات" />
+            <Head title="مخالفات الموظفون والباصات" />
 
             {/* Print Styles */}
-            <style dangerouslySetInnerHTML={{__html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media print {
                     aside, nav, header, .no-print, button, a, [type="checkbox"], select, input, .print\\:hidden, .custom-scrollbar {
                         display: none !important;
@@ -160,11 +161,11 @@ export default function Types({ auth, types, stats, jobGrades }) {
             </div>
 
             <div className="max-w-[1600px] mx-auto space-y-6">
-                
+
                 {/* Header Section (Preserved) */}
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                    
+
                     {/* Visual geometric lines */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                         <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -173,12 +174,12 @@ export default function Types({ auth, types, stats, jobGrades }) {
                             <circle cx="500" cy="160" r="6" className="fill-primary-400" />
                         </svg>
                     </div>
-                    
+
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
                                 <ShieldAlert size={28} className="text-primary-600" />
-                                إدارة أنواع المخالفات
+                                مخالفات الموظفون والباصات
                             </h1>
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة وتصنيف المخالفات والإجراءات الافتراضية الخاصة بها</p>
                         </div>
@@ -212,7 +213,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                 <h4 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">{stats.total}</h4>
                             </div>
                         </div>
-                        
+
                         <div className="bg-white dark:bg-[#121820]/60 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex items-center gap-5 transition-all hover:shadow-md hover:-translate-y-1 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-24 h-24 rounded-full mix-blend-multiply filter blur-2xl opacity-10 bg-emerald-500 transition-transform group-hover:scale-150" />
                             <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 relative z-10">
@@ -242,8 +243,8 @@ export default function Types({ auth, types, stats, jobGrades }) {
                     {/* Status Tabs */}
                     <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl w-full xl:w-auto overflow-x-auto custom-scrollbar shrink-0">
                         {[
-                            { value: '', label: 'الكل' }, 
-                            { value: 'active', label: 'الأنواع النشطة' }, 
+                            { value: '', label: 'الكل' },
+                            { value: 'active', label: 'الأنواع النشطة' },
                             { value: 'inactive', label: 'الموقوفة' }
                         ].map(opt => (
                             <button
@@ -270,7 +271,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                 className="w-full bg-slate-50 dark:bg-slate-800/40 border-none rounded-2xl py-2.5 pr-10 pl-4 text-sm focus:ring-2 focus:ring-primary-500/20 text-slate-800 dark:text-white placeholder-slate-400 transition-all"
                             />
                         </div>
-                        
+
                         <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden xl:block" />
 
                         {/* View Toggles */}
@@ -319,7 +320,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                     {filteredTypes.map(type => (
                                         <div key={type.id} className="group relative bg-white dark:bg-[#121820]/80 rounded-[2rem] border border-slate-200/80 dark:border-slate-800 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/40 dark:hover:shadow-none hover:-translate-y-1 flex flex-col h-full overflow-hidden">
                                             <div className="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-multiply filter blur-3xl opacity-[0.03] transition-all duration-500 group-hover:scale-150 group-hover:opacity-[0.06] bg-primary-500" />
-                                            
+
                                             <div className="relative z-10 flex justify-between items-start mb-4">
                                                 <div>
                                                     <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
@@ -461,7 +462,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={closeModal}></div>
                     <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
-                        
+
                         <div className="relative p-6 sm:p-8 pb-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-primary-600"></div>
                             <div className="flex items-start justify-between">
@@ -478,8 +479,8 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                         </p>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={closeModal} 
+                                <button
+                                    onClick={closeModal}
                                     className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-colors shrink-0"
                                 >
                                     <X size={20} />
@@ -502,7 +503,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                         required
                                         placeholder="مثال: التأخر عن العمل، الغياب بدون عذر..."
                                     />
-                                    {errors.name && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.name}</p>}
+                                    {errors.name && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.name}</p>}
                                 </div>
 
                                 <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
@@ -517,7 +518,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                         rows="2"
                                         placeholder="اكتب وصفاً مختصراً للمخالفة..."
                                     />
-                                    {errors.description && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.description}</p>}
+                                    {errors.description && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.description}</p>}
                                 </div>
 
                                 <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
@@ -578,7 +579,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                                 ...(jobGrades || []).map(role => ({ value: role.id, label: role.name }))
                                             ]}
                                         />
-                                        {errors.follow_up_role_id && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.follow_up_role_id}</p>}
+                                        {errors.follow_up_role_id && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.follow_up_role_id}</p>}
                                     </div>
                                     <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
                                         <label className="flex items-center gap-2 text-sm font-bold text-dark-900 dark:text-white mb-2">
@@ -594,16 +595,16 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                                 ...(jobGrades || []).map(role => ({ value: role.id, label: role.name }))
                                             ]}
                                         />
-                                        {errors.execution_role_id && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.execution_role_id}</p>}
+                                        {errors.execution_role_id && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.execution_role_id}</p>}
                                     </div>
                                 </div>
 
                                 <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60">
                                     <label className="relative flex items-center gap-3 cursor-pointer">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             name="is_active"
-                                            className="sr-only peer" 
+                                            className="sr-only peer"
                                             checked={data.is_active}
                                             onChange={(e) => setData('is_active', e.target.checked)}
                                         />
@@ -616,7 +617,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                                 </div>
                             </form>
                         </div>
-                        
+
                         {/* Modal Footer */}
                         <div className="p-6 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row gap-3">
                             <button
@@ -651,8 +652,8 @@ export default function Types({ auth, types, stats, jobGrades }) {
                             </div>
                             <h3 className="text-2xl font-bold text-dark-900 dark:text-white mb-3">تأكيد الحذف</h3>
                             <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed">
-                                هل أنت متأكد من رغبتك في حذف هذا النوع؟ 
-                                <br/>لا يمكن التراجع عن هذا الإجراء ولا يمكن الحذف إذا كانت هناك مخالفات مرتبطة به.
+                                هل أنت متأكد من رغبتك في حذف هذا النوع؟
+                                <br />لا يمكن التراجع عن هذا الإجراء ولا يمكن الحذف إذا كانت هناك مخالفات مرتبطة به.
                             </p>
                         </div>
                         <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">

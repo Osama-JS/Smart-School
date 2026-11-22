@@ -10,18 +10,18 @@ import {
 import ExcelJS from 'exceljs';
 
 const TYPE_ICONS = {
-    leave:       Umbrella,
-    permission:  LogOut,
-    loan:        CreditCard,
+    leave: Umbrella,
+    permission: LogOut,
+    loan: CreditCard,
     maintenance: Wrench,
-    supplies:    Package,
+    supplies: Package,
     certificate: Award,
 };
 
 const STATUS_COLORS = {
-    pending:  { bg: 'bg-amber-50 dark:bg-amber-500/10',   text: 'text-amber-600 dark:text-amber-400',   border: 'border-amber-200 dark:border-amber-500/30' },
+    pending: { bg: 'bg-amber-50 dark:bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-500/30' },
     approved: { bg: 'bg-emerald-50 dark:bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-500/30' },
-    rejected: { bg: 'bg-red-50 dark:bg-red-500/10',       text: 'text-red-600 dark:text-red-400',       border: 'border-red-200 dark:border-red-500/30' },
+    rejected: { bg: 'bg-red-50 dark:bg-red-500/10', text: 'text-red-600 dark:text-red-400', border: 'border-red-200 dark:border-red-500/30' },
 };
 
 export default function RequestsIndex({ requests, stats, types, statuses, filters, leaveBalances }) {
@@ -192,7 +192,7 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
 
             const row = sheet.addRow(rowData);
             row.height = 35;
-            
+
             row.eachCell((cell, colNumber) => {
                 cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
                 cell.font = { name: 'Segoe UI', size: 10, color: { argb: 'FF212529' } };
@@ -201,7 +201,7 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
                     left: { style: 'thin', color: { argb: 'FFDEE2E6' } },
                     right: { style: 'thin', color: { argb: 'FFDEE2E6' } }
                 };
-                
+
                 if (colNumber === 5) {
                     cell.font = { name: 'Segoe UI', size: 10, bold: true, color: { argb: statusColor } };
                     if (statusBg) {
@@ -286,7 +286,7 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
 
     return (
         <AdminLayout activeMenu="إدارة الطلبات">
-            <Head title="إدارة طلبات الموظفين" />
+            <Head title="طلبات الموظفين" />
 
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
@@ -301,7 +301,7 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
                     </div>
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">إدارة طلبات الموظفين</h1>
+                            <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight"> طلبات الموظفين </h1>
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">مراجعة واعتماد الطلبات الواردة من الموظفين</p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0">
@@ -492,10 +492,10 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
                                     </span>
                                     <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 px-3 py-1 rounded-lg border border-blue-100 dark:border-blue-500/20">{reviewingRequest.type_label}</span>
                                 </div>
-                                
+
                                 {/* Dynamic Details Display */}
                                 {reviewingRequest.details && Object.entries(reviewingRequest.details).map(([key, val]) => {
-                                    if(key === 'leave_type_id') return null;
+                                    if (key === 'leave_type_id') return null;
                                     const formattedKey = {
                                         start_date: 'تاريخ البداية',
                                         end_date: 'تاريخ النهاية',
@@ -506,9 +506,9 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
                                         date: 'التاريخ',
                                         hours: 'عدد الساعات'
                                     }[key] || key;
-                                    
+
                                     const Icon = key.includes('date') ? Calendar : key === 'amount' ? CreditCard : List;
-                                    
+
                                     return (
                                         <div key={key} className="flex justify-between items-center text-sm pb-3 border-b border-slate-200 dark:border-slate-700 last:border-0 last:pb-0">
                                             <span className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold">
@@ -680,25 +680,25 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
                                     <p className="text-sm font-black text-slate-800 dark:text-white">{new Date(viewingRequest.created_at).toLocaleDateString('ar-SA')}</p>
                                 </div>
                             </div>
-                            
+
                             {/* Status Card */}
                             <div className={`p-4 rounded-2xl border flex items-center justify-between
-                                ${viewingRequest.status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 
-                                  viewingRequest.status === 'rejected' ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20' : 
-                                  'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20'}`}>
+                                ${viewingRequest.status === 'approved' ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' :
+                                    viewingRequest.status === 'rejected' ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20' :
+                                        'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20'}`}>
                                 <div className="flex items-center gap-3">
                                     <div className={`p-2 rounded-xl 
-                                        ${viewingRequest.status === 'approved' ? 'bg-emerald-200/50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 
-                                          viewingRequest.status === 'rejected' ? 'bg-red-200/50 dark:bg-red-500/20 text-red-600 dark:text-red-400' : 
-                                          'bg-amber-200/50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'}`}>
+                                        ${viewingRequest.status === 'approved' ? 'bg-emerald-200/50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' :
+                                            viewingRequest.status === 'rejected' ? 'bg-red-200/50 dark:bg-red-500/20 text-red-600 dark:text-red-400' :
+                                                'bg-amber-200/50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400'}`}>
                                         {viewingRequest.status === 'approved' ? <CheckCircle size={20} /> : viewingRequest.status === 'rejected' ? <XCircle size={20} /> : <Clock size={20} />}
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-wider opacity-70 mb-0.5">حالة الطلب</p>
                                         <p className={`text-sm font-black 
-                                            ${viewingRequest.status === 'approved' ? 'text-emerald-700 dark:text-emerald-400' : 
-                                              viewingRequest.status === 'rejected' ? 'text-red-700 dark:text-red-400' : 
-                                              'text-amber-700 dark:text-amber-400'}`}>{viewingRequest.status_label}</p>
+                                            ${viewingRequest.status === 'approved' ? 'text-emerald-700 dark:text-emerald-400' :
+                                                viewingRequest.status === 'rejected' ? 'text-red-700 dark:text-red-400' :
+                                                    'text-amber-700 dark:text-amber-400'}`}>{viewingRequest.status_label}</p>
                                     </div>
                                 </div>
                             </div>
@@ -803,7 +803,7 @@ export default function RequestsIndex({ requests, stats, types, statuses, filter
                                 </div>
                             </div>
                         </div>
-                        
+
                         {/* Footer */}
                         <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex justify-end">
                             <button onClick={() => setViewingRequest(null)} className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm text-sm">

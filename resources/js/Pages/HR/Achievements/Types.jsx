@@ -83,14 +83,14 @@ export default function Types({ auth, types, stats }) {
             <Head title="أنواع الإنجازات" />
 
             <div className="max-w-[1600px] mx-auto space-y-6">
-                
+
                 <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                     <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700" />
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
                                 <ShieldCheck size={28} className="text-emerald-600" />
-                                إدارة أنواع الإنجازات
+                                إنجازات الموظفون وحركة الباصات
                             </h1>
                             <p className="text-emerald-700/80 dark:text-emerald-300/80 mt-2 text-sm font-semibold">إدارة وتصنيف الإنجازات والمكافآت الخاصة بها</p>
                         </div>
@@ -140,7 +140,7 @@ export default function Types({ auth, types, stats }) {
 
                 <div className="bg-white dark:bg-[#121820]/60 p-3 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row gap-4 justify-between items-center">
                     <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl w-full xl:w-auto overflow-x-auto shrink-0">
-                        {[ { value: '', label: 'الكل' }, { value: 'active', label: 'الأنواع النشطة' }, { value: 'inactive', label: 'الموقوفة' } ].map(opt => (
+                        {[{ value: '', label: 'الكل' }, { value: 'active', label: 'الأنواع النشطة' }, { value: 'inactive', label: 'الموقوفة' }].map(opt => (
                             <button
                                 key={opt.value}
                                 onClick={() => setStatusFilter(opt.value)}
@@ -164,9 +164,9 @@ export default function Types({ auth, types, stats }) {
                                 className="w-full bg-slate-50 dark:bg-slate-800/40 border-none rounded-2xl py-2.5 pr-10 pl-4 text-sm focus:ring-2 focus:ring-emerald-500/20 text-slate-800 dark:text-white"
                             />
                         </div>
-                        
+
                         <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl shrink-0">
-                            {[ { id: 'cards', icon: LayoutGrid }, { id: 'table', icon: Table2 } ].map(view => (
+                            {[{ id: 'cards', icon: LayoutGrid }, { id: 'table', icon: Table2 }].map(view => (
                                 <button
                                     key={view.id}
                                     onClick={() => setViewMode(view.id)}
@@ -224,7 +224,7 @@ export default function Types({ auth, types, stats }) {
                             ))}
                         </div>
                     )}
-                    
+
                     <div className={viewMode === 'table' ? 'bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden' : 'hidden'}>
                         <table className="w-full text-right">
                             <thead className="bg-slate-50/50 dark:bg-slate-800/20">
@@ -278,7 +278,7 @@ export default function Types({ auth, types, stats }) {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
                     <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" onClick={closeModal}></div>
                     <div className="relative bg-white dark:bg-[#121820] rounded-[2rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
-                        
+
                         <div className="relative p-6 sm:p-8 pb-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
                             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-500 to-primary-600"></div>
                             <div className="flex items-start justify-between">
@@ -295,8 +295,8 @@ export default function Types({ auth, types, stats }) {
                                         </p>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={closeModal} 
+                                <button
+                                    onClick={closeModal}
                                     className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex items-center justify-center transition-colors shrink-0"
                                 >
                                     <X size={20} />
@@ -319,7 +319,7 @@ export default function Types({ auth, types, stats }) {
                                         required
                                         placeholder="مثال: موظف الشهر، الإبداع..."
                                     />
-                                    {errors.name && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.name}</p>}
+                                    {errors.name && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.name}</p>}
                                 </div>
 
                                 <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
@@ -334,7 +334,7 @@ export default function Types({ auth, types, stats }) {
                                         rows="2"
                                         placeholder="اكتب وصفاً مختصراً للإنجاز..."
                                     />
-                                    {errors.description && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.description}</p>}
+                                    {errors.description && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.description}</p>}
                                 </div>
 
                                 <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
@@ -349,7 +349,7 @@ export default function Types({ auth, types, stats }) {
                                         onChange={(e) => setData('reward', e.target.value)}
                                         placeholder="مثال: شهادة شكر، مكافأة مالية..."
                                     />
-                                    {errors.reward && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.reward}</p>}
+                                    {errors.reward && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.reward}</p>}
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -365,7 +365,7 @@ export default function Types({ auth, types, stats }) {
                                             value={data.points}
                                             onChange={(e) => setData('points', e.target.value)}
                                         />
-                                        {errors.points && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.points}</p>}
+                                        {errors.points && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.points}</p>}
                                     </div>
                                     <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
                                         <label className="flex items-center gap-2 text-sm font-bold text-dark-900 dark:text-white mb-2">
@@ -385,17 +385,17 @@ export default function Types({ auth, types, stats }) {
                                             <option value="text-purple-500">بنفسجي (Purple)</option>
                                             <option value="text-rose-500">أحمر (Rose)</option>
                                         </select>
-                                        {errors.badge_color && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12}/> {errors.badge_color}</p>}
+                                        {errors.badge_color && <p className="text-xs text-rose-500 mt-2 flex items-center gap-1"><X size={12} /> {errors.badge_color}</p>}
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                                    <input 
-                                        type="checkbox" 
-                                        id="is_active" 
-                                        className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500 bg-white border-slate-300 dark:bg-slate-900 dark:border-slate-700" 
-                                        checked={data.is_active} 
-                                        onChange={(e) => setData('is_active', e.target.checked)} 
+                                    <input
+                                        type="checkbox"
+                                        id="is_active"
+                                        className="w-5 h-5 rounded text-primary-600 focus:ring-primary-500 bg-white border-slate-300 dark:bg-slate-900 dark:border-slate-700"
+                                        checked={data.is_active}
+                                        onChange={(e) => setData('is_active', e.target.checked)}
                                     />
                                     <label htmlFor="is_active" className="text-sm font-bold text-slate-800 dark:text-slate-200 cursor-pointer">
                                         تفعيل هذا النوع (يمكن اختياره عند تسجيل الإنجازات)
@@ -403,7 +403,7 @@ export default function Types({ auth, types, stats }) {
                                 </div>
                             </form>
                         </div>
-                        
+
                         <div className="p-6 sm:p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 flex flex-col sm:flex-row gap-3">
                             <button
                                 type="submit"
@@ -437,8 +437,8 @@ export default function Types({ auth, types, stats }) {
                             </div>
                             <h3 className="text-2xl font-bold text-dark-900 dark:text-white mb-3">تأكيد الحذف</h3>
                             <p className="text-slate-500 dark:text-slate-400 text-base leading-relaxed">
-                                هل أنت متأكد من أنك تريد حذف نوع الإنجاز هذا؟ 
-                                <br/>لا يمكن التراجع عن هذا الإجراء.
+                                هل أنت متأكد من أنك تريد حذف نوع الإنجاز هذا؟
+                                <br />لا يمكن التراجع عن هذا الإجراء.
                             </p>
                         </div>
                         <div className="p-6 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row gap-3">

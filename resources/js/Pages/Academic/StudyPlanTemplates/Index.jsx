@@ -1,16 +1,64 @@
 import React, { useState } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Plus, Edit2, Trash2, Save, X, PlusCircle, GripVertical, FileSignature, AlertCircle, Sparkles, LayoutTemplate, CheckCircle2, XCircle, CalendarDays, Check, LayoutGrid, List } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, PlusCircle, GripVertical, FileSignature, AlertCircle, Sparkles, LayoutTemplate, CheckCircle2, XCircle, CalendarDays, Check, LayoutGrid, List, Eye } from 'lucide-react';
 import Pagination from '@/Components/Pagination';
 
+const PREVIEW_WEEK_NAMES = ['الأسبوع الأول', 'الأسبوع الثاني', 'الأسبوع الثالث', 'الأسبوع الرابع', 'الأسبوع الخامس', 'الأسبوع السادس', 'الأسبوع السابع', 'الأسبوع الثامن', 'الأسبوع التاسع', 'الأسبوع العاشر', 'الأسبوع الحادي عشر', 'الأسبوع الثاني عشر', 'الأسبوع الثالث عشر', 'الأسبوع الرابع عشر', 'الأسبوع الخامس عشر', 'الأسبوع السادس عشر', 'الأسبوع السابع عشر', 'الأسبوع الثامن عشر'];
+
+const getPreviewWeekName = (index, template = null) => {
+    if (template?.weeks?.[index]?.name) {
+        return template.weeks[index].name;
+    }
+    return PREVIEW_WEEK_NAMES[index] || `الأسبوع ${index + 1}`;
+};
+
+const toArabicNumerals = (str) => {
+    if (!str) return '';
+    return str.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+};
+
+const formatGregorian = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return toArabicNumerals(dateStr);
+        return d.toLocaleDateString('ar-EG', { calendar: 'gregory', day: 'numeric', month: 'short' });
+    } catch {
+        return toArabicNumerals(dateStr);
+    }
+};
+
+const formatHijri = (dateStr) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split(/[-/.]/);
+    if (parts.length >= 3) {
+        if (parts[0].length === 4) return toArabicNumerals(`${parts[2]}-${parts[1]}`);
+        if (parts[2].length === 4) return toArabicNumerals(`${parts[0]}-${parts[1]}`);
+    }
+    return toArabicNumerals(dateStr);
+};
+
+const getPreviewWeekDate = (index, template = null) => {
+    const w = template?.weeks?.[index];
+    if (!w) return '';
+    const parts = [];
+    if (w.start_date_gregorian || w.end_date_gregorian) {
+        parts.push(`${formatGregorian(w.start_date_gregorian)} إلى ${formatGregorian(w.end_date_gregorian)} (م)`);
+    }
+    if (w.start_date_hijri || w.end_date_hijri) {
+        parts.push(`${formatHijri(w.start_date_hijri)} إلى ${formatHijri(w.end_date_hijri)} (هـ)`);
+    }
+    return parts.join(' | ');
+};
+
 // Modern Modal Component
-function Modal({ isOpen, onClose, title, children, icon: Icon }) {
+function Modal({ isOpen, onClose, title, children, icon: Icon, maxWidth = 'max-w-4xl' }) {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
             <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-4xl z-10 overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+            <div className={`relative bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full ${maxWidth} z-10 overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]`}>
                 <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 to-indigo-500" />
                 <div className="flex items-center justify-between p-6 border-b border-slate-100/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-900/30 shrink-0">
                     <h3 className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-3">
@@ -30,6 +78,7 @@ function Modal({ isOpen, onClose, title, children, icon: Icon }) {
 export default function StudyPlanTemplatesIndex({ auth, templates, academicYears }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [previewItem, setPreviewItem] = useState(null);
     const [viewMode, setViewMode] = useState(() => {
         if (typeof window !== 'undefined') {
             return localStorage.getItem('study_plan_templates_view_mode') || 'table';
@@ -259,6 +308,13 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                         
                                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-slate-800 p-1.5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                                             <button 
+                                                onClick={() => setPreviewItem(item)} 
+                                                className="p-2 rounded-xl text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400 transition-colors"
+                                                title="معاينة القالب"
+                                            >
+                                                <Eye size={16} />
+                                            </button>
+                                            <button 
                                                 onClick={() => openModal(item)} 
                                                 className="p-2 rounded-xl text-slate-400 hover:bg-primary-50 hover:text-primary-600 dark:hover:bg-primary-500/20 dark:hover:text-primary-400 transition-colors"
                                                 title="تعديل القالب"
@@ -408,6 +464,13 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                                                 </td>
                                                 <td className="px-6 py-5 align-middle">
                                                     <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button 
+                                                            onClick={() => setPreviewItem(item)} 
+                                                            className="p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-indigo-500/20 dark:hover:text-indigo-400 transition-colors tooltip"
+                                                            title="معاينة القالب"
+                                                        >
+                                                            <Eye size={18} />
+                                                        </button>
                                                         <button 
                                                             onClick={() => openModal(item)} 
                                                             className="p-2.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-primary-50 hover:text-primary-600 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-primary-500/20 dark:hover:text-primary-400 transition-colors tooltip"
@@ -886,20 +949,210 @@ export default function StudyPlanTemplatesIndex({ auth, templates, academicYears
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <button type="button" onClick={closeModal} className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
-                            إلغاء
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const matchedSemester = availableSemesters.find(s => s.id.toString() === data.semester_id?.toString()) || null;
+                                setPreviewItem({
+                                    ...data,
+                                    name: data.name || 'معاينة القالب الجديد',
+                                    semester: matchedSemester,
+                                    isFromEditor: true,
+                                });
+                            }}
+                            disabled={!data.columns || data.columns.length === 0}
+                            className="px-5 py-3 rounded-2xl text-sm font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 border border-indigo-200/60 dark:border-indigo-500/20 transition-colors flex items-center gap-2 disabled:opacity-50"
+                        >
+                            <Eye size={17} />
+                            <span>معاينة القالب</span>
                         </button>
-                        <button type="submit" disabled={processing} className="erp-btn-primary px-8 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary-500/20">
-                            {processing ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            ) : (
-                                <Save size={18} />
-                            )}
-                            <span>{editingItem ? 'حفظ التعديلات' : 'اعتماد وإنشاء'}</span>
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button type="button" onClick={closeModal} className="px-6 py-3 rounded-2xl text-sm font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors">
+                                إلغاء
+                            </button>
+                            <button type="submit" disabled={processing} className="erp-btn-primary px-8 py-3 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary-500/20">
+                                {processing ? (
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                    <Save size={18} />
+                                )}
+                                <span>{editingItem ? 'حفظ التعديلات' : 'اعتماد وإنشاء'}</span>
+                            </button>
+                        </div>
                     </div>
                 </form>
+            </Modal>
+
+            {/* Preview Modal */}
+            <Modal
+                isOpen={!!previewItem}
+                onClose={() => setPreviewItem(null)}
+                title={`معاينة القالب: ${previewItem?.name || ''}`}
+                icon={Eye}
+                maxWidth="max-w-6xl"
+            >
+                {previewItem && (() => {
+                    const previewCols = Array.isArray(previewItem.columns) ? previewItem.columns : [];
+                    const previewWeeks = Array.isArray(previewItem.weeks) ? previewItem.weeks : [];
+                    const rowCount = previewWeeks.length > 0 ? previewWeeks.length : 2;
+
+                    return (
+                        <div className="space-y-6">
+                            {/* Template Summary Badges */}
+                            <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-700/60">
+                                <div className="flex flex-wrap items-center gap-2.5">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300 text-xs font-black border border-purple-100 dark:border-purple-800/40">
+                                        {previewItem.semester ? previewItem.semester.name : 'جميع الفصول'}
+                                    </span>
+                                    {previewItem.month && (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300 text-xs font-black border border-teal-100 dark:border-teal-800/40">
+                                            <CalendarDays size={13} /> {previewItem.month}
+                                        </span>
+                                    )}
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200/80 dark:border-slate-700">
+                                        {previewCols.length} أعمدة
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold border border-slate-200/80 dark:border-slate-700">
+                                        {previewWeeks.length > 0 ? `${previewWeeks.length} أسابيع محددة` : 'صفوف مرنة (يضيفها المعلم)'}
+                                    </span>
+                                </div>
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black ${previewItem.is_active ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>
+                                    {previewItem.is_active ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                    {previewItem.is_active ? 'نشط' : 'متوقف'}
+                                </span>
+                            </div>
+
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                                هذا هو الشكل الفعلي للجدول الذي سيظهر للمعلم عند اختيار هذا القالب (أعمدة الشهر والأسبوع والفترة الزمنية تتعبأ تلقائياً):
+                            </p>
+
+                            {/* Interactive Table Preview matching Teacher Form */}
+                            {previewCols.length > 0 ? (
+                                <div className="w-full overflow-hidden border border-slate-200/80 dark:border-slate-700/80 rounded-[24px] shadow-sm bg-white dark:bg-slate-900">
+                                    <div className="overflow-x-auto custom-scrollbar">
+                                        <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800/60">
+                                            <thead className="bg-slate-50/90 dark:bg-slate-800/60">
+                                                <tr>
+                                                    {previewCols.map((col, idx) => {
+                                                        const label = col.label || '';
+                                                        const isDateCol = label.includes('شهر') || label.includes('أسبوع') || label.includes('الاسبوع') || label.includes('تاريخ') || label.includes('فترة') || label.includes('زمني');
+                                                        const isNumberCol = label.includes('أيام') || label.includes('ايام') || label.includes('حصص') || label.includes('يوم');
+                                                        const widthClass = isDateCol ? 'w-16 min-w-[64px]' : isNumberCol ? 'w-16 min-w-[64px]' : 'min-w-[190px]';
+                                                        return (
+                                                            <th key={idx} className={`px-2 py-4 text-center text-[11px] font-black text-slate-600 dark:text-slate-300 border-l border-slate-100 dark:border-slate-800/60 last:border-0 ${widthClass} ${isNumberCol ? 'whitespace-normal leading-tight' : 'whitespace-nowrap'}`}>
+                                                                {label || `عمود ${idx + 1}`}
+                                                            </th>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                                {Array.from({ length: rowCount }).map((_, rowIdx) => (
+                                                    <tr key={rowIdx} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/20">
+                                                        {previewCols.map((col, colIdx) => {
+                                                            const label = col.label || '';
+                                                            const isDateCol = label.includes('شهر') || label.includes('أسبوع') || label.includes('الاسبوع') || label.includes('تاريخ') || label.includes('فترة') || label.includes('زمني');
+                                                            const isNumberCol = label.includes('أيام') || label.includes('ايام') || label.includes('حصص') || label.includes('يوم');
+                                                            const widthClass = isDateCol ? 'w-16 min-w-[64px]' : isNumberCol ? 'w-16 min-w-[64px]' : 'min-w-[190px]';
+
+                                                            const isMonth = label.includes('شهر') || label.toLowerCase().includes('month');
+                                                            const isWeek = label.includes('أسبوع') || label.includes('الاسبوع') || label.toLowerCase().includes('week');
+                                                            const isDate = label.includes('تاريخ') || label.includes('فترة') || label.includes('زمني');
+
+                                                            let autoValue = '';
+                                                            let isReadOnlyCell = false;
+
+                                                            if (isMonth && previewItem.month) {
+                                                                autoValue = previewItem.month;
+                                                                isReadOnlyCell = true;
+                                                            } else if (isWeek) {
+                                                                autoValue = getPreviewWeekName(rowIdx, previewItem);
+                                                                isReadOnlyCell = true;
+                                                            } else if (isDate && getPreviewWeekDate(rowIdx, previewItem)) {
+                                                                autoValue = getPreviewWeekDate(rowIdx, previewItem);
+                                                                isReadOnlyCell = true;
+                                                            }
+
+                                                            return (
+                                                                <td key={colIdx} className={`p-0 border-l border-slate-100 dark:border-slate-800/60 last:border-0 align-top ${widthClass}`}>
+                                                                    {isReadOnlyCell ? (
+                                                                        <div className="w-full h-full min-h-[130px] flex items-center justify-center gap-2 py-3 bg-slate-50/80 dark:bg-slate-800/50 select-none">
+                                                                            {(typeof autoValue === 'string' ? autoValue.split(' | ') : [autoValue]).map((line, i) => (
+                                                                                <span
+                                                                                    key={i}
+                                                                                    className="text-slate-500 dark:text-slate-400 font-black text-xs tracking-wider whitespace-nowrap"
+                                                                                    style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                                                                                >
+                                                                                    {line}
+                                                                                </span>
+                                                                            ))}
+                                                                        </div>
+                                                                    ) : col.type === 'textarea' ? (
+                                                                        <textarea
+                                                                            className="w-full h-full min-h-[64px] text-xs px-3 py-3 border-0 bg-transparent focus:ring-0 resize-none outline-none text-slate-600 dark:text-slate-300 placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                                                            placeholder="نص طويل..."
+                                                                            rows={3}
+                                                                        />
+                                                                    ) : col.type === 'select' ? (
+                                                                        <select className="w-full min-h-[60px] text-xs px-3 py-3 border-0 bg-transparent focus:ring-0 outline-none text-slate-600 dark:text-slate-300 cursor-pointer">
+                                                                            <option value="">اختر...</option>
+                                                                            {col.options?.split(',').map(o => o.trim()).filter(Boolean).map(opt => (
+                                                                                <option key={opt} value={opt}>{opt}</option>
+                                                                            ))}
+                                                                        </select>
+                                                                    ) : col.type === 'checkbox' ? (
+                                                                        <div className="w-full min-h-[60px] flex items-center justify-center p-3">
+                                                                            <input type="checkbox" className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500" />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <input
+                                                                            type={col.type === 'number' ? 'number' : col.type === 'date' ? 'date' : 'text'}
+                                                                            className={`w-full min-h-[60px] text-xs ${col.type === 'number' ? 'px-1 text-center' : 'px-3'} py-3 border-0 bg-transparent focus:ring-0 outline-none text-slate-600 dark:text-slate-300 placeholder:text-slate-300 dark:placeholder:text-slate-600`}
+                                                                            placeholder={col.type === 'number' ? '0' : col.type === 'date' ? '' : 'اكتب هنا...'}
+                                                                        />
+                                                                    )}
+                                                                </td>
+                                                            );
+                                                        })}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl text-slate-400 font-bold text-sm">
+                                    لا توجد أعمدة مضافة في هذا القالب بعد.
+                                </div>
+                            )}
+
+                            {/* Footer Actions */}
+                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                                {!previewItem.isFromEditor && previewItem.id && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const itemToEdit = previewItem;
+                                            setPreviewItem(null);
+                                            openModal(itemToEdit);
+                                        }}
+                                        className="px-6 py-2.5 rounded-2xl text-sm font-bold bg-primary-50 text-primary-600 hover:bg-primary-100 dark:bg-primary-500/15 dark:text-primary-400 transition-colors flex items-center gap-2"
+                                    >
+                                        <Edit2 size={16} /> تعديل القالب
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewItem(null)}
+                                    className="px-6 py-2.5 rounded-2xl text-sm font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 transition-colors"
+                                >
+                                    إغلاق
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })()}
             </Modal>
         </AdminLayout>
     );

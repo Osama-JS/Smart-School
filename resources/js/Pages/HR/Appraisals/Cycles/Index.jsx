@@ -278,11 +278,11 @@ export default function CyclesIndex({ cycles }) {
                                     <CalendarDays size={22} className="text-white" />
                                 </div>
                                 <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight">
-                                    دورات التقييم
+                                    التقييم
                                 </h1>
                             </div>
                             <p className="text-primary-700/70 dark:text-primary-300/60 text-sm font-semibold mr-14">
-                                إدارة فترات التقييم الدورية (شهرية، نصف سنوية، أو سنوية)
+                                فترات التقييم الدورية (شهرية، نصف سنوية، أو سنوية)
                             </p>
                         </div>
 
@@ -348,16 +348,14 @@ export default function CyclesIndex({ cycles }) {
                             <button
                                 key={tab.key}
                                 onClick={() => setFilter(tab.key)}
-                                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                                    filter === tab.key
-                                        ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                                }`}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all ${filter === tab.key
+                                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/20'
+                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                    }`}
                             >
                                 {tab.label}
-                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                                    filter === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-                                }`}>{tab.count}</span>
+                                <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${filter === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
+                                    }`}>{tab.count}</span>
                             </button>
                         ))}
                     </div>
@@ -366,21 +364,19 @@ export default function CyclesIndex({ cycles }) {
                     <div className="flex items-center gap-1.5 bg-white/60 dark:bg-[#121820]/40 p-1 rounded-xl border border-slate-100 dark:border-slate-800/50 backdrop-blur-sm">
                         <button
                             onClick={() => setViewMode('cards')}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-                                viewMode === 'cards'
-                                    ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/20'
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                            }`}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'cards'
+                                ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/20'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
                         >
                             <LayoutGrid size={14} /> بطاقات
                         </button>
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-                                viewMode === 'table'
-                                    ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/20'
-                                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                            }`}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'table'
+                                ? 'bg-primary-500 text-white shadow-sm shadow-primary-500/20'
+                                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                                }`}
                         >
                             <List size={14} /> جدول
                         </button>
