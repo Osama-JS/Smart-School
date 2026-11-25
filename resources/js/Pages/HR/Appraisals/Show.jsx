@@ -63,24 +63,47 @@ const TRAINING_PRESETS = [
 const EVALUATOR_ROLE_LABELS = {
     all: 'الجميع',
     manager: 'المدير المباشر',
-    supervisor: 'المشرف التربوي',
+    supervisor: 'الموجه',
     hr: 'الموارد البشرية',
     committee: 'عضو لجنة',
 };
 
 const EVALUATOR_ROLE_OPTIONS = [
     { value: 'manager', label: 'المدير المباشر' },
-    { value: 'supervisor', label: 'المشرف التربوي' },
+    { value: 'supervisor', label: 'الموجه' },
     { value: 'hr', label: 'الموارد البشرية' },
     { value: 'committee', label: 'عضو لجنة' },
 ];
 
-const kpiAllowsRole = (kpi, roleType) => {
+const kpiAllowsRole = (kpi, roleType, user = null) => {
     const roles = kpi?.evaluator_roles;
     if (!Array.isArray(roles) || roles.length === 0 || roles.includes('all')) {
         return true;
     }
-    return roles.includes(roleType);
+    if (roles.includes(roleType)) {
+        return true;
+    }
+    if (!user) {
+        return false;
+    }
+    const jobGradeName = user?.employee?.job_grade?.name;
+    const jobGradeId = user?.employee?.job_grade_id;
+    const roleName = user?.role?.name;
+    const normalizedRoles = roles.map(String);
+
+    if (jobGradeName && normalizedRoles.includes(String(jobGradeName))) {
+        return true;
+    }
+    if (jobGradeId !== null && jobGradeId !== undefined && normalizedRoles.includes(String(jobGradeId))) {
+        return true;
+    }
+    if (roleName && normalizedRoles.includes(String(roleName))) {
+        return true;
+    }
+    if (!jobGradeId && !jobGradeName) {
+        return true;
+    }
+    return false;
 };
 
 const getRatingMeta = (val) => RATING_LEVELS.find((r) => r.value === Math.round(Number(val))) || null;
@@ -471,7 +494,7 @@ export default function AppraisalsShow({
         let totalWeighted = 0;
         let totalWeight = 0;
         appraisal.scores.forEach((orig, idx) => {
-            if (checkRole && !kpiAllowsRole(orig.kpi, actingRole)) {
+            if (checkRole && !kpiAllowsRole(orig.kpi, actingRole, auth?.user)) {
                 return;
             }
             const val = Number(scoreItems[idx]?.[field]);
@@ -502,7 +525,7 @@ export default function AppraisalsShow({
     const handleManagerSubmit = (e) => {
         e.preventDefault();
         const incomplete = appraisal.scores.some((orig, idx) => {
-            if (!kpiAllowsRole(orig.kpi, actingRole)) return false;
+            if (!kpiAllowsRole(orig.kpi, actingRole, auth?.user)) return false;
             const val = Number(managerData.scores[idx]?.manager_score);
             return !val || val < 1 || val > 5;
         });
@@ -734,7 +757,7 @@ export default function AppraisalsShow({
                                 لجنة التقييم والمقيّمون المشاركون ({evaluatorsList.length})
                             </h3>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-semibold">
-                                يمكن إسناد التقييم لأكثر من شخص (المدير، المشرف التربوي، الموارد البشرية) ويحسب النظام المتوسط الموزون تلقائياً
+                                يمكن إسناد التقييم لأكثر من شخص (المدير، الموجه، الموارد البشرية) ويحسب النظام المتوسط الموزون تلقائياً
                             </p>
                         </div>
                         {canManageCommittee && (
@@ -847,7 +870,7 @@ export default function AppraisalsShow({
                                     const mgrRatingVal = score.manager_score;
                                     const selfMeta = getRatingMeta(selfRatingVal);
                                     const mgrMeta = getRatingMeta(mgrRatingVal);
-                                    const allowedForMe = kpiAllowsRole(score.kpi, actingRole);
+                                    const allowedForMe = kpiAllowsRole(score.kpi, actingRole, auth?.user);
                                     const kpiRoles = Array.isArray(score.kpi?.evaluator_roles) && score.kpi.evaluator_roles.length > 0
                                         ? score.kpi.evaluator_roles
                                         : ['all'];
@@ -1294,7 +1317,7 @@ export default function AppraisalsShow({
                                     </div>
                                     {suggestedMetrics.academic_component !== null && (
                                         <div className="flex items-center justify-between">
-                                            <span className="text-white/80">الأداء الأكاديمي والإشرافي</span>
+                                            <span className="text-white/80">الأداء الأكاديمي والتوجيهي</span>
                                             <span className="font-black">{suggestedMetrics.academic_component}%</span>
                                         </div>
                                     )}
@@ -1322,7 +1345,7 @@ export default function AppraisalsShow({
                                             <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center">
                                                 <BookOpen size={14} className="text-indigo-500" />
                                             </div>
-                                            <h4 className="font-bold text-slate-700 dark:text-slate-300 text-sm">الأداء الأكاديمي والإشرافي</h4>
+                                            <h4 className="font-bold text-slate-700 dark:text-slate-300 text-sm">الأداء الأكاديمي والتوجيهي</h4>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-2.5">
@@ -1336,7 +1359,7 @@ export default function AppraisalsShow({
                                                 </p>
                                                 {academicData.preparations_avg_rating != null && (
                                                     <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-0.5">
-                                                        تقييم المشرف: {academicData.preparations_avg_rating} / 5
+                                                        تقييم الموجه: {academicData.preparations_avg_rating} / 5
                                                     </p>
                                                 )}
                                             </div>
@@ -1549,7 +1572,7 @@ export default function AppraisalsShow({
                                     }))}
                                     value={evaluatorForm.data.evaluator_user_id}
                                     onChange={(v) => evaluatorForm.setData('evaluator_user_id', v || '')}
-                                    placeholder="اختر المشرف أو المدير أو عضو اللجنة..."
+                                    placeholder="اختر الموجه أو المدير أو عضو اللجنة..."
                                     required
                                 />
                                 {evaluatorForm.errors.evaluator_user_id && (

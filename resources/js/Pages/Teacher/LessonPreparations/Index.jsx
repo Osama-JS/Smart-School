@@ -784,7 +784,7 @@ export default function Index({ auth, preparations, grades, subjects, schedules 
                                         <th className="px-5 py-4 font-bold">الحالة والسير في المنهج</th>
                                         <th className="px-5 py-4 font-bold">الوحدة وعنوان الدرس</th>
                                         <th className="px-5 py-4 font-bold">المادة والصف</th>
-                                        <th className="px-5 py-4 font-bold">ملاحظات المشرف</th>
+                                        <th className="px-5 py-4 font-bold">ملاحظات الموجه</th>
                                         <th className="px-5 py-4 rounded-tl-3xl text-center font-bold">إجراءات</th>
                                     </tr>
                                 </thead>

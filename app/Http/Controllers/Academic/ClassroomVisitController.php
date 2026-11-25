@@ -78,7 +78,7 @@ class ClassroomVisitController extends Controller implements \Illuminate\Routing
         }
         $grades = $gradesQuery->get();
 
-        // جلب المشرفين في نفس الفرع
+        // جلب الموجهين في نفس الفرع
         $supervisorsQuery = User::whereHas('role', function($q) {
             $q->where('name', '!=', 'طالب')->where('name', '!=', 'ولي أمر');
         });

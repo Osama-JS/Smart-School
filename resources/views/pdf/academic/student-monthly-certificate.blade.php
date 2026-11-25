@@ -455,21 +455,21 @@
                         <div class="sigs">
                             @if($design['sig1_active'] ?? true)
                                 <div class="sig">
-                                    <div class="sig-title">{{ $design['sig1_title'] ?? 'إعداد / المختص' }}</div>
+                                    <div class="sig-title">{{ $design['sig1_title'] ?? 'رائد الصف' }}</div>
                                     <div class="sig-line"></div>
                                     <div class="sig-name">{{ $design['sig1_name'] ?: 'التوقيع' }}</div>
                                 </div>
                             @endif
                             @if($design['sig2_active'] ?? true)
                                 <div class="sig">
-                                    <div class="sig-title">{{ $design['sig2_title'] ?? 'مراجعة / وكيل المدرسة' }}</div>
+                                    <div class="sig-title">{{ $design['sig2_title'] ?? 'المشرف' }}</div>
                                     <div class="sig-line"></div>
                                     <div class="sig-name">{{ $design['sig2_name'] ?: 'التوقيع' }}</div>
                                 </div>
                             @endif
                             @if($design['sig3_active'] ?? true)
                                 <div class="sig">
-                                    <div class="sig-title">{{ $design['sig3_title'] ?? 'اعتماد / مدير الفرع' }}</div>
+                                    <div class="sig-title">{{ $design['sig3_title'] ?? 'مدير المدرسة' }}</div>
                                     <div class="sig-line"></div>
                                     <div class="sig-name">{{ $design['sig3_name'] ?: 'التوقيع' }}</div>
                                 </div>

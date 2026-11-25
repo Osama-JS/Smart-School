@@ -18,7 +18,7 @@ export default function StudentAchievementTypes({ achievementTypes = [] }) {
         is_active: true,
     });
 
-    const categories = ['الكل', 'أكاديمي', 'سلوكي', 'رياضي', 'ديني', 'أخرى'];
+    const categories = ['الكل', 'أكاديمي', 'قيمي', 'رياضي', 'مهاري', 'أخرى'];
 
     const openModal = (type = null) => {
         clearErrors();
@@ -68,8 +68,8 @@ export default function StudentAchievementTypes({ achievementTypes = [] }) {
         switch (category) {
             case 'أكاديمي': return { icon: <Target size={18} />, bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800', gradient: 'from-blue-500 to-indigo-600' };
             case 'رياضي': return { icon: <Trophy size={18} />, bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-600 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800', gradient: 'from-orange-500 to-amber-500' };
-            case 'ديني': return { icon: <Star size={18} />, bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800', gradient: 'from-emerald-400 to-teal-500' };
-            case 'سلوكي': return { icon: <Award size={18} />, bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-800', gradient: 'from-purple-500 to-fuchsia-500' };
+            case 'مهاري': return { icon: <Star size={18} />, bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800', gradient: 'from-emerald-400 to-teal-500' };
+            case 'قيمي': return { icon: <Award size={18} />, bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-200 dark:border-purple-800', gradient: 'from-purple-500 to-fuchsia-500' };
             default: return { icon: <Layers size={18} />, bg: 'bg-slate-50 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-300', border: 'border-slate-200 dark:border-slate-700', gradient: 'from-slate-400 to-slate-600' };
         }
     };
@@ -309,8 +309,8 @@ export default function StudentAchievementTypes({ achievementTypes = [] }) {
                                                 >
                                                     <option value="أكاديمي">أكاديمي</option>
                                                     <option value="رياضي">رياضي</option>
-                                                    <option value="ديني">ديني</option>
-                                                    <option value="سلوكي">سلوكي</option>
+                                                    <option value="مهاري">مهاري</option>
+                                                    <option value="قيمي">قيمي</option>
                                                     <option value="أخرى">أخرى</option>
                                                 </select>
                                                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">

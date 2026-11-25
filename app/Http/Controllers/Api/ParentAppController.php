@@ -634,21 +634,7 @@ class ParentAppController extends Controller
             return response()->json(['message' => 'No active enrollment found'], 404);
         }
 
-        $query = \App\Models\LessonPreparation::with(['subject', 'teacher'])
-            ->where('division_id', $enrollment->division_id)
-            ->where('status', 'published');
-
-        if ($request->filled('date')) {
-            $query->whereDate('preparation_date', $request->date);
-        } elseif ($request->filled('start_date') && $request->filled('end_date')) {
-            $query->whereBetween('preparation_date', [$request->start_date, $request->end_date]);
-        } else {
-            $query->whereDate('preparation_date', '>=', now()->subDays(30));
-        }
-
-        $homework = $query->orderBy('preparation_date', 'desc')
-            ->orderBy('id', 'desc')
-            ->get();
+        $homework = \App\Models\FollowupBook::getCombinedDivisionHomework((int) $enrollment->division_id, $request);
 
         return response()->json([
             'status' => 'success',

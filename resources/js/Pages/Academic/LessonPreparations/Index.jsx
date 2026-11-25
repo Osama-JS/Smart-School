@@ -89,7 +89,7 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
                 Swal.fire({
                     icon: 'success',
                     title: 'تم الحفظ',
-                    text: 'تم حفظ تقييم وملاحظات المشرف التربوي بنجاح.',
+                    text: 'تم حفظ تقييم وملاحظات الموجه بنجاح.',
                     timer: 1800,
                     showConfirmButton: false,
                 });
@@ -199,7 +199,7 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
             { width: 34 }, // S: الشرح والتقويم والواجب
             { width: 24 }, // T: التعزيزات
             { width: 14 }, // U: عدد المرفقات
-            { width: 30 }, // V: تقييم وملاحظات المشرف
+            { width: 30 }, // V: تقييم وملاحظات الموجه
         ];
 
         if (logoId !== null) {
@@ -271,7 +271,7 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
             'الشرح والتقويم والواجب',
             'التعزيزات',
             'عدد المرفقات',
-            'تقييم وملاحظات المشرف',
+            'تقييم وملاحظات الموجه',
         ];
         const headerRow = sheet.addRow(headers);
         headerRow.height = 30;
@@ -405,7 +405,7 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
                                 دفاتر التحضير ومتابعة الدروس
                             </h1>
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">
-                                مراجعة وتقييم دفاتر التحضير التربوية الخاصة بالمعلمين وتدوين الملاحظات الإشرافية
+                                مراجعة وتقييم دفاتر التحضير التربوية الخاصة بالمعلمين وتدوين ملاحظات التوجيه
                             </p>
                         </div>
                         <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
@@ -506,7 +506,7 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
                                         <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider">المعلم</th>
                                         <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider">الصف والمادة</th>
                                         <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider">الوحدة وعنوان الدرس</th>
-                                        <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider">المراجعة الإشرافية</th>
+                                        <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider">مراجعة التوجيه</th>
                                         <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 dark:text-slate-300 uppercase tracking-wider">الإجراءات</th>
                                     </tr>
                                 </thead>
@@ -591,7 +591,7 @@ export default function Index({ auth, preparations, teachers, grades, subjects, 
                                                                 {prep.supervisor_notes && (
                                                                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
                                                                         <MessageSquare size={11} />
-                                                                        توجد ملاحظة إشرافية
+                                                                        توجد ملاحظة توجيهية
                                                                     </span>
                                                                 )}
                                                             </div>

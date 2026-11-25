@@ -497,6 +497,9 @@ class StudentCertificateService
 
         $branchId = $enrollment->division?->branch_id ?? $student->user?->branch_id;
         $design = ReportDesignService::getDesignConfig($branchId);
+        $design['sig1_title'] = 'رائد الصف';
+        $design['sig2_title'] = 'المشرف';
+        $design['sig3_title'] = 'مدير المدرسة';
         $logoUrl = $this->resolveLogoUrl($design);
         $issueDate = now()->format('Y-m-d');
 

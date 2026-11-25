@@ -50,7 +50,7 @@ export default function ClassroomVisitsReport({
     // Print Settings State
     const [printSettings, setPrintSettings] = useState(() => {
         const defaultSettings = {
-            title: 'تقارير الزيارات الصفية (المشرف)',
+            title: 'تقارير الزيارات الصفية (الموجه)',
             showKPIs: true,
             showDetails: true,
             orientation: 'portrait',
@@ -151,7 +151,7 @@ export default function ClassroomVisitsReport({
     const activeFilters = [];
     if (startDate || endDate) activeFilters.push({ id: 'date', label: `التاريخ: ${startDate || 'الكل'} إلى ${endDate || 'الكل'}` });
     if (selectedTeacher) activeFilters.push({ id: 'teacher', label: `المعلم: ${selectedTeacher.label}` });
-    if (selectedSupervisor) activeFilters.push({ id: 'supervisor', label: `المشرف: ${selectedSupervisor.label}` });
+    if (selectedSupervisor) activeFilters.push({ id: 'supervisor', label: `الموجه: ${selectedSupervisor.label}` });
     if (violatorsOnly) activeFilters.push({ id: 'violators', label: `أداء منخفض / بدون زيارات فقط` });
 
     const setPresetDate = (preset) => {
@@ -183,7 +183,7 @@ export default function ClassroomVisitsReport({
 
     const handleExportCSV = () => {
         const csvRows = [];
-        csvRows.push(['اسم المعلم', 'القسم', 'تاريخ الزيارة', 'نوع الزيارة', 'اسم المشرف', 'التقييم (%)', 'الحالة', 'النقاط المناقشة', 'الملاحظات']);
+        csvRows.push(['اسم المعلم', 'القسم', 'تاريخ الزيارة', 'نوع الزيارة', 'اسم الموجه', 'التقييم (%)', 'الحالة', 'النقاط المناقشة', 'الملاحظات']);
 
         sortedTeachers.forEach(teacher => {
             const records = Array.isArray(teacher.records) ? teacher.records : [];
@@ -287,7 +287,7 @@ export default function ClassroomVisitsReport({
 
     return (
         <AdminLayout user={auth?.user} activeMenu="التقارير">
-            <Head title="تقارير الزيارات الصفية (المشرف)" />
+            <Head title="تقارير الزيارات الصفية (الموجه)" />
 
             <div className="space-y-6">
                 
@@ -303,9 +303,9 @@ export default function ClassroomVisitsReport({
                         </div>
                         <div>
                             <h1 className="text-[22px] font-black text-slate-800 tracking-tight mb-1">
-                                تقارير الزيارات الصفية (المشرف)
+                                تقارير الزيارات الصفية (الموجه)
                             </h1>
-                            <p className="text-[13.5px] font-bold text-slate-500">متابعة وتقييم الزيارات الصفية الميدانية للمشرفين الأكاديميين ونسب أداء المعلمين</p>
+                            <p className="text-[13.5px] font-bold text-slate-500">متابعة وتقييم الزيارات الصفية الميدانية للموجهين ونسب أداء المعلمين</p>
                         </div>
                     </div>
 
@@ -399,12 +399,12 @@ export default function ClassroomVisitsReport({
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">المشرف الأكاديمي</label>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">الموجه</label>
                                         <Select classNamePrefix="custom-select"
                                             options={safeAllSupervisors.map(s => ({ value: s.id, label: s.name }))}
                                             value={selectedSupervisor}
                                             onChange={setSelectedSupervisor}
-                                            placeholder="ابحث عن مشرف..."
+                                            placeholder="ابحث عن موجه..."
                                             isClearable
                                             styles={customSelectStyles}
                                             menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
@@ -751,7 +751,7 @@ export default function ClassroomVisitsReport({
                                                 <th className="py-3 px-4 font-bold text-center w-12 border-l border-white/20 first:rounded-tr-xl print:first:rounded-none">م</th>
                                                 <th className="py-3 px-4 font-bold border-l border-white/20">نوع الزيارة</th>
                                                 <th className="py-3 px-4 font-bold border-l border-white/20">الصف والشعبة</th>
-                                                <th className="py-3 px-4 font-bold border-l border-white/20">المشرف الأكاديمي</th>
+                                                <th className="py-3 px-4 font-bold border-l border-white/20">الموجه</th>
                                                 <th className="py-3 px-4 font-bold text-center w-32 border-l border-white/20">تاريخ الزيارة</th>
                                                 <th className="py-3 px-4 font-bold text-center w-28 border-l border-white/20 last:rounded-tl-xl print:last:rounded-none">التقييم (%)</th>
                                             </tr>
@@ -783,7 +783,7 @@ export default function ClassroomVisitsReport({
                                 {/* Official Signature Placeholders */}
                                 <div className="grid grid-cols-3 gap-6 mb-8 text-center print:grid">
                                     <div>
-                                        <p className="text-xs font-bold text-slate-500 mb-12">مُعد التقرير (المشرف الأكاديمي)</p>
+                                        <p className="text-xs font-bold text-slate-500 mb-12">مُعد التقرير (الموجه)</p>
                                         <p className="text-sm font-black text-slate-800">....................................</p>
                                     </div>
                                     <div>

@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
-use App\Models\MasterTimetable;
-use App\Models\FollowupBook;
-use App\Models\Subject;
-use App\Models\Grade;
+use App\Models\AcademicYear;
+use App\Models\DailyPeriod;
 use App\Models\Division;
+use App\Models\FollowupBook;
+use App\Models\LessonPreparation;
+use App\Models\MasterTimetable;
+use App\Models\Semester;
+use App\Models\Subject;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Carbon\Carbon;
@@ -15,6 +18,47 @@ use Carbon\CarbonPeriod;
 
 class FollowupBookController extends Controller
 {
+    private function findSuggestedPreparation(
+        \Illuminate\Support\Collection $preps,
+        int $subjectId,
+        ?int $divisionId,
+        ?int $gradeId,
+        ?int $periodId,
+        string $dateStr
+    ): ?array {
+        $candidates = $preps->filter(function (LessonPreparation $prep) use ($subjectId, $divisionId, $gradeId, $dateStr) {
+            $prepDate = $prep->preparation_date instanceof Carbon
+                ? $prep->preparation_date->format('Y-m-d')
+                : substr((string) $prep->preparation_date, 0, 10);
+
+            if ($prepDate !== $dateStr || (int) $prep->subject_id !== $subjectId) {
+                return false;
+            }
+
+            if ($divisionId && $prep->division_id) {
+                return (int) $prep->division_id === $divisionId;
+            }
+
+            return !$gradeId || (int) $prep->grade_id === $gradeId;
+        });
+
+        $match = $periodId
+            ? ($candidates->first(fn (LessonPreparation $p) => (int) $p->period_id === $periodId) ?? $candidates->first())
+            : $candidates->first();
+
+        if (!$match) {
+            return null;
+        }
+
+        return [
+            'id' => $match->id,
+            'lesson_title' => $match->lesson_title ?: '',
+            'page_numbers' => $match->page_numbers ?: '',
+            'homework' => $match->homework ?: '',
+            'notes' => $match->notes ?: '',
+        ];
+    }
+
     public function index(Request $request)
     {
         $teacherId = auth()->id();
@@ -22,7 +66,7 @@ class FollowupBookController extends Controller
         $startDateInput = $request->query('start_date');
         $endDateInput = $request->query('end_date');
         $weekOffset = (int) $request->query('week_offset', 0);
-        
+
         if ($startDateInput && $endDateInput) {
             $startOfWeek = Carbon::parse($startDateInput)->startOfDay();
             $endOfWeek = Carbon::parse($endDateInput)->endOfDay();
@@ -31,55 +75,94 @@ class FollowupBookController extends Controller
             $startOfWeek = now()->addWeeks($weekOffset)->startOfWeek(Carbon::SUNDAY)->startOfDay();
             $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::THURSDAY)->endOfDay();
         }
-        
-        $period = CarbonPeriod::create($startOfWeek, $endOfWeek);
 
-        $timetable = MasterTimetable::with(['subject', 'division.grade'])
+        $period = CarbonPeriod::create($startOfWeek, $endOfWeek);
+        $activeSemester = Semester::where('is_active', true)->first();
+
+        $timetable = MasterTimetable::with(['subject', 'division.grade', 'period'])
             ->where('teacher_id', $teacherId)
+            ->when($activeSemester, fn ($q) => $q->where('semester_id', $activeSemester->id))
             ->get();
 
-        // Fetch followups for this teacher in this week
-        $followups = FollowupBook::where('teacher_id', $teacherId)
-            ->whereBetween('date', [$startOfWeek, $endOfWeek])
-            ->get()
-            ->keyBy(function($item) {
-                return $item->date->format('Y-m-d') . '_' . $item->division_id . '_' . $item->subject_id;
-            });
+        // Fetch followups and lesson preparations (for prefill suggestions) in this week
+        $followups = FollowupBook::with(['reviewer:id,name', 'period:id,period_name'])
+            ->where('teacher_id', $teacherId)
+            ->whereBetween('date', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+            ->get();
 
-        $dayNames = [
-            'Saturday' => 'السبت',
-            'Sunday' => 'الأحد',
-            'Monday' => 'الاثنين',
-            'Tuesday' => 'الثلاثاء',
-            'Wednesday' => 'الأربعاء',
-            'Thursday' => 'الخميس',
-            'Friday' => 'الجمعة',
-        ];
+        $preps = LessonPreparation::where('teacher_id', $teacherId)
+            ->whereBetween('preparation_date', [$startOfWeek->format('Y-m-d'), $endOfWeek->format('Y-m-d')])
+            ->orderByDesc('id')
+            ->get();
 
         $days = [];
+        $matchedFollowupIds = [];
 
         foreach ($period as $date) {
             $dayOfWeek = $date->format('l');
-            $lessonsForDay = $timetable->filter(function($item) use ($dayOfWeek) {
-                return strtolower($item->day_of_week) === strtolower($dayOfWeek);
+            $dateStr = $date->format('Y-m-d');
+            $lessonsForDay = $timetable->filter(function ($item) use ($dayOfWeek) {
+                return FollowupBook::matchesDayOfWeek($item->day_of_week, $dayOfWeek);
             })->unique(function ($item) {
-                return $item->subject_id . '_' . $item->division_id;
-            });
+                return $item->subject_id . '_' . $item->division_id . '_' . ($item->period_id ?? 0);
+            })->sortBy(fn ($item) => $item->period?->start_time ?? '00:00');
 
             $dayData = [
-                'date' => $date->format('Y-m-d'),
-                'day_name' => $dayNames[$dayOfWeek] ?? $dayOfWeek,
+                'date' => $dateStr,
+                'day_name' => FollowupBook::arabicDayName($dayOfWeek),
                 'lessons' => []
             ];
 
             foreach ($lessonsForDay as $lesson) {
-                $key = $date->format('Y-m-d') . '_' . $lesson->division_id . '_' . $lesson->subject_id;
-                $followup = $followups->get($key);
+                $followup = FollowupBook::findMatchingForLesson(
+                    $followups,
+                    (int) $lesson->subject_id,
+                    (int) $lesson->division_id,
+                    $dateStr,
+                    $lesson->period_id ? (int) $lesson->period_id : null,
+                    $matchedFollowupIds
+                );
+                if ($followup) {
+                    $matchedFollowupIds[$followup->id] = true;
+                }
+
+                $hasFollowup = (bool) ($followup && $followup->uploaded_at);
+                $suggestedPrep = $this->findSuggestedPreparation(
+                    $preps,
+                    (int) $lesson->subject_id,
+                    (int) $lesson->division_id,
+                    $lesson->division?->grade_id ? (int) $lesson->division->grade_id : null,
+                    $lesson->period_id ? (int) $lesson->period_id : null,
+                    $dateStr
+                );
 
                 $dayData['lessons'][] = [
                     'subject' => $lesson->subject,
                     'division' => $lesson->division,
-                    'has_followup' => $followup ? true : false,
+                    'period' => $lesson->period ? [
+                        'id' => $lesson->period->id,
+                        'period_name' => $lesson->period->period_name,
+                        'start_time' => $lesson->period->start_time,
+                        'end_time' => $lesson->period->end_time,
+                    ] : null,
+                    'has_followup' => $hasFollowup,
+                    'suggested_prep' => $suggestedPrep,
+                    'followup' => $followup ? [
+                        'id' => $followup->id,
+                        'period_id' => $followup->period_id,
+                        'lesson_title' => $followup->lesson_title,
+                        'page_number' => $followup->page_number,
+                        'homework' => $followup->homework,
+                        'homework_page' => $followup->homework_page,
+                        'notes' => $followup->notes,
+                        'attachments' => $followup->formattedAttachments(),
+                        'supervisor_rating' => $followup->supervisor_rating,
+                        'supervisor_notes' => $followup->supervisor_notes,
+                        'reviewer_name' => $followup->reviewer?->name,
+                        'reviewed_at' => $followup->reviewed_at ? $followup->reviewed_at->format('Y-m-d H:i') : null,
+                        'upload_source' => $followup->upload_source,
+                        'uploaded_at' => $followup->uploaded_at ? $followup->uploaded_at->format('Y-m-d H:i') : null,
+                    ] : null,
                 ];
             }
 
@@ -104,7 +187,8 @@ class FollowupBookController extends Controller
         $date = $request->query('date');
         $subjectId = $request->query('subject_id');
         $divisionId = $request->query('division_id');
-        
+        $periodId = $request->query('period_id');
+
         $teacherId = auth()->id();
 
         if (!$date || !$subjectId || !$divisionId) {
@@ -113,53 +197,124 @@ class FollowupBookController extends Controller
 
         $subject = Subject::find($subjectId);
         $division = Division::with('grade')->find($divisionId);
+        $period = $periodId ? DailyPeriod::find($periodId) : null;
 
-        $followup = FollowupBook::where('teacher_id', $teacherId)
+        $candidates = FollowupBook::with(['reviewer:id,name', 'period:id,period_name'])
+            ->where('teacher_id', $teacherId)
             ->where('subject_id', $subjectId)
             ->where('division_id', $divisionId)
-            ->where('date', $date)
-            ->first();
+            ->whereDate('date', $date)
+            ->get();
+
+        $followup = FollowupBook::findMatchingForLesson(
+            $candidates,
+            (int) $subjectId,
+            (int) $divisionId,
+            substr((string) $date, 0, 10),
+            $periodId ? (int) $periodId : null
+        );
+
+        $preps = LessonPreparation::where('teacher_id', $teacherId)
+            ->where('subject_id', $subjectId)
+            ->whereDate('preparation_date', $date)
+            ->orderByDesc('id')
+            ->get();
+
+        $suggestedPrep = $this->findSuggestedPreparation(
+            $preps,
+            (int) $subjectId,
+            (int) $divisionId,
+            $division?->grade_id ? (int) $division->grade_id : null,
+            $periodId ? (int) $periodId : null,
+            substr((string) $date, 0, 10)
+        );
+
+        $followupPayload = $followup ? [
+            'id' => $followup->id,
+            'period_id' => $followup->period_id,
+            'lesson_title' => $followup->lesson_title,
+            'page_number' => $followup->page_number,
+            'homework' => $followup->homework,
+            'homework_page' => $followup->homework_page,
+            'notes' => $followup->notes,
+            'attachments' => $followup->formattedAttachments(),
+            'supervisor_rating' => $followup->supervisor_rating,
+            'supervisor_notes' => $followup->supervisor_notes,
+            'reviewer_name' => $followup->reviewer?->name,
+            'reviewed_at' => $followup->reviewed_at ? $followup->reviewed_at->format('Y-m-d H:i') : null,
+            'uploaded_at' => $followup->uploaded_at ? $followup->uploaded_at->format('Y-m-d H:i') : null,
+        ] : null;
 
         return Inertia::render('Teacher/FollowupBooks/Details', [
             'date' => $date,
             'subject' => $subject,
             'division' => $division,
-            'followup' => $followup
+            'period' => $period ? [
+                'id' => $period->id,
+                'period_name' => $period->period_name,
+                'start_time' => $period->start_time,
+                'end_time' => $period->end_time,
+            ] : null,
+            'followup' => $followupPayload,
+            'suggestedPrep' => $suggestedPrep,
         ]);
     }
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'date' => 'required|date',
             'subject_id' => 'required|exists:subjects,id',
             'division_id' => 'required|exists:divisions,id',
+            'period_id' => 'nullable|exists:daily_periods,id',
             'lesson_title' => 'required|string|max:255',
             'notes' => 'nullable|string',
             'page_number' => 'required|string|max:100',
             'homework' => 'required|string',
             'homework_page' => 'required|string|max:100',
+            'existing_attachments' => 'nullable|array',
+            'new_attachments' => 'nullable|array',
+            'new_attachments.*' => 'file|max:20480|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,webp,zip',
         ]);
 
-        $teacherId = auth()->id();
+        $user = auth()->user();
+        $teacherId = $user->id;
+        $activeYearId = AcademicYear::where('is_active', true)->value('id');
+        $periodId = !empty($validated['period_id']) ? (int) $validated['period_id'] : null;
 
-        FollowupBook::updateOrCreate(
-            [
-                'teacher_id' => $teacherId,
-                'subject_id' => $request->subject_id,
-                'division_id' => $request->division_id,
-                'date' => $request->date,
-            ],
-            [
-                'lesson_title' => $request->lesson_title,
-                'notes' => $request->notes,
-                'page_number' => $request->page_number,
-                'homework' => $request->homework,
-                'homework_page' => $request->homework_page,
-                'upload_source' => 'dashboard',
-                'uploaded_at' => now(), // Will update every time they edit, or we can use if missing
-            ]
-        );
+        $existing = FollowupBook::where('teacher_id', $teacherId)
+            ->where('subject_id', $validated['subject_id'])
+            ->where('division_id', $validated['division_id'])
+            ->whereDate('date', $validated['date'])
+            ->when($periodId, fn ($q) => $q->where(fn ($sub) => $sub->where('period_id', $periodId)->orWhereNull('period_id')))
+            ->first();
+
+        $followup = $existing ?? new FollowupBook([
+            'teacher_id' => $teacherId,
+            'subject_id' => $validated['subject_id'],
+            'division_id' => $validated['division_id'],
+            'date' => $validated['date'],
+        ]);
+
+        $followup->fill([
+            'branch_id' => $user->branch_id,
+            'academic_year_id' => $activeYearId,
+            'period_id' => $periodId ?? $followup->period_id,
+            'lesson_title' => $validated['lesson_title'],
+            'notes' => $validated['notes'] ?? null,
+            'page_number' => $validated['page_number'],
+            'homework' => $validated['homework'],
+            'homework_page' => $validated['homework_page'],
+            'upload_source' => 'dashboard',
+            'uploaded_at' => $existing?->uploaded_at ?? now(),
+        ]);
+
+        $followup->attachments = $followup->syncAttachmentsFromRequest($request, (bool) $existing);
+        $followup->save();
+
+        if (!empty($followup->homework)) {
+            app(\App\Services\AutomaticNotificationService::class)->notifyFollowupHomeworkPublished($followup);
+        }
 
         return back()->with('success', 'تم حفظ محتوى دفتر المتابعة بنجاح.');
     }

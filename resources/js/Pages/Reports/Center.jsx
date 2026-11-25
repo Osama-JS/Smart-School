@@ -180,7 +180,7 @@ export default function ReportsCenter({
             insights.push({
                 type: 'info',
                 icon: Eye,
-                text: `نشاط إشرافي نشط: تم إنجاز ${stats.classroom_visits_this_week} زيارة صفية هذا الأسبوع في الفرع.`,
+                text: `نشاط توجيهي نشط: تم إنجاز ${stats.classroom_visits_this_week} زيارة صفية هذا الأسبوع في الفرع.`,
                 color: 'text-primary-600 dark:text-primary-400',
                 bg: 'bg-primary-50 dark:bg-primary-900/20',
                 border: 'border-primary-200 dark:border-primary-800/50',
@@ -297,7 +297,7 @@ export default function ReportsCenter({
                 },
                 {
                     name: 'الزيارات الصفية الأكاديمية',
-                    description: 'تقارير وسجلات الزيارات الصفية للمشرفين التربويين وتقييم الأداء',
+                    description: 'تقارير وسجلات الزيارات الصفية للموجهين وتقييم الأداء',
                     icon: Eye,
                     url: route('hr.reports.classroom-visits'),
                     permission: 'إدارة الزيارات الصفية',

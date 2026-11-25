@@ -225,7 +225,7 @@ export default function PrintSchedule({ examSchedule, grades, settings = {} }) {
                         {/* Footer / Signatures */}
                         <div className="mt-16 flex justify-between items-start pt-8 break-inside-avoid">
                             <div className="text-center w-64">
-                                <h3 className="font-black text-slate-800 mb-12 text-lg">إعداد المشرف الأكاديمي</h3>
+                                <h3 className="font-black text-slate-800 mb-12 text-lg">إعداد الموجه</h3>
                                 <div className="border-b-2 border-slate-300 w-full mb-2"></div>
                                 <p className="text-sm font-bold text-slate-500">الاسم والتوقيع</p>
                             </div>

@@ -15,6 +15,8 @@ class StudentViolation extends Model
         'student_id',
         'violation_type_id',
         'supervisor_id',
+        'follow_up_officer_id',
+        'execution_officer_id',
         'violation_date',
         'details',
         'action_taken',
@@ -49,5 +51,15 @@ class StudentViolation extends Model
     public function supervisor()
     {
         return $this->belongsTo(User::class, 'supervisor_id');
+    }
+
+    public function followUpOfficer()
+    {
+        return $this->belongsTo(User::class, 'follow_up_officer_id');
+    }
+
+    public function executionOfficer()
+    {
+        return $this->belongsTo(User::class, 'execution_officer_id');
     }
 }

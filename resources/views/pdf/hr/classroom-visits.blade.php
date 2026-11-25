@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>{{ $printSettings['title'] ?? 'تقارير الزيارات الصفية (المشرف)' }}</title>
+    <title>{{ $printSettings['title'] ?? 'تقارير الزيارات الصفية (الموجه)' }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
@@ -76,7 +76,7 @@
                 
                 <div class="mt-3 pr-3 border-r-[3px] py-0.5 brand-border">
                     <h1 class="text-xl font-black text-slate-900 tracking-tight whitespace-nowrap leading-none">
-                        {{ $printSettings['title'] ?? 'تقارير الزيارات الصفية (المشرف)' }}
+                        {{ $printSettings['title'] ?? 'تقارير الزيارات الصفية (الموجه)' }}
                     </h1>
                 </div>
             </div>

@@ -4,22 +4,37 @@ import { Head, useForm, Link } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
-import { BookOpen, ArrowRight, Calendar, Plus, Save, FileText, CheckCircle, XCircle, Book, CheckSquare, FilePlus, AlertCircle, Edit3 } from 'lucide-react';
+import { BookOpen, ArrowRight, Calendar, Plus, Save, FileText, CheckCircle, XCircle, Book, CheckSquare, FilePlus, AlertCircle, Edit3, Sparkles, Paperclip, Star, Clock, Download, Trash2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
-export default function Details({ auth, date, subject, division, followup }) {
+export default function Details({ auth, date, subject, division, period = null, followup, suggestedPrep = null }) {
     const [isEditing, setIsEditing] = useState(!followup);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         date: date,
         subject_id: subject.id,
         division_id: division.id,
+        period_id: period?.id || followup?.period_id || '',
         lesson_title: followup ? followup.lesson_title : '',
-        notes: followup ? followup.notes : '',
-        page_number: followup ? followup.page_number : '',
-        homework: followup ? followup.homework : '',
-        homework_page: followup ? followup.homework_page : '',
+        notes: followup ? (followup.notes || '') : '',
+        page_number: followup ? (followup.page_number || '') : '',
+        homework: followup ? (followup.homework || '') : '',
+        homework_page: followup ? (followup.homework_page || '') : '',
+        existing_attachments: Array.isArray(followup?.attachments) ? followup.attachments : [],
+        new_attachments: [],
+        attachments_synced: true,
     });
+
+    const importFromPreparation = () => {
+        if (!suggestedPrep) return;
+        setData((prev) => ({
+            ...prev,
+            lesson_title: suggestedPrep.lesson_title || prev.lesson_title,
+            page_number: suggestedPrep.page_numbers || prev.page_number,
+            homework: suggestedPrep.homework || prev.homework,
+            notes: suggestedPrep.notes || prev.notes,
+        }));
+    };
 
     const startEditing = () => setIsEditing(true);
     const cancelEditing = () => {
@@ -34,6 +49,7 @@ export default function Details({ auth, date, subject, division, followup }) {
     const submit = (e) => {
         e.preventDefault();
         post(route('teacher.followup-books.store'), {
+            forceFormData: true,
             onSuccess: () => {
                 setIsEditing(false);
                 Swal.fire({
@@ -48,7 +64,7 @@ export default function Details({ auth, date, subject, division, followup }) {
     };
 
     return (
-        <AdminLayout user={auth.user}>
+        <AdminLayout user={auth.user} activeMenu="دفتر المتابعة">
             <Head title={`متابعة ${subject.name}`} />
 
             <div className="max-w-7xl mx-auto space-y-8 pb-12">
@@ -84,6 +100,12 @@ export default function Details({ auth, date, subject, division, followup }) {
                                     <Calendar size={18} className="text-primary-500" />
                                     <span className="font-bold text-slate-700 dark:text-slate-300">التاريخ: <span className="text-slate-900 dark:text-white" dir="ltr">{date}</span></span>
                                 </div>
+                                {period?.period_name && (
+                                    <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <Clock size={18} className="text-indigo-500" />
+                                        <span className="font-bold text-slate-700 dark:text-slate-300">الحصة: <span className="text-slate-900 dark:text-white">{period.period_name}</span></span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         
@@ -118,6 +140,22 @@ export default function Details({ auth, date, subject, division, followup }) {
                                     <p className="text-slate-500 font-semibold mt-1">الرجاء ملء تفاصيل الدرس والواجبات بدقة.</p>
                                 </div>
                             </div>
+
+                            {suggestedPrep && (
+                                <div className="mb-6 p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-200/70 dark:border-indigo-500/20 flex flex-wrap items-center justify-between gap-3">
+                                    <div className="text-sm font-bold text-indigo-800 dark:text-indigo-200">
+                                        يوجد دفتر تحضير مسجل لهذا الدرس ({suggestedPrep.lesson_title})
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={importFromPreparation}
+                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors"
+                                    >
+                                        <Sparkles size={15} />
+                                        <span>استيراد تلقائي من دفتر التحضير</span>
+                                    </button>
+                                </div>
+                            )}
 
                             <form onSubmit={submit} className="space-y-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -188,11 +226,43 @@ export default function Details({ auth, date, subject, division, followup }) {
                                             id="notes"
                                             value={data.notes}
                                             onChange={(e) => setData('notes', e.target.value)}
-                                            placeholder="أي ملاحظات تود إضافتها للإدارة أو المشرف..."
+                                            placeholder="أي ملاحظات تود إضافتها للإدارة أو الموجه..."
                                             className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-6 py-4 text-base font-bold outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all shadow-sm resize-none"
                                             rows="2"
                                         />
                                         <InputError message={errors.notes} className="mt-2" />
+                                    </div>
+
+                                    <div className="md:col-span-2">
+                                        <InputLabel value="مرفقات الدرس أو الواجب (اختياري)" className="text-slate-700 dark:text-slate-300 font-bold mb-3 text-sm uppercase tracking-wider" />
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.zip"
+                                            onChange={(e) => setData('new_attachments', Array.from(e.target.files || []))}
+                                            className="w-full text-sm text-slate-600 dark:text-slate-300 file:ml-4 file:py-2.5 file:px-5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 dark:file:bg-primary-500/15 dark:file:text-primary-300"
+                                        />
+                                        <InputError message={errors['new_attachments.0']} className="mt-2" />
+
+                                        {data.existing_attachments?.length > 0 && (
+                                            <div className="mt-3 space-y-2">
+                                                {data.existing_attachments.map((att, idx) => (
+                                                    <div key={idx} className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
+                                                        <a href={att.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 font-bold text-primary-600 hover:underline truncate">
+                                                            <Download size={14} />
+                                                            <span className="truncate">{att.name}</span>
+                                                        </a>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setData('existing_attachments', data.existing_attachments.filter((_, i) => i !== idx))}
+                                                            className="text-rose-500 hover:text-rose-700 p-1"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -290,6 +360,57 @@ export default function Details({ auth, date, subject, division, followup }) {
                                         <p className="text-amber-900 dark:text-amber-100 leading-relaxed font-bold">
                                             {followup.notes}
                                         </p>
+                                    </div>
+                                )}
+
+                                {/* Attachments */}
+                                {followup.attachments?.length > 0 && (
+                                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700">
+                                        <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400 mb-3">
+                                            <Paperclip size={20} />
+                                            <h3 className="font-bold text-sm uppercase tracking-wider">المرفقات</h3>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {followup.attachments.map((att, idx) => (
+                                                <a
+                                                    key={idx}
+                                                    href={att.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-primary-600 hover:border-primary-400 transition-colors"
+                                                >
+                                                    <Download size={14} />
+                                                    <span>{att.name}</span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Supervisor Review */}
+                                {(followup.supervisor_rating || followup.supervisor_notes) && (
+                                    <div className="bg-indigo-50/60 dark:bg-indigo-900/15 rounded-2xl p-6 border border-indigo-200/70 dark:border-indigo-800/40 space-y-2">
+                                        <div className="flex items-center justify-between flex-wrap gap-2">
+                                            <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300">
+                                                <Star size={20} className="fill-amber-400 text-amber-500" />
+                                                <h3 className="font-bold text-sm uppercase tracking-wider">مراجعة الموجه</h3>
+                                            </div>
+                                            {followup.supervisor_rating && (
+                                                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-black">
+                                                    التقييم: {followup.supervisor_rating} / 5
+                                                </span>
+                                            )}
+                                        </div>
+                                        {followup.supervisor_notes && (
+                                            <p className="text-sm font-bold text-indigo-950 dark:text-indigo-100 leading-relaxed">
+                                                {followup.supervisor_notes}
+                                            </p>
+                                        )}
+                                        {followup.reviewer_name && (
+                                            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                                                بواسطة: {followup.reviewer_name} {followup.reviewed_at ? `(${followup.reviewed_at})` : ''}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
                             </div>

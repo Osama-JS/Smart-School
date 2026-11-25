@@ -108,7 +108,7 @@ class LessonPreparationController extends Controller implements \Illuminate\Rout
             'supervisor_rating.integer' => 'يجب أن يكون التقييم رقماً صحيحاً.',
             'supervisor_rating.min' => 'أقل تقييم مسموح به هو 1.',
             'supervisor_rating.max' => 'أعلى تقييم مسموح به هو 5.',
-            'supervisor_notes.max' => 'ملاحظات المشرف يجب ألا تتجاوز 2000 حرف.',
+            'supervisor_notes.max' => 'ملاحظات الموجه يجب ألا تتجاوز 2000 حرف.',
         ]);
 
         $lessonPreparation->update([
@@ -118,7 +118,7 @@ class LessonPreparationController extends Controller implements \Illuminate\Rout
             'reviewed_at' => now(),
         ]);
 
-        return redirect()->back()->with('success', 'تم حفظ تقييم وملاحظات المشرف التربوي بنجاح.');
+        return redirect()->back()->with('success', 'تم حفظ تقييم وملاحظات الموجه بنجاح.');
     }
 
     public function destroy(LessonPreparation $lessonPreparation)

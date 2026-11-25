@@ -140,7 +140,7 @@ class ClassAttendanceController extends Controller
 
         if (!$ownsClass) {
             $user = $request->user();
-            $isAdmin = $user->role && in_array($user->role->name, ['مدير النظام', 'وكيل شؤون الطلاب', 'مشرف تربوي']);
+            $isAdmin = $user->role && in_array($user->role->name, ['مدير النظام', 'وكيل شؤون الطلاب', 'موجه', 'موجه تربوي', 'مشرف تربوي']);
             if (!$isAdmin) {
                 return response()->json(['success' => false, 'message' => 'غير مصرح لك بتحضير هذه الحصة'], 403);
             }
@@ -228,7 +228,7 @@ class ClassAttendanceController extends Controller
 
         if (!$ownsClass) {
             $user = $request->user();
-            $isAdmin = $user->role && in_array($user->role->name, ['مدير النظام', 'وكيل شؤون الطلاب', 'مشرف تربوي']);
+            $isAdmin = $user->role && in_array($user->role->name, ['مدير النظام', 'وكيل شؤون الطلاب', 'موجه', 'موجه تربوي', 'مشرف تربوي']);
             if (!$isAdmin) {
                 return response()->json(['success' => false, 'message' => 'غير مصرح لك بتحضير هذه الحصة'], 403);
             }

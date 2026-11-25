@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\Enrollment;
+use App\Models\FollowupBook;
 use App\Models\LessonPreparation;
 use App\Models\StudentPledge;
 use App\Models\EmployeeRequest;
@@ -41,7 +42,7 @@ class AutomaticNotificationService
     }
 
     /**
-     * 1. إشعار إضافة واجب منزلي جديد (للطلاب وأولياء أمورهم)
+     * 1. إشعار إضافة واجب منزلي جديد من التحضير (للطلاب وأولياء أمورهم)
      */
     public function notifyHomeworkPublished(LessonPreparation $preparation): void
     {
@@ -49,6 +50,51 @@ class AutomaticNotificationService
             return;
         }
 
+        $preparation->loadMissing('subject');
+        $this->dispatchHomeworkNotifications(
+            (int) $preparation->division_id,
+            $preparation->teacher_id,
+            $preparation->branch_id,
+            $preparation->subject?->name ?? 'المادة الدراسية',
+            $preparation->lesson_title ?? 'درس جديد',
+            $preparation->homework,
+            ['preparation_id' => $preparation->id]
+        );
+    }
+
+    /**
+     * 1b. إشعار إضافة واجب منزلي جديد من دفتر المتابعة (للطلاب وأولياء أمورهم)
+     */
+    public function notifyFollowupHomeworkPublished(FollowupBook $followup): void
+    {
+        if (empty($followup->homework) || !$followup->division_id) {
+            return;
+        }
+
+        $followup->loadMissing('subject');
+        $this->dispatchHomeworkNotifications(
+            (int) $followup->division_id,
+            $followup->teacher_id,
+            $followup->branch_id,
+            $followup->subject?->name ?? 'المادة الدراسية',
+            $followup->lesson_title ?? 'درس جديد',
+            $followup->homework,
+            ['followup_book_id' => $followup->id]
+        );
+    }
+
+    /**
+     * Shared dispatcher for homework push & in-app notifications to students and parents.
+     */
+    private function dispatchHomeworkNotifications(
+        int $divisionId,
+        ?int $teacherId,
+        ?int $branchId,
+        string $subjectName,
+        string $lessonTitle,
+        string $homeworkText,
+        array $extraPayload = []
+    ): void {
         $sendFirebase = $this->canSend('homework', 'firebase');
         $sendInApp    = $this->canSend('homework', 'in_app');
 
@@ -58,20 +104,18 @@ class AutomaticNotificationService
 
         try {
             $enrollments = Enrollment::with(['student.user', 'student.parents'])
-                ->where('division_id', $preparation->division_id)
+                ->where('division_id', $divisionId)
                 ->where('status', 'active')
                 ->get();
 
             if ($enrollments->isEmpty()) {
                 $enrollments = Enrollment::with(['student.user', 'student.parents'])
-                    ->where('division_id', $preparation->division_id)
+                    ->where('division_id', $divisionId)
                     ->get();
             }
 
-            $subjectName = $preparation->subject ? $preparation->subject->name : 'المادة الدراسية';
-            $lessonTitle = $preparation->lesson_title ?? 'درس جديد';
             $title = "📚 واجب منزلي جديد: {$subjectName}";
-            $body  = "تم تحديد واجب في درس ({$lessonTitle}): " . \Illuminate\Support\Str::limit($preparation->homework, 90);
+            $body  = "تم تحديد واجب في درس ({$lessonTitle}): " . \Illuminate\Support\Str::limit($homeworkText, 90);
 
             $targetUserIds = [];
             $sentUsers = [];
@@ -86,10 +130,12 @@ class AutomaticNotificationService
                     $targetUserIds[] = $student->user->id;
 
                     if ($sendFirebase) {
-                        $this->notificationService->sendFirebaseNotification($student->user, $title, $body, [
-                            'type' => 'homework',
-                            'preparation_id' => $preparation->id,
-                        ]);
+                        $this->notificationService->sendFirebaseNotification(
+                            $student->user,
+                            $title,
+                            $body,
+                            array_merge(['type' => 'homework'], $extraPayload)
+                        );
                     }
                 }
 
@@ -100,12 +146,14 @@ class AutomaticNotificationService
                         $targetUserIds[] = $parent->id;
 
                         if ($sendFirebase) {
-                            $parentBody = "تم إضافة واجب جديد لابنكم ({$student->user->name}) في مادة {$subjectName}: " . \Illuminate\Support\Str::limit($preparation->homework, 70);
-                            $this->notificationService->sendFirebaseNotification($parent, $title, $parentBody, [
-                                'type' => 'homework',
-                                'student_id' => $student->id,
-                                'preparation_id' => $preparation->id,
-                            ]);
+                            $studentDisplayName = $student->user?->name ?? 'ابنكم';
+                            $parentBody = "تم إضافة واجب جديد لابنكم ({$studentDisplayName}) في مادة {$subjectName}: " . \Illuminate\Support\Str::limit($homeworkText, 70);
+                            $this->notificationService->sendFirebaseNotification(
+                                $parent,
+                                $title,
+                                $parentBody,
+                                array_merge(['type' => 'homework', 'student_id' => $student->id], $extraPayload)
+                            );
                         }
                     }
                 }
@@ -117,15 +165,15 @@ class AutomaticNotificationService
                     $title,
                     $body,
                     'homework',
-                    $preparation->teacher_id,
-                    $preparation->branch_id,
+                    $teacherId,
+                    $branchId,
                     'users',
                     null,
                     $targetUserIds
                 );
             }
         } catch (\Exception $e) {
-            Log::error('AutomaticNotificationService::notifyHomeworkPublished failed: ' . $e->getMessage());
+            Log::error('AutomaticNotificationService::dispatchHomeworkNotifications failed: ' . $e->getMessage());
         }
     }
 

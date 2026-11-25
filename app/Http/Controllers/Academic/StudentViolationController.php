@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\AcademicYear;
 use App\Models\ParentSummon;
 use App\Models\StudentPledge;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -25,6 +26,8 @@ class StudentViolationController extends Controller
             'student.user', 
             'violationType', 
             'supervisor',
+            'followUpOfficer:id,name',
+            'executionOfficer:id,name',
             'student.currentEnrollment.division.grade'
         ])
             ->where('branch_id', $branchId)
@@ -37,6 +40,12 @@ class StudentViolationController extends Controller
         $students = Student::with('user')->whereHas('user', function($q) use ($branchId) {
             $q->where('branch_id', $branchId);
         })->get();
+
+        $staffUsers = User::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->whereHas('role', fn ($q) => $q->whereNotIn('name', ['طالب', 'ولي أمر']))
+            ->orderBy('name')
+            ->get(['id', 'name']);
         
         $grades = \App\Models\Grade::with(['divisions' => function($q) use ($activeYear) {
             if ($activeYear) {
@@ -48,6 +57,7 @@ class StudentViolationController extends Controller
             'violations' => $violations,
             'types' => $types,
             'students' => $students,
+            'staffUsers' => $staffUsers,
             'grades' => $grades,
             'activeYearId' => $activeYear ? $activeYear->id : null,
         ]);

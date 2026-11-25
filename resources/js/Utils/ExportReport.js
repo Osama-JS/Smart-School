@@ -385,7 +385,7 @@ export const exportReportToExcel = async (report, logoUrl = null) => {
             sheet.mergeCells(`B${currentRow}:C${currentRow}`);
             sheet.mergeCells(`E${currentRow}:F${currentRow}`);
             sheet.getCell(`B${currentRow}`).value = 'توقيع مُعدّ التقرير';
-            sheet.getCell(`E${currentRow}`).value = 'اعتماد المشرف / مدير المدرسة';
+            sheet.getCell(`E${currentRow}`).value = 'اعتماد الموجه / مدير المدرسة';
             sheet.getRow(currentRow).font = { bold: true, color: { argb: 'FF64748B' }, name: 'Segoe UI', size: 11 };
             sheet.getRow(currentRow).alignment = { horizontal: 'center', vertical: 'middle' };
             currentRow++;

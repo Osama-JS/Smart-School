@@ -52,7 +52,7 @@ export default function CustomBuilder({ auth, teachersList = [], studentsList = 
     useEffect(() => {
         const entityLabel = entity === 'teachers' ? 'تقرير المعلمين المخصص' : 
                             entity === 'students' ? 'تقرير الطلاب المخصص' : 
-                            entity === 'supervisors' ? 'تقرير المشرفين المخصص' : 'تقرير الموظفين المخصص';
+                            entity === 'supervisors' ? 'تقرير الموجهين المخصص' : 'تقرير الموظفين المخصص';
         setPrintSettings(prev => ({
             ...prev,
             title: prev.title === 'تقرير مخصص' || prev.title.includes('المخصص') ? entityLabel : prev.title
@@ -1093,13 +1093,13 @@ export default function CustomBuilder({ auth, teachersList = [], studentsList = 
                                     <div className={`p-2 rounded-lg ${entity === 'supervisors' ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
                                         <ShieldCheck size={18} />
                                     </div>
-                                    <span className="font-bold text-sm">المشرفين</span>
+                                    <span className="font-bold text-sm">الموجهين</span>
                                 </div>
                                 {entity === 'supervisors' ? (
                                     <Select
                                         isMulti
-                                        placeholder="ابحث عن مشرف..."
-                                        noOptionsMessage={() => "لا يوجد مشرفين"}
+                                        placeholder="ابحث عن موجه..."
+                                        noOptionsMessage={() => "لا يوجد موجهين"}
                                         options={supervisorsList.map(u => ({ value: u.name, label: u.name }))}
                                         value={
                                             filters.find(f => f.field === 'name') 
@@ -1123,7 +1123,7 @@ export default function CustomBuilder({ auth, teachersList = [], studentsList = 
                                         onClick={() => handleEntitySelect('supervisors', 'all')}
                                         className="w-full text-sm font-medium text-center py-2 bg-slate-100 dark:bg-slate-800 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 text-slate-600 dark:text-slate-300 transition-colors"
                                     >
-                                        اختر المشرفين
+                                        اختر الموجهين
                                     </button>
                                 )}
                             </div>

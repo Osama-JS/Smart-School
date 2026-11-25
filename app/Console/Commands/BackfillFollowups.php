@@ -3,8 +3,10 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\MasterTimetable;
+use App\Models\AcademicYear;
 use App\Models\FollowupBook;
+use App\Models\MasterTimetable;
+use App\Models\Semester;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 
@@ -26,19 +28,22 @@ class BackfillFollowups extends Command
         }
 
         $end = $endStr ? Carbon::parse($endStr) : now();
-
         $period = CarbonPeriod::create($start, $end);
+        $activeYearId = AcademicYear::where('is_active', true)->value('id');
+        $activeSemester = Semester::where('is_active', true)->first();
 
         $this->info("Backfilling expected followups from {$start->format('Y-m-d')} to {$end->format('Y-m-d')}...");
 
-        $timetables = MasterTimetable::with(['teacher'])->get();
+        $timetables = MasterTimetable::with(['teacher'])
+            ->when($activeSemester, fn ($q) => $q->where('semester_id', $activeSemester->id))
+            ->get();
 
         $count = 0;
         foreach ($period as $date) {
-            $dayOfWeek = strtolower($date->format('l'));
-            
-            $dailyLessons = $timetables->filter(function($tt) use ($dayOfWeek) {
-                return strtolower($tt->day_of_week) === $dayOfWeek;
+            $englishDay = $date->format('l');
+
+            $dailyLessons = $timetables->filter(function ($tt) use ($englishDay) {
+                return FollowupBook::matchesDayOfWeek($tt->day_of_week, $englishDay);
             });
 
             foreach ($dailyLessons as $tt) {
@@ -49,6 +54,7 @@ class BackfillFollowups extends Command
                     'date' => $date->format('Y-m-d'),
                 ], [
                     'branch_id' => $tt->teacher->branch_id ?? null,
+                    'academic_year_id' => $activeYearId,
                     'upload_source' => 'dashboard',
                 ]);
 

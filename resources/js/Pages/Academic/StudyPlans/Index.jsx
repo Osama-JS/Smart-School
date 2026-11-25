@@ -410,7 +410,7 @@ export default function AcademicStudyPlansIndex({ studyPlans, grades, subjects, 
                                         {plan.admin_feedback && (
                                             <div className={`mb-4 border p-3 rounded-xl text-xs font-bold ${plan.status === 'rejected' ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300'}`}>
                                                 <div className="flex items-center gap-1 mb-1">
-                                                    <AlertCircle size={14}/> {plan.status === 'rejected' ? 'سبب الرفض:' : 'ملاحظات المشرف:'}
+                                                    <AlertCircle size={14}/> {plan.status === 'rejected' ? 'سبب الرفض:' : 'ملاحظات الموجه:'}
                                                 </div>
                                                 {plan.admin_feedback}
                                             </div>

@@ -10,7 +10,7 @@ class EmployeeAppraisalEvaluator extends Model
 {
     public const ROLE_LABELS = [
         'manager' => 'المدير المباشر',
-        'supervisor' => 'المشرف التربوي',
+        'supervisor' => 'الموجه',
         'hr' => 'الموارد البشرية',
         'committee' => 'عضو لجنة',
     ];

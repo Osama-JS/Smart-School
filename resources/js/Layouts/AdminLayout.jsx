@@ -256,13 +256,15 @@ export default function AdminLayout({ children, activeMenu = 'المستخدمو
             ]
         },
         {
-            title: 'الإشراف والمتابعة',
+            title: 'التوجيه والمتابعة',
             items: [
                 { name: 'متابعة انضباط التحضير', icon: BookOpen, url: route('admin.followup-books.index') },
+                { name: 'إدارة ومتابعة دفاتر المتابعة', icon: ClipboardList, url: route().has('academic.followup-books.index') ? route('academic.followup-books.index') : '/academic/followup-books' },
                 { name: 'الزيارات الصفية', icon: Eye, url: route('academic.classroom-visits'), permission: 'إدارة الزيارات الصفية' },
                 { name: 'زياراتي الصفية', icon: Eye, url: route('teacher.my-classroom-visits'), permission: 'عرض زياراتي الصفية' },
                 { name: 'تحضير الحصص', icon: CheckSquare, url: route('teacher.class-attendances.index'), role: 'معلم' },
                 { name: 'دفاتري للتحضير', icon: BookOpen, url: route('teacher.lesson-preparations.index') },
+                { name: 'دفتر المتابعة', icon: ClipboardList, url: route().has('teacher.followup-books.index') ? route('teacher.followup-books.index') : '/teacher/followup-books' },
                 { name: 'خططي الدراسية', icon: Map, url: route('teacher.study-plans.index') },
                 { name: 'جدول المراقبة والاختبارات', icon: Calendar, url: route('teacher.my-exam-schedules') },
                 { name: 'متابعة الخطط الدراسية', icon: BookOpen, url: route('academic.study-plans.index'), permission: 'إدارة الخطط الدراسية' },

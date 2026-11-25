@@ -436,6 +436,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/teacher/followup-books/show', [\App\Http\Controllers\Teacher\FollowupBookController::class, 'show'])->name('teacher.followup-books.show');
     Route::post('/teacher/followup-books', [\App\Http\Controllers\Teacher\FollowupBookController::class, 'store'])->name('teacher.followup-books.store');
 
+    // Academic Supervision Follow-up Books (Independent of Lesson Preparations)
+    Route::prefix('academic/followup-books')->name('academic.followup-books.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Academic\FollowupBookManagementController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\Academic\FollowupBookManagementController::class, 'export'])->name('export');
+        Route::post('/settings', [\App\Http\Controllers\Academic\FollowupBookManagementController::class, 'updateSettings'])->name('settings');
+        Route::post('/{followupBook}/review', [\App\Http\Controllers\Academic\FollowupBookManagementController::class, 'review'])->name('review');
+        Route::delete('/{followupBook}', [\App\Http\Controllers\Academic\FollowupBookManagementController::class, 'destroy'])->name('destroy');
+    });
+
     // Admin's Follow-up Books
     Route::middleware('permission:إدارة دفاتر المتابعة')->group(function () {
         Route::get('/admin/followup-books/export', [\App\Http\Controllers\Admin\FollowupBookController::class, 'export'])->name('admin.followup-books.export');

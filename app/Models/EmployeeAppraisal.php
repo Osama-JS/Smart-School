@@ -172,7 +172,7 @@ class EmployeeAppraisal extends Model
             $branchId = $employeeUser->branch_id;
             $supervisorUserId = User::when($branchId, fn ($q) => $q->where('branch_id', $branchId))
                 ->where('id', '!=', $employeeUserId)
-                ->whereHas('role', fn ($q) => $q->where('name', 'like', '%مشرف%'))
+                ->whereHas('role', fn ($q) => $q->where(fn ($rq) => $rq->where('name', 'like', '%موجه%')->orWhere('name', 'like', '%مشرف%')))
                 ->value('id');
         }
 
@@ -288,7 +288,7 @@ class EmployeeAppraisal extends Model
 
             foreach ($appraisalScores as $appraisalScore) {
                 $kpi = $appraisalScore->kpi;
-                if (!$kpi || !$kpi->allowsRole($evaluator->role_type)) {
+                if (!$kpi || !$kpi->allowsRole($evaluator->role_type, $actingUser)) {
                     continue;
                 }
 

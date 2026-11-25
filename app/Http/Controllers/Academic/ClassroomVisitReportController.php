@@ -37,7 +37,7 @@ class ClassroomVisitReportController extends Controller
         $teachersQuery = User::whereHas('role', function ($query) {
                 $query->where('name', 'like', '%معلم%')
                       ->orWhere('name', 'Teacher')
-                      ->orWhere('name', 'مشرف تربوي');
+                      ->orWhereIn('name', ['موجه', 'موجه تربوي', 'مشرف تربوي']);
             })
             ->with(['employee.department']);
 
@@ -105,7 +105,7 @@ class ClassroomVisitReportController extends Controller
                     'id' => $visit->id,
                     'visit_date' => is_string($visit->visit_date) ? $visit->visit_date : $visit->visit_date->format('Y-m-d'),
                     'visit_type' => $visit->visit_type ?: 'زيارة صفية',
-                    'supervisor_name' => $visit->supervisor ? $visit->supervisor->name : 'مشرف أخصائي',
+                    'supervisor_name' => $visit->supervisor ? $visit->supervisor->name : 'موجه',
                     'grade_name' => $visit->grade ? $visit->grade->name : '',
                     'division_name' => $visit->division ? $visit->division->name : '',
                     'score' => $visit->score !== null ? $visit->score : 0,
@@ -182,7 +182,7 @@ class ClassroomVisitReportController extends Controller
         $allTeachersList = User::whereHas('role', function ($query) {
                 $query->where('name', 'like', '%معلم%')
                       ->orWhere('name', 'Teacher')
-                      ->orWhere('name', 'مشرف تربوي');
+                      ->orWhereIn('name', ['موجه', 'موجه تربوي', 'مشرف تربوي']);
             })
             ->when($branchId, fn($q) => $q->where(fn($sub) => $sub->where('branch_id', $branchId)->orWhereNull('branch_id')))
             ->select('id', 'name')

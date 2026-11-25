@@ -93,7 +93,7 @@ export default function SupervisorDashboard({
 
     return (
         <AdminLayout user={auth.user} activeMenu="الرئيسية">
-            <Head title="لوحة المشرف التربوي | شامل" />
+            <Head title="لوحة الموجه | شامل" />
 
             <div className="max-w-[1400px] mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 animate-fade-in pb-20">
                 {/* Hero Header */}
@@ -102,10 +102,10 @@ export default function SupervisorDashboard({
                     <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div>
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 text-xs font-black mb-2">
-                                <Eye size={13} /> الإشراف التربوي والأكاديمي
+                                <Eye size={13} /> التوجيه والمتابعة الأكاديمية
                             </span>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-                                {greeting.text}، {auth.user?.name?.split(' ')[0] || 'مشرفنا'}
+                                {greeting.text}، {auth.user?.name?.split(' ')[0] || 'موجهنا'}
                                 <greeting.icon size={26} className={greeting.color} />
                             </h1>
                             <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 mt-1">
@@ -246,7 +246,7 @@ export default function SupervisorDashboard({
                             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                                 <h3 className="text-base font-black text-slate-800 dark:text-white flex items-center gap-2">
                                     <ClipboardList size={18} className="text-amber-500" />
-                                    دفاتر تحضير بانتظار المراجعة الإشرافية
+                                    دفاتر تحضير بانتظار مراجعة التوجيه
                                 </h3>
                                 <Link href={route('academic.lesson-preparations')} className="text-xs font-bold text-primary-600 hover:underline flex items-center gap-1">
                                     فتح الكل <ChevronLeft size={14} />
@@ -367,7 +367,7 @@ export default function SupervisorDashboard({
                         <div className="bg-white dark:bg-[#121820]/70 border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-base font-black text-slate-800 dark:text-white flex items-center gap-2">
-                                    <LayoutList size={18} className="text-primary-500" /> مهامي الإشرافية
+                                    <LayoutList size={18} className="text-primary-500" /> مهامي التوجيهية
                                 </h3>
                                 <span className="text-xs font-bold text-primary-600 bg-primary-50 dark:bg-primary-900/20 px-3 py-1 rounded-full">
                                     {tasks.filter((t) => t.completed).length} / {tasks.length}
@@ -437,7 +437,7 @@ export default function SupervisorDashboard({
                                         onClick={() => setIsAddingTask(true)}
                                         className="w-full py-2.5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-400 hover:text-primary-500 hover:border-primary-300 text-xs font-bold flex items-center justify-center gap-1.5"
                                     >
-                                        <Plus size={14} /> إضافة مهمة إشرافية
+                                        <Plus size={14} /> إضافة مهمة توجيهية
                                     </button>
                                 )}
                             </div>

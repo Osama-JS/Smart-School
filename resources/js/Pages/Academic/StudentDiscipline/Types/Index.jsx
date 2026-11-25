@@ -4,6 +4,33 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit2, Trash2, ShieldAlert, X, Save, FileText, CheckCircle, AlertTriangle, AlertCircle, Search, LayoutGrid, Table2, Printer, Target, GraduationCap } from 'lucide-react';
 import SelectInput from '@/Components/SelectInput';
 
+const DEGREE_OPTIONS = [
+    {
+        value: 'first_degree',
+        label: 'مخالفة من الدرجة الأولى (مخالفات بسيطة)',
+        shortLabel: 'درجة أولى',
+        badgeClass: 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20',
+    },
+    {
+        value: 'second_degree',
+        label: 'مخالفة من الدرجة الثانية (مخالفات متوسطة)',
+        shortLabel: 'درجة ثانية',
+        badgeClass: 'bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20',
+    },
+    {
+        value: 'third_degree',
+        label: 'مخالفة من الدرجة الثالثة (مخالفات جسيمة)',
+        shortLabel: 'درجة ثالثة',
+        badgeClass: 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
+    },
+    {
+        value: 'fourth_degree',
+        label: 'مخالفة من الدرجة الرابعة (مخالفات شديدة الخطورة)',
+        shortLabel: 'درجة رابعة',
+        badgeClass: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20',
+    },
+];
+
 export default function Types({ auth, types }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -11,6 +38,7 @@ export default function Types({ auth, types }) {
     const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState(''); // '', 'active', 'inactive'
+    const [degreeFilter, setDegreeFilter] = useState('');
 
     const { data, setData, post, put, delete: destroy, errors, reset } = useForm({
         name: '',
@@ -75,9 +103,10 @@ export default function Types({ auth, types }) {
         return types.filter(t => {
             const matchesSearch = !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()) || (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
             const matchesStatus = statusFilter === '' || (statusFilter === 'active' && t.is_active) || (statusFilter === 'inactive' && !t.is_active);
-            return matchesSearch && matchesStatus;
+            const matchesDegree = !degreeFilter || t.degree === degreeFilter;
+            return matchesSearch && matchesStatus && matchesDegree;
         });
-    }, [types, searchQuery, statusFilter]);
+    }, [types, searchQuery, statusFilter, degreeFilter]);
 
     // Calculate Stats
     const stats = {
@@ -113,12 +142,11 @@ export default function Types({ auth, types }) {
     );
 
     const getDegreeBadge = (degree) => {
-        switch (degree) {
-            case 'first_degree': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20">درجة أولى</span>;
-            case 'second_degree': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20">درجة ثانية</span>;
-            case 'third_degree': return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">درجة ثالثة</span>;
-            default: return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20">غير محدد</span>;
+        const meta = DEGREE_OPTIONS.find(opt => opt.value === degree);
+        if (meta) {
+            return <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${meta.badgeClass}`}>{meta.shortLabel}</span>;
         }
+        return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20">غير محدد</span>;
     };
 
     return (
@@ -232,8 +260,20 @@ export default function Types({ auth, types }) {
                         ))}
                     </div>
 
-                    {/* Search & View Toggles */}
-                    <div className="flex items-center gap-3 w-full xl:w-auto shrink-0 flex-1 xl:flex-none justify-end">
+                    {/* Search, Degree Filter & View Toggles */}
+                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full xl:w-auto shrink-0 flex-1 xl:flex-none justify-end">
+                        <div className="w-full sm:w-56">
+                            <SelectInput
+                                options={[
+                                    { value: '', label: 'جميع الدرجات' },
+                                    ...DEGREE_OPTIONS.map(opt => ({ value: opt.value, label: opt.shortLabel })),
+                                ]}
+                                value={degreeFilter}
+                                onChange={val => setDegreeFilter(val)}
+                                className="w-full"
+                            />
+                        </div>
+
                         <div className="relative w-full max-w-xs">
                             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                 <Search size={16} className="text-slate-400" />
@@ -455,11 +495,7 @@ export default function Types({ auth, types }) {
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">درجة المخالفة <span className="text-rose-500">*</span></label>
                                         <SelectInput
-                                            options={[
-                                                { value: 'first_degree', label: 'مخالفة من الدرجة الأولى (مخالفات بسيطة)' },
-                                                { value: 'second_degree', label: 'مخالفة من الدرجة الثانية (مخالفات متوسطة)' },
-                                                { value: 'third_degree', label: 'مخالفة من الدرجة الثالثة (مخالفات جسيمة)' },
-                                            ]}
+                                            options={DEGREE_OPTIONS.map(({ value, label }) => ({ value, label }))}
                                             value={data.degree}
                                             onChange={val => setData('degree', val)}
                                             className="w-full"

@@ -339,7 +339,7 @@ export default function ClassroomVisitsIndex({ auth, visits, teachers, superviso
             { width: 30 }, // B: المعلم
             { width: 25 }, // C: الصف والشعبة
             { width: 20 }, // D: نوع الزيارة
-            { width: 30 }, // E: الموجه/المشرف
+            { width: 30 }, // E: الموجه
             { width: 20 }, // F: الحالة
         ];
 
@@ -390,7 +390,7 @@ export default function ClassroomVisitsIndex({ auth, visits, teachers, superviso
 
         sheet.getRow(5).height = 15;
 
-        const headers = ['التاريخ', 'المعلم', 'الصف والشعبة', 'نوع الزيارة', 'الموجه/المشرف', 'الحالة'];
+        const headers = ['التاريخ', 'المعلم', 'الصف والشعبة', 'نوع الزيارة', 'الموجه', 'الحالة'];
         const headerRow = sheet.addRow(headers);
         headerRow.height = 30;
 
@@ -563,13 +563,13 @@ export default function ClassroomVisitsIndex({ auth, visits, teachers, superviso
                         
                         {/* Supervisor Filter */}
                         <div className="group flex flex-col">
-                            <label className="mb-1.5 text-[11px] font-bold text-slate-500 dark:text-400 uppercase tracking-wider">المشرف</label>
+                            <label className="mb-1.5 text-[11px] font-bold text-slate-500 dark:text-400 uppercase tracking-wider">الموجه</label>
                             <SelectInput 
                                 className="w-full" 
                                 value={filterData.supervisor_id} 
                                 onChange={val => setFilterData({...filterData, supervisor_id: val})}
                                 options={[
-                                    { value: '', label: 'جميع المشرفين' },
+                                    { value: '', label: 'جميع الموجهين' },
                                     ...supervisors.map(s => ({ value: s.id, label: s.name }))
                                 ]}
                             />
@@ -633,7 +633,7 @@ export default function ClassroomVisitsIndex({ auth, visits, teachers, superviso
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">المعلم</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الصف والشعبة</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">نوع الزيارة</th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الموجه/المشرف</th>
+                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الموجه</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحالة</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الإجراءات</th>
                                 </tr>
@@ -853,7 +853,7 @@ export default function ClassroomVisitsIndex({ auth, visits, teachers, superviso
 
                     <div className="bg-slate-50 dark:bg-slate-800/40 rounded-2xl p-5 border border-slate-100 dark:border-slate-800/60 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800/60">
                         <label className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-white mb-3">
-                            <PenTool size={16} className="text-primary-500" /> توقيع المشرف 
+                            <PenTool size={16} className="text-primary-500" /> توقيع الموجه 
                             {selectedVisit && selectedVisit.supervisor_signature && (
                                 <span className="text-emerald-600 dark:text-emerald-400 font-normal text-xs mr-2 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-1 rounded-md">
                                     (تم الإرفاق، ارسم لتغييره)
@@ -945,10 +945,10 @@ export default function ClassroomVisitsIndex({ auth, visits, teachers, superviso
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                             <div>
-                                <span className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-wider">توقيع المشرف ({selectedVisit.supervisor?.name})</span>
+                                <span className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-wider">توقيع الموجه ({selectedVisit.supervisor?.name})</span>
                                 {selectedVisit.supervisor_signature_url ? (
                                     <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-2 bg-white dark:bg-slate-800 flex justify-center h-28 items-center overflow-hidden">
-                                        <img src={selectedVisit.supervisor_signature_url} alt="توقيع المشرف" className="max-h-full max-w-full object-contain filter dark:invert" />
+                                        <img src={selectedVisit.supervisor_signature_url} alt="توقيع الموجه" className="max-h-full max-w-full object-contain filter dark:invert" />
                                     </div>
                                 ) : (
                                     <div className="border border-slate-200 dark:border-slate-700 border-dashed rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/50 flex justify-center h-28 items-center text-slate-400 text-sm font-bold">

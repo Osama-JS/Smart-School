@@ -198,7 +198,7 @@ class ReportCenterController extends Controller implements HasMiddleware
         
         $teachers = $users->filter(fn($u) => str_contains($u->role->name ?? '', 'معلم') || str_contains($u->role->name ?? '', 'مدرس'))->values();
 
-        $supervisors = $users->filter(fn($u) => str_contains($u->role->name ?? '', 'مشرف'))->values();
+        $supervisors = $users->filter(fn($u) => str_contains($u->role->name ?? '', 'موجه') || str_contains($u->role->name ?? '', 'مشرف'))->values();
 
         $grades = \App\Models\Grade::with('divisions:id,name,grade_id')->select('id', 'name')->get();
         $studentData = \App\Models\Student::with(['user:id,name', 'currentEnrollment.division:id,grade_id'])->get();
@@ -308,12 +308,13 @@ class ReportCenterController extends Controller implements HasMiddleware
                 });
             } elseif ($entity === 'supervisors') {
                 $query->whereHas('user.role', function($q) {
-                    $q->where('name', 'like', '%مشرف%');
+                    $q->where(fn($sq) => $sq->where('name', 'like', '%موجه%')->orWhere('name', 'like', '%مشرف%'));
                 });
             } elseif ($entity === 'employees') {
                 $query->whereHas('user.role', function($q) {
                     $q->where('name', 'not like', '%معلم%')
                       ->where('name', 'not like', '%مدرس%')
+                      ->where('name', 'not like', '%موجه%')
                       ->where('name', 'not like', '%مشرف%');
                 });
             }

@@ -86,31 +86,82 @@ export default function Types({ auth, types, stats, jobGrades }) {
         });
     }, [types, searchQuery, statusFilter]);
 
-    // Escalation Path Component for Cards
-    const EscalationPath = ({ t }) => (
-        <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-            <h5 className="text-xs font-bold text-slate-500 mb-1 flex items-center gap-1.5"><AlertCircle size={14} /> مسار التصعيد</h5>
+    // Shared escalation steps helper to avoid duplicating step styling across cards and table
+    const getEscalationSteps = (t) => [
+        {
+            level: 1,
+            label: 'المرة الأولى',
+            action: t.first_time_action,
+            badgeClass: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30',
+            rowClass: 'bg-amber-50/50 border-amber-100/80 dark:bg-amber-500/5 dark:border-amber-500/15',
+            tagClass: 'text-amber-600 dark:text-amber-400',
+        },
+        t.second_time_action && {
+            level: 2,
+            label: 'المرة الثانية',
+            action: t.second_time_action,
+            badgeClass: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30',
+            rowClass: 'bg-orange-50/50 border-orange-100/80 dark:bg-orange-500/5 dark:border-orange-500/15',
+            tagClass: 'text-orange-600 dark:text-orange-400',
+        },
+        t.third_time_action && {
+            level: 3,
+            label: 'المرة الثالثة',
+            action: t.third_time_action,
+            badgeClass: 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30',
+            rowClass: 'bg-rose-50/50 border-rose-100/80 dark:bg-rose-500/5 dark:border-rose-500/15',
+            tagClass: 'text-rose-600 dark:text-rose-400',
+        },
+    ].filter(Boolean);
 
-            <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-[10px] flex items-center justify-center shrink-0">1</div>
-                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{t.first_time_action}</p>
-            </div>
-
-            {t.second_time_action && (
-                <div className="flex items-center gap-2 opacity-90">
-                    <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-black text-[10px] flex items-center justify-center shrink-0">2</div>
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{t.second_time_action}</p>
-                </div>
-            )}
-
-            {t.third_time_action && (
-                <div className="flex items-center gap-2 opacity-80">
-                    <div className="w-6 h-6 rounded-lg bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-black text-[10px] flex items-center justify-center shrink-0">3</div>
-                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{t.third_time_action}</p>
-                </div>
-            )}
-        </div>
+    const StatusBadge = ({ isActive }) => (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${isActive
+            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+            : 'bg-rose-50 text-rose-700 border-rose-200/80 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
+            }`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+            {isActive ? 'نشط' : 'موقوف'}
+        </span>
     );
+
+    // Escalation Path Component for Cards
+    const EscalationPath = ({ t }) => {
+        const steps = getEscalationSteps(t);
+        return (
+            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center justify-between mb-3">
+                    <h5 className="text-xs font-extrabold text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                        <AlertCircle size={14} className="text-primary-500" />
+                        <span>مسار التصعيد</span>
+                    </h5>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                        {steps.length} {steps.length === 1 ? 'مستوى' : 'مستويات'}
+                    </span>
+                </div>
+
+                <div className="relative space-y-2">
+                    {steps.length > 1 && (
+                        <div className="absolute top-4 bottom-4 right-[15px] w-px border-r border-dashed border-slate-300 dark:border-slate-700 pointer-events-none" />
+                    )}
+                    {steps.map((step) => (
+                        <div key={step.level} className={`relative flex items-start gap-2.5 p-2 rounded-xl border transition-colors ${step.rowClass}`}>
+                            <div className={`w-6 h-6 rounded-lg border font-black text-[11px] flex items-center justify-center shrink-0 relative z-10 shadow-xs ${step.badgeClass}`}>
+                                {step.level}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <span className={`block text-[10px] font-extrabold leading-none mb-1 ${step.tagClass}`}>
+                                    {step.label}
+                                </span>
+                                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-relaxed line-clamp-2">
+                                    {step.action}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
 
     return (
         <AdminLayout user={auth.user} activeMenu="أنواع المخالفات">
@@ -179,7 +230,7 @@ export default function Types({ auth, types, stats, jobGrades }) {
                         <div>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
                                 <ShieldAlert size={28} className="text-primary-600" />
-                                مخالفات الموظفون والباصات
+                                مخالفات الموظفين
                             </h1>
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">إدارة وتصنيف المخالفات والإجراءات الافتراضية الخاصة بها</p>
                         </div>
@@ -318,55 +369,84 @@ export default function Types({ auth, types, stats, jobGrades }) {
                             <div className={viewMode === 'cards' ? 'cards-view' : 'hidden'}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                                     {filteredTypes.map(type => (
-                                        <div key={type.id} className="group relative bg-white dark:bg-[#121820]/80 rounded-[2rem] border border-slate-200/80 dark:border-slate-800 p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/40 dark:hover:shadow-none hover:-translate-y-1 flex flex-col h-full overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-32 h-32 rounded-full mix-blend-multiply filter blur-3xl opacity-[0.03] transition-all duration-500 group-hover:scale-150 group-hover:opacity-[0.06] bg-primary-500" />
+                                        <div
+                                            key={type.id}
+                                            className={`group relative bg-white dark:bg-[#121820]/90 rounded-[2rem] border p-6 transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/30 hover:-translate-y-1 flex flex-col h-full overflow-hidden ${type.is_active
+                                                ? 'border-slate-200/80 dark:border-slate-800 hover:border-primary-200 dark:hover:border-primary-500/30'
+                                                : 'border-slate-200/60 dark:border-slate-800/60 opacity-80'
+                                                }`}
+                                        >
+                                            {/* Top Accent Strip */}
+                                            <div className={`absolute top-0 inset-x-0 h-1 ${type.is_active
+                                                ? 'bg-gradient-to-r from-primary-500 via-amber-500 to-rose-500 opacity-80 group-hover:opacity-100'
+                                                : 'bg-slate-300 dark:bg-slate-700'
+                                                } transition-opacity`} />
 
-                                            <div className="relative z-10 flex justify-between items-start mb-4">
-                                                <div>
-                                                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                                                        {type.name}
-                                                    </h3>
-                                                    <span className={`inline-flex px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${type.is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'}`}>
-                                                        {type.is_active ? 'نشط' : 'موقوف'}
-                                                    </span>
+                                            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full filter blur-3xl opacity-[0.04] transition-all duration-500 group-hover:scale-150 group-hover:opacity-[0.08] bg-primary-500 pointer-events-none" />
+
+                                            {/* Card Header */}
+                                            <div className="relative z-10 flex justify-between items-start gap-3 mb-3 pt-1">
+                                                <div className="flex items-start gap-3 min-w-0">
+                                                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border transition-colors ${type.is_active
+                                                        ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20'
+                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
+                                                        }`}>
+                                                        <ShieldAlert size={20} />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <h3 className="text-base font-black text-slate-800 dark:text-white mb-1.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors leading-snug line-clamp-1" title={type.name}>
+                                                            {type.name}
+                                                        </h3>
+                                                        <StatusBadge isActive={type.is_active} />
+                                                    </div>
                                                 </div>
-                                                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => openModal(type)} className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/20 flex items-center justify-center transition-all">
+
+                                                <div className="flex gap-1.5 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                                    <button
+                                                        onClick={() => openModal(type)}
+                                                        title="تعديل"
+                                                        className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/20 flex items-center justify-center transition-all"
+                                                    >
                                                         <Edit2 size={14} />
                                                     </button>
-                                                    <button onClick={() => confirmDelete(type)} className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/20 flex items-center justify-center transition-all">
+                                                    <button
+                                                        onClick={() => confirmDelete(type)}
+                                                        title="حذف"
+                                                        className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/20 flex items-center justify-center transition-all"
+                                                    >
                                                         <Trash2 size={14} />
                                                     </button>
                                                 </div>
                                             </div>
 
-                                            {type.description && (
-                                                <p className="relative z-10 text-sm font-semibold text-slate-500 dark:text-slate-400 line-clamp-2 mb-2">
-                                                    {type.description}
-                                                </p>
-                                            )}
+                                            {/* Description */}
+                                            <p className={`relative z-10 text-xs font-semibold line-clamp-2 min-h-[2.25rem] leading-relaxed ${type.description ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400/70 dark:text-slate-500/70 italic'}`}>
+                                                {type.description || 'لا يوجد وصف إضافي لهذا النوع من المخالفات.'}
+                                            </p>
 
+                                            {/* Escalation Timeline */}
                                             <div className="relative z-10 flex-1">
                                                 <EscalationPath t={type} />
                                             </div>
 
-                                            <div className="relative z-10 grid grid-cols-2 gap-3 mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0">
+                                            {/* Responsible Roles Footer */}
+                                            <div className="relative z-10 grid grid-cols-2 gap-2.5 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800/80">
+                                                <div className="flex items-center gap-2.5 p-2 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 min-w-0">
+                                                    <div className="w-7 h-7 rounded-xl bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                                                         <UserCheck size={14} />
                                                     </div>
-                                                    <div className="truncate">
-                                                        <p className="text-[10px] font-bold text-slate-400 mb-0.5">المتابعة</p>
-                                                        <p className="text-xs font-black text-slate-700 dark:text-slate-300 truncate">{type.follow_up_role?.name || 'الكل'}</p>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-slate-400 leading-none mb-1">المتابعة</p>
+                                                        <p className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">{type.follow_up_role?.name || 'الكل'}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-lg bg-sky-50 dark:bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
+                                                <div className="flex items-center gap-2.5 p-2 rounded-2xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80 min-w-0">
+                                                    <div className="w-7 h-7 rounded-xl bg-sky-50 dark:bg-sky-500/15 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
                                                         <UserCog size={14} />
                                                     </div>
-                                                    <div className="truncate">
-                                                        <p className="text-[10px] font-bold text-slate-400 mb-0.5">التنفيذ</p>
-                                                        <p className="text-xs font-black text-slate-700 dark:text-slate-300 truncate">{type.execution_role?.name || 'الإدارة'}</p>
+                                                    <div className="min-w-0">
+                                                        <p className="text-[10px] font-bold text-slate-400 leading-none mb-1">التنفيذ</p>
+                                                        <p className="text-xs font-black text-slate-700 dark:text-slate-200 truncate">{type.execution_role?.name || 'الإدارة'}</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -376,79 +456,104 @@ export default function Types({ auth, types, stats, jobGrades }) {
                             </div>
 
                             <div className={viewMode === 'table' ? 'table-view' : 'hidden print:block table-view'}>
-                                <div className="bg-white dark:bg-[#121820]/60 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden print:border-none print:shadow-none print:rounded-none">
+                                <div className="bg-white dark:bg-[#121820]/80 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden print:border-none print:shadow-none print:rounded-none">
                                     <div className="overflow-x-auto">
-                                        <table className="w-full text-right min-w-[900px]">
+                                        <table className="w-full text-right min-w-[980px]">
                                             <thead>
-                                                <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
-                                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">النوع</th>
-                                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">الوصف</th>
-                                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400 w-1/3">مسار التصعيد (الإجراءات)</th>
-                                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">الأدوار المسؤولة</th>
-                                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">الحالة</th>
-                                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400 w-24">إجراءات</th>
+                                                <tr className="bg-slate-50/90 dark:bg-slate-800/50 border-b border-slate-200/70 dark:border-slate-800">
+                                                    <th className="py-4 px-4 text-xs font-black text-slate-500 dark:text-slate-400 text-center w-12">#</th>
+                                                    <th className="py-4 px-5 text-xs font-black text-slate-500 dark:text-slate-400 w-56">نوع المخالفة</th>
+                                                    <th className="py-4 px-5 text-xs font-black text-slate-500 dark:text-slate-400 w-64">الوصف</th>
+                                                    <th className="py-4 px-5 text-xs font-black text-slate-500 dark:text-slate-400">مسار التصعيد (الإجراءات)</th>
+                                                    <th className="py-4 px-5 text-xs font-black text-slate-500 dark:text-slate-400 w-48">الأدوار المسؤولة</th>
+                                                    <th className="py-4 px-4 text-xs font-black text-slate-500 dark:text-slate-400 text-center w-28">الحالة</th>
+                                                    <th className="py-4 px-5 text-xs font-black text-slate-500 dark:text-slate-400 text-center w-24 no-print">إجراءات</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                                {filteredTypes.map((type) => (
-                                                    <tr key={type.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors group">
-                                                        <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">
-                                                            {type.name}
-                                                        </td>
-                                                        <td className="py-4 px-6 text-slate-600 dark:text-slate-300 max-w-xs truncate text-sm font-semibold">
-                                                            {type.description || '-'}
-                                                        </td>
-                                                        <td className="py-4 px-6">
-                                                            <div className="flex flex-col gap-2">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="w-5 h-5 rounded bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-black text-[10px] flex items-center justify-center shrink-0">1</div>
-                                                                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{type.first_time_action}</p>
-                                                                </div>
-                                                                {type.second_time_action && (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-5 h-5 rounded bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-black text-[10px] flex items-center justify-center shrink-0">2</div>
-                                                                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{type.second_time_action}</p>
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                                                {filteredTypes.map((type, idx) => {
+                                                    const steps = getEscalationSteps(type);
+                                                    return (
+                                                        <tr key={type.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-colors group">
+                                                            <td className="py-4 px-4 text-center">
+                                                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400">
+                                                                    {idx + 1}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-4 px-5">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border print:hidden ${type.is_active
+                                                                        ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-500/20'
+                                                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'
+                                                                        }`}>
+                                                                        <ShieldAlert size={16} />
                                                                     </div>
-                                                                )}
-                                                                {type.third_time_action && (
-                                                                    <div className="flex items-center gap-2">
-                                                                        <div className="w-5 h-5 rounded bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-black text-[10px] flex items-center justify-center shrink-0">3</div>
-                                                                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{type.third_time_action}</p>
+                                                                    <span className="font-black text-sm text-slate-800 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                                                                        {type.name}
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 px-5 text-slate-600 dark:text-slate-300 text-xs font-semibold leading-relaxed">
+                                                                <p className="line-clamp-2 max-w-xs">
+                                                                    {type.description || <span className="text-slate-400 italic">لا يوجد وصف</span>}
+                                                                </p>
+                                                            </td>
+                                                            <td className="py-4 px-5">
+                                                                <div className="flex flex-col gap-1.5">
+                                                                    {steps.map((step) => (
+                                                                        <div key={step.level} className="flex items-start gap-2">
+                                                                            <span className={`w-5 h-5 rounded-md border font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5 ${step.badgeClass}`}>
+                                                                                {step.level}
+                                                                            </span>
+                                                                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 leading-relaxed">
+                                                                                {step.action}
+                                                                            </p>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-4 px-5">
+                                                                <div className="flex flex-col gap-1.5">
+                                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50/70 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 w-fit" title="مسؤول المتابعة">
+                                                                        <UserCheck size={12} className="text-indigo-500 shrink-0" />
+                                                                        <span className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300">{type.follow_up_role?.name || 'الكل'}</span>
                                                                     </div>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-4 px-6">
-                                                            <div className="flex flex-col gap-2">
-                                                                <div className="flex items-center gap-2" title="مسؤول المتابعة">
-                                                                    <UserCheck size={14} className="text-indigo-500" />
-                                                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{type.follow_up_role?.name || '-'}</span>
+                                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50/70 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20 w-fit" title="مسؤول التنفيذ">
+                                                                        <UserCog size={12} className="text-sky-500 shrink-0" />
+                                                                        <span className="text-[11px] font-bold text-sky-700 dark:text-sky-300">{type.execution_role?.name || 'الإدارة'}</span>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex items-center gap-2" title="مسؤول التنفيذ">
-                                                                    <UserCog size={14} className="text-sky-500" />
-                                                                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{type.execution_role?.name || '-'}</span>
+                                                            </td>
+                                                            <td className="py-4 px-4 text-center">
+                                                                <StatusBadge isActive={type.is_active} />
+                                                            </td>
+                                                            <td className="py-4 px-5 no-print">
+                                                                <div className="flex items-center justify-center gap-1.5">
+                                                                    <button
+                                                                        onClick={() => openModal(type)}
+                                                                        title="تعديل"
+                                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/20 transition-all"
+                                                                    >
+                                                                        <Edit2 size={14} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => confirmDelete(type)}
+                                                                        title="حذف"
+                                                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/20 transition-all"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
                                                                 </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-4 px-6">
-                                                            <span className={`inline-flex px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${type.is_active ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20' : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'}`}>
-                                                                {type.is_active ? 'نشط' : 'موقوف'}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-4 px-6">
-                                                            <div className="flex items-center gap-2">
-                                                                <button onClick={() => openModal(type)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-500/20 transition-all shadow-sm">
-                                                                    <Edit2 size={14} />
-                                                                </button>
-                                                                <button onClick={() => confirmDelete(type)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/20 transition-all shadow-sm">
-                                                                    <Trash2 size={14} />
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
+                                    </div>
+                                    <div className="px-6 py-3.5 bg-slate-50/60 dark:bg-slate-800/30 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400 no-print">
+                                        <span>عرض {filteredTypes.length} من أصل {types.length} نوع مخالفة</span>
+                                        <span>الوضع الحالي: عرض الجدول</span>
                                     </div>
                                 </div>
                             </div>

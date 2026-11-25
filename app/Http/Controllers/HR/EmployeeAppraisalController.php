@@ -675,6 +675,7 @@ class EmployeeAppraisalController extends Controller
     // Show Appraisal Form (Self or Manager view)
     public function show(EmployeeAppraisal $appraisal)
     {
+        Auth::user()?->loadMissing('employee.jobGrade');
         $appraisal->ensureDefaultManagerEvaluator();
         $appraisal->load([
             'employee.user',

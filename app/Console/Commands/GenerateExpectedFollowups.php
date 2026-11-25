@@ -3,8 +3,10 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\MasterTimetable;
+use App\Models\AcademicYear;
 use App\Models\FollowupBook;
+use App\Models\MasterTimetable;
+use App\Models\Semester;
 use Carbon\Carbon;
 
 class GenerateExpectedFollowups extends Command
@@ -16,15 +18,19 @@ class GenerateExpectedFollowups extends Command
     {
         $dateStr = $this->option('date');
         $date = $dateStr ? Carbon::parse($dateStr) : now();
-        $dayOfWeek = strtolower($date->format('l'));
+        $englishDay = $date->format('l');
+        $activeYearId = AcademicYear::where('is_active', true)->value('id');
+        $activeSemester = Semester::where('is_active', true)->first();
 
-        $this->info("Generating expected followups for {$date->format('Y-m-d')} ($dayOfWeek)...");
+        $this->info("Generating expected followups for {$date->format('Y-m-d')} ($englishDay)...");
 
-        $timetables = MasterTimetable::with(['teacher'])->get();
+        $timetables = MasterTimetable::with(['teacher'])
+            ->when($activeSemester, fn ($q) => $q->where('semester_id', $activeSemester->id))
+            ->get();
 
         $count = 0;
         foreach ($timetables as $tt) {
-            if (strtolower($tt->day_of_week) !== $dayOfWeek) {
+            if (!FollowupBook::matchesDayOfWeek($tt->day_of_week, $englishDay)) {
                 continue;
             }
 
@@ -37,7 +43,8 @@ class GenerateExpectedFollowups extends Command
             ], [
                 // Set default fields, uploaded_at is null
                 'branch_id' => $tt->teacher->branch_id ?? null,
-                'upload_source' => 'dashboard', 
+                'academic_year_id' => $activeYearId,
+                'upload_source' => 'dashboard',
             ]);
 
             if ($followup->wasRecentlyCreated) {

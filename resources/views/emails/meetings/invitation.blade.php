@@ -34,7 +34,7 @@
                 <p><strong>📅 التاريخ:</strong> {{ \Carbon\Carbon::parse($meeting->date)->translatedFormat('l، j F Y') }}</p>
                 <p><strong>⏰ الوقت:</strong> {{ \Carbon\Carbon::parse($meeting->time)->format('h:i A') }}</p>
                 <p><strong>🏢 النوع:</strong> {{ $meeting->type == 'in_person' ? 'حضوري' : 'عن بعد (Online)' }}</p>
-                <p><strong>👤 المشرف:</strong> {{ $meeting->supervisor->name ?? 'غير محدد' }}</p>
+                <p><strong>👤 الموجه:</strong> {{ $meeting->supervisor->name ?? 'غير محدد' }}</p>
             </div>
 
             @if(!empty($meeting->agendas))

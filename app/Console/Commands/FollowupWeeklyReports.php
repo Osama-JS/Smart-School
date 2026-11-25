@@ -103,7 +103,7 @@ class FollowupWeeklyReports extends Command
             'message' => $message,
             'type' => 'system',
             'target_type' => 'roles',
-            'target_role' => ['مشرف تربوي', 'مدير النظام', 'مدير الفرع'],
+            'target_role' => ['موجه', 'موجه تربوي', 'مشرف تربوي', 'مدير النظام', 'مدير الفرع'],
             'is_read' => false
         ]);
 

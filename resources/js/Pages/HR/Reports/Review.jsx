@@ -611,7 +611,7 @@ export default function ReviewReport({ auth, report }) {
                                 
                                 {report.manager_notes && (
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
-                                        <span className="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><User size={18} className="text-slate-400"/> ملاحظات المشرف / المدير:</span>
+                                        <span className="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><User size={18} className="text-slate-400"/> ملاحظات الموجه / المدير:</span>
                                         <div className="bg-white dark:bg-slate-900/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 text-base text-slate-700 dark:text-slate-300 leading-relaxed shadow-inner font-medium">
                                             {report.manager_notes}
                                         </div>
@@ -751,7 +751,7 @@ export default function ReviewReport({ auth, report }) {
                                         </div>
                                     </td>
                                     <td style={{ width: '50%', padding: '30px 20px 20px 20px', textAlign: 'center', verticalAlign: 'top', borderRight: '1px solid #e2e8f0' }}>
-                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '40px' }}>اعتماد المشرف / مدير المدرسة</div>
+                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '40px' }}>اعتماد الموجه / مدير المدرسة</div>
                                         <div style={{ fontSize: '15px', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #cbd5e1', paddingBottom: '6px', display: 'inline-block', minWidth: '200px' }}>
                                             {report.reviewer ? report.reviewer.name : '..................................'}
                                         </div>

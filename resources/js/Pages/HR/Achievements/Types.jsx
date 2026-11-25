@@ -90,7 +90,7 @@ export default function Types({ auth, types, stats }) {
                         <div>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
                                 <ShieldCheck size={28} className="text-emerald-600" />
-                                إنجازات الموظفون وحركة الباصات
+                                إنجازات الموظفين
                             </h1>
                             <p className="text-emerald-700/80 dark:text-emerald-300/80 mt-2 text-sm font-semibold">إدارة وتصنيف الإنجازات والمكافآت الخاصة بها</p>
                         </div>

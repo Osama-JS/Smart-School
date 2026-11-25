@@ -330,7 +330,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             updateField(index, 'options', { source: val, columns: defaultColsBySource[val] || [] });
                                         }}
                                         options={[
-                                            { value: 'classroom_visits', label: 'جدول الزيارات الصفية (للمشرف/الوكيل)' },
+                                            { value: 'classroom_visits', label: 'جدول الزيارات الصفية (للموجه/الوكيل)' },
                                             { value: 'employee_violations', label: 'جدول مخالفات الموظفين' },
                                             { value: 'teacher_absences', label: 'جدول غياب وتأخر واستئذان المعلمين' },
                                             { value: 'study_plans', label: 'جدول الخطط الدراسية ومسح المقررات' },

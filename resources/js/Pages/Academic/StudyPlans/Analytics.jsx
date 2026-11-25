@@ -45,7 +45,7 @@ export default function AnalyticsDashboard({ stats, statusDistribution, teacherP
 
     return (
         <AdminLayout activeMenu="الخطط الدراسية">
-            <Head title="مؤشرات أداء المشرفين | النظام الأكاديمي" />
+            <Head title="مؤشرات أداء الموجهين | النظام الأكاديمي" />
 
             <div className="p-6 space-y-6 max-w-7xl mx-auto">
                 {/* Header Section */}
@@ -59,7 +59,7 @@ export default function AnalyticsDashboard({ stats, statusDistribution, teacherP
                             </Link>
                             <h1 className="text-2xl md:text-3xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-3">
                                 <TrendingUp size={28} className="text-primary-600" />
-                                لوحة مؤشرات أداء المشرفين
+                                لوحة مؤشرات أداء الموجهين
                             </h1>
                             <p className="text-primary-700/80 dark:text-primary-300/80 mt-2 text-sm font-semibold">
                                 إحصائيات بصرية لنسب الإنجاز، والتزام المعلمين بتسليم الخطط الدراسية.

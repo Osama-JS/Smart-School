@@ -84,8 +84,8 @@ export default function StudentAchievements({ achievements = [], students = [], 
         switch (category) {
             case 'أكاديمي': return <Target className="text-blue-500" size={20} />;
             case 'رياضي': return <Trophy className="text-orange-500" size={20} />;
-            case 'ديني': return <Star className="text-green-500" size={20} />;
-            case 'سلوكي': return <Award className="text-purple-500" size={20} />;
+            case 'مهاري': return <Star className="text-green-500" size={20} />;
+            case 'قيمي': return <Award className="text-purple-500" size={20} />;
             default: return <Medal className="text-slate-500" size={20} />;
         }
     };
@@ -94,8 +94,8 @@ export default function StudentAchievements({ achievements = [], students = [], 
         switch (category) {
             case 'أكاديمي': return 'bg-blue-50 text-blue-700 border-blue-200';
             case 'رياضي': return 'bg-orange-50 text-orange-700 border-orange-200';
-            case 'ديني': return 'bg-green-50 text-green-700 border-green-200';
-            case 'سلوكي': return 'bg-purple-50 text-purple-700 border-purple-200';
+            case 'مهاري': return 'bg-green-50 text-green-700 border-green-200';
+            case 'قيمي': return 'bg-purple-50 text-purple-700 border-purple-200';
             default: return 'bg-slate-50 text-slate-700 border-slate-200';
         }
     };
@@ -374,8 +374,8 @@ export default function StudentAchievements({ achievements = [], students = [], 
                                     <option value="">جميع الفئات</option>
                                     <option value="أكاديمي">أكاديمي 📚</option>
                                     <option value="رياضي">رياضي ⚽</option>
-                                    <option value="ديني">ديني 🕌</option>
-                                    <option value="سلوكي">سلوكي 🌟</option>
+                                    <option value="مهاري">مهاري 🛠️</option>
+                                    <option value="قيمي">قيمي 🌟</option>
                                     <option value="أخرى">أخرى ✨</option>
                                 </select>
                                 <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />

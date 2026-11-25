@@ -234,7 +234,7 @@ export const StudyPlanPdfTemplate = forwardRef(({ plan }, ref) => {
                                 <CheckCircle2 size={140} color="#16a34a" />
                             </div>
                             
-                            <p style={{ fontSize: '13px', fontWeight: '800', color: '#475569', marginBottom: '24px', position: 'relative', zIndex: 10 }}>الاعتماد الأكاديمي (المشرف)</p>
+                            <p style={{ fontSize: '13px', fontWeight: '800', color: '#475569', marginBottom: '24px', position: 'relative', zIndex: 10 }}>الاعتماد الأكاديمي (الموجه)</p>
                             <div style={{ borderBottom: '2px dashed #cbd5e1', paddingBottom: '12px', position: 'relative', zIndex: 10 }}>
                                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#f0fdf4', border: '1px solid #22c55e', padding: '6px 14px', borderRadius: '100px', transform: 'rotate(-2deg)' }}>
                                     <CheckCircle2 size={16} color="#15803d" />

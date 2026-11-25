@@ -20,14 +20,14 @@ class HRSeeder extends Seeder
         $jeddahBranch = Branch::where('name', 'فرع جدة')->first();
         $teacherRole  = Role::where('name', 'معلم')->first();
         $adminRole    = Role::where('name', 'إداري')->first();
-        $supervisorRole = Role::where('name', 'مشرف تربوي')->first();
+        $supervisorRole = Role::whereIn('name', ['موجه', 'مشرف تربوي'])->first();
 
         // ── 1. الدرجات الوظيفية (مشتركة) ──
         $gradesData = [
             ['name' => 'مدير الفرع',       'level' => 1],
             ['name' => 'مدير إدارة',     'level' => 2],
             ['name' => 'رئيس قسم',       'level' => 3],
-            ['name' => 'مشرف تربوي',     'level' => 4],
+            ['name' => 'موجه',           'level' => 4],
             ['name' => 'أخصائي شؤون',    'level' => 5],
             ['name' => 'معلم أول',        'level' => 6],
             ['name' => 'معلم',            'level' => 7],
@@ -80,11 +80,11 @@ class HRSeeder extends Seeder
             ['name' => 'أحمد محمود الزهراني',   'username' => 'ahmed.z',   'dept' => $topDept->id,  'grade' => $gradeIds['مدير الفرع'],     'hire' => '2018-09-01', 'role' => $adminRole],
             ['name' => 'سارة خالد العمري',        'username' => 'sara.o',    'dept' => $hr->id,        'grade' => $gradeIds['مدير إدارة'],   'hire' => '2019-03-15', 'role' => $adminRole],
             ['name' => 'عمر عبدالله القحطاني',   'username' => 'omar.q',    'dept' => $it->id,        'grade' => $gradeIds['رئيس قسم'],     'hire' => '2020-01-10', 'role' => $adminRole],
-            ['name' => 'فهد علي الدوسري',          'username' => 'fahad.d',   'dept' => $academic->id,  'grade' => $gradeIds['مشرف تربوي'],   'hire' => '2020-09-05', 'role' => $supervisorRole],
+            ['name' => 'فهد علي الدوسري',          'username' => 'fahad.d',   'dept' => $academic->id,  'grade' => $gradeIds['موجه'],         'hire' => '2020-09-05', 'role' => $supervisorRole],
             ['name' => 'منى سعد الغامدي',          'username' => 'mona.g',    'dept' => $students->id,  'grade' => $gradeIds['معلم أول'],     'hire' => '2022-01-15', 'role' => $teacherRole],
             ['name' => 'خالد ناصر العتيبي',        'username' => 'khaled.a',  'dept' => $it->id,        'grade' => $gradeIds['إداري عام'],    'hire' => '2022-06-01', 'role' => $adminRole],
             ['name' => 'رنا يوسف الشمري',          'username' => 'rana.sh',   'dept' => $guidance->id,  'grade' => $gradeIds['أخصائي شؤون'],  'hire' => '2021-03-22', 'role' => $teacherRole],
-            ['name' => 'محمد حسين الزيد',          'username' => 'mohd.z',    'dept' => $academic->id,  'grade' => $gradeIds['مشرف تربوي'],   'hire' => '2019-11-01', 'role' => $supervisorRole],
+            ['name' => 'محمد حسين الزيد',          'username' => 'mohd.z',    'dept' => $academic->id,  'grade' => $gradeIds['موجه'],         'hire' => '2019-11-01', 'role' => $supervisorRole],
             ['name' => 'هند عبدالرحمن المطيري',    'username' => 'hend.m',    'dept' => $hr->id,        'grade' => $gradeIds['إداري عام'],    'hire' => '2023-02-10', 'role' => $adminRole],
             ['name' => 'نورة محمد السلمي',          'username' => 'noura.s',   'dept' => $hr->id,        'grade' => $gradeIds['أخصائي شؤون'], 'hire' => '2021-08-20', 'role' => $adminRole],
         ];

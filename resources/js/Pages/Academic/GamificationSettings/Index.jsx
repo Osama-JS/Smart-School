@@ -474,8 +474,8 @@ export default function GamificationSettings({ tiers = [], badges = [] }) {
                                             >
                                                 <option value="أكاديمي">أكاديمي</option>
                                                 <option value="رياضي">رياضي</option>
-                                                <option value="ديني">ديني</option>
-                                                <option value="سلوكي">سلوكي</option>
+                                                <option value="مهاري">مهاري</option>
+                                                <option value="قيمي">قيمي</option>
                                                 <option value="أخرى">أخرى</option>
                                             </select>
                                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400">

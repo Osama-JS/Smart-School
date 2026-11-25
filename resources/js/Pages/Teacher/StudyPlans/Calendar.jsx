@@ -98,7 +98,7 @@ export default function StudyPlanCalendar({ events }) {
                     
                     <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-100 dark:border-amber-900/30">
                         <Info size={18} className="shrink-0" />
-                        <p>ملاحظة: تظهر في التقويم الخطط الدراسية التي اعتمدها المشرف فقط، والتي تحتوي على عمود لتحديد "تاريخ" الدرس.</p>
+                        <p>ملاحظة: تظهر في التقويم الخطط الدراسية التي اعتمدها الموجه فقط، والتي تحتوي على عمود لتحديد "تاريخ" الدرس.</p>
                     </div>
 
                     {/* Custom styling for fullcalendar via CSS */}

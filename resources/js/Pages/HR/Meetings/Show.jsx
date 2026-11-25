@@ -277,7 +277,7 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
                                     </h1>
                                     <div className="flex items-center gap-2 text-dark-600 dark:text-dark-300 font-bold bg-dark-50 dark:bg-dark-800/50 px-4 py-2 rounded-xl border border-dark-200/50 dark:border-dark-700/50 w-fit">
                                         <Users size={16} className="text-primary-500" />
-                                        المشرف المسؤول: <span className="text-dark-900 dark:text-white">{meeting.supervisor?.name || 'غير محدد'}</span>
+                                        الموجه المسؤول: <span className="text-dark-900 dark:text-white">{meeting.supervisor?.name || 'غير محدد'}</span>
                                     </div>
                                 </div>
                                 
@@ -512,7 +512,7 @@ export default function MeetingShow({ auth, meeting, isSupervisor }) {
                                                 <Clock size={36} className="text-dark-300 dark:text-dark-600 animate-pulse" />
                                             </div>
                                             <h4 className="text-lg font-black text-dark-800 dark:text-white mb-2">الاجتماع لم يكتمل بعد</h4>
-                                            <p className="text-dark-500 font-medium max-w-md mx-auto">ستظهر المخرجات والتوصيات هنا فور اعتمادها وإغلاق الاجتماع من قبل المشرف.</p>
+                                            <p className="text-dark-500 font-medium max-w-md mx-auto">ستظهر المخرجات والتوصيات هنا فور اعتمادها وإغلاق الاجتماع من قبل الموجه.</p>
                                         </div>
                                     )}
                                 </div>

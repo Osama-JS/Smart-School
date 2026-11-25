@@ -80,7 +80,7 @@ class StudyPlanReportController extends Controller
         $baseTeachersQuery = User::whereHas('role', function ($query) {
                 $query->where('name', 'like', '%معلم%')
                       ->orWhere('name', 'Teacher')
-                      ->orWhere('name', 'مشرف تربوي');
+                      ->orWhereIn('name', ['موجه', 'موجه تربوي', 'مشرف تربوي']);
             })
             ->with(['employee.department']);
 
@@ -334,7 +334,7 @@ class StudyPlanReportController extends Controller
         $allTeachersList = User::whereHas('role', function ($query) {
                 $query->where('name', 'like', '%معلم%')
                       ->orWhere('name', 'Teacher')
-                      ->orWhere('name', 'مشرف تربوي');
+                      ->orWhereIn('name', ['موجه', 'موجه تربوي', 'مشرف تربوي']);
             })
             ->when($branchId, fn($q) => $q->where(fn($sub) => $sub->where('branch_id', $branchId)->orWhereNull('branch_id')))
             ->select('id', 'name')

@@ -156,7 +156,7 @@ class TimetableImportService
 
         $teachers = User::with(['role:id,name', 'employee:id,user_id,national_id,job_title'])
             ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
-            ->whereHas('role', fn ($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']))
+            ->whereHas('role', fn ($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'موجه', 'موجه تربوي', 'مشرف تربوي']))
             ->orderBy('name')
             ->get(['id', 'name', 'username', 'email', 'national_id', 'role_id'])
             ->map(function (User $teacher) {

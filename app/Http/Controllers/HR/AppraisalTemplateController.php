@@ -130,7 +130,7 @@ class AppraisalTemplateController extends Controller
             'kpis.*.name' => 'required|string|max:255',
             'kpis.*.category' => 'nullable|string|max:100',
             'kpis.*.evaluator_roles' => 'nullable|array',
-            'kpis.*.evaluator_roles.*' => 'string|in:all,manager,supervisor,hr,committee',
+            'kpis.*.evaluator_roles.*' => 'nullable|string|max:255',
             'kpis.*.description' => 'nullable|string|max:1000',
             'kpis.*.weight' => 'required|numeric|min:1',
         ]);

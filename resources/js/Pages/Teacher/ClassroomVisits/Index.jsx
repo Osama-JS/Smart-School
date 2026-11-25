@@ -148,7 +148,7 @@ export default function TeacherClassroomVisitsIndex({ auth, visits }) {
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">التاريخ</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الصف والشعبة</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">نوع الزيارة</th>
-                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الموجه/المشرف</th>
+                                    <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الموجه</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الحالة والتوقيع</th>
                                     <th className="px-6 py-4 text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">الإجراءات</th>
                                 </tr>
@@ -258,10 +258,10 @@ export default function TeacherClassroomVisitsIndex({ auth, visits }) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-800">
                             <div>
-                                <span className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-wider">توقيع المشرف ({selectedVisit.supervisor?.name})</span>
+                                <span className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-2 uppercase tracking-wider">توقيع الموجه ({selectedVisit.supervisor?.name})</span>
                                 {selectedVisit.supervisor_signature_url ? (
                                     <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-2 bg-white dark:bg-slate-800 flex justify-center h-32 items-center overflow-hidden">
-                                        <img src={selectedVisit.supervisor_signature_url} alt="توقيع المشرف" className="max-h-full max-w-full object-contain filter dark:invert" />
+                                        <img src={selectedVisit.supervisor_signature_url} alt="توقيع الموجه" className="max-h-full max-w-full object-contain filter dark:invert" />
                                     </div>
                                 ) : (
                                     <div className="border border-slate-200 dark:border-slate-700 border-dashed rounded-2xl p-4 bg-slate-50 dark:bg-slate-800/50 flex justify-center h-32 items-center text-slate-400 text-sm font-bold">

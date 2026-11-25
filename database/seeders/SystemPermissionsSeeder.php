@@ -47,7 +47,7 @@ class SystemPermissionsSeeder extends Seeder
             ['name' => 'إدارة قوالب التقارير',   'module' => 'reports'],
             ['name' => 'إدارة الاجتماعات',       'module' => 'reports'],
 
-            // ── الإشراف التربوي ──
+            // ── التوجيه ──
             ['name' => 'إدارة الزيارات الصفية',  'module' => 'supervision'],
             ['name' => 'إدارة دفاتر التحضير',    'module' => 'supervision'],
             ['name' => 'إدارة خطط الدراسة',      'module' => 'supervision'],

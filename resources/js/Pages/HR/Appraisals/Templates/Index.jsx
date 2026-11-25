@@ -73,21 +73,22 @@ function Modal({ isOpen, onClose, title, children }) {
 const EVALUATOR_ROLE_LABELS = {
     all: 'الجميع',
     manager: 'المدير المباشر',
-    supervisor: 'المشرف التربوي',
+    supervisor: 'الموجه',
     hr: 'الموارد البشرية',
     committee: 'عضو لجنة',
 };
 
-const EVALUATOR_ROLE_OPTIONS = [
-    { value: 'all', label: 'الجميع' },
-    { value: 'manager', label: 'المدير المباشر' },
-    { value: 'supervisor', label: 'المشرف التربوي' },
-    { value: 'hr', label: 'الموارد البشرية' },
-    { value: 'committee', label: 'عضو لجنة' },
-];
+const getEvaluatorRoleLabel = (roleVal, jobGrades = []) => {
+    if (!roleVal || roleVal === 'all') return 'الجميع';
+    const matchedGrade = Array.isArray(jobGrades)
+        ? jobGrades.find(g => String(g.id) === String(roleVal) || g.name === roleVal)
+        : null;
+    if (matchedGrade) return matchedGrade.name;
+    return EVALUATOR_ROLE_LABELS[roleVal] || roleVal;
+};
 
 // ─── Template Card ────────────────────────────────────────────────────────────
-function TemplateCard({ template, onEdit, onDelete, index }) {
+function TemplateCard({ template, jobGrades = [], onEdit, onDelete, index }) {
     const [expanded, setExpanded] = useState(false);
     const totalWeight = template.kpis?.reduce((sum, kpi) => sum + (parseInt(kpi.weight) || 0), 0) || 0;
 
@@ -178,7 +179,7 @@ function TemplateCard({ template, onEdit, onDelete, index }) {
                                                     <span className="px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 text-[10px] font-bold">
                                                         {!kpi.evaluator_roles || kpi.evaluator_roles.length === 0 || kpi.evaluator_roles.includes('all')
                                                             ? 'يقيّمه: الجميع'
-                                                            : `يقيّمه: ${kpi.evaluator_roles.map(r => EVALUATOR_ROLE_LABELS[r] || r).join('، ')}`}
+                                                            : `يقيّمه: ${kpi.evaluator_roles.map(r => getEvaluatorRoleLabel(r, jobGrades)).join('، ')}`}
                                                     </span>
                                                 </div>
                                                 {kpi.description && (
@@ -278,19 +279,6 @@ export default function TemplatesIndex({ templates, jobGrades }) {
         const newKpis = [...data.kpis];
         newKpis[index][field] = value;
         setData('kpis', newKpis);
-    };
-
-    const toggleKpiEvaluatorRole = (index, roleVal) => {
-        const current = Array.isArray(data.kpis[index]?.evaluator_roles) ? data.kpis[index].evaluator_roles : ['all'];
-        if (roleVal === 'all') {
-            updateKpi(index, 'evaluator_roles', ['all']);
-            return;
-        }
-        const withoutAll = current.filter(r => r !== 'all');
-        const next = withoutAll.includes(roleVal)
-            ? withoutAll.filter(r => r !== roleVal)
-            : [...withoutAll, roleVal];
-        updateKpi(index, 'evaluator_roles', next.length > 0 ? next : ['all']);
     };
 
     const totalWeight = data.kpis.reduce((sum, kpi) => sum + (parseInt(kpi.weight) || 0), 0);
@@ -439,6 +427,7 @@ export default function TemplatesIndex({ templates, jobGrades }) {
                             <TemplateCard
                                 key={template.id}
                                 template={template}
+                                jobGrades={jobGrades}
                                 onEdit={openModal}
                                 onDelete={handleDelete}
                                 index={index}
@@ -632,27 +621,35 @@ export default function TemplatesIndex({ templates, jobGrades }) {
                                                 onChange={e => updateKpi(index, 'description', e.target.value)}
                                                 className="w-full bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-medium outline-none focus:border-primary-400 dark:text-slate-200 placeholder:text-slate-300 dark:placeholder:text-slate-600"
                                             />
-                                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                                                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 ml-1">من يقيّم المعيار؟</span>
-                                                {EVALUATOR_ROLE_OPTIONS.map((opt) => {
+                                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                                                <label className="text-[11px] font-black text-slate-500 dark:text-slate-400 flex items-center gap-1.5 shrink-0">
+                                                    <Briefcase size={12} className="text-indigo-500" />
+                                                    <span>من يقيّم المعيار؟</span>
+                                                </label>
+                                                {(() => {
                                                     const roles = Array.isArray(kpi.evaluator_roles) && kpi.evaluator_roles.length > 0 ? kpi.evaluator_roles : ['all'];
-                                                    const active = roles.includes(opt.value);
+                                                    const currentVal = roles[0] || 'all';
+                                                    const isLegacyOrMissing = currentVal !== 'all' && !(jobGrades || []).some(g => g.name === currentVal || String(g.id) === String(currentVal));
                                                     return (
-                                                        <button
-                                                            key={opt.value}
-                                                            type="button"
-                                                            onClick={() => toggleKpiEvaluatorRole(index, opt.value)}
-                                                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors ${
-                                                                active
-                                                                    ? 'bg-indigo-600 text-white border-indigo-600'
-                                                                    : 'bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border-slate-200/70 dark:border-slate-700 hover:border-indigo-400'
-                                                            }`}
+                                                        <select
+                                                            value={currentVal}
+                                                            onChange={(e) => updateKpi(index, 'evaluator_roles', [e.target.value])}
+                                                            className="flex-1 min-w-[200px] bg-slate-50/70 dark:bg-slate-950/40 border border-slate-200/70 dark:border-slate-800 rounded-xl px-3 py-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 dark:text-white transition-all"
                                                         >
-                                                            {active ? '✓ ' : ''}
-                                                            {opt.label}
-                                                        </button>
+                                                            <option value="all">الجميع (كل الدرجات الوظيفية)</option>
+                                                            {isLegacyOrMissing && (
+                                                                <option value={currentVal}>
+                                                                    {EVALUATOR_ROLE_LABELS[currentVal] || currentVal} (الحالي)
+                                                                </option>
+                                                            )}
+                                                            {(jobGrades || []).map((grade) => (
+                                                                <option key={grade.id} value={grade.name}>
+                                                                    {grade.name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
                                                     );
-                                                })}
+                                                })()}
                                             </div>
                                         </div>
                                     </div>

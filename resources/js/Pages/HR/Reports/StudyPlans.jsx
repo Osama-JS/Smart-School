@@ -812,7 +812,7 @@ export default function StudyPlansReport({
                                         <p className="text-sm font-black text-slate-800">....................................</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-slate-500 mb-12">المشرف الأكاديمي / رئيس القسم</p>
+                                        <p className="text-xs font-bold text-slate-500 mb-12">الموجه / رئيس القسم</p>
                                         <p className="text-sm font-black text-slate-800">....................................</p>
                                     </div>
                                     <div>

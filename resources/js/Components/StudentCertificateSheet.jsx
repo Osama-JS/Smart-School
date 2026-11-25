@@ -58,10 +58,14 @@ export default function StudentCertificateSheet({
         ? (design.stamp_image.startsWith('http') ? design.stamp_image : `/storage/${design.stamp_image.replace(/^\/+/, '')}`)
         : null;
 
+    const defaultTitles = isMonthly
+        ? { sig1: 'رائد الصف', sig2: 'المشرف', sig3: 'مدير المدرسة' }
+        : { sig1: 'إعداد / المختص', sig2: 'مراجعة / وكيل المدرسة', sig3: 'اعتماد / مدير الفرع' };
+
     const signatures = [
-        { active: design.sig1_active !== false, title: design.sig1_title || 'إعداد / المختص', name: design.sig1_name || '' },
-        { active: design.sig2_active !== false, title: design.sig2_title || 'مراجعة / وكيل المدرسة', name: design.sig2_name || '' },
-        { active: design.sig3_active !== false, title: design.sig3_title || 'اعتماد / مدير الفرع', name: design.sig3_name || '' },
+        { active: design.sig1_active !== false, title: isMonthly ? defaultTitles.sig1 : (design.sig1_title || defaultTitles.sig1), name: design.sig1_name || '' },
+        { active: design.sig2_active !== false, title: isMonthly ? defaultTitles.sig2 : (design.sig2_title || defaultTitles.sig2), name: design.sig2_name || '' },
+        { active: design.sig3_active !== false, title: isMonthly ? defaultTitles.sig3 : (design.sig3_title || defaultTitles.sig3), name: design.sig3_name || '' },
     ].filter((s) => s.active);
 
     return (

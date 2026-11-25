@@ -10,7 +10,7 @@ import { Plus, Edit2, Trash2, FileText, CheckCircle, AlertTriangle, CalendarDays
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 
-export default function Violations({ auth, violations, types, students, grades, activeYearId }) {
+export default function Violations({ auth, violations, types, students, staffUsers = [], grades, activeYearId }) {
     const { logo_url } = usePage().props;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);

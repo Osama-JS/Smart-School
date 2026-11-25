@@ -495,7 +495,7 @@ class DashboardController extends Controller
                 ->count();
             if ($unreviewedPrepCount > 0) {
                 $systemAlerts[] = [
-                    'title' => 'دفاتر تحضير بانتظار المراجعة الإشرافية',
+                    'title' => 'دفاتر تحضير بانتظار مراجعة التوجيه',
                     'description' => "يوجد ({$unreviewedPrepCount}) تحضير منشور لم يُراجع بعد",
                     'count' => $unreviewedPrepCount,
                     'type' => 'warning',
@@ -549,8 +549,8 @@ class DashboardController extends Controller
             ]);
         }
 
-        // --- Educational Supervisor Dashboard ---
-        if ($roleName && str_contains($roleName, 'مشرف')) {
+        // --- Educational Supervisor / Guidance Dashboard ---
+        if ($roleName && (str_contains($roleName, 'موجه') || str_contains($roleName, 'مشرف'))) {
             $employeeId = optional($user->employee)->id;
             $todayAttendance = Attendance::where('employee_id', $employeeId)
                 ->whereDate('date', Carbon::today())

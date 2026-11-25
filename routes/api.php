@@ -264,6 +264,10 @@ Route::middleware('auth:sanctum')->prefix('mobile/features')->group(function () 
     Route::post('/teacher/parent-visits/{id}/convert-violation', [MobileFeaturesController::class, 'convertParentVisitToViolation']);
     Route::get('/teacher/students-list', [MobileFeaturesController::class, 'getTeacherStudentsList']);
 
+    // Teacher Follow-up Books
+    Route::get('/teacher/followup-books', [MobileFeaturesController::class, 'getTeacherFollowupBooks']);
+    Route::post('/teacher/followup-books', [MobileFeaturesController::class, 'storeTeacherFollowupBook']);
+
     // Leave Balances & Leave Consumption History
     Route::get('/leave-balances', [MobileFeaturesController::class, 'getMyLeaveBalances']);
     Route::get('/my-leave-balances', [MobileFeaturesController::class, 'getMyLeaveBalances']);

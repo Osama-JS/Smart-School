@@ -93,7 +93,7 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
         $teachers = User::with(['role', 'employee'])
             ->where('branch_id', $branchId)
             ->whereHas('role', function($q){
-                $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']);
+                $q->whereIn('name', ['معلم', 'معلم أول', 'موجه', 'موجه تربوي', 'مشرف تربوي']);
             })->get(['id', 'name', 'role_id'])->map(function($teacher) {
                 $jobTitle = $teacher->employee?->job_title ?? $teacher->role?->name ?? '';
                 return [
@@ -350,7 +350,7 @@ class TimetableController extends Controller implements \Illuminate\Routing\Cont
         $teachers = User::with(['role', 'employee'])
             ->where('branch_id', $branchId)
             ->whereHas('role', function($q){
-                $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']);
+                $q->whereIn('name', ['معلم', 'معلم أول', 'موجه', 'موجه تربوي', 'مشرف تربوي']);
             })->get(['id', 'name', 'role_id'])->map(function($teacher) {
                 $jobTitle = $teacher->employee?->job_title ?? $teacher->role?->name ?? '';
                 return [

@@ -666,7 +666,7 @@ export default function TeacherDashboard({
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
                                         <ClipboardList size={16} className="text-indigo-500" />
-                                        آخر ملاحظة إشرافية للتحضير
+                                        آخر ملاحظة توجيهية للتحضير
                                     </h3>
                                     {todayPrepSummary.latest_feedback.supervisor_rating && (
                                         <span className="px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 text-xs font-black">
@@ -683,7 +683,7 @@ export default function TeacherDashboard({
                                     </p>
                                 )}
                                 <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
-                                    <span>المشرف: {todayPrepSummary.latest_feedback.reviewer_name || 'الإشراف'}</span>
+                                    <span>الموجه: {todayPrepSummary.latest_feedback.reviewer_name || 'التوجيه'}</span>
                                     <Link href={route('teacher.lesson-preparations.index')} className="text-indigo-600 font-bold hover:underline">
                                         عرض التحاضير
                                     </Link>

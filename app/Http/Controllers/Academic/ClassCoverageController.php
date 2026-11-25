@@ -61,7 +61,7 @@ class ClassCoverageController extends Controller
 
         // Lists for filters
         $teachers = User::where('branch_id', $branchId)
-            ->whereHas('role', fn($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']))
+            ->whereHas('role', fn($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'موجه', 'موجه تربوي', 'مشرف تربوي']))
             ->get(['id', 'name']);
 
         return Inertia::render('Academic/Coverage/ReportIndex', [
@@ -221,7 +221,7 @@ class ClassCoverageController extends Controller
 
         // Lists for filters
         $teachers = User::where('branch_id', $branchId)
-            ->whereHas('role', fn($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']))
+            ->whereHas('role', fn($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'موجه', 'موجه تربوي', 'مشرف تربوي']))
             ->get(['id', 'name']);
 
         return Inertia::render('Academic/Coverage/Index', [
@@ -238,7 +238,7 @@ class ClassCoverageController extends Controller
         $branchId = auth()->user()->branch_id;
 
         $teachers = User::where('branch_id', $branchId)
-            ->whereHas('role', fn($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'مشرف تربوي']))
+            ->whereHas('role', fn($q) => $q->whereIn('name', ['معلم', 'معلم أول', 'موجه', 'موجه تربوي', 'مشرف تربوي']))
             ->get(['id', 'name']);
 
         $subjects = Subject::where('branch_id', $branchId)->get(['id', 'name']);

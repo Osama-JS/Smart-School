@@ -37,7 +37,7 @@ return new class extends Migration
             'admin'          => 'الإدارة والنظام',
             'students'       => 'الطلاب',
             'reports'        => 'التقارير والاجتماعات',
-            'supervision'    => 'الإشراف التربوي',
+            'supervision'    => 'التوجيه',
             'communications' => 'التواصل والأخبار',
             'clinic'         => 'العيادة المدرسية',
             'student_portal' => 'بوابة الطالب',
