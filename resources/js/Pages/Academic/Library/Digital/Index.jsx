@@ -55,6 +55,7 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
     const [deleteItem, setDeleteItem] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [previewItem, setPreviewItem] = useState(null);
+    const [metricOverrides, setMetricOverrides] = useState({});
     
     const [filterGrade, setFilterGrade] = useState(filters?.grade_id || 'all');
     const [filterSubject, setFilterSubject] = useState(filters?.subject_id || 'all');
@@ -71,7 +72,7 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
         external_url: '',
         item_type: 'pdf',
         category: '',
-        target_audience: 'students',
+        target_audience: ['students'],
         thumbnail: null,
     });
 
@@ -164,12 +165,60 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
         }
     };
     
+    const postMetricPing = (url) => {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+            },
+        }).catch(() => {});
+    };
+
+    const getViewsCount = (item) => metricOverrides[item.id]?.views_count ?? item.views_count ?? 0;
+    const getDownloadsCount = (item) => metricOverrides[item.id]?.downloads_count ?? item.downloads_count ?? 0;
+
+    const canPreviewItem = (item) => Boolean(item.external_url) || Boolean(
+        item.file_path && (
+            item.item_type === 'video' ||
+            item.item_type === 'audio' ||
+            item.item_type === 'pdf' ||
+            item.file_path.toLowerCase().endsWith('.pdf')
+        )
+    );
+
+    const getActionUrl = (item) => item.file_url || item.external_url || '#';
+
+    const canDeleteItem = (item) => !['معلم', 'طالب'].includes(auth?.user?.role?.name) || (auth?.user?.role?.name === 'معلم' && item.uploader_id === auth?.user?.id);
+
+    const handleOpenPreview = (item) => {
+        const nextViews = getViewsCount(item) + 1;
+        setMetricOverrides(prev => ({
+            ...prev,
+            [item.id]: { ...prev[item.id], views_count: nextViews },
+        }));
+        setPreviewItem({ ...item, views_count: nextViews });
+        postMetricPing(route('academic.library.digital.increment-views', item.id));
+    };
+
+    const handleDownload = (item) => {
+        const nextDownloads = getDownloadsCount(item) + 1;
+        setMetricOverrides(prev => ({
+            ...prev,
+            [item.id]: { ...prev[item.id], downloads_count: nextDownloads },
+        }));
+        postMetricPing(route('academic.library.digital.increment-downloads', item.id));
+    };
+
     const handleBookmark = (item) => {
-        router.post(route('digital.bookmark', item.id), {}, { preserveScroll: true });
+        router.post(route('academic.library.digital.bookmark', item.id), {}, { preserveScroll: true });
     };
 
     const handleRate = (item, rating) => {
-        router.post(route('digital.rating', item.id), { rating }, { preserveScroll: true });
+        router.post(route('academic.library.digital.rating', item.id), { rating }, { preserveScroll: true });
     };
 
     return (
@@ -422,7 +471,7 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                 >
                                                     <Bookmark size={16} fill={item.is_bookmarked_by_user ? "currentColor" : "none"} />
                                                 </button>
-                                                {!['معلم', 'طالب'].includes(auth?.user?.role?.name) && (
+                                                {canDeleteItem(item) && (
                                                     <button 
                                                         onClick={() => handleDelete(item)}
                                                         className="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-colors"
@@ -464,8 +513,8 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                             </div>
                                             <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 font-medium pt-2">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex items-center gap-1.5" title="المشاهدات"><Eye size={14} /> {item.views_count}</div>
-                                                    <div className="flex items-center gap-1.5" title="التحميلات"><Download size={14} /> {item.downloads_count}</div>
+                                                    <div className="flex items-center gap-1.5" title="المشاهدات"><Eye size={14} /> {getViewsCount(item)}</div>
+                                                    <div className="flex items-center gap-1.5" title="التحميلات"><Download size={14} /> {getDownloadsCount(item)}</div>
                                                 </div>
                                                 <div className="flex items-center gap-1 text-amber-500" title="التقييم">
                                                     <span className="font-bold">{item.average_rating || '0.0'}</span>
@@ -475,9 +524,9 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                         </div>
 
                                         <div className="relative z-10 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                                            {item.file_path && (item.item_type === 'video' || item.item_type === 'audio' || item.file_path.toLowerCase().endsWith('.pdf')) && (
+                                            {canPreviewItem(item) && (
                                                 <button 
-                                                    onClick={() => setPreviewItem(item)}
+                                                    onClick={() => handleOpenPreview(item)}
                                                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-500/20 font-bold transition-colors border border-primary-100 dark:border-primary-500/20 shadow-sm"
                                                 >
                                                     {(item.item_type === 'video') ? <MonitorPlay size={18} /> : (item.item_type === 'audio' ? <Headphones size={18} /> : <Eye size={18} />)}
@@ -485,14 +534,15 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                 </button>
                                             )}
                                             <a 
-                                                href={`/storage/${item.file_path}`} 
+                                                href={getActionUrl(item)} 
                                                 target="_blank" 
                                                 rel="noreferrer"
-                                                download
+                                                {...(item.file_path ? { download: true } : {})}
+                                                onClick={() => handleDownload(item)}
                                                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-bold transition-colors border border-slate-200 dark:border-slate-700"
                                             >
                                                 <Download size={18} />
-                                                تحميل
+                                                {item.file_path ? 'تحميل' : 'فتح الرابط'}
                                             </a>
                                         </div>
                                     </div>
@@ -554,9 +604,9 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                             >
                                                                 <Bookmark size={18} fill={item.is_bookmarked_by_user ? "currentColor" : "none"} />
                                                             </button>
-                                                            {item.file_path && (item.item_type === 'video' || item.item_type === 'audio' || item.file_path.toLowerCase().endsWith('.pdf')) && (
+                                                            {canPreviewItem(item) && (
                                                                 <button 
-                                                                    onClick={() => setPreviewItem(item)}
+                                                                    onClick={() => handleOpenPreview(item)}
                                                                     className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm"
                                                                     title="عرض المحتوى"
                                                                 >
@@ -564,16 +614,17 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                                                 </button>
                                                             )}
                                                             <a 
-                                                                href={item.file_url} 
+                                                                href={getActionUrl(item)} 
                                                                 target="_blank" 
                                                                 rel="noreferrer"
-                                                                download
+                                                                {...(item.file_path ? { download: true } : {})}
+                                                                onClick={() => handleDownload(item)}
                                                                 className="p-2 rounded-xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-500/20 transition-all"
-                                                                title="تحميل"
+                                                                title={item.file_path ? 'تحميل' : 'فتح الرابط'}
                                                             >
                                                                 <Download size={18} />
                                                             </a>
-                                                            {!['معلم', 'طالب'].includes(auth?.user?.role?.name) && (
+                                                            {canDeleteItem(item) && (
                                                                 <button 
                                                                     onClick={() => handleDelete(item)}
                                                                     className="p-2 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all"
@@ -681,9 +732,22 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                         <div>
                             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الجمهور المستهدف</label>
                             <SelectInput 
+                                isMulti={true}
                                 value={data.target_audience} 
-                                onChange={val => setData('target_audience', val)}
+                                onChange={(vals) => {
+                                    const nextVals = Array.isArray(vals) ? vals : [];
+                                    const prevVals = Array.isArray(data.target_audience) ? data.target_audience : [];
+                                    if (!prevVals.includes('all') && nextVals.includes('all')) {
+                                        setData('target_audience', ['all']);
+                                    } else if (prevVals.includes('all') && nextVals.length > 1) {
+                                        setData('target_audience', nextVals.filter(v => v !== 'all'));
+                                    } else {
+                                        setData('target_audience', nextVals);
+                                    }
+                                }}
+                                placeholder="اختر الجمهور المستهدف..."
                                 options={[
+                                    { value: 'all', label: 'الكل (الطلاب والمعلمين وأولياء الأمور)' },
                                     { value: 'students', label: 'الطلاب' },
                                     { value: 'teachers', label: 'المعلمين' },
                                     { value: 'parents', label: 'أولياء الأمور' },
@@ -719,7 +783,7 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                                             <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={e => setData('file', e.target.files[0])} />
                                         </label>
                                     </div>
-                                    <p className="text-xs text-slate-500 font-bold">PDF, MP4, MP3 (حتى 20 ميجا)</p>
+                                    <p className="text-xs text-slate-500 font-bold">PDF, MP4, MP3 (حتى 200 ميجا)</p>
                                     {data.file && (
                                         <div className="mt-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-bold border border-emerald-100 dark:border-emerald-500/20 inline-block truncate max-w-full">
                                             {data.file.name}
@@ -801,12 +865,15 @@ export default function DigitalLibraryIndex({ items, grades, subjects, filters }
                             </div>
                             <div className="flex items-center gap-2">
                                 <a 
-                                    href={previewItem.file_url} 
-                                    download 
+                                    href={getActionUrl(previewItem)} 
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    {...(previewItem.file_path ? { download: true } : {})}
+                                    onClick={() => handleDownload(previewItem)}
                                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-500/20 transition-colors"
                                 >
                                     <Download size={16} />
-                                    تحميل
+                                    {previewItem.file_path ? 'تحميل' : 'فتح الرابط'}
                                 </a>
                                 <button 
                                     onClick={() => setPreviewItem(null)} 

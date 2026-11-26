@@ -16,26 +16,66 @@ class LibraryItemController extends Controller
     {
         $user = auth()->user();
         $isSystemAdmin = $user->role && $user->role->name === 'مدير النظام';
-
-        $items = LibraryItem::with(['grade', 'subject', 'uploader', 'ratings', 'bookmarks'])
-            ->when(!$isSystemAdmin, function ($query) use ($user) {
-                return $query->whereHas('uploader', function($q) use ($user) {
-                    $q->where('branch_id', $user->branch_id);
-                });
-            })
-            ->when($request->grade_id, function ($query, $grade_id) {
-                return $query->where('grade_id', $grade_id);
-            })
-            ->when($request->subject_id, function ($query, $subject_id) {
-                return $query->where('subject_id', $subject_id);
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
-
         $branchId = $user->branch_id ?? null;
         $isTeacher = $user->role && $user->role->name === 'معلم';
         $isStudent = $user->role && $user->role->name === 'طالب';
+
+        $studentGradeId = null;
+        if ($isStudent && $user->student) {
+            $enrollment = $user->student->currentEnrollment()->with('division')->first();
+            if ($enrollment && $enrollment->division) {
+                $studentGradeId = $enrollment->division->grade_id;
+            }
+        }
+
+        $applyFilters = function ($query) use ($request, $user, $studentGradeId) {
+            return $query
+                ->when($request->filled('search'), function ($q) use ($request) {
+                    $q->where('title', 'like', '%' . $request->search . '%');
+                })
+                ->when(!$studentGradeId && $request->filled('grade_id') && $request->grade_id !== 'all', function ($q) use ($request) {
+                    $q->where('grade_id', $request->grade_id);
+                })
+                ->when($request->filled('subject_id') && $request->subject_id !== 'all', function ($q) use ($request) {
+                    $q->where('subject_id', $request->subject_id);
+                })
+                ->when($request->filled('item_type') && $request->item_type !== 'all', function ($q) use ($request) {
+                    $q->where('item_type', $request->item_type);
+                })
+                ->when($request->filled('category') && $request->category !== 'all', function ($q) use ($request) {
+                    $q->where('category', $request->category);
+                })
+                ->when($request->filled('target_audience') && $request->target_audience !== 'all', function ($q) use ($request) {
+                    $audience = $request->target_audience;
+                    $q->where(function ($aq) use ($audience) {
+                        $aq->where('target_audience', 'all')
+                           ->orWhere('target_audience', 'like', '%' . $audience . '%');
+                    });
+                })
+                ->when($request->boolean('bookmarked'), function ($q) use ($user) {
+                    $q->whereHas('bookmarks', fn($bq) => $bq->where('users.id', $user->id));
+                });
+        };
+
+        $itemsQuery = LibraryItem::with(['grade', 'subject', 'uploader', 'ratings', 'bookmarks']);
+
+        if ($studentGradeId) {
+            $itemsQuery->where('grade_id', $studentGradeId)
+                ->where(function ($q) {
+                    $q->where('target_audience', 'all')
+                      ->orWhere('target_audience', 'like', '%students%')
+                      ->orWhereNull('target_audience');
+                });
+        } elseif (!$isSystemAdmin) {
+            $itemsQuery->whereHas('uploader', function ($q) use ($user) {
+                $q->where('branch_id', $user->branch_id);
+            });
+        }
+
+        $items = $applyFilters($itemsQuery)
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         $gradesQuery = Grade::query();
         if ($branchId) {
@@ -47,21 +87,8 @@ class LibraryItemController extends Controller
             $subjectsQuery->where('branch_id', $branchId);
         }
 
-        if ($isStudent && $user->student) {
-            $enrollment = $user->student->currentEnrollment()->with('division')->first();
-            if ($enrollment && $enrollment->division) {
-                $studentGradeId = $enrollment->division->grade_id;
-                $gradesQuery->where('id', $studentGradeId);
-                // Override the items query to only show items for this student's grade
-                $items = LibraryItem::with(['grade', 'subject', 'uploader', 'ratings', 'bookmarks'])
-                    ->where('grade_id', $studentGradeId)
-                    ->when($request->subject_id, function ($query, $subject_id) {
-                        return $query->where('subject_id', $subject_id);
-                    })
-                    ->latest()
-                    ->paginate(10)
-                    ->withQueryString();
-            }
+        if ($studentGradeId) {
+            $gradesQuery->where('id', $studentGradeId);
         }
 
         if ($isTeacher) {
@@ -72,9 +99,7 @@ class LibraryItemController extends Controller
             $divisionsAssigned = \App\Models\Division::whereIn('id', $allDivisionIds)->get();
             $teacherGradeIds = $divisionsAssigned->pluck('grade_id')->unique()->filter()->toArray();
 
-            if (empty($teacherGradeIds)) {
-                $gradesQuery->whereRaw('1 = 0');
-            } else {
+            if (!empty($teacherGradeIds)) {
                 $gradesQuery->whereIn('id', $teacherGradeIds);
             }
             
@@ -82,9 +107,7 @@ class LibraryItemController extends Controller
             $teacherSubjectIds2 = \App\Models\MasterTimetable::where('teacher_id', $user->id)->pluck('subject_id')->toArray();
             $allSubjectIds = array_unique(array_merge($teacherSubjectIds1, $teacherSubjectIds2));
 
-            if (empty($allSubjectIds)) {
-                $subjectsQuery->whereRaw('1 = 0');
-            } else {
+            if (!empty($allSubjectIds)) {
                 $subjectsQuery->whereIn('id', $allSubjectIds);
             }
         }
@@ -96,8 +119,24 @@ class LibraryItemController extends Controller
             'items' => $items,
             'grades' => $grades,
             'subjects' => $subjects,
-            'filters' => $request->only(['grade_id', 'subject_id', 'item_type', 'category', 'target_audience', 'search']),
+            'filters' => $request->only(['grade_id', 'subject_id', 'item_type', 'category', 'target_audience', 'search', 'bookmarked']),
         ]);
+    }
+
+    private function normalizeTargetAudience($raw): string
+    {
+        $allowed = ['all', 'students', 'teachers', 'parents'];
+        $items = is_array($raw) ? $raw : explode(',', (string) $raw);
+        $values = array_values(array_unique(array_filter(
+            array_map(fn($v) => trim((string) $v), $items),
+            fn($v) => in_array($v, $allowed, true)
+        )));
+
+        if (in_array('all', $values, true) || count(array_intersect(['students', 'teachers', 'parents'], $values)) === 3) {
+            return 'all';
+        }
+
+        return !empty($values) ? implode(',', $values) : 'students';
     }
 
     public function store(Request $request)
@@ -108,12 +147,12 @@ class LibraryItemController extends Controller
             'title' => 'required|string|max:255',
             'grade_id' => 'required|exists:grades,id',
             'subject_id' => 'required|exists:subjects,id',
-            'file' => 'required_without:external_url|nullable|file|max:20480', // 20MB max
+            'file' => 'required_without:external_url|nullable|file|max:204800', // 200MB max
             'external_url' => 'required_without:file|nullable|url|max:1000',
             'item_type' => 'required|string',
             'category' => 'nullable|string',
-            'target_audience' => 'required|string',
-            'thumbnail' => 'nullable|image|max:5120', // 5MB max
+            'target_audience' => 'required',
+            'thumbnail' => 'nullable|image|max:10240', // 10MB max
         ]);
 
         $path = null;
@@ -132,7 +171,7 @@ class LibraryItemController extends Controller
             'subject_id' => $request->subject_id,
             'item_type' => $request->item_type,
             'category' => $request->category,
-            'target_audience' => $request->target_audience,
+            'target_audience' => $this->normalizeTargetAudience($request->input('target_audience')),
             'uploader_id' => auth()->id(),
             'file_path' => $path,
             'external_url' => $request->external_url,
@@ -144,21 +183,28 @@ class LibraryItemController extends Controller
 
     public function update(Request $request, LibraryItem $libraryItem)
     {
-        if (auth()->user()->role && auth()->user()->role->name === 'طالب') abort(403);
+        $user = auth()->user();
+        if ($user->role && $user->role->name === 'طالب') {
+            abort(403);
+        }
+        if ($user->role && $user->role->name === 'معلم' && $libraryItem->uploader_id !== $user->id) {
+            abort(403, 'لا يمكنك تعديل مورد لم تقم برفعه.');
+        }
 
         $request->validate([
             'title' => 'required|string|max:255',
             'grade_id' => 'required|exists:grades,id',
             'subject_id' => 'required|exists:subjects,id',
-            'file' => 'nullable|file|max:20480', // 20MB max
+            'file' => 'nullable|file|max:204800', // 200MB max
             'external_url' => 'nullable|url|max:1000',
             'item_type' => 'required|string',
             'category' => 'nullable|string',
-            'target_audience' => 'required|string',
-            'thumbnail' => 'nullable|image|max:5120', // 5MB max
+            'target_audience' => 'required',
+            'thumbnail' => 'nullable|image|max:10240', // 10MB max
         ]);
 
-        $data = $request->only(['title', 'grade_id', 'subject_id', 'item_type', 'category', 'target_audience', 'external_url']);
+        $data = $request->only(['title', 'grade_id', 'subject_id', 'item_type', 'category', 'external_url']);
+        $data['target_audience'] = $this->normalizeTargetAudience($request->input('target_audience'));
 
         if ($request->hasFile('file')) {
             if ($libraryItem->file_path && Storage::disk('public')->exists($libraryItem->file_path)) {
@@ -183,7 +229,7 @@ class LibraryItemController extends Controller
     public function destroy(LibraryItem $libraryItem)
     {
         $user = auth()->user();
-        if ($user->role && in_array($user->role->name, ['معلم', 'طالب'])) {
+        if ($user->role && ($user->role->name === 'طالب' || ($user->role->name === 'معلم' && $libraryItem->uploader_id !== $user->id))) {
             abort(403, 'غير مصرح لك بحذف الموارد من المكتبة الرقمية. الرجاء الرجوع للإدارة.');
         }
 

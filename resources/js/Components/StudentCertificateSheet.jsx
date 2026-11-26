@@ -1,6 +1,59 @@
 import React from 'react';
 import QRCode from 'react-qr-code';
-import { Award, ShieldCheck, Lock, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { Award, ShieldCheck, Lock, AlertTriangle } from 'lucide-react';
+
+const ONES_AR = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+const TENS_AR = ['', 'عشرة', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+const TEENS_AR = ['', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+const HUNDREDS_AR = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+
+const intToArabicWords = (n) => {
+    if (n === 0) return 'صفر';
+    if (n >= 1000) return String(n);
+
+    const parts = [];
+    const hundreds = Math.floor(n / 100);
+    const rem = n % 100;
+
+    if (hundreds > 0) parts.push(HUNDREDS_AR[hundreds]);
+
+    if (rem > 0) {
+        if (rem < 10) {
+            parts.push(ONES_AR[rem]);
+        } else if (rem === 10) {
+            parts.push(TENS_AR[1]);
+        } else if (rem < 20) {
+            parts.push(TEENS_AR[rem - 10]);
+        } else {
+            const unit = rem % 10;
+            const ten = Math.floor(rem / 10);
+            if (unit > 0) {
+                parts.push(`${ONES_AR[unit]} و${TENS_AR[ten]}`);
+            } else {
+                parts.push(TENS_AR[ten]);
+            }
+        }
+    }
+
+    return parts.join(' و');
+};
+
+const numberToArabicWords = (value) => {
+    if (value === null || value === undefined || value === '') return '—';
+    const num = Number(value);
+    if (Number.isNaN(num)) return String(value);
+
+    const rounded = Math.round(num * 100) / 100;
+    const intPart = Math.floor(rounded);
+    const decPart = Math.round((rounded - intPart) * 100);
+
+    const baseWords = intToArabicWords(intPart);
+    if (decPart === 0) return baseWords;
+    if (decPart === 50) return intPart === 0 ? 'نصف' : `${baseWords} ونصف`;
+    if (decPart === 25) return intPart === 0 ? 'ربع' : `${baseWords} وربع`;
+    if (decPart === 75) return intPart === 0 ? 'ثلاثة أرباع' : `${baseWords} وثلاثة أرباع`;
+    return `${baseWords} فاصل ${intToArabicWords(decPart)}`;
+};
 
 const GRADE_COLORS = {
     excellent: 'text-lime-800 border-lime-300 bg-lime-50',
@@ -9,6 +62,48 @@ const GRADE_COLORS = {
     pass: 'text-amber-700 border-amber-300 bg-amber-50',
     weak: 'text-orange-700 border-orange-300 bg-orange-50',
     fail: 'text-red-700 border-red-300 bg-red-50',
+};
+
+const getHijriParts = (dateInput) => {
+    try {
+        const d = dateInput ? new Date(dateInput) : new Date();
+        if (Number.isNaN(d.getTime())) return null;
+        const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).formatToParts(d);
+        const year = parts.find((p) => p.type === 'year')?.value;
+        const month = parts.find((p) => p.type === 'month')?.value;
+        const day = parts.find((p) => p.type === 'day')?.value;
+        if (!year || !month || !day) return null;
+        return { year, month, day };
+    } catch {
+        return null;
+    }
+};
+
+const formatHijriDate = (dateInput) => {
+    const p = getHijriParts(dateInput);
+    return p ? `${p.year}/${p.month}/${p.day} هـ` : '';
+};
+
+const getHijriAcademicYear = (academicYearStr, fallbackDate) => {
+    const text = String(academicYearStr || '');
+    if (text.includes('هـ') || /\b14\d{2}\b/.test(text)) return '';
+    const matches = text.match(/\b(20\d{2})\b/g);
+    if (matches && matches.length >= 2) {
+        const startH = getHijriParts(`${matches[0]}-09-01`)?.year;
+        const endH = getHijriParts(`${matches[1]}-05-01`)?.year;
+        if (startH && endH) {
+            return startH === endH ? `${startH} هـ` : `${startH}/${endH} هـ`;
+        }
+    } else if (matches && matches.length === 1) {
+        const h = getHijriParts(`${matches[0]}-09-01`)?.year;
+        if (h) return `${h} هـ`;
+    }
+    const fallbackH = getHijriParts(fallbackDate)?.year;
+    return fallbackH ? `${fallbackH} هـ` : '';
 };
 
 export default function StudentCertificateSheet({
@@ -41,6 +136,9 @@ export default function StudentCertificateSheet({
         issueDate = '',
     } = certificate;
 
+    const hijriIssueDate = formatHijriDate(issueDate);
+    const hijriAcademicYear = getHijriAcademicYear(academicYear, issueDate);
+
     const isMonthly = type === 'monthly';
     const rawBrandColor = design.default_brand_color || '';
     const isValidHex = /^#[0-9a-fA-F]{3,8}$/.test(rawBrandColor);
@@ -58,14 +156,12 @@ export default function StudentCertificateSheet({
         ? (design.stamp_image.startsWith('http') ? design.stamp_image : `/storage/${design.stamp_image.replace(/^\/+/, '')}`)
         : null;
 
-    const defaultTitles = isMonthly
-        ? { sig1: 'رائد الصف', sig2: 'المشرف', sig3: 'مدير المدرسة' }
-        : { sig1: 'إعداد / المختص', sig2: 'مراجعة / وكيل المدرسة', sig3: 'اعتماد / مدير الفرع' };
+    const defaultTitles = { sig1: 'رائد الصف', sig2: 'المشرف', sig3: 'مدير المدرسة' };
 
     const signatures = [
-        { active: design.sig1_active !== false, title: isMonthly ? defaultTitles.sig1 : (design.sig1_title || defaultTitles.sig1), name: design.sig1_name || '' },
-        { active: design.sig2_active !== false, title: isMonthly ? defaultTitles.sig2 : (design.sig2_title || defaultTitles.sig2), name: design.sig2_name || '' },
-        { active: design.sig3_active !== false, title: isMonthly ? defaultTitles.sig3 : (design.sig3_title || defaultTitles.sig3), name: design.sig3_name || '' },
+        { active: design.sig1_active !== false, title: defaultTitles.sig1, name: design.sig1_name || '' },
+        { active: design.sig2_active !== false, title: defaultTitles.sig2, name: design.sig2_name || '' },
+        { active: design.sig3_active !== false, title: defaultTitles.sig3, name: design.sig3_name || '' },
     ].filter((s) => s.active);
 
     return (
@@ -122,6 +218,7 @@ export default function StudentCertificateSheet({
                         <div className="w-[36%] text-right space-y-0.5">
                             <p className="text-[11px] font-black text-zinc-900">{design.republic || 'الجمهورية اليمنية'}</p>
                             <p className="text-[11px] font-bold text-zinc-600">{design.ministry || 'وزارة التربية والتعليم والبحث العلمي'}</p>
+                            <p className="text-[11px] font-bold text-zinc-600">مكتب التربية والتعليم بالامانة السبعين</p>
                             <h2 className="text-lg font-black pt-1" style={{ color: primaryDark }}>
                                 {design.school_name || 'مدارس القيم الأهلية'}
                             </h2>
@@ -159,7 +256,12 @@ export default function StudentCertificateSheet({
                             >
                                 <div className="flex justify-between gap-2">
                                     <span className="text-zinc-500 font-bold">العام الدراسي:</span>
-                                    <span className="font-black text-zinc-900">{academicYear || '—'}</span>
+                                    <span className="font-black text-zinc-900 text-left">
+                                        {academicYear || '—'}
+                                        {hijriAcademicYear && (
+                                            <span className="block text-[10px] font-bold text-zinc-600">{hijriAcademicYear}</span>
+                                        )}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between gap-2">
                                     <span className="text-zinc-500 font-bold">الفصل الدراسي:</span>
@@ -167,7 +269,12 @@ export default function StudentCertificateSheet({
                                 </div>
                                 <div className="flex justify-between gap-2">
                                     <span className="text-zinc-500 font-bold">تاريخ الإصدار:</span>
-                                    <span className="font-bold font-mono text-zinc-900" dir="ltr">{issueDate}</span>
+                                    <span className="font-bold font-mono text-zinc-900 text-left">
+                                        <span dir="ltr">{issueDate}</span>
+                                        {hijriIssueDate && (
+                                            <span className="block text-[10px] font-sans font-bold text-zinc-600">{hijriIssueDate}</span>
+                                        )}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -176,7 +283,7 @@ export default function StudentCertificateSheet({
                     {/* Certificate Title */}
                     <div className="text-center mb-5">
                         <h1 className="text-2xl sm:text-[26px] font-black text-zinc-900 mb-2">
-                            {isMonthly ? 'شهادة الدرجات الشهرية' : 'شهادة نتائج نهاية الفصل الدراسي'}
+                            {isMonthly ? 'شهادة الدرجات الشهرية' : 'نتيجة نهاية الفصل الدراسي'}
                         </h1>
                         <div
                             className="w-24 h-[3px] mx-auto mb-2.5 rounded-full [color-adjust:exact] [-webkit-print-color-adjust:exact]"
@@ -248,8 +355,7 @@ export default function StudentCertificateSheet({
                                     className="text-white [color-adjust:exact] [-webkit-print-color-adjust:exact]"
                                     style={{ backgroundColor: primaryDark }}
                                 >
-                                    <th className="py-2.5 px-2.5 border border-white/20 text-center w-8">#</th>
-                                    <th className="py-2.5 px-3 border border-white/20">المادة الدراسية</th>
+                                    <th className="py-2.5 px-3 border border-white/20">المادة</th>
                                     {isMonthly ? (
                                         <>
                                             <th className="py-2.5 px-2 border border-white/20 text-center">الشفهي</th>
@@ -259,16 +365,12 @@ export default function StudentCertificateSheet({
                                         </>
                                     ) : (
                                         <>
-                                            <th className="py-2.5 px-2 border border-white/20 text-center">أعمال السنة</th>
-                                            <th className="py-2.5 px-2 border border-white/20 text-center">الاختبار النهائي</th>
+                                            <th className="py-2.5 px-2 border border-white/20 text-center">المحصلة</th>
+                                            <th className="py-2.5 px-2 border border-white/20 text-center">نهاية الفصل</th>
                                         </>
                                     )}
                                     <th className="py-2.5 px-2 border border-white/20 text-center">المجموع</th>
-                                    <th className="py-2.5 px-2 border border-white/20 text-center">العظمى</th>
-                                    <th className="py-2.5 px-2 border border-white/20 text-center">التقدير</th>
-                                    {!isMonthly && (
-                                        <th className="py-2.5 px-2 border border-white/20 text-center">الحالة</th>
-                                    )}
+                                    <th className="py-2.5 px-3 border border-white/20 text-center">المجموع كتابة</th>
                                     {hasNotes && (
                                         <th className="py-2.5 px-2.5 border border-white/20">ملاحظة المعلم</th>
                                     )}
@@ -281,9 +383,6 @@ export default function StudentCertificateSheet({
                                         className="[color-adjust:exact] [-webkit-print-color-adjust:exact]"
                                         style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f9fbf5' }}
                                     >
-                                        <td className="py-2.5 px-2 border border-zinc-200 text-center font-bold text-zinc-400">
-                                            {idx + 1}
-                                        </td>
                                         <td className="py-2.5 px-3 border border-zinc-200 font-black text-zinc-900">
                                             {row.subject_name}
                                         </td>
@@ -324,28 +423,9 @@ export default function StudentCertificateSheet({
                                                 </td>
                                             </>
                                         )}
-                                        <td className="py-2.5 px-2 border border-zinc-200 text-center font-mono font-bold text-zinc-500">
-                                            {row.max_total}
+                                        <td className="py-2.5 px-3 border border-zinc-200 text-center font-bold text-zinc-700">
+                                            {numberToArabicWords(isMonthly ? row.grand_total : row.semester_total)}
                                         </td>
-                                        <td
-                                            className="py-2.5 px-2 border border-zinc-200 text-center font-black"
-                                            style={{ color: row.passed ? primaryDark : accentRed }}
-                                        >
-                                            {row.grade_text}
-                                        </td>
-                                        {!isMonthly && (
-                                            <td className="py-2.5 px-2 border border-zinc-200 text-center">
-                                                {row.passed ? (
-                                                    <span className="inline-flex items-center gap-0.5 font-black" style={{ color: primaryDark }}>
-                                                        <CheckCircle2 size={12} /> ناجح
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-0.5 font-black" style={{ color: accentRed }}>
-                                                        <XCircle size={12} /> راسب
-                                                    </span>
-                                                )}
-                                            </td>
-                                        )}
                                         {hasNotes && (
                                             <td className="py-2.5 px-2.5 border border-zinc-200 text-zinc-600">
                                                 {row.note || '—'}
@@ -399,6 +479,35 @@ export default function StudentCertificateSheet({
                                     </p>
                                 </>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Homeroom Teacher & Parent Notes (like official sheet) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                        <div className="border border-zinc-400 rounded-xl overflow-hidden bg-white">
+                            <div
+                                className="py-1.5 px-3 text-center text-xs font-black text-zinc-900 border-b border-zinc-400 [color-adjust:exact] [-webkit-print-color-adjust:exact]"
+                                style={{ backgroundColor: tintBg }}
+                            >
+                                ملاحظات رائد الصف
+                            </div>
+                            <div className="px-3 py-2 space-y-5">
+                                <div className="border-b border-dotted border-zinc-400 h-5" />
+                                <div className="border-b border-dotted border-zinc-400 h-5" />
+                            </div>
+                        </div>
+
+                        <div className="border border-zinc-400 rounded-xl overflow-hidden bg-white">
+                            <div
+                                className="py-1.5 px-3 text-center text-xs font-black text-zinc-900 border-b border-zinc-400 [color-adjust:exact] [-webkit-print-color-adjust:exact]"
+                                style={{ backgroundColor: tintBg }}
+                            >
+                                ملاحظات ولي الأمر
+                            </div>
+                            <div className="px-3 py-2 space-y-5">
+                                <div className="border-b border-dotted border-zinc-400 h-5" />
+                                <div className="border-b border-dotted border-zinc-400 h-5" />
+                            </div>
                         </div>
                     </div>
 

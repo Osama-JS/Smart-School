@@ -46,7 +46,7 @@ export default function StudentLibrary({ auth, items, subjects, stats, filters, 
     };
 
     const handleBookmark = (item) => {
-        router.post(route('digital.bookmark', item.id), {}, { preserveScroll: true });
+        router.post(route('academic.library.digital.bookmark', item.id), {}, { preserveScroll: true });
     };
 
     const itemsData = items?.data || [];
@@ -241,8 +241,8 @@ export default function StudentLibrary({ auth, items, subjects, stats, filters, 
                                         
                                         {/* Thumbnail Cover */}
                                         <div className="relative w-full h-40 rounded-[1.5rem] bg-slate-100 dark:bg-slate-800 overflow-hidden mb-4 border border-slate-200/50 dark:border-slate-700/50 group-hover:border-primary-500/30 transition-colors">
-                                            {item.thumbnail_path ? (
-                                                <img src={`/storage/${item.thumbnail_path}`} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                            {item.thumbnail_url ? (
+                                                <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                             ) : (
                                                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-300 dark:text-slate-600 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
                                                     {React.cloneElement(getItemIcon(item.item_type), { size: 40, className: "opacity-30 mb-2" })}
@@ -288,7 +288,7 @@ export default function StudentLibrary({ auth, items, subjects, stats, filters, 
                                         <div className="relative z-10 mt-auto px-2 pb-2">
                                             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-3">
                                                 <a 
-                                                    href={item.file_path ? `/storage/${item.file_path}` : item.external_url} 
+                                                    href={item.file_url || item.external_url} 
                                                     target="_blank" 
                                                     rel="noreferrer"
                                                     {...(item.file_path ? { download: true } : {})}
@@ -328,8 +328,8 @@ export default function StudentLibrary({ auth, items, subjects, stats, filters, 
                                                     <td className="px-6 py-4">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 border border-slate-100 dark:border-slate-700 overflow-hidden">
-                                                                {item.thumbnail_path ? (
-                                                                    <img src={`/storage/${item.thumbnail_path}`} alt={item.title} className="w-full h-full object-cover" />
+                                                                {item.thumbnail_url ? (
+                                                                    <img src={item.thumbnail_url} alt={item.title} className="w-full h-full object-cover" />
                                                                 ) : (
                                                                     React.cloneElement(getItemIcon(item.item_type), { size: 24 })
                                                                 )}
@@ -359,7 +359,7 @@ export default function StudentLibrary({ auth, items, subjects, stats, filters, 
                                                                 <Bookmark size={20} fill={item.is_bookmarked_by_user ? "currentColor" : "none"} />
                                                             </button>
                                                             <a 
-                                                                href={item.file_path ? `/storage/${item.file_path}` : item.external_url} 
+                                                                href={item.file_url || item.external_url} 
                                                                 target="_blank" 
                                                                 rel="noreferrer"
                                                                 {...(item.file_path ? { download: true } : {})}

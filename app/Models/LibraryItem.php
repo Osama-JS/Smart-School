@@ -23,15 +23,15 @@ class LibraryItem extends Model
         if (!$this->file_path) {
             return null;
         }
-        if (request() && request()->root() && !str_contains(request()->root(), 'localhost')) {
-            return request()->root() . '/storage/' . $this->file_path;
-        }
-        return asset('storage/' . $this->file_path);
+        return asset('storage/' . ltrim($this->file_path, '/'));
     }
 
     public function getThumbnailUrlAttribute()
     {
-        return $this->thumbnail_path ? asset('storage/' . $this->thumbnail_path) : null;
+        if (!$this->thumbnail_path) {
+            return null;
+        }
+        return asset('storage/' . ltrim($this->thumbnail_path, '/'));
     }
 
     public function grade(): BelongsTo { return $this->belongsTo(Grade::class); }

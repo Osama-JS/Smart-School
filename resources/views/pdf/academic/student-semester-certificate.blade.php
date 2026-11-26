@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>شهادة نهاية الفصل الدراسي - {{ $student['name'] ?? '' }}</title>
+    <title>نتيجة نهاية الفصل الدراسي - {{ $student['name'] ?? '' }}</title>
     <style>
         @page { size: A4 portrait; margin: 9mm; }
         * { box-sizing: border-box; }
@@ -23,6 +23,94 @@
             $accentRed = '#dc2626';
             $charcoal = '#18181b';
             $tintBg = '#f7fbe9';
+
+            $intToArWords = function (int $n): string {
+                if ($n === 0) return 'صفر';
+                if ($n >= 1000) return (string) $n;
+                $ones = ['', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة'];
+                $tens = ['', 'عشرة', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+                $teens = ['', 'أحد عشر', 'اثنا عشر', 'ثلاثة عشر', 'أربعة عشر', 'خمسة عشر', 'ستة عشر', 'سبعة عشر', 'ثمانية عشر', 'تسعة عشر'];
+                $hundreds = ['', 'مائة', 'مائتان', 'ثلاثمائة', 'أربعمائة', 'خمسمائة', 'ستمائة', 'سبعمائة', 'ثمانمائة', 'تسعمائة'];
+                $parts = [];
+                $h = intdiv($n, 100);
+                $rem = $n % 100;
+                if ($h > 0) $parts[] = $hundreds[$h];
+                if ($rem > 0) {
+                    if ($rem < 10) $parts[] = $ones[$rem];
+                    elseif ($rem === 10) $parts[] = $tens[1];
+                    elseif ($rem < 20) $parts[] = $teens[$rem - 10];
+                    else {
+                        $u = $rem % 10;
+                        $t = intdiv($rem, 10);
+                        $parts[] = $u > 0 ? ($ones[$u] . ' و' . $tens[$t]) : $tens[$t];
+                    }
+                }
+                return implode(' و', $parts);
+            };
+
+            $numToArWords = function ($val) use ($intToArWords): string {
+                if ($val === null || $val === '') return '—';
+                if (!is_numeric($val)) return (string) $val;
+                $rounded = round((float) $val, 2);
+                $intPart = (int) floor($rounded);
+                $decPart = (int) round(($rounded - $intPart) * 100);
+                $base = $intToArWords($intPart);
+                if ($decPart === 0) return $base;
+                if ($decPart === 50) return $intPart === 0 ? 'نصف' : $base . ' ونصف';
+                if ($decPart === 25) return $intPart === 0 ? 'ربع' : $base . ' وربع';
+                if ($decPart === 75) return $intPart === 0 ? 'ثلاثة أرباع' : $base . ' وثلاثة أرباع';
+                return $base . ' فاصل ' . $intToArWords($decPart);
+            };
+
+            $toHijri = function (?string $dateStr): ?array {
+                try {
+                    $dt = $dateStr ? new \DateTime($dateStr) : new \DateTime();
+                } catch (\Throwable $e) {
+                    $dt = new \DateTime();
+                }
+                $y = (int) $dt->format('Y');
+                $m = (int) $dt->format('m');
+                $d = (int) $dt->format('d');
+                $jd = intdiv(1461 * ($y + 4800 + intdiv($m - 14, 12)), 4)
+                    + intdiv(367 * ($m - 2 - 12 * intdiv($m - 14, 12)), 12)
+                    - intdiv(3 * intdiv($y + 4900 + intdiv($m - 14, 12), 100), 4)
+                    + $d - 32075;
+                $l = $jd - 1948440 + 10632;
+                $n = intdiv($l - 1, 10631);
+                $l = $l - 10631 * $n + 354;
+                $j = (intdiv(10985 - $l, 5316)) * (intdiv(50 * $l, 17719))
+                    + (intdiv($l, 5670)) * (intdiv(43 * $l, 15238));
+                $l = $l - (intdiv(30 - $j, 15)) * (intdiv(17719 * $j, 50))
+                    - (intdiv($j, 16)) * (intdiv(15238 * $j, 43)) + 29;
+                $hm = intdiv(24 * $l, 709);
+                $hd = $l - intdiv(709 * $hm, 24);
+                $hy = 30 * $n + $j - 30;
+                return [
+                    'year' => (string) $hy,
+                    'month' => str_pad((string) $hm, 2, '0', STR_PAD_LEFT),
+                    'day' => str_pad((string) $hd, 2, '0', STR_PAD_LEFT),
+                ];
+            };
+
+            $hIssue = $toHijri($issueDate ?? null);
+            $hijriIssueDate = $hIssue ? ($hIssue['year'] . '/' . $hIssue['month'] . '/' . $hIssue['day'] . ' هـ') : '';
+
+            $hijriAcademicYear = '';
+            $ayStr = (string) ($academicYear ?? '');
+            if (!str_contains($ayStr, 'هـ') && !preg_match('/\b14\d{2}\b/', $ayStr)) {
+                if (preg_match_all('/\b(20\d{2})\b/', $ayStr, $matches) && count($matches[1]) >= 2) {
+                    $hStart = $toHijri($matches[1][0] . '-09-01')['year'] ?? null;
+                    $hEnd = $toHijri($matches[1][1] . '-05-01')['year'] ?? null;
+                    if ($hStart && $hEnd) {
+                        $hijriAcademicYear = ($hStart === $hEnd) ? ($hStart . ' هـ') : ($hStart . '/' . $hEnd . ' هـ');
+                    }
+                } elseif (preg_match('/\b(20\d{2})\b/', $ayStr, $mOne)) {
+                    $hStart = $toHijri($mOne[1] . '-09-01')['year'] ?? null;
+                    if ($hStart) $hijriAcademicYear = $hStart . ' هـ';
+                } elseif ($hIssue) {
+                    $hijriAcademicYear = $hIssue['year'] . ' هـ';
+                }
+            }
         @endphp
 
         .outer-frame {
@@ -277,6 +365,36 @@
         .sum-val.brand { color: {{ $primaryDark }}; }
         .sum-val.red { color: {{ $accentRed }}; }
 
+        /* Notes Boxes */
+        .notes-grid {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .note-box {
+            flex: 1;
+            border: 1px solid #a1a1aa;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+        .note-box-title {
+            background: {{ $tintBg }};
+            border-bottom: 1px solid #a1a1aa;
+            text-align: center;
+            font-size: 10.5px;
+            font-weight: bold;
+            color: {{ $charcoal }};
+            padding: 5px 8px;
+        }
+        .note-lines {
+            padding: 6px 10px 10px;
+        }
+        .note-line {
+            border-bottom: 1px dotted #71717a;
+            height: 20px;
+        }
+
         /* Footer & Signatures */
         .footer {
             border-top: 1.5px dashed {{ $primaryBright }}aa;
@@ -338,6 +456,7 @@
                     <div class="header-right">
                         <div class="gov">{{ $design['republic'] ?? 'الجمهورية اليمنية' }}</div>
                         <div>{{ $design['ministry'] ?? 'وزارة التربية والتعليم والبحث العلمي' }}</div>
+                        <div>مكتب التربية والتعليم بالامانة السبعين</div>
                         <h2>{{ $design['school_name'] ?? 'مدارس القيم الأهلية' }}</h2>
                         <div style="color:#52525b">{{ $design['branch_name'] ?? '' }}</div>
                     </div>
@@ -353,15 +472,27 @@
 
                     <div class="header-left">
                         <div class="meta-box">
-                            <div class="meta-row"><span>العام الدراسي:</span><strong>{{ $academicYear }}</strong></div>
+                            <div class="meta-row">
+                                <span>العام الدراسي:</span>
+                                <strong style="text-align:left">
+                                    {{ $academicYear }}
+                                    @if($hijriAcademicYear)<br><span style="font-size:9px;color:#52525b">{{ $hijriAcademicYear }}</span>@endif
+                                </strong>
+                            </div>
                             <div class="meta-row"><span>الفصل الدراسي:</span><strong>{{ $semester['name'] ?? '' }}</strong></div>
-                            <div class="meta-row"><span>تاريخ الإصدار:</span><strong dir="ltr">{{ $issueDate }}</strong></div>
+                            <div class="meta-row">
+                                <span>تاريخ الإصدار:</span>
+                                <strong style="text-align:left">
+                                    <span dir="ltr">{{ $issueDate }}</span>
+                                    @if($hijriIssueDate)<br><span style="font-size:9px;color:#52525b">{{ $hijriIssueDate }}</span>@endif
+                                </strong>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="title-wrap">
-                    <h1>شهادة نتائج نهاية الفصل الدراسي</h1>
+                    <h1>نتيجة نهاية الفصل الدراسي</h1>
                     <div class="title-divider"></div>
                     <span class="badge">{{ $semester['name'] ?? '' }}</span>
                 </div>
@@ -376,27 +507,21 @@
                 <table class="grades">
                     <thead>
                         <tr>
-                            <th style="width:28px">#</th>
-                            <th class="subj">المادة الدراسية</th>
-                            <th>أعمال السنة</th>
-                            <th>الاختبار النهائي</th>
+                            <th class="subj">المادة</th>
+                            <th>المحصلة</th>
+                            <th>نهاية الفصل</th>
                             <th>المجموع</th>
-                            <th>العظمى</th>
-                            <th>التقدير</th>
-                            <th>الحالة</th>
+                            <th>المجموع كتابة</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($rows as $idx => $row)
                             <tr>
-                                <td>{{ $idx + 1 }}</td>
                                 <td class="subj">{{ $row['subject_name'] }}</td>
                                 <td>{{ $row['monthly_aggregate'] }} / {{ $row['aggregate_max'] }}</td>
                                 <td>{{ $row['final_exam_score'] }} / {{ $row['final_exam_max'] }}</td>
                                 <td class="total-col">{{ $row['semester_total'] }}</td>
-                                <td>{{ $row['max_total'] }}</td>
-                                <td class="{{ $row['passed'] ? 'pass' : 'fail' }}">{{ $row['grade_text'] }}</td>
-                                <td class="{{ $row['passed'] ? 'pass' : 'fail' }}">{{ $row['passed'] ? 'ناجح' : 'راسب' }}</td>
+                                <td style="font-weight:bold">{{ $numToArWords($row['semester_total']) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -426,6 +551,23 @@
                     </div>
                 </div>
 
+                <div class="notes-grid">
+                    <div class="note-box">
+                        <div class="note-box-title">ملاحظات رائد الصف</div>
+                        <div class="note-lines">
+                            <div class="note-line"></div>
+                            <div class="note-line"></div>
+                        </div>
+                    </div>
+                    <div class="note-box">
+                        <div class="note-box-title">ملاحظات ولي الأمر</div>
+                        <div class="note-lines">
+                            <div class="note-line"></div>
+                            <div class="note-line"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="footer">
                     <div class="verify-box">
                         <strong>توثيق إلكتروني للوثيقة</strong><br>
@@ -437,21 +579,21 @@
                         <div class="sigs">
                             @if($design['sig1_active'] ?? true)
                                 <div class="sig">
-                                    <div class="sig-title">{{ $design['sig1_title'] ?? 'إعداد / المختص' }}</div>
+                                    <div class="sig-title">رائد الصف</div>
                                     <div class="sig-line"></div>
                                     <div class="sig-name">{{ $design['sig1_name'] ?: 'التوقيع' }}</div>
                                 </div>
                             @endif
                             @if($design['sig2_active'] ?? true)
                                 <div class="sig">
-                                    <div class="sig-title">{{ $design['sig2_title'] ?? 'مراجعة / وكيل المدرسة' }}</div>
+                                    <div class="sig-title">المشرف</div>
                                     <div class="sig-line"></div>
                                     <div class="sig-name">{{ $design['sig2_name'] ?: 'التوقيع' }}</div>
                                 </div>
                             @endif
                             @if($design['sig3_active'] ?? true)
                                 <div class="sig">
-                                    <div class="sig-title">{{ $design['sig3_title'] ?? 'اعتماد / مدير الفرع' }}</div>
+                                    <div class="sig-title">مدير المدرسة</div>
                                     <div class="sig-line"></div>
                                     <div class="sig-name">{{ $design['sig3_name'] ?: 'التوقيع' }}</div>
                                 </div>

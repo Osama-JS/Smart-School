@@ -41,8 +41,16 @@ class MyLibraryController extends Controller
             ]);
         }
 
+        $audienceFilter = function ($q) {
+            $q->where('target_audience', 'all')
+              ->orWhere('target_audience', 'like', '%students%')
+              ->orWhere('target_audience', 'like', '%parents%')
+              ->orWhereNull('target_audience');
+        };
+
         $query = LibraryItem::with(['subject', 'uploader', 'bookmarks'])
-            ->where('grade_id', $studentGradeId);
+            ->where('grade_id', $studentGradeId)
+            ->where($audienceFilter);
 
         if ($request->filled('subject_id') && $request->subject_id !== 'all') {
             $query->where('subject_id', $request->subject_id);
@@ -56,22 +64,33 @@ class MyLibraryController extends Controller
             $query->where('item_type', $request->type);
         }
 
+        if ($request->filled('category') && $request->category !== 'all') {
+            $query->where('category', $request->category);
+        }
+
+        if ($request->boolean('bookmarked')) {
+            $query->whereHas('bookmarks', fn($q) => $q->where('users.id', $user->id));
+        }
+
         $items = $query->latest()->paginate(12)->withQueryString();
 
         // Subjects for filter (only subjects that have materials in this grade)
-        $subjectIds = LibraryItem::where('grade_id', $studentGradeId)->pluck('subject_id')->unique();
+        $subjectIds = LibraryItem::where('grade_id', $studentGradeId)
+            ->where($audienceFilter)
+            ->pluck('subject_id')
+            ->unique();
         $subjects = Subject::whereIn('id', $subjectIds)->get();
 
         $stats = [
-            'total' => LibraryItem::where('grade_id', $studentGradeId)->count(),
-            'bookmarked' => $user->bookmarkedLibraryItems()->where('grade_id', $studentGradeId)->count(),
+            'total' => LibraryItem::where('grade_id', $studentGradeId)->where($audienceFilter)->count(),
+            'bookmarked' => $user->bookmarkedLibraryItems()->where('grade_id', $studentGradeId)->where($audienceFilter)->count(),
         ];
 
         return Inertia::render('Student/Library/Index', [
             'items' => $items,
             'subjects' => $subjects,
             'stats' => $stats,
-            'filters' => $request->only(['subject_id', 'search', 'type']),
+            'filters' => $request->only(['subject_id', 'search', 'type', 'category', 'bookmarked']),
             'children' => $children,
             'activeChildId' => $student->id,
         ]);
