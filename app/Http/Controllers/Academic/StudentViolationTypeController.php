@@ -27,6 +27,7 @@ class StudentViolationTypeController extends Controller
             'first_time_action' => 'nullable|string',
             'second_time_action' => 'nullable|string',
             'third_time_action' => 'nullable|string',
+            'fourth_time_action' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 
@@ -46,6 +47,7 @@ class StudentViolationTypeController extends Controller
             'first_time_action' => 'nullable|string',
             'second_time_action' => 'nullable|string',
             'third_time_action' => 'nullable|string',
+            'fourth_time_action' => 'nullable|string',
             'is_active' => 'boolean',
         ]);
 

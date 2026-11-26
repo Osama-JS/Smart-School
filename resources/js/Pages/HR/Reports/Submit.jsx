@@ -4,6 +4,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 import { Send, ArrowRight, Plus, Trash2, Database } from 'lucide-react';
+import ClassroomVisitFormInput, { createInitialClassroomVisitFormData } from '@/Components/Reports/ClassroomVisitFormMatrix';
 
 export default function SubmitReport({ auth, template }) {
     // Dynamically generate initial state for the form
@@ -15,6 +16,8 @@ export default function SubmitReport({ auth, template }) {
             initialData[`field_${field.id}`] = [{ day_date: '', teacher_name: '', absence: false, permission: false, exit_during_work: false, reason: '' }];
         } else if (field.type === 'teacher_discipline_matrix') {
             initialData[`field_${field.id}`] = [{ day: '', date: '', teacher_name: '', problem_type: '' }];
+        } else if (field.type === 'classroom_visit_form_matrix') {
+            initialData[`field_${field.id}`] = createInitialClassroomVisitFormData(false);
         } else if (field.type === 'data_source') {
             initialData[`field_${field.id}`] = field.prefilled_data || [];
         } else {
@@ -389,6 +392,14 @@ export default function SubmitReport({ auth, template }) {
                             </table>
                         </div>
                     </div>
+                );
+                break;
+            case 'classroom_visit_form_matrix':
+                inputElement = (
+                    <ClassroomVisitFormInput
+                        value={data[key]}
+                        onChange={(nextVal) => setData(key, nextVal)}
+                    />
                 );
                 break;
             default:

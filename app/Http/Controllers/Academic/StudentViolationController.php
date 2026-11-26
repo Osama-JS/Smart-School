@@ -157,8 +157,14 @@ class StudentViolationController extends Controller
         $action = $type->first_time_action;
         if ($repetitionLevel == 2 && $type->second_time_action) {
             $action = $type->second_time_action;
-        } elseif ($repetitionLevel >= 3 && $type->third_time_action) {
+        } elseif ($repetitionLevel == 3 && $type->third_time_action) {
             $action = $type->third_time_action;
+        } elseif ($repetitionLevel >= 4) {
+            if ($type->fourth_time_action) {
+                $action = $type->fourth_time_action;
+            } elseif ($type->third_time_action) {
+                $action = $type->third_time_action;
+            }
         }
 
         return response()->json([
@@ -176,6 +182,8 @@ class StudentViolationController extends Controller
             'details' => 'required|string',
             'action_taken' => 'required|string',
             'academic_year_id' => 'nullable|exists:academic_years,id',
+            'follow_up_officer_id' => 'nullable|exists:users,id',
+            'execution_officer_id' => 'nullable|exists:users,id',
             'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 
@@ -248,6 +256,8 @@ class StudentViolationController extends Controller
             'details' => 'required|string',
             'action_taken' => 'required|string',
             'status' => 'required|string', // pending, resolved
+            'follow_up_officer_id' => 'nullable|exists:users,id',
+            'execution_officer_id' => 'nullable|exists:users,id',
             'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
 

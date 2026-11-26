@@ -24,7 +24,13 @@ class ParentVisitController extends Controller
     {
         $branchId = auth()->user()->branch_id;
 
-        $query = ParentVisit::with(['student:id,user_id', 'student.user:id,name', 'employee:id,name'])
+        $query = ParentVisit::with([
+            'student:id,user_id',
+            'student.user:id,name',
+            'employee:id,name',
+            'followUpOfficer:id,name',
+            'executionOfficer:id,name',
+        ])
             ->where('branch_id', $branchId);
 
         if ($request->filled('search')) {
@@ -89,6 +95,8 @@ class ParentVisitController extends Controller
             'visitor_name' => 'required|string|max:255',
             'visitor_relation' => 'required|string|max:255',
             'employee_id' => 'nullable|exists:users,id',
+            'follow_up_officer_id' => 'nullable|exists:users,id',
+            'execution_officer_id' => 'nullable|exists:users,id',
             'visit_date' => 'required|date',
             'visit_time' => 'nullable',
             'purpose_category' => 'required|in:أكاديمي,سلوكي,مالي,إداري/أخرى',
@@ -119,6 +127,8 @@ class ParentVisitController extends Controller
             'visitor_name' => 'required|string|max:255',
             'visitor_relation' => 'required|string|max:255',
             'employee_id' => 'nullable|exists:users,id',
+            'follow_up_officer_id' => 'nullable|exists:users,id',
+            'execution_officer_id' => 'nullable|exists:users,id',
             'visit_date' => 'required|date',
             'visit_time' => 'nullable',
             'purpose_category' => 'required|in:أكاديمي,سلوكي,مالي,إداري/أخرى',

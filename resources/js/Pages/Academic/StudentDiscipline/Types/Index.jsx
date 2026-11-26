@@ -7,27 +7,27 @@ import SelectInput from '@/Components/SelectInput';
 const DEGREE_OPTIONS = [
     {
         value: 'first_degree',
-        label: 'مخالفة من الدرجة الأولى (مخالفات بسيطة)',
+        label: 'مخالفة من الدرجة الأولى (مخالفات شديدة الخطورة)',
         shortLabel: 'درجة أولى',
-        badgeClass: 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20',
+        badgeClass: 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20',
     },
     {
         value: 'second_degree',
-        label: 'مخالفة من الدرجة الثانية (مخالفات متوسطة)',
+        label: 'مخالفة من الدرجة الثانية (مخالفات جسيمة)',
         shortLabel: 'درجة ثانية',
-        badgeClass: 'bg-orange-50 text-orange-600 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20',
+        badgeClass: 'bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-500/10 dark:text-orange-400 dark:border-orange-500/20',
     },
     {
         value: 'third_degree',
-        label: 'مخالفة من الدرجة الثالثة (مخالفات جسيمة)',
+        label: 'مخالفة من الدرجة الثالثة (مخالفات متوسطة)',
         shortLabel: 'درجة ثالثة',
-        badgeClass: 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
+        badgeClass: 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
     },
     {
         value: 'fourth_degree',
-        label: 'مخالفة من الدرجة الرابعة (مخالفات شديدة الخطورة)',
+        label: 'مخالفة من الدرجة الرابعة (مخالفات بسيطة)',
         shortLabel: 'درجة رابعة',
-        badgeClass: 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-500/10 dark:text-purple-400 dark:border-purple-500/20',
+        badgeClass: 'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20',
     },
 ];
 
@@ -47,6 +47,7 @@ export default function Types({ auth, types }) {
         first_time_action: '',
         second_time_action: '',
         third_time_action: '',
+        fourth_time_action: '',
         is_active: true,
     });
 
@@ -60,6 +61,7 @@ export default function Types({ auth, types }) {
                 first_time_action: type.first_time_action || '',
                 second_time_action: type.second_time_action || '',
                 third_time_action: type.third_time_action || '',
+                fourth_time_action: type.fourth_time_action || '',
                 is_active: type.is_active,
             });
         } else {
@@ -98,14 +100,23 @@ export default function Types({ auth, types }) {
         });
     };
 
-    // Client-side filtering
+    // Client-side filtering & degree ordering (first_degree -> fourth_degree)
     const filteredTypes = useMemo(() => {
-        return types.filter(t => {
-            const matchesSearch = !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()) || (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
-            const matchesStatus = statusFilter === '' || (statusFilter === 'active' && t.is_active) || (statusFilter === 'inactive' && !t.is_active);
-            const matchesDegree = !degreeFilter || t.degree === degreeFilter;
-            return matchesSearch && matchesStatus && matchesDegree;
-        });
+        const degreeOrder = {
+            first_degree: 1,
+            second_degree: 2,
+            third_degree: 3,
+            fourth_degree: 4,
+        };
+
+        return types
+            .filter(t => {
+                const matchesSearch = !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()) || (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()));
+                const matchesStatus = statusFilter === '' || (statusFilter === 'active' && t.is_active) || (statusFilter === 'inactive' && !t.is_active);
+                const matchesDegree = !degreeFilter || t.degree === degreeFilter;
+                return matchesSearch && matchesStatus && matchesDegree;
+            })
+            .sort((a, b) => (degreeOrder[a.degree] ?? 99) - (degreeOrder[b.degree] ?? 99));
     }, [types, searchQuery, statusFilter, degreeFilter]);
 
     // Calculate Stats
@@ -133,9 +144,16 @@ export default function Types({ auth, types }) {
             )}
             
             {t.third_time_action && (
-                <div className="flex items-center gap-2 opacity-80">
+                <div className="flex items-center gap-2 opacity-85">
                     <div className="w-6 h-6 rounded-lg bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-black text-[10px] flex items-center justify-center shrink-0">3</div>
                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{t.third_time_action}</p>
+                </div>
+            )}
+
+            {t.fourth_time_action && (
+                <div className="flex items-center gap-2 opacity-80">
+                    <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 font-black text-[10px] flex items-center justify-center shrink-0">4</div>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 truncate">{t.fourth_time_action}</p>
                 </div>
             )}
         </div>
@@ -242,69 +260,93 @@ export default function Types({ auth, types }) {
                 </div>
 
                 {/* Smart Toolbar */}
-                <div className="bg-white dark:bg-[#121820]/60 p-3 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col xl:flex-row gap-4 justify-between items-center">
-                    {/* Status Tabs */}
-                    <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl w-full xl:w-auto overflow-x-auto custom-scrollbar shrink-0">
-                        {[
-                            { value: '', label: 'الكل' }, 
-                            { value: 'active', label: 'الأنواع النشطة' }, 
-                            { value: 'inactive', label: 'الموقوفة' }
-                        ].map(opt => (
-                            <button
-                                key={opt.value}
-                                onClick={() => setStatusFilter(opt.value)}
-                                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${statusFilter === opt.value ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                            >
-                                {opt.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Search, Degree Filter & View Toggles */}
-                    <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full xl:w-auto shrink-0 flex-1 xl:flex-none justify-end">
-                        <div className="w-full sm:w-56">
-                            <SelectInput
-                                options={[
-                                    { value: '', label: 'جميع الدرجات' },
-                                    ...DEGREE_OPTIONS.map(opt => ({ value: opt.value, label: opt.shortLabel })),
-                                ]}
-                                value={degreeFilter}
-                                onChange={val => setDegreeFilter(val)}
-                                className="w-full"
-                            />
-                        </div>
-
-                        <div className="relative w-full max-w-xs">
-                            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                <Search size={16} className="text-slate-400" />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="ابحث باسم المخالفة..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-slate-50 dark:bg-slate-800/40 border-none rounded-2xl py-2.5 pr-10 pl-4 text-sm focus:ring-2 focus:ring-primary-500/20 text-slate-800 dark:text-white placeholder-slate-400 transition-all"
-                            />
-                        </div>
-                        
-                        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden xl:block" />
-
-                        {/* View Toggles */}
-                        <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl shrink-0">
+                <div className="bg-white dark:bg-[#121820]/60 p-3 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+                    <div className="flex flex-col xl:flex-row gap-4 justify-between items-center">
+                        {/* Status Tabs */}
+                        <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl w-full xl:w-auto overflow-x-auto custom-scrollbar shrink-0">
                             {[
-                                { id: 'cards', icon: LayoutGrid, title: 'بطاقات' },
-                                { id: 'table', icon: Table2, title: 'جدول' },
-                            ].map(view => (
+                                { value: '', label: 'الكل' }, 
+                                { value: 'active', label: 'الأنواع النشطة' }, 
+                                { value: 'inactive', label: 'الموقوفة' }
+                            ].map(opt => (
                                 <button
-                                    key={view.id}
-                                    onClick={() => setViewMode(view.id)}
-                                    title={view.title}
-                                    className={`p-2 rounded-xl transition-all ${viewMode === view.id ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                    key={opt.value}
+                                    onClick={() => setStatusFilter(opt.value)}
+                                    className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${statusFilter === opt.value ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                                 >
-                                    <view.icon size={18} />
+                                    {opt.label}
                                 </button>
                             ))}
                         </div>
+
+                        {/* Search & View Toggles */}
+                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full xl:w-auto shrink-0 flex-1 xl:flex-none justify-end">
+                            <div className="relative w-full max-w-xs">
+                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <Search size={16} className="text-slate-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="ابحث باسم المخالفة..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-slate-50 dark:bg-slate-800/40 border-none rounded-2xl py-2.5 pr-10 pl-4 text-sm focus:ring-2 focus:ring-primary-500/20 text-slate-800 dark:text-white placeholder-slate-400 transition-all"
+                                />
+                            </div>
+                            
+                            <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden xl:block" />
+
+                            {/* View Toggles */}
+                            <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl shrink-0">
+                                {[
+                                    { id: 'cards', icon: LayoutGrid, title: 'بطاقات' },
+                                    { id: 'table', icon: Table2, title: 'جدول' },
+                                ].map(view => (
+                                    <button
+                                        key={view.id}
+                                        onClick={() => setViewMode(view.id)}
+                                        title={view.title}
+                                        className={`p-2 rounded-xl transition-all ${viewMode === view.id ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'}`}
+                                    >
+                                        <view.icon size={18} />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Degree Filter Tabs */}
+                    <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1.5 rounded-2xl w-full overflow-x-auto custom-scrollbar">
+                        {[
+                            { value: '', label: 'جميع الدرجات', count: types.length },
+                            ...DEGREE_OPTIONS.map(opt => ({
+                                value: opt.value,
+                                label: opt.shortLabel,
+                                count: types.filter(t => t.degree === opt.value).length,
+                            })),
+                        ].map(opt => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                onClick={() => setDegreeFilter(opt.value)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+                                    degreeFilter === opt.value
+                                        ? 'bg-white dark:bg-slate-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                                }`}
+                            >
+                                <span>{opt.label}</span>
+                                <span
+                                    className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+                                        degreeFilter === opt.value
+                                            ? 'bg-primary-50 text-primary-600 dark:bg-primary-500/20 dark:text-primary-300'
+                                            : 'bg-slate-200/70 text-slate-600 dark:bg-slate-700 dark:text-slate-400'
+                                    }`}
+                                >
+                                    {opt.count}
+                                </span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -411,6 +453,12 @@ export default function Types({ auth, types }) {
                                                                     <div className="flex items-center gap-2">
                                                                         <div className="w-5 h-5 rounded bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 font-black text-[10px] flex items-center justify-center shrink-0">3</div>
                                                                         <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{type.third_time_action}</p>
+                                                                    </div>
+                                                                )}
+                                                                {type.fourth_time_action && (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-5 h-5 rounded bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 font-black text-[10px] flex items-center justify-center shrink-0">4</div>
+                                                                        <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{type.fourth_time_action}</p>
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -540,6 +588,16 @@ export default function Types({ auth, types }) {
                                                 value={data.third_time_action}
                                                 onChange={e => setData('third_time_action', e.target.value)}
                                                 placeholder="الإجراء في المرة الثالثة (مثال: توقيع تعهد)"
+                                            />
+                                        </div>
+                                        <div className="relative">
+                                            <div className="absolute top-1/2 -translate-y-1/2 right-4 w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400 font-black text-[10px] flex items-center justify-center">4</div>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3.5 pl-5 pr-14 text-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all dark:text-white"
+                                                value={data.fourth_time_action}
+                                                onChange={e => setData('fourth_time_action', e.target.value)}
+                                                placeholder="الإجراء في المرة الرابعة (مثال: الإحالة إلى مجلس الضبط)"
                                             />
                                         </div>
                                     </div>

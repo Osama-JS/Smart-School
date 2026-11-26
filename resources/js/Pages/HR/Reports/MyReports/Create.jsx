@@ -8,6 +8,7 @@ import SelectInput from '@/Components/SelectInput';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import RichTextEditor from '@/Components/RichTextEditor';
+import ClassroomVisitFormInput, { createInitialClassroomVisitFormData } from '@/Components/Reports/ClassroomVisitFormMatrix';
 
 export default function MyReportsCreate({ auth, template }) {
     
@@ -49,6 +50,8 @@ export default function MyReportsCreate({ auth, template }) {
             initialData[field.name] = [{ day_date: '', teacher_name: '', absence: false, permission: false, exit_during_work: false, reason: '' }];
         } else if (field.type === 'teacher_discipline_matrix') {
             initialData[field.name] = [{ day: '', date: '', teacher_name: '', problem_type: '' }];
+        } else if (field.type === 'classroom_visit_form_matrix') {
+            initialData[field.name] = createInitialClassroomVisitFormData(false);
         } else if (field.type === 'checkbox') {
             initialData[field.name] = false;
         } else if (field.type === 'data_source') {
@@ -553,6 +556,13 @@ export default function MyReportsCreate({ auth, template }) {
                             </button>
                         </div>
                     </div>
+                );
+            case 'classroom_visit_form_matrix':
+                return (
+                    <ClassroomVisitFormInput
+                        value={val}
+                        onChange={(nextVal) => handleFieldChange(field.name, nextVal)}
+                    />
                 );
             case 'teacher_status_matrix': {
                 const statusRows = Array.isArray(val) ? val : [];

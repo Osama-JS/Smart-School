@@ -122,15 +122,16 @@ class LeaveBalanceController extends Controller
 
         $user = $request->user();
         $isSystemAdmin = $user && $user->role && $user->role->name === 'مدير النظام';
-        $branchId = $user->branch_id ?? session('branch_id');
+        $branchId = $user->branch_id ?? session('active_branch_id') ?? session('branch_id');
 
         if ($isSystemAdmin && $request->filled('branch_id')) {
             $branchId = $request->branch_id;
         }
 
         $leaveTypesQuery = LeaveType::when($branchId, fn($q) => $q->where('branch_id', $branchId));
-        if ($request->filled('leave_type_ids')) {
-            $leaveTypesQuery->whereIn('id', $request->leave_type_ids);
+        $leaveTypeIds = array_values(array_filter((array) $request->input('leave_type_ids', []), fn($v) => $v !== null && $v !== ''));
+        if (!empty($leaveTypeIds)) {
+            $leaveTypesQuery->whereIn('id', $leaveTypeIds);
         }
         $leaveTypes = $leaveTypesQuery->get();
 
@@ -139,8 +140,9 @@ class LeaveBalanceController extends Controller
                 $sq->where('branch_id', $branchId);
             });
         });
-        if ($request->filled('employee_ids')) {
-            $employeesQuery->whereIn('id', $request->employee_ids);
+        $employeeIds = array_values(array_filter((array) $request->input('employee_ids', []), fn($v) => $v !== null && $v !== ''));
+        if (!empty($employeeIds)) {
+            $employeesQuery->whereIn('id', $employeeIds);
         }
         $employees = $employeesQuery->get();
 

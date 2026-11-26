@@ -3,8 +3,9 @@ import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Plus, Edit2, Trash2, PenTool, CheckCircle, AlertTriangle, CalendarDays, Search, X, User, CheckSquare, FileBadge, Check, XCircle, Tag, Calendar, AlignLeft } from 'lucide-react';
 import SignatureCanvas from 'react-signature-canvas';
+import SelectInput from '@/Components/SelectInput';
 
-export default function Pledges({ auth, pledges, students, violations }) {
+export default function Pledges({ auth, pledges, students, staffUsers = [], violations }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [editingPledge, setEditingPledge] = useState(null);
@@ -20,6 +21,8 @@ export default function Pledges({ auth, pledges, students, violations }) {
     const { data, setData, post, put, delete: destroy, errors, reset } = useForm({
         student_id: '',
         student_violation_id: '',
+        follow_up_officer_id: '',
+        execution_officer_id: '',
         pledge_text: '',
         date: '',
         is_signed_by_student: false,
@@ -33,6 +36,8 @@ export default function Pledges({ auth, pledges, students, violations }) {
             setData({
                 student_id: pledge.student_id,
                 student_violation_id: pledge.student_violation_id || '',
+                follow_up_officer_id: pledge.follow_up_officer_id || '',
+                execution_officer_id: pledge.execution_officer_id || '',
                 pledge_text: pledge.pledge_text || '',
                 date: pledge.date ? pledge.date.split('T')[0] : '',
                 is_signed_by_student: pledge.is_signed_by_student || false,
@@ -41,6 +46,8 @@ export default function Pledges({ auth, pledges, students, violations }) {
             });
         } else {
             reset();
+            setData('follow_up_officer_id', '');
+            setData('execution_officer_id', '');
             setData('date', new Date().toISOString().split('T')[0]);
             setData('attachment', null);
         }
@@ -288,6 +295,8 @@ export default function Pledges({ auth, pledges, students, violations }) {
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">الطالب</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">تاريخ التعهد</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400 w-1/3">نص التعهد والمخالفة المرتبطة</th>
+                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">مسؤول المتابعة</th>
+                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">مسؤول التنفيذ</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">حالة التوقيع</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400 w-24">إجراءات</th>
                                 </tr>
@@ -295,7 +304,7 @@ export default function Pledges({ auth, pledges, students, violations }) {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {filteredPledges.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="py-12 text-center">
+                                        <td colSpan="7" className="py-12 text-center">
                                             <div className="flex flex-col items-center justify-center text-slate-500">
                                                 <PenTool size={40} className="mb-3 text-slate-300" />
                                                 <p className="font-bold">لا توجد تعهدات مسجلة</p>
@@ -331,6 +340,12 @@ export default function Pledges({ auth, pledges, students, violations }) {
                                                     )}
                                                     <p className="line-clamp-2 font-semibold text-slate-500 leading-relaxed" title={p.pledge_text}>{p.pledge_text}</p>
                                                 </div>
+                                            </td>
+                                            <td className="py-4 px-6 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                {p.follow_up_officer?.name || '-'}
+                                            </td>
+                                            <td className="py-4 px-6 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                {p.execution_officer?.name || '-'}
                                             </td>
                                             <td className="py-4 px-6">
                                                 <div className="flex flex-col gap-3">
@@ -501,6 +516,30 @@ export default function Pledges({ auth, pledges, students, violations }) {
                                         <div className="pointer-events-none absolute top-4 right-0 flex items-center pr-4 text-slate-400">
                                             <AlignLeft size={16} />
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مسؤول المتابعة</label>
+                                        <SelectInput
+                                            options={[{ value: '', label: '-- اختر مسؤول المتابعة --' }, ...staffUsers.map(u => ({ value: u.id, label: u.name }))]}
+                                            value={data.follow_up_officer_id}
+                                            onChange={val => setData('follow_up_officer_id', val)}
+                                            className="w-full"
+                                        />
+                                        {errors.follow_up_officer_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.follow_up_officer_id}</p>}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مسؤول التنفيذ</label>
+                                        <SelectInput
+                                            options={[{ value: '', label: '-- اختر مسؤول التنفيذ --' }, ...staffUsers.map(u => ({ value: u.id, label: u.name }))]}
+                                            value={data.execution_officer_id}
+                                            onChange={val => setData('execution_officer_id', val)}
+                                            className="w-full"
+                                        />
+                                        {errors.execution_officer_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.execution_officer_id}</p>}
                                     </div>
                                 </div>
 

@@ -25,8 +25,9 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
         total_days: 0,
     });
 
-    const { data: genData, setData: setGenData, post: genPost, processing: genProcessing, reset: genReset, clearErrors: genClearErrors } = useForm({
+    const { data: genData, setData: setGenData, post: genPost, processing: genProcessing, errors: genErrors, reset: genReset, clearErrors: genClearErrors } = useForm({
         academic_year_id: currentAcademicYearId || '',
+        branch_id: currentBranchId || filters?.branch_id || '',
         employee_ids: [],
         leave_type_ids: [],
     });
@@ -56,6 +57,33 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                 confirmButtonColor: '#ef4444',
                 ...swalConfig
             });
+        } else if (flash?.warning) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'تنبيه',
+                text: flash.warning,
+                confirmButtonText: 'حسناً',
+                confirmButtonColor: '#f59e0b',
+                ...swalConfig
+            });
+        } else if (flash?.info) {
+            Swal.fire({
+                icon: 'info',
+                title: 'معلومة',
+                text: flash.info,
+                confirmButtonText: 'حسناً',
+                confirmButtonColor: '#3b82f6',
+                ...swalConfig
+            });
+        } else if (flash?.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'تم بنجاح',
+                text: flash.success,
+                confirmButtonText: 'حسناً',
+                confirmButtonColor: '#10b981',
+                ...swalConfig
+            });
         }
     }, [flash]);
 
@@ -80,6 +108,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
         }
         setGenData({
             academic_year_id: currentAcademicYearId,
+            branch_id: currentBranchId || filters?.branch_id || '',
             employee_ids: [],
             leave_type_ids: [],
         });
@@ -718,6 +747,7 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                                     }))}
                                     placeholder="اختر الموظفين (يترك فارغاً للكل)"
                                 />
+                                {genErrors.employee_ids && <p className="text-xs text-rose-500 mt-1 flex items-center gap-1"><AlertCircle size={12}/> {genErrors.employee_ids}</p>}
                             </div>
 
                             <div className="space-y-2">
@@ -730,10 +760,12 @@ export default function LeaveBalancesIndex({ balances, academicYears, currentAca
                                     onChange={(val) => setGenData('leave_type_ids', val)}
                                     options={leaveTypes.map(type => ({
                                         value: type.id,
-                                        label: `${type.name} (الافتراضي: ${type.default_days} أيام)`
+                                        label: `${type.name} (الافتراضي: ${type.default_days ?? 0} أيام)`
                                     }))}
                                     placeholder="اختر الأنواع (يترك فارغاً للكل)"
                                 />
+                                {genErrors.leave_type_ids && <p className="text-xs text-rose-500 mt-1 flex items-center gap-1"><AlertCircle size={12}/> {genErrors.leave_type_ids}</p>}
+                                {genErrors.academic_year_id && <p className="text-xs text-rose-500 mt-1 flex items-center gap-1"><AlertCircle size={12}/> {genErrors.academic_year_id}</p>}
                             </div>
 
                             <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800">

@@ -5,7 +5,7 @@ import { Plus, Edit2, Trash2, Users, CheckCircle, AlertTriangle, CalendarDays, S
 import SelectInput from '@/Components/SelectInput';
 import FlatpickrInput from '@/Components/FlatpickrInput';
 
-export default function Summons({ auth, summons, students, violations }) {
+export default function Summons({ auth, summons, students, staffUsers = [], violations }) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [editingSummon, setEditingSummon] = useState(null);
@@ -15,6 +15,8 @@ export default function Summons({ auth, summons, students, violations }) {
     const { data, setData, post, put, delete: destroy, errors, reset } = useForm({
         student_id: '',
         student_violation_id: '',
+        follow_up_officer_id: '',
+        execution_officer_id: '',
         summon_date: '',
         reason: '',
         status: 'scheduled',
@@ -27,6 +29,8 @@ export default function Summons({ auth, summons, students, violations }) {
             setData({
                 student_id: summon.student_id,
                 student_violation_id: summon.student_violation_id || '',
+                follow_up_officer_id: summon.follow_up_officer_id || '',
+                execution_officer_id: summon.execution_officer_id || '',
                 summon_date: summon.summon_date ? summon.summon_date.split('T')[0] : '',
                 reason: summon.reason || '',
                 status: summon.status || 'scheduled',
@@ -34,6 +38,8 @@ export default function Summons({ auth, summons, students, violations }) {
             });
         } else {
             reset();
+            setData('follow_up_officer_id', '');
+            setData('execution_officer_id', '');
             setData('status', 'scheduled');
         }
         setIsModalOpen(true);
@@ -256,6 +262,8 @@ export default function Summons({ auth, summons, students, violations }) {
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">الطالب</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">موعد الاستدعاء</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400 w-1/3">السبب / المخالفة المرتبطة</th>
+                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">مسؤول المتابعة</th>
+                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">مسؤول التنفيذ</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">الحالة</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400 w-24">إجراءات</th>
                                 </tr>
@@ -263,7 +271,7 @@ export default function Summons({ auth, summons, students, violations }) {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {filteredSummons.length === 0 ? (
                                     <tr>
-                                        <td colSpan="5" className="py-12 text-center">
+                                        <td colSpan="7" className="py-12 text-center">
                                             <div className="flex flex-col items-center justify-center text-slate-500">
                                                 <Users size={40} className="mb-3 text-slate-300" />
                                                 <p className="font-bold">لا توجد استدعاءات مسجلة</p>
@@ -300,6 +308,12 @@ export default function Summons({ auth, summons, students, violations }) {
                                                     <p className="truncate font-semibold"><span className="text-slate-400">السبب:</span> {s.reason}</p>
                                                     {s.notes && <p className="truncate font-semibold text-slate-400 mt-1"><span className="text-slate-400">ملاحظات:</span> {s.notes}</p>}
                                                 </div>
+                                            </td>
+                                            <td className="py-4 px-6 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                {s.follow_up_officer?.name || '-'}
+                                            </td>
+                                            <td className="py-4 px-6 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                {s.execution_officer?.name || '-'}
                                             </td>
                                             <td className="py-4 px-6">
                                                 <button 
@@ -438,6 +452,30 @@ export default function Summons({ auth, summons, students, violations }) {
                                         <div className="pointer-events-none absolute top-4 right-0 flex items-center pr-4 text-slate-400">
                                             <MessageSquare size={16} />
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مسؤول المتابعة</label>
+                                        <SelectInput
+                                            options={[{ value: '', label: '-- اختر مسؤول المتابعة --' }, ...staffUsers.map(u => ({ value: u.id, label: u.name }))]}
+                                            value={data.follow_up_officer_id}
+                                            onChange={val => setData('follow_up_officer_id', val)}
+                                            className="w-full"
+                                        />
+                                        {errors.follow_up_officer_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.follow_up_officer_id}</p>}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مسؤول التنفيذ</label>
+                                        <SelectInput
+                                            options={[{ value: '', label: '-- اختر مسؤول التنفيذ --' }, ...staffUsers.map(u => ({ value: u.id, label: u.name }))]}
+                                            value={data.execution_officer_id}
+                                            onChange={val => setData('execution_officer_id', val)}
+                                            className="w-full"
+                                        />
+                                        {errors.execution_officer_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.execution_officer_id}</p>}
                                     </div>
                                 </div>
 

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, FileText, Image as ImageIcon, File, Calendar as CalendarIcon, Clock, Database, CalendarRange, Star } from 'lucide-react';
 import RichTextEditor from '@/Components/RichTextEditor';
+import { ClassroomVisitFormPrintView, createInitialClassroomVisitFormData } from '@/Components/Reports/ClassroomVisitFormMatrix';
+import DisciplinaryCouncilReportSheet, { isDisciplinaryCouncilTemplate, getDisciplinaryCouncilMockData } from '@/Components/Reports/DisciplinaryCouncilReportView';
 
 export default function PreviewReportModal({ template, onClose }) {
     
@@ -17,8 +19,13 @@ export default function PreviewReportModal({ template, onClose }) {
 
     useEffect(() => {
         if (!template || !template.fields) return;
-        const mockData = {};
+        const mockData = isDisciplinaryCouncilTemplate(template)
+            ? getDisciplinaryCouncilMockData(template.fields)
+            : {};
         template.fields.forEach(field => {
+            if (mockData[field.name] !== undefined && mockData[field.name] !== '') {
+                return;
+            }
             if (field.type === 'matrix_text') {
                 mockData[field.name] = [];
                 const opts = parseMatrixOptions(field.options);
@@ -56,6 +63,8 @@ export default function PreviewReportModal({ template, onClose }) {
                 mockData[field.name] = [
                     { day: 'الإثنين', date: '2026-07-20', teacher_name: 'أحمد علي', problem_type: 'تأخر عن الطابور الصباحي' }
                 ];
+            } else if (field.type === 'classroom_visit_form_matrix') {
+                mockData[field.name] = createInitialClassroomVisitFormData(true);
             } else if (field.type === 'checkbox') {
                 mockData[field.name] = true;
             } else if (field.type === 'data_source') {
@@ -249,6 +258,9 @@ export default function PreviewReportModal({ template, onClose }) {
                     );
                 }
                 return <span className="text-slate-400 italic">لا توجد بيانات</span>;
+
+            case 'classroom_visit_form_matrix':
+                return <ClassroomVisitFormPrintView value={value} />;
 
             case 'teacher_status_matrix':
                 if (Array.isArray(value) && value.length > 0) {
@@ -463,33 +475,37 @@ export default function PreviewReportModal({ template, onClose }) {
                 </div>
                 
                 <div className="p-6 md:p-8 overflow-y-auto">
-                    <div className="max-w-4xl mx-auto space-y-8">
-                        
-                        <div className="bg-white dark:bg-slate-800/50 p-6 rounded-[1.5rem] border border-slate-200 dark:border-slate-700/50 shadow-sm flex items-center justify-between">
-                            <div>
-                                <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">تفاصيل مقدم التقرير</h3>
-                                <p className="text-sm text-slate-500 font-semibold">بيانات تجريبية لمعاينة شكل التقرير</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">الاسم: الموظف التجريبي</p>
-                                <p className="text-xs text-slate-500 mt-1">تاريخ التقديم: 2026-07-20</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            {(template?.fields || []).map((field, idx) => (
-                                <div key={idx} className="bg-white dark:bg-slate-800/50 p-6 rounded-[1.5rem] border border-slate-200 dark:border-slate-700/50 shadow-sm">
-                                    <h3 className="text-base font-black text-slate-800 dark:text-slate-200 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/50 flex items-center gap-2">
-                                        <div className="w-1.5 h-4 bg-primary-500 rounded-full" />
-                                        {field.name}
-                                    </h3>
-                                    <div className="px-2">
-                                        {renderFieldValue(field, data[field.name])}
-                                    </div>
+                    {isDisciplinaryCouncilTemplate(template) ? (
+                        <DisciplinaryCouncilReportSheet template={template} data={data} />
+                    ) : (
+                        <div className="max-w-4xl mx-auto space-y-8">
+                            
+                            <div className="bg-white dark:bg-slate-800/50 p-6 rounded-[1.5rem] border border-slate-200 dark:border-slate-700/50 shadow-sm flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-800 dark:text-white mb-1">تفاصيل مقدم التقرير</h3>
+                                    <p className="text-sm text-slate-500 font-semibold">بيانات تجريبية لمعاينة شكل التقرير</p>
                                 </div>
-                            ))}
+                                <div className="text-right">
+                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">الاسم: الموظف التجريبي</p>
+                                    <p className="text-xs text-slate-500 mt-1">تاريخ التقديم: 2026-07-20</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6">
+                                {(template?.fields || []).map((field, idx) => (
+                                    <div key={idx} className="bg-white dark:bg-slate-800/50 p-6 rounded-[1.5rem] border border-slate-200 dark:border-slate-700/50 shadow-sm">
+                                        <h3 className="text-base font-black text-slate-800 dark:text-slate-200 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/50 flex items-center gap-2">
+                                            <div className="w-1.5 h-4 bg-primary-500 rounded-full" />
+                                            {field.name}
+                                        </h3>
+                                        <div className="px-2">
+                                            {renderFieldValue(field, data[field.name])}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
                 
                 <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-end">

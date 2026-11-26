@@ -3,6 +3,8 @@ import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { CheckCircle, CornerUpLeft, ArrowRight, User, Calendar, Briefcase, FileText, Download, Image as ImageIcon, Eye, File, Clock, AlertCircle, Database, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { exportReportToPDF, exportReportToExcel } from '@/Utils/ExportReport';
+import { ClassroomVisitFormPrintView } from '@/Components/Reports/ClassroomVisitFormMatrix';
+import DisciplinaryCouncilReportSheet, { isDisciplinaryCouncilTemplate } from '@/Components/Reports/DisciplinaryCouncilReportView';
 
 export default function ReviewReport({ auth, report }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -23,6 +25,7 @@ export default function ReviewReport({ auth, report }) {
     };
 
     const { logo_url } = usePage().props;
+    const isDisciplinaryCouncil = isDisciplinaryCouncilTemplate(report.template);
 
     const handleExportExcel = async () => {
         setIsExportingExcel(true);
@@ -75,7 +78,7 @@ export default function ReviewReport({ auth, report }) {
                         </div>
                         <div>
                             <p className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">تحميل الملف المرفق</p>
-                            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1"><Download size={12}/> انقر للتنزيل والمشاهدة</p>
+                            <p className="text-xs text-slate-500 mt-1 flex items-center gap-1"><Download size={12} /> انقر للتنزيل والمشاهدة</p>
                         </div>
                     </a>
                 );
@@ -88,7 +91,7 @@ export default function ReviewReport({ auth, report }) {
                         } else if (Array.isArray(field.options)) {
                             columns = field.options.join('.').split('.').map(s => s.trim()).filter(Boolean);
                         }
-                    } catch (e) {}
+                    } catch (e) { }
 
                     return (
                         <div className="overflow-hidden rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white/50 dark:bg-slate-900/50 shadow-inner overflow-x-auto">
@@ -201,6 +204,8 @@ export default function ReviewReport({ auth, report }) {
                     );
                 }
                 return <span className="text-slate-400 font-bold">لا توجد أنشطة مدخلة</span>;
+            case 'classroom_visit_form_matrix':
+                return <ClassroomVisitFormPrintView value={value} />;
             case 'teacher_status_matrix':
                 if (Array.isArray(value) && value.length > 0) {
                     const totalAbsence = value.filter(r => r.absence).length;
@@ -277,7 +282,7 @@ export default function ReviewReport({ auth, report }) {
                 const sourceData = value || [];
                 const options = typeof field.options === 'string' ? JSON.parse(field.options) : (field.options || {});
                 const columns = options.columns || [];
-                
+
                 const columnHeaders = {
                     day: 'اليوم',
                     date: 'التاريخ',
@@ -336,7 +341,7 @@ export default function ReviewReport({ auth, report }) {
                     weekly_eval: 'التقييم الأسبوعي',
                     interactive_lessons_count: 'عدد الدروس التفاعلية',
                 };
-                
+
                 return (
                     <div className="border border-slate-200 dark:border-slate-700/50 rounded-2xl overflow-hidden shadow-sm">
                         <div className="bg-primary-50 dark:bg-primary-900/10 p-4 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-3">
@@ -405,10 +410,10 @@ export default function ReviewReport({ auth, report }) {
 
             <div className="py-12" style={{ direction: 'rtl' }}>
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-                    
+
                     <div className="relative overflow-hidden bg-gradient-to-br from-primary-50/70 via-white to-white dark:from-primary-500/10 dark:via-[#121820]/95 dark:to-[#121820]/95 border border-primary-100 dark:border-primary-500/10 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] dark:bg-[radial-gradient(#27313f_1px,transparent_1px)] [background-size:20px_20px]">
                         <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700" />
-                        
+
                         <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
                             <svg className="w-full h-full" viewBox="0 0 800 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M-50 120 C 150 20, 250 280, 450 120 C 650 -40, 750 220, 950 120" stroke="currentColor" strokeWidth="2.5" className="text-primary-600" />
@@ -416,7 +421,7 @@ export default function ReviewReport({ auth, report }) {
                                 <circle cx="500" cy="160" r="6" className="fill-primary-400" />
                             </svg>
                         </div>
-                        
+
                         <div className="relative z-10">
                             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                                 <Link href={auth.user.id === report.submitter_id ? route('hr.reports.my-reports.index') : route('reports.index')} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 transition-colors bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 px-4 py-2 rounded-xl border border-slate-200/50 dark:border-slate-700 backdrop-blur-sm">
@@ -442,7 +447,7 @@ export default function ReviewReport({ auth, report }) {
                                     </button>
                                 </div>
                             </div>
-                            
+
                             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                                 <div>
                                     <div className="flex items-center gap-3 mb-4">
@@ -460,7 +465,7 @@ export default function ReviewReport({ auth, report }) {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Report Meta Data (Smart Widgets) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
                         <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all group">
@@ -504,28 +509,38 @@ export default function ReviewReport({ auth, report }) {
                     {/* Report Data */}
                     <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl overflow-hidden relative">
                         <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-primary-500 to-indigo-500" />
-                        
+
                         <div className="p-6 md:p-10 border-b border-slate-100 dark:border-slate-800/50 bg-slate-50/50 dark:bg-slate-800/30 flex items-center gap-3">
                             <FileText className="text-primary-500" size={24} />
                             <h3 className="text-xl font-black text-slate-900 dark:text-white">تفاصيل التقرير المدخلة</h3>
                         </div>
-                        <div className="p-6 md:p-10 space-y-8">
-                            {report.template?.fields?.sort((a,b) => a.order - b.order).map((field, idx) => (
-                                <div key={field.id} className="relative group/field border-b border-slate-100 dark:border-slate-800/50 pb-8 last:border-0 last:pb-0">
-                                    <div className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center shrink-0 font-bold text-sm mt-0.5 border border-slate-200/60 dark:border-slate-700">
-                                            {idx + 1}
-                                        </div>
-                                        <div className="flex-1 w-full overflow-hidden">
-                                            <h4 className="text-base font-black text-slate-900 dark:text-slate-200 mb-4">{field.name}</h4>
-                                            <div className="overflow-x-auto w-full">
-                                                {renderFieldValue(field, report.data ? report.data[field.name] : null)}
+                        {isDisciplinaryCouncil ? (
+                            <div className="p-4 md:p-8 bg-slate-100/70 dark:bg-slate-950/60 overflow-x-auto">
+                                <DisciplinaryCouncilReportSheet
+                                    template={report.template}
+                                    data={report.data}
+                                    report={report}
+                                />
+                            </div>
+                        ) : (
+                            <div className="p-6 md:p-10 space-y-8">
+                                {report.template?.fields?.sort((a, b) => a.order - b.order).map((field, idx) => (
+                                    <div key={field.id} className="relative group/field border-b border-slate-100 dark:border-slate-800/50 pb-8 last:border-0 last:pb-0">
+                                        <div className="flex gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center shrink-0 font-bold text-sm mt-0.5 border border-slate-200/60 dark:border-slate-700">
+                                                {idx + 1}
+                                            </div>
+                                            <div className="flex-1 w-full overflow-hidden">
+                                                <h4 className="text-base font-black text-slate-900 dark:text-slate-200 mb-4">{field.name}</h4>
+                                                <div className="overflow-x-auto w-full">
+                                                    {renderFieldValue(field, report.data ? report.data[field.name] : null)}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Manager Review Action */}
@@ -542,34 +557,34 @@ export default function ReviewReport({ auth, report }) {
                                         <label className="block text-base font-black text-slate-900 dark:text-slate-200 mb-4">قرار المراجعة <span className="text-rose-500">*</span></label>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <label className={`relative flex items-center gap-3 p-5 rounded-2xl border-2 cursor-pointer transition-all ${data.status === 'reviewed' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-800 dark:text-emerald-400 shadow-md shadow-emerald-500/10' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-emerald-300 dark:hover:border-emerald-700'}`}>
-                                                <input 
-                                                    type="radio" 
-                                                    name="status" 
-                                                    value="reviewed" 
-                                                    checked={data.status === 'reviewed'} 
+                                                <input
+                                                    type="radio"
+                                                    name="status"
+                                                    value="reviewed"
+                                                    checked={data.status === 'reviewed'}
                                                     onChange={e => setData('status', e.target.value)}
                                                     className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 border-slate-300 dark:border-slate-600"
                                                 />
-                                                <span className="font-bold flex items-center gap-2 text-base"><CheckCircle size={20} className={data.status === 'reviewed' ? 'text-emerald-500' : 'text-slate-400'}/> اعتماد التقرير</span>
+                                                <span className="font-bold flex items-center gap-2 text-base"><CheckCircle size={20} className={data.status === 'reviewed' ? 'text-emerald-500' : 'text-slate-400'} /> اعتماد التقرير</span>
                                             </label>
-                                            
+
                                             <label className={`relative flex items-center gap-3 p-5 rounded-2xl border-2 cursor-pointer transition-all ${data.status === 'returned' ? 'bg-rose-50 dark:bg-rose-900/20 border-rose-500 text-rose-800 dark:text-rose-400 shadow-md shadow-rose-500/10' : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-rose-300 dark:hover:border-rose-700'}`}>
-                                                <input 
-                                                    type="radio" 
-                                                    name="status" 
-                                                    value="returned" 
-                                                    checked={data.status === 'returned'} 
+                                                <input
+                                                    type="radio"
+                                                    name="status"
+                                                    value="returned"
+                                                    checked={data.status === 'returned'}
                                                     onChange={e => setData('status', e.target.value)}
                                                     className="w-5 h-5 text-rose-600 focus:ring-rose-500 border-slate-300 dark:border-slate-600"
                                                 />
-                                                <span className="font-bold flex items-center gap-2 text-base"><CornerUpLeft size={20} className={data.status === 'returned' ? 'text-rose-500' : 'text-slate-400'}/> إعادة التقرير للموظف</span>
+                                                <span className="font-bold flex items-center gap-2 text-base"><CornerUpLeft size={20} className={data.status === 'returned' ? 'text-rose-500' : 'text-slate-400'} /> إعادة التقرير للموظف</span>
                                             </label>
                                         </div>
                                     </div>
 
                                     <div>
                                         <label className="block text-base font-black text-slate-900 dark:text-slate-200 mb-3">ملاحظات المدير <span className="text-slate-400 font-normal text-sm">(اختياري)</span></label>
-                                        <textarea 
+                                        <textarea
                                             value={data.manager_notes}
                                             onChange={e => setData('manager_notes', e.target.value)}
                                             className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all shadow-inner font-semibold dark:text-white"
@@ -579,8 +594,8 @@ export default function ReviewReport({ auth, report }) {
                                     </div>
 
                                     <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4">
-                                        <button 
-                                            type="submit" 
+                                        <button
+                                            type="submit"
                                             disabled={processing}
                                             className="w-full sm:w-auto px-10 py-4 rounded-2xl font-black bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 hover:-translate-y-0.5 active:scale-95 text-lg"
                                         >
@@ -596,22 +611,22 @@ export default function ReviewReport({ auth, report }) {
                                 <CheckCircle className="text-emerald-500" size={24} />
                                 <h3 className="text-xl font-black text-slate-900 dark:text-white">حالة ونتيجة المراجعة</h3>
                             </div>
-                            
+
                             <div className="p-6 md:p-8 space-y-6">
                                 <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
                                     <span className="text-base font-bold text-slate-600 dark:text-slate-400">حالة التقرير:</span>
                                     {report.status === 'reviewed' ? (
-                                        <span className="bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full text-sm font-black border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1.5"><CheckCircle size={16}/> تم الاعتماد</span>
+                                        <span className="bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-4 py-1.5 rounded-full text-sm font-black border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-1.5"><CheckCircle size={16} /> تم الاعتماد</span>
                                     ) : report.status === 'returned' ? (
-                                        <span className="bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 px-4 py-1.5 rounded-full text-sm font-black border border-rose-200 dark:border-rose-500/20 flex items-center gap-1.5"><CornerUpLeft size={16}/> مُعاد للتعديل</span>
+                                        <span className="bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 px-4 py-1.5 rounded-full text-sm font-black border border-rose-200 dark:border-rose-500/20 flex items-center gap-1.5"><CornerUpLeft size={16} /> مُعاد للتعديل</span>
                                     ) : (
-                                        <span className="bg-yellow-100 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 px-4 py-1.5 rounded-full text-sm font-black border border-yellow-200 dark:border-yellow-500/20 flex items-center gap-1.5"><Clock size={16}/> قيد المراجعة</span>
+                                        <span className="bg-yellow-100 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 px-4 py-1.5 rounded-full text-sm font-black border border-yellow-200 dark:border-yellow-500/20 flex items-center gap-1.5"><Clock size={16} /> قيد المراجعة</span>
                                     )}
                                 </div>
-                                
+
                                 {report.manager_notes && (
                                     <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800/60 shadow-sm">
-                                        <span className="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><User size={18} className="text-slate-400"/> ملاحظات الموجه / المدير:</span>
+                                        <span className="text-base font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2"><User size={18} className="text-slate-400" /> ملاحظات الموجه / المدير:</span>
                                         <div className="bg-white dark:bg-slate-900/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 text-base text-slate-700 dark:text-slate-300 leading-relaxed shadow-inner font-medium">
                                             {report.manager_notes}
                                         </div>
@@ -628,162 +643,172 @@ export default function ReviewReport({ auth, report }) {
             {/* Hidden on screen via positioning behind the main content. Revealed in print via @media print. */}
             <div id="printable-report-wrapper" className="print-only-wrapper">
                 <div id="printable-report" style={{ background: '#fff', color: '#1e293b', direction: 'rtl', fontFamily: 'Tajawal, "Segoe UI", Arial, sans-serif', position: 'relative', width: '210mm', minHeight: '297mm', boxSizing: 'border-box' }}>
-                    
-                    {/* ─── TOP BRAND BAR ─── */}
-                    <div style={{ display: 'flex', height: '6px' }}>
-                        <div style={{ flex: 1, background: '#6B9D1F' }} />
-                        <div style={{ flex: 1, background: '#E2202C' }} />
-                        <div style={{ flex: 1, background: '#2D2D2D' }} />
-                    </div>
+                    {isDisciplinaryCouncil ? (
+                        <DisciplinaryCouncilReportSheet
+                            template={report.template}
+                            data={report.data}
+                            report={report}
+                            isPrint={true}
+                        />
+                    ) : (
+                        <>
+                            {/* ─── TOP BRAND BAR ─── */}
+                            <div style={{ display: 'flex', height: '6px' }}>
+                                <div style={{ flex: 1, background: '#6B9D1F' }} />
+                                <div style={{ flex: 1, background: '#E2202C' }} />
+                                <div style={{ flex: 1, background: '#2D2D2D' }} />
+                            </div>
 
-                    {/* ─── WATERMARK ─── */}
-                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.03, pointerEvents: 'none', zIndex: 0 }}>
-                        <img src="/images/school_logo.png" alt="" loading="eager" style={{ width: '400px', height: '400px', objectFit: 'contain' }} />
-                    </div>
+                            {/* ─── WATERMARK ─── */}
+                            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.03, pointerEvents: 'none', zIndex: 0 }}>
+                                <img src="/images/school_logo.png" alt="" loading="eager" style={{ width: '400px', height: '400px', objectFit: 'contain' }} />
+                            </div>
 
-                    {/* ─── MAIN CONTENT ─── */}
-                    <div style={{ position: 'relative', zIndex: 1, padding: '0 36px' }}>
+                            {/* ─── MAIN CONTENT ─── */}
+                            <div style={{ position: 'relative', zIndex: 1, padding: '0 36px' }}>
 
-                        {/* ══════════ HEADER ══════════ */}
-                        <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: '3px solid #6B9D1F', marginBottom: '0' }}>
-                            <tbody>
-                                <tr>
-                                    <td style={{ padding: '28px 0 20px 0', verticalAlign: 'middle', width: '110px' }}>
-                                        <img src="/images/school_logo.png" alt="مدارس القيم الأهلية" loading="eager" 
-                                            style={{ width: '90px', height: '90px', objectFit: 'contain', display: 'block' }} />
-                                    </td>
-                                    <td style={{ padding: '28px 16px 20px 0', verticalAlign: 'middle' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#6B9D1F', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '4px' }}>ALQIAM CIVIL SCHOOLS</div>
-                                        <div style={{ fontSize: '26px', fontWeight: 900, color: '#1e293b', lineHeight: 1.3, marginBottom: '2px' }}>التقرير الإداري</div>
-                                        <div style={{ fontSize: '16px', fontWeight: 600, color: '#64748b' }}>{report.template?.name}</div>
-                                    </td>
-                                    <td style={{ padding: '28px 0 20px 0', verticalAlign: 'middle', textAlign: 'left', width: '200px' }}>
-                                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 16px', textAlign: 'center' }}>
-                                            <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>الرقم المرجعي</div>
-                                            <div style={{ fontSize: '16px', fontWeight: 900, color: '#1e293b', fontFamily: '"Courier New", monospace', letterSpacing: '1px' }}>
-                                                REF-{report.id.toString().padStart(6, '0')}
-                                            </div>
-                                            <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
-                                                {new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        {/* ══════════ METADATA ══════════ */}
-                        <table style={{ width: '100%', borderCollapse: 'collapse', margin: '20px 0', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                            <tbody>
-                                <tr>
-                                    <td style={{ padding: '14px 18px', background: '#f8fafc', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
-                                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>مُقدّم التقرير</div>
-                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{report.submitter?.name || '-'}</div>
-                                    </td>
-                                    <td style={{ padding: '14px 18px', background: '#ffffff', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
-                                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>الدرجة الوظيفية</div>
-                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{report.submitter?.employee?.job_grade?.name || '-'}</div>
-                                    </td>
-                                    <td style={{ padding: '14px 18px', background: '#f8fafc', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
-                                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>تاريخ التقديم</div>
-                                        <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{new Date(report.created_at).toLocaleDateString('ar-EG')}</div>
-                                    </td>
-                                    <td style={{ padding: '14px 18px', background: '#ffffff', width: '25%' }}>
-                                        <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>حالة الاعتماد</div>
-                                        <div style={{ fontSize: '14px', fontWeight: 900, color: report.status === 'reviewed' ? '#16a34a' : (report.status === 'returned' ? '#dc2626' : '#d97706') }}>
-                                            {report.status === 'reviewed' ? '✓ مُعتمد رسمياً' : (report.status === 'returned' ? '✗ مُعاد' : '⏳ قيد المراجعة')}
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        {/* ══════════ SECTION DIVIDER ══════════ */}
-                        <table style={{ width: '100%', borderCollapse: 'collapse', margin: '24px 0 12px 0' }}>
-                            <tbody>
-                                <tr>
-                                    <td style={{ width: '4px', verticalAlign: 'middle' }}>
-                                        <div style={{ width: '4px', height: '20px', background: '#6B9D1F', borderRadius: '2px' }} />
-                                    </td>
-                                    <td style={{ padding: '0 10px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                                        <span style={{ fontSize: '14px', fontWeight: 900, color: '#475569' }}>محتوى التقرير</span>
-                                    </td>
-                                    <td style={{ verticalAlign: 'middle', width: '100%' }}>
-                                        <div style={{ height: '1px', background: '#e2e8f0' }} />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        {/* ══════════ REPORT FIELDS ══════════ */}
-                        {report.template?.fields?.sort((a,b) => a.order - b.order).map((field, idx) => (
-                            <div key={field.id} style={{ marginBottom: '22px', pageBreakInside: 'avoid' }}>
-                                {/* Field Title */}
-                                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8px' }}>
+                                {/* ══════════ HEADER ══════════ */}
+                                <table style={{ width: '100%', borderCollapse: 'collapse', borderBottom: '3px solid #6B9D1F', marginBottom: '0' }}>
                                     <tbody>
                                         <tr>
-                                            <td style={{ width: '26px', verticalAlign: 'middle', paddingLeft: '8px' }}>
-                                                <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#6B9D1F', color: '#fff', fontSize: '12px', fontWeight: 900, textAlign: 'center', lineHeight: '26px' }}>
-                                                    {idx + 1}
-                                                </div>
+                                            <td style={{ padding: '28px 0 20px 0', verticalAlign: 'middle', width: '110px' }}>
+                                                <img src="/images/school_logo.png" alt="مدارس القيم الأهلية" loading="eager"
+                                                    style={{ width: '90px', height: '90px', objectFit: 'contain', display: 'block' }} />
                                             </td>
-                                            <td style={{ verticalAlign: 'middle', paddingRight: '4px' }}>
-                                                <span style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{field.name}</span>
+                                            <td style={{ padding: '28px 16px 20px 0', verticalAlign: 'middle' }}>
+                                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#6B9D1F', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '4px' }}>ALQIAM CIVIL SCHOOLS</div>
+                                                <div style={{ fontSize: '26px', fontWeight: 900, color: '#1e293b', lineHeight: 1.3, marginBottom: '2px' }}>التقرير الإداري</div>
+                                                <div style={{ fontSize: '16px', fontWeight: 600, color: '#64748b' }}>{report.template?.name}</div>
+                                            </td>
+                                            <td style={{ padding: '28px 0 20px 0', verticalAlign: 'middle', textAlign: 'left', width: '200px' }}>
+                                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px 16px', textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '4px' }}>الرقم المرجعي</div>
+                                                    <div style={{ fontSize: '16px', fontWeight: 900, color: '#1e293b', fontFamily: '"Courier New", monospace', letterSpacing: '1px' }}>
+                                                        REF-{report.id.toString().padStart(6, '0')}
+                                                    </div>
+                                                    <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>
+                                                        {new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                    </div>
+                                                </div>
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
-                                {/* Field Value */}
-                                <div style={{ padding: '10px 18px', borderRight: '3px solid #6B9D1F', background: '#fafbfc', borderRadius: '0 6px 6px 0', fontSize: '13px', lineHeight: 1.8, color: '#334155' }} className="printable-field-content">
-                                    {renderFieldValue(field, report.data ? report.data[field.name] : null)}
-                                </div>
+
+                                {/* ══════════ METADATA ══════════ */}
+                                <table style={{ width: '100%', borderCollapse: 'collapse', margin: '20px 0', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ padding: '14px 18px', background: '#f8fafc', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
+                                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>مُقدّم التقرير</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{report.submitter?.name || '-'}</div>
+                                            </td>
+                                            <td style={{ padding: '14px 18px', background: '#ffffff', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
+                                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>الدرجة الوظيفية</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{report.submitter?.employee?.job_grade?.name || '-'}</div>
+                                            </td>
+                                            <td style={{ padding: '14px 18px', background: '#f8fafc', borderLeft: '1px solid #e2e8f0', width: '25%' }}>
+                                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>تاريخ التقديم</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 800, color: '#1e293b' }}>{new Date(report.created_at).toLocaleDateString('ar-EG')}</div>
+                                            </td>
+                                            <td style={{ padding: '14px 18px', background: '#ffffff', width: '25%' }}>
+                                                <div style={{ fontSize: '9px', fontWeight: 700, color: '#94a3b8', letterSpacing: '1px', marginBottom: '4px' }}>حالة الاعتماد</div>
+                                                <div style={{ fontSize: '14px', fontWeight: 900, color: report.status === 'reviewed' ? '#16a34a' : (report.status === 'returned' ? '#dc2626' : '#d97706') }}>
+                                                    {report.status === 'reviewed' ? '✓ مُعتمد رسمياً' : (report.status === 'returned' ? '✗ مُعاد' : '⏳ قيد المراجعة')}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                {/* ══════════ SECTION DIVIDER ══════════ */}
+                                <table style={{ width: '100%', borderCollapse: 'collapse', margin: '24px 0 12px 0' }}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ width: '4px', verticalAlign: 'middle' }}>
+                                                <div style={{ width: '4px', height: '20px', background: '#6B9D1F', borderRadius: '2px' }} />
+                                            </td>
+                                            <td style={{ padding: '0 10px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                                <span style={{ fontSize: '14px', fontWeight: 900, color: '#475569' }}>محتوى التقرير</span>
+                                            </td>
+                                            <td style={{ verticalAlign: 'middle', width: '100%' }}>
+                                                <div style={{ height: '1px', background: '#e2e8f0' }} />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                {/* ══════════ REPORT FIELDS ══════════ */}
+                                {report.template?.fields?.sort((a, b) => a.order - b.order).map((field, idx) => (
+                                    <div key={field.id} style={{ marginBottom: '22px', pageBreakInside: 'avoid' }}>
+                                        {/* Field Title */}
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '8px' }}>
+                                            <tbody>
+                                                <tr>
+                                                    <td style={{ width: '26px', verticalAlign: 'middle', paddingLeft: '8px' }}>
+                                                        <div style={{ width: '26px', height: '26px', borderRadius: '6px', background: '#6B9D1F', color: '#fff', fontSize: '12px', fontWeight: 900, textAlign: 'center', lineHeight: '26px' }}>
+                                                            {idx + 1}
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ verticalAlign: 'middle', paddingRight: '4px' }}>
+                                                        <span style={{ fontSize: '15px', fontWeight: 800, color: '#1e293b' }}>{field.name}</span>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                        {/* Field Value */}
+                                        <div style={{ padding: '10px 18px', borderRight: '3px solid #6B9D1F', background: '#fafbfc', borderRadius: '0 6px 6px 0', fontSize: '13px', lineHeight: 1.8, color: '#334155' }} className="printable-field-content">
+                                            {renderFieldValue(field, report.data ? report.data[field.name] : null)}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* ══════════ SIGNATURES ══════════ */}
+                                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '40px', borderTop: '2px solid #e2e8f0', pageBreakInside: 'avoid' }}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ width: '50%', padding: '30px 20px 20px 20px', textAlign: 'center', verticalAlign: 'top' }}>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '40px' }}>توقيع مُعدّ التقرير</div>
+                                                <div style={{ fontSize: '15px', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #cbd5e1', paddingBottom: '6px', display: 'inline-block', minWidth: '200px' }}>
+                                                    {report.submitter?.name}
+                                                </div>
+                                            </td>
+                                            <td style={{ width: '50%', padding: '30px 20px 20px 20px', textAlign: 'center', verticalAlign: 'top', borderRight: '1px solid #e2e8f0' }}>
+                                                <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '40px' }}>اعتماد الموجه / مدير المدرسة</div>
+                                                <div style={{ fontSize: '15px', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #cbd5e1', paddingBottom: '6px', display: 'inline-block', minWidth: '200px' }}>
+                                                    {report.reviewer ? report.reviewer.name : '..................................'}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+
+                                {/* ══════════ FOOTER ══════════ */}
+                                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '32px', borderTop: '1px solid #e2e8f0', pageBreakInside: 'avoid' }}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ padding: '12px 0', fontSize: '9px', color: '#94a3b8', lineHeight: 1.6, verticalAlign: 'middle' }}>
+                                                وثيقة إدارية مُصدرة إلكترونياً من نظام المدرسة الذكية — مدارس القيم الأهلية. لا يحتاج هذا المستند إلى توقيع حي في حال اعتماده من خلال النظام.
+                                            </td>
+                                            <td style={{ padding: '12px 0', textAlign: 'left', width: '50px', verticalAlign: 'middle' }}>
+                                                <img src="/images/school_logo.png" alt="" loading="eager" style={{ width: '36px', height: '36px', objectFit: 'contain', opacity: 0.25 }} />
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                        ))}
 
-                        {/* ══════════ SIGNATURES ══════════ */}
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '40px', borderTop: '2px solid #e2e8f0', pageBreakInside: 'avoid' }}>
-                            <tbody>
-                                <tr>
-                                    <td style={{ width: '50%', padding: '30px 20px 20px 20px', textAlign: 'center', verticalAlign: 'top' }}>
-                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '40px' }}>توقيع مُعدّ التقرير</div>
-                                        <div style={{ fontSize: '15px', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #cbd5e1', paddingBottom: '6px', display: 'inline-block', minWidth: '200px' }}>
-                                            {report.submitter?.name}
-                                        </div>
-                                    </td>
-                                    <td style={{ width: '50%', padding: '30px 20px 20px 20px', textAlign: 'center', verticalAlign: 'top', borderRight: '1px solid #e2e8f0' }}>
-                                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', marginBottom: '40px' }}>اعتماد الموجه / مدير المدرسة</div>
-                                        <div style={{ fontSize: '15px', fontWeight: 900, color: '#1e293b', borderBottom: '2px solid #cbd5e1', paddingBottom: '6px', display: 'inline-block', minWidth: '200px' }}>
-                                            {report.reviewer ? report.reviewer.name : '..................................'}
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-
-                        {/* ══════════ FOOTER ══════════ */}
-                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '32px', borderTop: '1px solid #e2e8f0', pageBreakInside: 'avoid' }}>
-                            <tbody>
-                                <tr>
-                                    <td style={{ padding: '12px 0', fontSize: '9px', color: '#94a3b8', lineHeight: 1.6, verticalAlign: 'middle' }}>
-                                        وثيقة إدارية مُصدرة إلكترونياً من نظام المدرسة الذكية — مدارس القيم الأهلية. لا يحتاج هذا المستند إلى توقيع حي في حال اعتماده من خلال النظام.
-                                    </td>
-                                    <td style={{ padding: '12px 0', textAlign: 'left', width: '50px', verticalAlign: 'middle' }}>
-                                        <img src="/images/school_logo.png" alt="" loading="eager" style={{ width: '36px', height: '36px', objectFit: 'contain', opacity: 0.25 }} />
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* ─── BOTTOM BRAND BAR ─── */}
-                    <div style={{ display: 'flex', height: '4px', position: 'absolute', bottom: 0, left: 0, right: 0 }}>
-                        <div style={{ flex: 1, background: '#6B9D1F' }} />
-                        <div style={{ flex: 1, background: '#E2202C' }} />
-                        <div style={{ flex: 1, background: '#2D2D2D' }} />
-                    </div>
+                            {/* ─── BOTTOM BRAND BAR ─── */}
+                            <div style={{ display: 'flex', height: '4px', position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+                                <div style={{ flex: 1, background: '#6B9D1F' }} />
+                                <div style={{ flex: 1, background: '#E2202C' }} />
+                                <div style={{ flex: 1, background: '#2D2D2D' }} />
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
-            
+
             {/* ==================== PRINT CSS ==================== */}
             <style>{`
                 /* Hide from screen but keep in DOM so images preload */

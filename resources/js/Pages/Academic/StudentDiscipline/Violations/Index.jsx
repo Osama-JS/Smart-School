@@ -33,6 +33,8 @@ export default function Violations({ auth, violations, types, students, staffUse
         details: '',
         action_taken: '',
         academic_year_id: activeYearId,
+        follow_up_officer_id: '',
+        execution_officer_id: '',
         status: 'pending',
         attachment: null,
     });
@@ -65,6 +67,8 @@ export default function Violations({ auth, violations, types, students, staffUse
                 details: violation.details || '',
                 action_taken: violation.action_taken || '',
                 academic_year_id: violation.academic_year_id || activeYearId,
+                follow_up_officer_id: violation.follow_up_officer_id || '',
+                execution_officer_id: violation.execution_officer_id || '',
                 status: violation.status || 'pending',
                 attachment: null,
             });
@@ -72,6 +76,8 @@ export default function Violations({ auth, violations, types, students, staffUse
         } else {
             reset();
             setData('academic_year_id', activeYearId);
+            setData('follow_up_officer_id', '');
+            setData('execution_officer_id', '');
             setData('status', 'pending');
             setData('violation_date', new Date().toISOString().split('T')[0]);
             setData('attachment', null);
@@ -731,6 +737,8 @@ export default function Violations({ auth, violations, types, students, staffUse
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">المخالفة والتاريخ</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400 w-1/3">التفاصيل والإجراء</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">المشرف المباشر</th>
+                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">مسؤول المتابعة</th>
+                                    <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">مسؤول التنفيذ</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400">الحالة</th>
                                     <th className="py-4 px-6 text-sm font-black text-slate-500 dark:text-slate-400 w-24">إجراءات</th>
                                 </tr>
@@ -738,7 +746,7 @@ export default function Violations({ auth, violations, types, students, staffUse
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {filteredViolations.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="py-12 text-center">
+                                        <td colSpan="8" className="py-12 text-center">
                                             <div className="flex flex-col items-center justify-center text-slate-500">
                                                 <AlertCircle size={40} className="mb-3 text-slate-300" />
                                                 <p className="font-bold">لا توجد مخالفات مسجلة</p>
@@ -774,6 +782,12 @@ export default function Violations({ auth, violations, types, students, staffUse
                                             </td>
                                             <td className="py-4 px-6 text-sm font-semibold text-slate-700 dark:text-slate-300">
                                                 {v.supervisor?.name || '-'}
+                                            </td>
+                                            <td className="py-4 px-6 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                {v.follow_up_officer?.name || '-'}
+                                            </td>
+                                            <td className="py-4 px-6 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                                {v.execution_officer?.name || '-'}
                                             </td>
                                             <td className="py-4 px-6">
                                                 <button 
@@ -923,7 +937,14 @@ export default function Violations({ auth, violations, types, students, staffUse
                                 </div>
                                 
                                 <div>
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">الإجراء المتخذ <span className="text-rose-500">*</span></label>
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">الإجراء المتخذ <span className="text-rose-500">*</span></label>
+                                        {repetitionLevel && !editingViolation && (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20">
+                                                اقتراح تلقائي: {repetitionLevel >= 4 ? 'المرة الرابعة فأكثر' : repetitionLevel === 3 ? 'المرة الثالثة' : repetitionLevel === 2 ? 'المرة الثانية' : 'المرة الأولى'}
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="relative">
                                         <textarea
                                             className="w-full bg-slate-50 dark:bg-slate-900/50 border border-amber-200 dark:border-amber-700/50 rounded-2xl pr-12 pl-5 py-3.5 text-sm focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all dark:text-white"
@@ -936,6 +957,30 @@ export default function Violations({ auth, violations, types, students, staffUse
                                         <div className="pointer-events-none absolute top-4 right-0 flex items-center pr-4 text-amber-500">
                                             <Shield size={16} />
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مسؤول المتابعة</label>
+                                        <SelectInput
+                                            options={[{ value: '', label: '-- اختر مسؤول المتابعة --' }, ...staffUsers.map(u => ({ value: u.id, label: u.name }))]}
+                                            value={data.follow_up_officer_id}
+                                            onChange={val => setData('follow_up_officer_id', val)}
+                                            className="w-full"
+                                        />
+                                        {errors.follow_up_officer_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.follow_up_officer_id}</p>}
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">مسؤول التنفيذ</label>
+                                        <SelectInput
+                                            options={[{ value: '', label: '-- اختر مسؤول التنفيذ --' }, ...staffUsers.map(u => ({ value: u.id, label: u.name }))]}
+                                            value={data.execution_officer_id}
+                                            onChange={val => setData('execution_officer_id', val)}
+                                            className="w-full"
+                                        />
+                                        {errors.execution_officer_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.execution_officer_id}</p>}
                                     </div>
                                 </div>
 

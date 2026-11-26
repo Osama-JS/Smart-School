@@ -27,6 +27,8 @@ export default function ParentVisits({ auth, visits, students, employees, filter
         visitor_name: '',
         visitor_relation: '',
         employee_id: '',
+        follow_up_officer_id: '',
+        execution_officer_id: '',
         visit_date: '',
         visit_time: '',
         purpose_category: 'أكاديمي',
@@ -57,6 +59,8 @@ export default function ParentVisits({ auth, visits, students, employees, filter
                 visitor_name: visit.visitor_name || '',
                 visitor_relation: visit.visitor_relation || '',
                 employee_id: visit.employee_id || '',
+                follow_up_officer_id: visit.follow_up_officer_id || '',
+                execution_officer_id: visit.execution_officer_id || '',
                 visit_date: visit.visit_date ? visit.visit_date.split('T')[0] : '',
                 visit_time: visit.visit_time ? visit.visit_time.substring(11, 16) : '',
                 purpose_category: visit.purpose_category || 'أكاديمي',
@@ -66,6 +70,8 @@ export default function ParentVisits({ auth, visits, students, employees, filter
             });
         } else {
             reset();
+            setData('follow_up_officer_id', '');
+            setData('execution_officer_id', '');
             setData('status', 'مجدولة');
         }
         setIsModalOpen(true);
@@ -354,6 +360,8 @@ export default function ParentVisits({ auth, visits, students, employees, filter
                                         <th className="py-4 px-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">الطالب</th>
                                         <th className="py-4 px-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">موعد الزيارة</th>
                                         <th className="py-4 px-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">المضيف</th>
+                                        <th className="py-4 px-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">مسؤول المتابعة</th>
+                                        <th className="py-4 px-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">مسؤول التنفيذ</th>
                                         <th className="py-4 px-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">الحالة</th>
                                         <th className="py-4 px-6 text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">إجراءات</th>
                                     </tr>
@@ -393,6 +401,16 @@ export default function ParentVisits({ auth, visits, students, employees, filter
                                             <td className="py-4 px-6">
                                                 <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
                                                     {v.employee?.name || <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                                    {v.follow_up_officer?.name || <span className="text-slate-300 dark:text-slate-600">—</span>}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                                                    {v.execution_officer?.name || <span className="text-slate-300 dark:text-slate-600">—</span>}
                                                 </span>
                                             </td>
                                             <td className="py-4 px-6">
@@ -512,6 +530,30 @@ export default function ParentVisits({ auth, visits, students, employees, filter
                                                     <div>
                                                         <span className="text-xs text-slate-400 font-medium">المضيف</span>
                                                         <p className="font-bold text-slate-700 dark:text-slate-200 text-sm -mt-0.5">{v.employee.name}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {v.follow_up_officer?.name && (
+                                                <div className="flex items-center gap-2.5 text-sm">
+                                                    <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                                                        <User size={13} className="text-slate-400" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xs text-slate-400 font-medium">مسؤول المتابعة</span>
+                                                        <p className="font-bold text-slate-700 dark:text-slate-200 text-sm -mt-0.5">{v.follow_up_officer.name}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {v.execution_officer?.name && (
+                                                <div className="flex items-center gap-2.5 text-sm">
+                                                    <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                                                        <User size={13} className="text-slate-400" />
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xs text-slate-400 font-medium">مسؤول التنفيذ</span>
+                                                        <p className="font-bold text-slate-700 dark:text-slate-200 text-sm -mt-0.5">{v.execution_officer.name}</p>
                                                     </div>
                                                 </div>
                                             )}
@@ -671,6 +713,32 @@ export default function ParentVisits({ auth, visits, students, employees, filter
                                             className="w-full"
                                         />
                                         {errors.employee_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.employee_id}</p>}
+                                    </div>
+
+                                    <div>
+                                        <label className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-400 mb-2">
+                                            <User size={14} className="text-primary-500" /> مسؤول المتابعة <span className="text-slate-400 font-normal">(اختياري)</span>
+                                        </label>
+                                        <SelectInput
+                                            options={[{ value: '', label: '-- اختر مسؤول المتابعة --' }, ...employees.map(e => ({ value: e.id, label: e.name }))]}
+                                            value={data.follow_up_officer_id}
+                                            onChange={val => setData('follow_up_officer_id', val)}
+                                            className="w-full"
+                                        />
+                                        {errors.follow_up_officer_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.follow_up_officer_id}</p>}
+                                    </div>
+
+                                    <div>
+                                        <label className="flex items-center gap-1.5 text-sm font-bold text-slate-600 dark:text-slate-400 mb-2">
+                                            <User size={14} className="text-primary-500" /> مسؤول التنفيذ <span className="text-slate-400 font-normal">(اختياري)</span>
+                                        </label>
+                                        <SelectInput
+                                            options={[{ value: '', label: '-- اختر مسؤول التنفيذ --' }, ...employees.map(e => ({ value: e.id, label: e.name }))]}
+                                            value={data.execution_officer_id}
+                                            onChange={val => setData('execution_officer_id', val)}
+                                            className="w-full"
+                                        />
+                                        {errors.execution_officer_id && <p className="text-xs text-rose-500 font-semibold mt-1.5">{errors.execution_officer_id}</p>}
                                     </div>
                                 </div>
 
@@ -1122,6 +1190,16 @@ export default function ParentVisits({ auth, visits, students, employees, filter
                                         <div>
                                             <span className="text-xs text-slate-400 block mb-0.5">اسم الموظف/المعلم</span>
                                             <p className="font-black text-slate-800 dark:text-white">{viewingVisit.employee?.name || 'لم يحدد'}</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/70 dark:border-slate-700/60">
+                                            <div>
+                                                <span className="text-xs text-slate-400 block mb-0.5">مسؤول المتابعة</span>
+                                                <p className="font-bold text-slate-700 dark:text-slate-200 text-xs">{viewingVisit.follow_up_officer?.name || 'لم يحدد'}</p>
+                                            </div>
+                                            <div>
+                                                <span className="text-xs text-slate-400 block mb-0.5">مسؤول التنفيذ</span>
+                                                <p className="font-bold text-slate-700 dark:text-slate-200 text-xs">{viewingVisit.execution_officer?.name || 'لم يحدد'}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

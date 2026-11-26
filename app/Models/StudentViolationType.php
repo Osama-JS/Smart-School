@@ -17,6 +17,7 @@ class StudentViolationType extends Model
         'first_time_action',
         'second_time_action',
         'third_time_action',
+        'fourth_time_action',
         'is_active',
     ];
 

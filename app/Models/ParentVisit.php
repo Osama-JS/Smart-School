@@ -15,6 +15,8 @@ class ParentVisit extends Model
         'visitor_name',
         'visitor_relation',
         'employee_id',
+        'follow_up_officer_id',
+        'execution_officer_id',
         'visit_date',
         'visit_time',
         'purpose_category',
@@ -41,5 +43,15 @@ class ParentVisit extends Model
     public function employee()
     {
         return $this->belongsTo(User::class, 'employee_id');
+    }
+
+    public function followUpOfficer()
+    {
+        return $this->belongsTo(User::class, 'follow_up_officer_id');
+    }
+
+    public function executionOfficer()
+    {
+        return $this->belongsTo(User::class, 'execution_officer_id');
     }
 }

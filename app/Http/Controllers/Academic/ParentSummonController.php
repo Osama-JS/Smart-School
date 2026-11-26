@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ParentSummon;
 use App\Models\Student;
 use App\Models\StudentViolation;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,7 +16,12 @@ class ParentSummonController extends Controller
     {
         $branchId = auth()->user()->branch_id;
         
-        $summons = ParentSummon::with(['student.user', 'violation.violationType'])
+        $summons = ParentSummon::with([
+            'student.user',
+            'violation.violationType',
+            'followUpOfficer:id,name',
+            'executionOfficer:id,name',
+        ])
             ->where('branch_id', $branchId)
             ->latest()
             ->get();
@@ -25,6 +31,12 @@ class ParentSummonController extends Controller
             $q->where('branch_id', $branchId);
         })->get();
 
+        $staffUsers = User::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->whereHas('role', fn ($q) => $q->whereNotIn('name', ['طالب', 'ولي أمر']))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         $violations = StudentViolation::with('violationType')
             ->where('branch_id', $branchId)
             ->where('status', 'pending') // Maybe only show pending violations for summons
@@ -33,6 +45,7 @@ class ParentSummonController extends Controller
         return Inertia::render('Academic/StudentDiscipline/Summons/Index', [
             'summons' => $summons,
             'students' => $students,
+            'staffUsers' => $staffUsers,
             'violations' => $violations,
         ]);
     }
@@ -42,6 +55,8 @@ class ParentSummonController extends Controller
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
             'student_violation_id' => 'nullable|exists:student_violations,id',
+            'follow_up_officer_id' => 'nullable|exists:users,id',
+            'execution_officer_id' => 'nullable|exists:users,id',
             'summon_date' => 'required|date',
             'reason' => 'required|string',
         ]);
@@ -67,6 +82,8 @@ class ParentSummonController extends Controller
         $validated = $request->validate([
             'summon_date' => 'required|date',
             'reason' => 'required|string',
+            'follow_up_officer_id' => 'nullable|exists:users,id',
+            'execution_officer_id' => 'nullable|exists:users,id',
             'status' => 'required|string', // scheduled, attended, no_show
             'notes' => 'nullable|string',
         ]);

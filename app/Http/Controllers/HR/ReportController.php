@@ -565,7 +565,7 @@ class ReportController extends Controller implements \Illuminate\Routing\Control
         $rules = [];
         $template->load('fields');
         foreach ($template->fields as $field) {
-            if ($field->type === 'data_source' || $field->type === 'activities_matrix' || $field->type === 'tasks_matrix' || $field->type === 'matrix_text' || $field->type === 'teacher_status_matrix' || $field->type === 'teacher_discipline_matrix') {
+            if ($field->type === 'data_source' || $field->type === 'activities_matrix' || $field->type === 'tasks_matrix' || $field->type === 'matrix_text' || $field->type === 'teacher_status_matrix' || $field->type === 'teacher_discipline_matrix' || $field->type === 'classroom_visit_form_matrix') {
                 $rules['field_' . $field->id] = ['nullable', 'array'];
                 continue;
             }
@@ -585,7 +585,7 @@ class ReportController extends Controller implements \Illuminate\Routing\Control
         foreach ($template->fields as $field) {
             $key = 'field_' . $field->id;
             
-            if ($field->type === 'data_source' || $field->type === 'activities_matrix' || $field->type === 'tasks_matrix' || $field->type === 'matrix_text' || $field->type === 'teacher_status_matrix' || $field->type === 'teacher_discipline_matrix') {
+            if ($field->type === 'data_source' || $field->type === 'activities_matrix' || $field->type === 'tasks_matrix' || $field->type === 'matrix_text' || $field->type === 'teacher_status_matrix' || $field->type === 'teacher_discipline_matrix' || $field->type === 'classroom_visit_form_matrix') {
                 $data[$field->id] = $request->input($key, []);
             } elseif ($request->hasFile($key)) {
                 $path = $request->file($key)->store('reports/images', 'public');

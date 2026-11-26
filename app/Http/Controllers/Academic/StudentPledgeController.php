@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StudentPledge;
 use App\Models\Student;
 use App\Models\StudentViolation;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +17,12 @@ class StudentPledgeController extends Controller
     {
         $branchId = auth()->user()->branch_id;
         
-        $pledges = StudentPledge::with(['student.user', 'violation.violationType'])
+        $pledges = StudentPledge::with([
+            'student.user',
+            'violation.violationType',
+            'followUpOfficer:id,name',
+            'executionOfficer:id,name',
+        ])
             ->where('branch_id', $branchId)
             ->latest()
             ->get();
@@ -25,6 +31,12 @@ class StudentPledgeController extends Controller
             $q->where('branch_id', $branchId);
         })->get();
 
+        $staffUsers = User::where('branch_id', $branchId)
+            ->where('is_active', true)
+            ->whereHas('role', fn ($q) => $q->whereNotIn('name', ['طالب', 'ولي أمر']))
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         $violations = StudentViolation::with('violationType')
             ->where('branch_id', $branchId)
             ->get();
@@ -32,6 +44,7 @@ class StudentPledgeController extends Controller
         return Inertia::render('Academic/StudentDiscipline/Pledges/Index', [
             'pledges' => $pledges,
             'students' => $students,
+            'staffUsers' => $staffUsers,
             'violations' => $violations,
         ]);
     }
@@ -41,6 +54,8 @@ class StudentPledgeController extends Controller
         $validated = $request->validate([
             'student_id' => 'required|exists:students,id',
             'student_violation_id' => 'nullable|exists:student_violations,id',
+            'follow_up_officer_id' => 'nullable|exists:users,id',
+            'execution_officer_id' => 'nullable|exists:users,id',
             'pledge_text' => 'required|string',
             'date' => 'required|date',
             'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -70,6 +85,8 @@ class StudentPledgeController extends Controller
         $validated = $request->validate([
             'pledge_text' => 'required|string',
             'date' => 'required|date',
+            'follow_up_officer_id' => 'nullable|exists:users,id',
+            'execution_officer_id' => 'nullable|exists:users,id',
             'is_signed_by_student' => 'boolean',
             'is_signed_by_parent' => 'boolean',
             'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',

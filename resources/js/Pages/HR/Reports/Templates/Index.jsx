@@ -3,10 +3,10 @@ import { Head, useForm, router, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Select from 'react-select';
 import SelectInput from '@/Components/SelectInput';
-import { 
-    Plus, Edit, Trash2, X, PlusCircle, AlignLeft, List, Hash, 
-    CheckSquare, Image as ImageIcon, Search, FileText, Settings, 
-    ShieldCheck, Calendar, Sparkles, ChevronDown, FileSpreadsheet, 
+import {
+    Plus, Edit, Trash2, X, PlusCircle, AlignLeft, List, Hash,
+    CheckSquare, Image as ImageIcon, Search, FileText, Settings,
+    ShieldCheck, Calendar, Sparkles, ChevronDown, FileSpreadsheet,
     AlertCircle, Type, Clock, Paperclip, Star, Table2, ListTodo, CalendarRange, Database, Eye,
     LayoutGrid, TableProperties
 } from 'lucide-react';
@@ -58,13 +58,12 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
     const selectClassNames = {
         control: (state) => `bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 shadow-none !min-h-[46px] text-sm transition-all duration-200 ${state.isFocused ? 'ring-4 ring-primary-500/15 border-primary-500' : ''}`,
         menu: () => 'bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl mt-2 overflow-hidden z-[100] animate-scale-in',
-        option: (state) => `px-4 py-2.5 text-sm cursor-pointer transition-all duration-200 ${
-            state.isSelected 
-                ? 'bg-primary-500 text-white font-bold' 
-                : state.isFocused 
-                    ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-semibold' 
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium'
-        }`,
+        option: (state) => `px-4 py-2.5 text-sm cursor-pointer transition-all duration-200 ${state.isSelected
+            ? 'bg-primary-500 text-white font-bold'
+            : state.isFocused
+                ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-700 dark:text-primary-400 font-semibold'
+                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 font-medium'
+            }`,
         singleValue: () => 'text-slate-800 dark:text-slate-200 text-sm font-semibold',
         input: () => 'text-slate-800 dark:text-slate-200 text-sm font-semibold',
         placeholder: () => 'text-slate-400 dark:text-slate-500 text-sm font-semibold',
@@ -92,6 +91,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
             case 'activities_matrix': return <CalendarRange size={16} />;
             case 'teacher_status_matrix': return <Table2 size={16} />;
             case 'teacher_discipline_matrix': return <AlertCircle size={16} />;
+            case 'classroom_visit_form_matrix': return <Table2 size={16} />;
             case 'data_source': return <Database size={16} />;
             default: return <AlignLeft size={16} />;
         }
@@ -180,16 +180,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                     <h3 className="text-sm font-black text-slate-800 dark:text-white">حقول التقرير (الأسئلة)</h3>
                     <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-semibold">أضف الحقول المخصصة التي سيقوم الموظفون بتعبئتها</p>
                 </div>
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     onClick={addField}
                     className="flex items-center gap-1.5 text-xs bg-primary-500 hover:bg-primary-600 text-white px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-primary-500/10 hover:shadow-primary-500/20 hover:-translate-y-0.5 transition-all active:translate-y-0 active:scale-95"
                 >
-                    <PlusCircle size={14} /> 
+                    <PlusCircle size={14} />
                     <span>إضافة حقل جديد</span>
                 </button>
             </div>
-            
+
             {fieldsForm.data.fields.length === 0 ? (
                 <div className="text-center py-12 bg-slate-50/50 dark:bg-slate-900/10 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800/80 flex flex-col items-center justify-center gap-3">
                     <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 flex items-center justify-center shadow-inner">
@@ -208,7 +208,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             <div className="absolute -right-3 -top-3 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-black shadow-sm group-hover/card:bg-primary-500 group-hover/card:text-white group-hover/card:border-primary-400 transition-all duration-300">
                                 {index + 1}
                             </div>
-                            
+
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
@@ -216,8 +216,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             <span>اسم الحقل / السؤال</span>
                                             <span className="text-red-500">*</span>
                                         </label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             value={field.name}
                                             onChange={(e) => updateField(index, 'name', e.target.value)}
                                             className="w-full bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2.5 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 dark:focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400"
@@ -231,7 +231,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none z-10">
                                                 {getFieldIcon(field.type)}
                                             </div>
-                                            <SelectInput 
+                                            <SelectInput
                                                 value={field.type}
                                                 onChange={(val) => updateField(index, 'type', val)}
                                                 className="w-full [&>div]:pr-10 [&>div]:pl-10"
@@ -251,6 +251,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                     { value: 'activities_matrix', label: 'جدول الأنشطة (Activities Matrix)' },
                                                     { value: 'teacher_status_matrix', label: 'جدول حالة المعلمين: غياب/استئذان/خروج (Teacher Status)' },
                                                     { value: 'teacher_discipline_matrix', label: 'جدول خلاصة انضباط المعلمين (Teacher Discipline)' },
+                                                    { value: 'classroom_visit_form_matrix', label: 'استمارة الزيارات الصفية المعتمدة (18 معياراً - 3 زيارات)' },
                                                     { value: 'data_source', label: 'جدول بيانات آلي من النظام (Data Source)' }
                                                 ]}
                                                 isClearable={false}
@@ -258,9 +259,9 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <button 
-                                    type="button" 
+
+                                <button
+                                    type="button"
                                     onClick={() => removeField(index)}
                                     className="p-2.5 text-red-500 hover:text-white hover:bg-red-500 dark:hover:bg-red-600 rounded-2xl transition-all border border-slate-200 dark:border-slate-800 hover:border-red-500 dark:hover:border-red-600 active:scale-95 mt-5 flex items-center justify-center w-10 h-10 shrink-0 shadow-sm"
                                     title="حذف هذا الحقل"
@@ -268,36 +269,38 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <Trash2 size={16} />
                                 </button>
                             </div>
-                            
+
                             {/* Options for Select or Matrix Type */}
                             {(field.type === 'select' || field.type === 'matrix_text' || field.type === 'tasks_matrix') && (
                                 <div className="mt-1 bg-slate-50/50 dark:bg-slate-900/10 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 animate-slide-down">
                                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
                                         {field.type === 'matrix_text' ? 'البنود / الأسئلة (افصل بينها بفاصلة ,)' : field.type === 'tasks_matrix' ? 'الأعمال المطلوبة (افصل بينها بفاصلة ,)' : 'الخيارات (افصل بينها بفاصلة ,)'}
                                     </label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         value={field.options ? field.options.join(', ') : ''}
                                         onChange={(e) => updateField(index, 'options', e.target.value.split(',').map(s => s.trim()).filter(s => s))}
                                         className="w-full bg-white dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800 rounded-2xl px-4 py-2 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-400 outline-none dark:text-white font-semibold"
                                         placeholder={field.type === 'matrix_text' ? "مثال: الطابور والإذاعة المدرسية, المدير التنفيذي, الإعلام" : field.type === 'tasks_matrix' ? "مثال: تجهيز المختبر, مراقبة الساحة, تصحيح الأوراق" : "مثال: ممتاز, جيد جدا, جيد"}
                                     />
                                     <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 block font-semibold">
-                                        {field.type === 'matrix_text' 
-                                            ? 'ملاحظة: سيتم رسم جدول يحتوي على هذه البنود ويقوم الموظف بكتابة ملاحظته أمام كل بند.' 
-                                            : field.type === 'tasks_matrix' 
-                                            ? 'ملاحظة: سيتم رسم جدول للأعمال المطلوبة، ويقوم الموظف بتحديد حالة كل عمل (نفذ / لم ينفذ) مع ذكر السبب.'
-                                            : 'ملاحظة: سيتم عرض هذه الكلمات كخيارات قائمة منسدلة للموظف عند تعبئة التقرير.'}
+                                        {field.type === 'matrix_text'
+                                            ? 'ملاحظة: سيتم رسم جدول يحتوي على هذه البنود ويقوم الموظف بكتابة ملاحظته أمام كل بند.'
+                                            : field.type === 'tasks_matrix'
+                                                ? 'ملاحظة: سيتم رسم جدول للأعمال المطلوبة، ويقوم الموظف بتحديد حالة كل عمل (نفذ / لم ينفذ) مع ذكر السبب.'
+                                                : 'ملاحظة: سيتم عرض هذه الكلمات كخيارات قائمة منسدلة للموظف عند تعبئة التقرير.'}
                                     </span>
                                 </div>
                             )}
 
-                            {(field.type === 'teacher_status_matrix' || field.type === 'teacher_discipline_matrix') && (
+                            {(field.type === 'teacher_status_matrix' || field.type === 'teacher_discipline_matrix' || field.type === 'classroom_visit_form_matrix') && (
                                 <div className="mt-1 bg-primary-50/40 dark:bg-primary-900/10 p-3.5 rounded-2xl border border-primary-100 dark:border-primary-800/40 animate-slide-down">
                                     <span className="text-xs text-primary-700 dark:text-primary-400 block font-bold">
                                         {field.type === 'teacher_status_matrix'
                                             ? 'جدول جاهز مطابق للنموذج الرسمي بأعمدة: (اليوم والتاريخ، اسم المعلم، غياب، استئذان، خروج أثناء الدوام المدرسي، السبب) مع حساب صف الإجمالي تلقائياً وإمكانية إضافة صفوف غير محدودة.'
-                                            : 'جدول جاهز مطابق للنموذج الرسمي بأعمدة: (اليوم، التاريخ، اسم المعلم، نوع المشكلة) مع إمكانية إضافة صفوف غير محدودة.'}
+                                            : field.type === 'teacher_discipline_matrix'
+                                                ? 'جدول جاهز مطابق للنموذج الرسمي بأعمدة: (اليوم، التاريخ، اسم المعلم، نوع المشكلة) مع إمكانية إضافة صفوف غير محدودة.'
+                                                : 'استمارة الزيارات الصفية المعتمدة بالكامل (4 مجالات، 18 معياراً، 3 زيارات، حساب تلقائي للنسبة المئوية والدرجة الكلية من 100%، ومصفوفة جوانب التميز ونقاط التحسين والتوقيعات).'}
                                     </span>
                                 </div>
                             )}
@@ -306,7 +309,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             {field.type === 'data_source' && (
                                 <div className="mt-1 bg-slate-50/50 dark:bg-slate-900/10 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/80 animate-slide-down">
                                     <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">مصدر البيانات الآلي</label>
-                                    <SelectInput 
+                                    <SelectInput
                                         value={field.options?.source || ''}
                                         onChange={(val) => {
                                             const defaultColsBySource = {
@@ -350,7 +353,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         placeholder="اختر مصدر البيانات..."
                                         className="mb-4"
                                     />
-                                    
+
                                     {(() => {
                                         const sourceConfigMap = {
                                             classroom_visits: {
@@ -563,8 +566,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                         const isChecked = columns.includes(col.id);
                                                         return (
                                                             <label key={col.id} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900/40 p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary-400 transition-all">
-                                                                <input 
-                                                                    type="checkbox" 
+                                                                <input
+                                                                    type="checkbox"
                                                                     checked={isChecked}
                                                                     onChange={(e) => {
                                                                         const currentOptions = Array.isArray(field.options) ? {} : (field.options || {});
@@ -595,8 +598,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                             <div className="flex items-center gap-2.5 mt-1 border-t border-slate-100 dark:border-slate-800/40 pt-3">
                                 <label className="flex items-center gap-2.5 cursor-pointer select-none group/toggle">
                                     <div className="relative">
-                                        <input 
-                                            type="checkbox" 
+                                        <input
+                                            type="checkbox"
                                             id={`req_fields_${index}`}
                                             checked={field.is_required}
                                             onChange={(e) => updateField(index, 'is_required', e.target.checked)}
@@ -779,19 +782,17 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                                 key={tab.id}
                                                 type="button"
                                                 onClick={() => setPeriodTab(tab.id)}
-                                                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-t-2xl text-xs font-black whitespace-nowrap transition-all border-b-2 ${
-                                                    isActive
-                                                        ? 'bg-white dark:bg-slate-900 text-[#4d7c0f] dark:text-lime-400 border-[#4d7c0f] dark:border-lime-400 shadow-xs'
-                                                        : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-800/60'
-                                                }`}
+                                                className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-t-2xl text-xs font-black whitespace-nowrap transition-all border-b-2 ${isActive
+                                                    ? 'bg-white dark:bg-slate-900 text-[#4d7c0f] dark:text-lime-400 border-[#4d7c0f] dark:border-lime-400 shadow-xs'
+                                                    : 'text-slate-500 dark:text-slate-400 border-transparent hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/60 dark:hover:bg-slate-800/60'
+                                                    }`}
                                             >
                                                 <span>{tab.label}</span>
                                                 <span
-                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-black ${
-                                                        isActive
-                                                            ? 'bg-[#f7fbe9] text-[#4d7c0f] dark:bg-lime-500/15 dark:text-lime-300'
-                                                            : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                                                    }`}
+                                                    className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-black ${isActive
+                                                        ? 'bg-[#f7fbe9] text-[#4d7c0f] dark:bg-lime-500/15 dark:text-lime-300'
+                                                        : 'bg-slate-200/80 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                                        }`}
                                                 >
                                                     {tab.count}
                                                 </span>
@@ -804,11 +805,10 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <button
                                         type="button"
                                         onClick={() => setViewMode('cards')}
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
-                                            viewMode === 'cards'
-                                                ? 'bg-[#4d7c0f] text-white shadow-xs'
-                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                                        }`}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${viewMode === 'cards'
+                                            ? 'bg-[#4d7c0f] text-white shadow-xs'
+                                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                            }`}
                                         title="عرض البطاقات"
                                     >
                                         <LayoutGrid size={14} />
@@ -817,11 +817,10 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                     <button
                                         type="button"
                                         onClick={() => setViewMode('table')}
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${
-                                            viewMode === 'table'
-                                                ? 'bg-[#4d7c0f] text-white shadow-xs'
-                                                : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-                                        }`}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black transition-all ${viewMode === 'table'
+                                            ? 'bg-[#4d7c0f] text-white shadow-xs'
+                                            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                                            }`}
                                         title="عرض الجدول"
                                     >
                                         <TableProperties size={14} />
@@ -1074,7 +1073,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
                         <div className="relative bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 w-full max-w-3xl rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
                             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 z-50" />
-                            
+
                             <div className="relative p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-10 h-10 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200 dark:border-primary-500/30">
@@ -1085,8 +1084,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-bold">إعداد نموذج بيانات مخصص لتقارير الموظفين</p>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => setIsCreateModalOpen(false)} 
+                                <button
+                                    onClick={() => setIsCreateModalOpen(false)}
                                     className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all duration-300 hover:rotate-90 active:scale-90"
                                 >
                                     <X size={16} />
@@ -1102,8 +1101,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             </label>
                                             <div className="relative group">
                                                 <FileText size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none" />
-                                                <input 
-                                                    type="text" 
+                                                <input
+                                                    type="text"
                                                     value={form.data.name}
                                                     onChange={e => form.setData('name', e.target.value)}
                                                     className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600"
@@ -1175,7 +1174,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الوصف (اختياري)</label>
                                         <div className="relative group">
                                             <AlignLeft size={16} className="absolute right-4 top-4 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none" />
-                                            <textarea 
+                                            <textarea
                                                 value={form.data.description}
                                                 onChange={e => form.setData('description', e.target.value)}
                                                 className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-600"
@@ -1187,16 +1186,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 </form>
                             </div>
                             <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setIsCreateModalOpen(false)}
                                     className="px-6 py-2.5 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 bg-slate-100 dark:bg-slate-800 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
-                                <button 
-                                    form="createForm" 
-                                    type="submit" 
+                                <button
+                                    form="createForm"
+                                    type="submit"
                                     disabled={form.processing}
                                     className="px-6 py-2.5 rounded-2xl text-sm font-bold bg-primary-500 hover:bg-primary-600 text-white disabled:opacity-50 transition-all shadow-md shadow-primary-500/20 active:scale-95 flex items-center gap-1.5"
                                 >
@@ -1213,7 +1212,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
                         <div className="relative bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 w-full max-w-3xl rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
                             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 z-50" />
-                            
+
                             <div className="relative p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-10 h-10 rounded-2xl bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 flex items-center justify-center shrink-0 border border-primary-200 dark:border-primary-500/30">
@@ -1224,8 +1223,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-bold">القالب الحالي: {editingTemplate?.name}</p>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => setIsEditModalOpen(false)} 
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
                                     className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all duration-300 hover:rotate-90 active:scale-90"
                                 >
                                     <X size={16} />
@@ -1241,8 +1240,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                             </label>
                                             <div className="relative group">
                                                 <FileText size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none" />
-                                                <input 
-                                                    type="text" 
+                                                <input
+                                                    type="text"
                                                     value={editForm.data.name}
                                                     onChange={e => editForm.setData('name', e.target.value)}
                                                     className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400"
@@ -1310,7 +1309,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">الوصف (اختياري)</label>
                                         <div className="relative group">
                                             <AlignLeft size={16} className="absolute right-4 top-4 text-slate-400 group-focus-within:text-primary-500 transition-all duration-300 pointer-events-none" />
-                                            <textarea 
+                                            <textarea
                                                 value={editForm.data.description}
                                                 onChange={e => editForm.setData('description', e.target.value)}
                                                 className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl pr-11 pl-4 py-3 text-sm focus:bg-white dark:focus:bg-slate-900 focus:ring-4 focus:ring-primary-500/15 focus:border-primary-500 outline-none transition-all dark:text-white font-semibold placeholder:text-slate-400"
@@ -1321,16 +1320,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 </form>
                             </div>
                             <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setIsEditModalOpen(false)}
                                     className="px-6 py-2.5 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 bg-slate-100 dark:bg-slate-800 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
-                                <button 
-                                    form="editForm" 
-                                    type="submit" 
+                                <button
+                                    form="editForm"
+                                    type="submit"
                                     disabled={editForm.processing}
                                     className="px-6 py-2.5 rounded-2xl text-sm font-bold bg-primary-500 hover:bg-primary-600 text-white disabled:opacity-50 transition-all shadow-md shadow-primary-500/20 active:scale-95 flex items-center gap-1.5"
                                 >
@@ -1347,7 +1346,7 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-fade-in">
                         <div className="relative bg-white dark:bg-[#121820] border border-slate-200 dark:border-slate-800 w-full max-w-4xl rounded-t-[32px] sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[85vh] animate-slide-up sm:animate-scale-in">
                             <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-emerald-500 via-emerald-600 to-emerald-700 z-50" />
-                            
+
                             <div className="relative p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/30">
                                 <div className="flex items-center gap-3.5">
                                     <div className="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-500/30">
@@ -1363,8 +1362,8 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                         </div>
                                     </div>
                                 </div>
-                                <button 
-                                    onClick={() => setIsFieldsModalOpen(false)} 
+                                <button
+                                    onClick={() => setIsFieldsModalOpen(false)}
                                     className="p-2.5 rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors duration-300 hover:rotate-90 active:scale-90"
                                 >
                                     <X size={18} />
@@ -1376,16 +1375,16 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
                                 </form>
                             </div>
                             <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-end gap-3">
-                                <button 
-                                    type="button" 
+                                <button
+                                    type="button"
                                     onClick={() => setIsFieldsModalOpen(false)}
                                     className="px-6 py-2.5 rounded-2xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 bg-slate-100 dark:bg-slate-800 transition-all active:scale-95"
                                 >
                                     إلغاء
                                 </button>
-                                <button 
-                                    form="fieldsForm" 
-                                    type="submit" 
+                                <button
+                                    form="fieldsForm"
+                                    type="submit"
                                     disabled={fieldsForm.processing}
                                     className="px-6 py-2.5 rounded-2xl text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50 transition-all shadow-md shadow-emerald-500/20 active:scale-95 flex items-center gap-1.5"
                                 >
@@ -1399,15 +1398,15 @@ export default function TemplatesIndex({ auth, templates, jobGrades, stats, filt
 
                 {/* Preview Modals */}
                 {previewFormTemplate && (
-                    <PreviewFormModal 
-                        template={previewFormTemplate} 
-                        onClose={() => setPreviewFormTemplate(null)} 
+                    <PreviewFormModal
+                        template={previewFormTemplate}
+                        onClose={() => setPreviewFormTemplate(null)}
                     />
                 )}
                 {previewReportTemplate && (
-                    <PreviewReportModal 
-                        template={previewReportTemplate} 
-                        onClose={() => setPreviewReportTemplate(null)} 
+                    <PreviewReportModal
+                        template={previewReportTemplate}
+                        onClose={() => setPreviewReportTemplate(null)}
                     />
                 )}
 
