@@ -31,6 +31,21 @@ class AppServiceProvider extends ServiceProvider
             LogSuccessfulLogin::class,
         );
 
+        if (class_exists(\Spatie\LaravelPdf\Drivers\BrowsershotDriver::class)) {
+            $this->app->singleton('laravel-pdf.driver.browsershot', function () {
+                return new \App\Services\Pdf\SmartPdfDriver(config('laravel-pdf.browsershot', []));
+            });
+
+            $this->app->singleton(\Spatie\LaravelPdf\Drivers\PdfDriver::class, function () {
+                $driverName = config('laravel-pdf.driver', 'browsershot');
+                if ($driverName === 'browsershot' || $driverName === 'mpdf') {
+                    return app('laravel-pdf.driver.browsershot');
+                }
+
+                return app("laravel-pdf.driver.{$driverName}");
+            });
+        }
+
         Vite::prefetch(concurrency: 3);
 
         try {
